@@ -1,0 +1,520 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.module_utils.rax &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>ansible.module_utils.rax</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.module_utils.rax</h1><div class="highlight"><pre>
+<span class="c"># This code is part of Ansible, but is an independent component.</span>
+<span class="c"># This particular file snippet, and this file snippet only, is BSD licensed.</span>
+<span class="c"># Modules you write using this snippet, which is embedded dynamically by</span>
+<span class="c"># Ansible still belong to the author of the module, and may assign their own</span>
+<span class="c"># license to the complete work.</span>
+<span class="c">#</span>
+<span class="c"># Copyright (c), Michael DeHaan &lt;michael.dehaan@gmail.com&gt;, 2012-2013</span>
+<span class="c"># All rights reserved.</span>
+<span class="c">#</span>
+<span class="c"># Redistribution and use in source and binary forms, with or without</span>
+<span class="c"># modification, are permitted provided that the following conditions are met:</span>
+<span class="c">#</span>
+<span class="c">#    * Redistributions of source code must retain the above copyright</span>
+<span class="c">#      notice, this list of conditions and the following disclaimer.</span>
+<span class="c">#    * Redistributions in binary form must reproduce the above copyright</span>
+<span class="c">#      notice, this list of conditions and the following disclaimer in the</span>
+<span class="c">#      documentation and/or other materials provided with the distribution.</span>
+<span class="c">#</span>
+<span class="c"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;</span>
+<span class="c"># AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE</span>
+<span class="c"># IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE</span>
+<span class="c"># ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE</span>
+<span class="c"># LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR</span>
+<span class="c"># CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF</span>
+<span class="c"># SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS</span>
+<span class="c"># INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN</span>
+<span class="c"># CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)</span>
+<span class="c"># ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE</span>
+<span class="c"># POSSIBILITY OF SUCH DAMAGE.</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">uuid</span> <span class="kn">import</span> <span class="n">UUID</span>
+
+<span class="kn">from</span> <span class="nn">ansible.module_utils.basic</span> <span class="kn">import</span> <span class="n">BOOLEANS</span>
+
+<span class="n">FINAL_STATUSES</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ACTIVE&#39;</span><span class="p">,</span> <span class="s">&#39;ERROR&#39;</span><span class="p">)</span>
+<span class="n">VOLUME_STATUS</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;available&#39;</span><span class="p">,</span> <span class="s">&#39;attaching&#39;</span><span class="p">,</span> <span class="s">&#39;creating&#39;</span><span class="p">,</span> <span class="s">&#39;deleting&#39;</span><span class="p">,</span> <span class="s">&#39;in-use&#39;</span><span class="p">,</span>
+                 <span class="s">&#39;error&#39;</span><span class="p">,</span> <span class="s">&#39;error_deleting&#39;</span><span class="p">)</span>
+
+<span class="n">CLB_ALGORITHMS</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;RANDOM&#39;</span><span class="p">,</span> <span class="s">&#39;LEAST_CONNECTIONS&#39;</span><span class="p">,</span> <span class="s">&#39;ROUND_ROBIN&#39;</span><span class="p">,</span>
+                  <span class="s">&#39;WEIGHTED_LEAST_CONNECTIONS&#39;</span><span class="p">,</span> <span class="s">&#39;WEIGHTED_ROUND_ROBIN&#39;</span><span class="p">]</span>
+<span class="n">CLB_PROTOCOLS</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;DNS_TCP&#39;</span><span class="p">,</span> <span class="s">&#39;DNS_UDP&#39;</span><span class="p">,</span> <span class="s">&#39;FTP&#39;</span><span class="p">,</span> <span class="s">&#39;HTTP&#39;</span><span class="p">,</span> <span class="s">&#39;HTTPS&#39;</span><span class="p">,</span> <span class="s">&#39;IMAPS&#39;</span><span class="p">,</span>
+                 <span class="s">&#39;IMAPv4&#39;</span><span class="p">,</span> <span class="s">&#39;LDAP&#39;</span><span class="p">,</span> <span class="s">&#39;LDAPS&#39;</span><span class="p">,</span> <span class="s">&#39;MYSQL&#39;</span><span class="p">,</span> <span class="s">&#39;POP3&#39;</span><span class="p">,</span> <span class="s">&#39;POP3S&#39;</span><span class="p">,</span> <span class="s">&#39;SMTP&#39;</span><span class="p">,</span>
+                 <span class="s">&#39;TCP&#39;</span><span class="p">,</span> <span class="s">&#39;TCP_CLIENT_FIRST&#39;</span><span class="p">,</span> <span class="s">&#39;UDP&#39;</span><span class="p">,</span> <span class="s">&#39;UDP_STREAM&#39;</span><span class="p">,</span> <span class="s">&#39;SFTP&#39;</span><span class="p">]</span>
+
+<span class="n">NON_CALLABLES</span> <span class="o">=</span> <span class="p">(</span><span class="nb">basestring</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="bp">None</span><span class="p">))</span>
+<span class="n">PUBLIC_NET_ID</span> <span class="o">=</span> <span class="s">&quot;00000000-0000-0000-0000-000000000000&quot;</span>
+<span class="n">SERVICE_NET_ID</span> <span class="o">=</span> <span class="s">&quot;11111111-1111-1111-1111-111111111111&quot;</span>
+
+
+<div class="viewcode-block" id="rax_slugify"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.rax.rax_slugify">[docs]</a><span class="k">def</span> <span class="nf">rax_slugify</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Prepend a key with rax_ and normalize the key name&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="s">&#39;rax_</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">&#39;[^\w-]&#39;</span><span class="p">,</span> <span class="s">&#39;_&#39;</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="rax_clb_node_to_dict"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.rax.rax_clb_node_to_dict">[docs]</a><span class="k">def</span> <span class="nf">rax_clb_node_to_dict</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Function to convert a CLB Node object to a dict&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">obj</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{}</span>
+    <span class="n">node</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+    <span class="n">node</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">id</span>
+    <span class="n">node</span><span class="p">[</span><span class="s">&#39;weight&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">weight</span>
+    <span class="k">return</span> <span class="n">node</span></div>
+
+
+<div class="viewcode-block" id="rax_to_dict"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.rax.rax_to_dict">[docs]</a><span class="k">def</span> <span class="nf">rax_to_dict</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">obj_type</span><span class="o">=</span><span class="s">&#39;standard&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Generic function to convert a pyrax object to a dict</span>
+
+<span class="sd">    obj_type values:</span>
+<span class="sd">        standard</span>
+<span class="sd">        clb</span>
+<span class="sd">        server</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">instance</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">obj_type</span> <span class="o">==</span> <span class="s">&#39;clb&#39;</span> <span class="ow">and</span> <span class="n">key</span> <span class="o">==</span> <span class="s">&#39;nodes&#39;</span><span class="p">:</span>
+            <span class="n">instance</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+                <span class="n">instance</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rax_clb_node_to_dict</span><span class="p">(</span><span class="n">node</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span>
+                <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">NON_CALLABLES</span><span class="p">)):</span>
+            <span class="n">instance</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+                <span class="n">instance</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rax_to_dict</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">NON_CALLABLES</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">obj_type</span> <span class="o">==</span> <span class="s">&#39;server&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s">&#39;image&#39;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">value</span><span class="p">:</span>
+                        <span class="n">instance</span><span class="p">[</span><span class="s">&#39;rax_boot_source&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;volume&#39;</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">instance</span><span class="p">[</span><span class="s">&#39;rax_boot_source&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;local&#39;</span>
+                <span class="n">key</span> <span class="o">=</span> <span class="n">rax_slugify</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="n">instance</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">if</span> <span class="n">obj_type</span> <span class="o">==</span> <span class="s">&#39;server&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">,</span> <span class="s">&#39;accessIPv4&#39;</span><span class="p">,</span> <span class="s">&#39;name&#39;</span><span class="p">,</span> <span class="s">&#39;status&#39;</span><span class="p">]:</span>
+            <span class="n">instance</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="n">instance</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">rax_slugify</span><span class="p">(</span><span class="n">attr</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">instance</span></div>
+
+
+<div class="viewcode-block" id="rax_find_bootable_volume"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.rax.rax_find_bootable_volume">[docs]</a><span class="k">def</span> <span class="nf">rax_find_bootable_volume</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">rax_module</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="nb">exit</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Find a servers bootable volume&quot;&quot;&quot;</span>
+    <span class="n">cs</span> <span class="o">=</span> <span class="n">rax_module</span><span class="o">.</span><span class="n">cloudservers</span>
+    <span class="n">cbs</span> <span class="o">=</span> <span class="n">rax_module</span><span class="o">.</span><span class="n">cloud_blockstorage</span>
+    <span class="n">server_id</span> <span class="o">=</span> <span class="n">rax_module</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">get_id</span><span class="p">(</span><span class="n">server</span><span class="p">)</span>
+    <span class="n">volumes</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">volumes</span><span class="o">.</span><span class="n">get_server_volumes</span><span class="p">(</span><span class="n">server_id</span><span class="p">)</span>
+    <span class="n">bootable_volumes</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">volume</span> <span class="ow">in</span> <span class="n">volumes</span><span class="p">:</span>
+        <span class="n">vol</span> <span class="o">=</span> <span class="n">cbs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">volume</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">module</span><span class="o">.</span><span class="n">boolean</span><span class="p">(</span><span class="n">vol</span><span class="o">.</span><span class="n">bootable</span><span class="p">):</span>
+            <span class="n">bootable_volumes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vol</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">bootable_volumes</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">exit</span><span class="p">:</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&#39;No bootable volumes could be found for &#39;</span>
+                                 <span class="s">&#39;server </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">server_id</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">bootable_volumes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">exit</span><span class="p">:</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&#39;Multiple bootable volumes found for server &#39;</span>
+                                 <span class="s">&#39;</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">server_id</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">return</span> <span class="n">bootable_volumes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="rax_find_image"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.rax.rax_find_image">[docs]</a><span class="k">def</span> <span class="nf">rax_find_image</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">rax_module</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="nb">exit</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Find a server image by ID or Name&quot;&quot;&quot;</span>
+    <span class="n">cs</span> <span class="o">=</span> <span class="n">rax_module</span><span class="o">.</span><span class="n">cloudservers</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">UUID</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">image</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">images</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">human_id</span><span class="o">=</span><span class="n">image</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">NotFound</span><span class="p">,</span>
+               <span class="n">cs</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">NoUniqueMatch</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">image</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">images</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">image</span><span class="p">)</span>
+            <span class="k">except</span> <span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">NotFound</span><span class="p">,</span>
+                    <span class="n">cs</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">NoUniqueMatch</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">exit</span><span class="p">:</span>
+                    <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&#39;No matching image found (</span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span>
+                                         <span class="n">image</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">return</span> <span class="n">rax_module</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">get_id</span><span class="p">(</span><span class="n">image</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="rax_find_volume"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.rax.rax_find_volume">[docs]</a><span class="k">def</span> <span class="nf">rax_find_volume</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">rax_module</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Find a Block storage volume by ID or name&quot;&quot;&quot;</span>
+    <span class="n">cbs</span> <span class="o">=</span> <span class="n">rax_module</span><span class="o">.</span><span class="n">cloud_blockstorage</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">UUID</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">volume</span> <span class="o">=</span> <span class="n">cbs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">volume</span> <span class="o">=</span> <span class="n">cbs</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">rax_module</span><span class="o">.</span><span class="n">exc</span><span class="o">.</span><span class="n">NotFound</span><span class="p">:</span>
+            <span class="n">volume</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">e</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">volume</span></div>
+
+
+<div class="viewcode-block" id="rax_find_network"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.rax.rax_find_network">[docs]</a><span class="k">def</span> <span class="nf">rax_find_network</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">rax_module</span><span class="p">,</span> <span class="n">network</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Find a cloud network by ID or name&quot;&quot;&quot;</span>
+    <span class="n">cnw</span> <span class="o">=</span> <span class="n">rax_module</span><span class="o">.</span><span class="n">cloud_networks</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">UUID</span><span class="p">(</span><span class="n">network</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">network</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;public&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">cnw</span><span class="o">.</span><span class="n">get_server_networks</span><span class="p">(</span><span class="n">PUBLIC_NET_ID</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">network</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;private&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">cnw</span><span class="o">.</span><span class="n">get_server_networks</span><span class="p">(</span><span class="n">SERVICE_NET_ID</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">network_obj</span> <span class="o">=</span> <span class="n">cnw</span><span class="o">.</span><span class="n">find_network_by_label</span><span class="p">(</span><span class="n">network</span><span class="p">)</span>
+            <span class="k">except</span> <span class="p">(</span><span class="n">rax_module</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">NetworkNotFound</span><span class="p">,</span>
+                    <span class="n">rax_module</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">NetworkLabelNotUnique</span><span class="p">):</span>
+                <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&#39;No matching network found (</span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span>
+                                     <span class="n">network</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">cnw</span><span class="o">.</span><span class="n">get_server_networks</span><span class="p">(</span><span class="n">network_obj</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">cnw</span><span class="o">.</span><span class="n">get_server_networks</span><span class="p">(</span><span class="n">network</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="rax_find_server"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.rax.rax_find_server">[docs]</a><span class="k">def</span> <span class="nf">rax_find_server</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">rax_module</span><span class="p">,</span> <span class="n">server</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Find a Cloud Server by ID or name&quot;&quot;&quot;</span>
+    <span class="n">cs</span> <span class="o">=</span> <span class="n">rax_module</span><span class="o">.</span><span class="n">cloudservers</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">UUID</span><span class="p">(</span><span class="n">server</span><span class="p">)</span>
+        <span class="n">server</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">servers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">server</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="n">servers</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">servers</span><span class="o">.</span><span class="n">list</span><span class="p">(</span><span class="n">search_opts</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;^</span><span class="si">%s</span><span class="s">$&#39;</span> <span class="o">%</span> <span class="n">server</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">servers</span><span class="p">:</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&#39;No Server was matched by name, &#39;</span>
+                                 <span class="s">&#39;try using the Server ID instead&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">servers</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&#39;Multiple servers matched by name, &#39;</span>
+                                 <span class="s">&#39;try using the Server ID instead&#39;</span><span class="p">)</span>
+
+        <span class="c"># We made it this far, grab the first and hopefully only server</span>
+        <span class="c"># in the list</span>
+        <span class="n">server</span> <span class="o">=</span> <span class="n">servers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">server</span></div>
+
+
+<div class="viewcode-block" id="rax_find_loadbalancer"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.rax.rax_find_loadbalancer">[docs]</a><span class="k">def</span> <span class="nf">rax_find_loadbalancer</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">rax_module</span><span class="p">,</span> <span class="n">loadbalancer</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Find a Cloud Load Balancer by ID or name&quot;&quot;&quot;</span>
+    <span class="n">clb</span> <span class="o">=</span> <span class="n">rax_module</span><span class="o">.</span><span class="n">cloud_loadbalancers</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">found</span> <span class="o">=</span> <span class="n">clb</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">loadbalancer</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">found</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">lb</span> <span class="ow">in</span> <span class="n">clb</span><span class="o">.</span><span class="n">list</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">loadbalancer</span> <span class="o">==</span> <span class="n">lb</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                <span class="n">found</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lb</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">found</span><span class="p">:</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&#39;No loadbalancer was matched&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">found</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&#39;Multiple loadbalancers matched&#39;</span><span class="p">)</span>
+
+        <span class="c"># We made it this far, grab the first and hopefully only item</span>
+        <span class="c"># in the list</span>
+        <span class="n">found</span> <span class="o">=</span> <span class="n">found</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">found</span></div>
+
+
+<div class="viewcode-block" id="rax_argument_spec"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.rax.rax_argument_spec">[docs]</a><span class="k">def</span> <span class="nf">rax_argument_spec</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Return standard base dictionary used for the argument_spec</span>
+<span class="sd">    argument in AnsibleModule</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">api_key</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;str&#39;</span><span class="p">,</span> <span class="n">aliases</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;password&#39;</span><span class="p">],</span> <span class="n">no_log</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+        <span class="n">auth_endpoint</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;str&#39;</span><span class="p">),</span>
+        <span class="n">credentials</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;str&#39;</span><span class="p">,</span> <span class="n">aliases</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;creds_file&#39;</span><span class="p">]),</span>
+        <span class="n">env</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;str&#39;</span><span class="p">),</span>
+        <span class="n">identity_type</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;str&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s">&#39;rackspace&#39;</span><span class="p">),</span>
+        <span class="n">region</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;str&#39;</span><span class="p">),</span>
+        <span class="n">tenant_id</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;str&#39;</span><span class="p">),</span>
+        <span class="n">tenant_name</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;str&#39;</span><span class="p">),</span>
+        <span class="n">username</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;str&#39;</span><span class="p">),</span>
+        <span class="n">verify_ssl</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">choices</span><span class="o">=</span><span class="n">BOOLEANS</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">),</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="rax_required_together"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.rax.rax_required_together">[docs]</a><span class="k">def</span> <span class="nf">rax_required_together</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Return the default list used for the required_together argument to</span>
+<span class="sd">    AnsibleModule&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[[</span><span class="s">&#39;api_key&#39;</span><span class="p">,</span> <span class="s">&#39;username&#39;</span><span class="p">]]</span></div>
+
+
+<div class="viewcode-block" id="setup_rax_module"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.rax.setup_rax_module">[docs]</a><span class="k">def</span> <span class="nf">setup_rax_module</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">rax_module</span><span class="p">,</span> <span class="n">region_required</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Set up pyrax in a standard way for all modules&quot;&quot;&quot;</span>
+    <span class="n">rax_module</span><span class="o">.</span><span class="n">USER_AGENT</span> <span class="o">=</span> <span class="s">&#39;ansible/</span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">ansible_version</span><span class="p">,</span>
+                                               <span class="n">rax_module</span><span class="o">.</span><span class="n">USER_AGENT</span><span class="p">)</span>
+
+    <span class="n">api_key</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;api_key&#39;</span><span class="p">)</span>
+    <span class="n">auth_endpoint</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;auth_endpoint&#39;</span><span class="p">)</span>
+    <span class="n">credentials</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;credentials&#39;</span><span class="p">)</span>
+    <span class="n">env</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;env&#39;</span><span class="p">)</span>
+    <span class="n">identity_type</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;identity_type&#39;</span><span class="p">)</span>
+    <span class="n">region</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;region&#39;</span><span class="p">)</span>
+    <span class="n">tenant_id</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;tenant_id&#39;</span><span class="p">)</span>
+    <span class="n">tenant_name</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;tenant_name&#39;</span><span class="p">)</span>
+    <span class="n">username</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;username&#39;</span><span class="p">)</span>
+    <span class="n">verify_ssl</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;verify_ssl&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">env</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">rax_module</span><span class="o">.</span><span class="n">set_environment</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
+
+    <span class="n">rax_module</span><span class="o">.</span><span class="n">set_setting</span><span class="p">(</span><span class="s">&#39;identity_type&#39;</span><span class="p">,</span> <span class="n">identity_type</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">verify_ssl</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">rax_module</span><span class="o">.</span><span class="n">set_setting</span><span class="p">(</span><span class="s">&#39;verify_ssl&#39;</span><span class="p">,</span> <span class="n">verify_ssl</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">auth_endpoint</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">rax_module</span><span class="o">.</span><span class="n">set_setting</span><span class="p">(</span><span class="s">&#39;auth_endpoint&#39;</span><span class="p">,</span> <span class="n">auth_endpoint</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">tenant_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">rax_module</span><span class="o">.</span><span class="n">set_setting</span><span class="p">(</span><span class="s">&#39;tenant_id&#39;</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">tenant_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">rax_module</span><span class="o">.</span><span class="n">set_setting</span><span class="p">(</span><span class="s">&#39;tenant_name&#39;</span><span class="p">,</span> <span class="n">tenant_name</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">username</span> <span class="o">=</span> <span class="n">username</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;RAX_USERNAME&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">username</span><span class="p">:</span>
+            <span class="n">username</span> <span class="o">=</span> <span class="n">rax_module</span><span class="o">.</span><span class="n">get_setting</span><span class="p">(</span><span class="s">&#39;keyring_username&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">username</span><span class="p">:</span>
+                <span class="n">api_key</span> <span class="o">=</span> <span class="s">&#39;USE_KEYRING&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">api_key</span><span class="p">:</span>
+            <span class="n">api_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;RAX_API_KEY&#39;</span><span class="p">)</span>
+        <span class="n">credentials</span> <span class="o">=</span> <span class="p">(</span><span class="n">credentials</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;RAX_CREDENTIALS&#39;</span><span class="p">)</span> <span class="ow">or</span>
+                       <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;RAX_CREDS_FILE&#39;</span><span class="p">))</span>
+        <span class="n">region</span> <span class="o">=</span> <span class="p">(</span><span class="n">region</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;RAX_REGION&#39;</span><span class="p">)</span> <span class="ow">or</span>
+                  <span class="n">rax_module</span><span class="o">.</span><span class="n">get_setting</span><span class="p">(</span><span class="s">&#39;region&#39;</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&#39;Unable to load </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">api_key</span> <span class="ow">and</span> <span class="n">username</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">api_key</span> <span class="o">==</span> <span class="s">&#39;USE_KEYRING&#39;</span><span class="p">:</span>
+                <span class="n">rax_module</span><span class="o">.</span><span class="n">keyring_auth</span><span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="n">region</span><span class="o">=</span><span class="n">region</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">rax_module</span><span class="o">.</span><span class="n">set_credentials</span><span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">,</span>
+                                           <span class="n">region</span><span class="o">=</span><span class="n">region</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">credentials</span><span class="p">:</span>
+            <span class="n">credentials</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">credentials</span><span class="p">)</span>
+            <span class="n">rax_module</span><span class="o">.</span><span class="n">set_credential_file</span><span class="p">(</span><span class="n">credentials</span><span class="p">,</span> <span class="n">region</span><span class="o">=</span><span class="n">region</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;No credentials supplied!&#39;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">region_required</span> <span class="ow">and</span> <span class="n">region</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">rax_module</span><span class="o">.</span><span class="n">regions</span><span class="p">:</span>
+        <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> is not a valid region, must be one of: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span>
+                         <span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">rax_module</span><span class="o">.</span><span class="n">regions</span><span class="p">)))</span>
+
+    <span class="k">return</span> <span class="n">rax_module</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

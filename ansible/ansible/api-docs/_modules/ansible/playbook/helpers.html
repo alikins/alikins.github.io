@@ -1,0 +1,458 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.playbook.helpers &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="ansible.playbook" href="../playbook.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../playbook.html">ansible.playbook</a> &raquo;</li>
+      
+    <li>ansible.playbook.helpers</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.playbook.helpers</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">string_types</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleParserError</span><span class="p">,</span> <span class="n">AnsibleUndefinedVariable</span><span class="p">,</span> <span class="n">AnsibleFileNotFound</span>
+<span class="kn">from</span> <span class="nn">ansible.parsing.yaml.objects</span> <span class="kn">import</span> <span class="n">AnsibleBaseYAMLObject</span><span class="p">,</span> <span class="n">AnsibleSequence</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="load_list_of_blocks"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.helpers.load_list_of_blocks">[docs]</a><span class="k">def</span> <span class="nf">load_list_of_blocks</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">play</span><span class="p">,</span> <span class="n">parent_block</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">role</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">task_include</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">use_handlers</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Given a list of mixed task/block data (parsed from YAML),</span>
+<span class="sd">    return a list of Block() objects, where implicit blocks</span>
+<span class="sd">    are created for each bare Task.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c"># we import here to prevent a circular dependency with imports</span>
+    <span class="kn">from</span> <span class="nn">ansible.playbook.block</span> <span class="kn">import</span> <span class="n">Block</span>
+
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="bp">None</span><span class="p">)))</span>
+
+    <span class="n">block_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">ds</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+            <span class="n">b</span> <span class="o">=</span> <span class="n">Block</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
+                <span class="n">block</span><span class="p">,</span>
+                <span class="n">play</span><span class="o">=</span><span class="n">play</span><span class="p">,</span>
+                <span class="n">parent_block</span><span class="o">=</span><span class="n">parent_block</span><span class="p">,</span>
+                <span class="n">role</span><span class="o">=</span><span class="n">role</span><span class="p">,</span>
+                <span class="n">task_include</span><span class="o">=</span><span class="n">task_include</span><span class="p">,</span>
+                <span class="n">use_handlers</span><span class="o">=</span><span class="n">use_handlers</span><span class="p">,</span>
+                <span class="n">variable_manager</span><span class="o">=</span><span class="n">variable_manager</span><span class="p">,</span>
+                <span class="n">loader</span><span class="o">=</span><span class="n">loader</span>
+            <span class="p">)</span>
+            <span class="c"># Implicit blocks are created by bare tasks listed in a play without</span>
+            <span class="c"># an explicit block statement. If we have two implicit blocks in a row,</span>
+            <span class="c"># squash them down to a single block to save processing time later.</span>
+            <span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">_implicit</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">block_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">block_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">_implicit</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">b</span><span class="o">.</span><span class="n">block</span><span class="p">:</span>
+                    <span class="n">t</span><span class="o">.</span><span class="n">_block</span> <span class="o">=</span> <span class="n">block_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">block_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">block</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">block_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">block_list</span></div>
+
+
+<div class="viewcode-block" id="load_list_of_tasks"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.helpers.load_list_of_tasks">[docs]</a><span class="k">def</span> <span class="nf">load_list_of_tasks</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">play</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">role</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">task_include</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">use_handlers</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Given a list of task datastructures (parsed from YAML),</span>
+<span class="sd">    return a list of Task() or TaskInclude() objects.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c"># we import here to prevent a circular dependency with imports</span>
+    <span class="kn">from</span> <span class="nn">ansible.playbook.block</span> <span class="kn">import</span> <span class="n">Block</span>
+    <span class="kn">from</span> <span class="nn">ansible.playbook.handler</span> <span class="kn">import</span> <span class="n">Handler</span>
+    <span class="kn">from</span> <span class="nn">ansible.playbook.task</span> <span class="kn">import</span> <span class="n">Task</span>
+    <span class="kn">from</span> <span class="nn">ansible.playbook.task_include</span> <span class="kn">import</span> <span class="n">TaskInclude</span>
+    <span class="kn">from</span> <span class="nn">ansible.playbook.handler_task_include</span> <span class="kn">import</span> <span class="n">HandlerTaskInclude</span>
+    <span class="kn">from</span> <span class="nn">ansible.template</span> <span class="kn">import</span> <span class="n">Templar</span>
+
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
+
+    <span class="n">task_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">task_ds</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">task_ds</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s">&#39;block&#39;</span> <span class="ow">in</span> <span class="n">task_ds</span><span class="p">:</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">Block</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
+                <span class="n">task_ds</span><span class="p">,</span>
+                <span class="n">play</span><span class="o">=</span><span class="n">play</span><span class="p">,</span>
+                <span class="n">parent_block</span><span class="o">=</span><span class="n">block</span><span class="p">,</span>
+                <span class="n">role</span><span class="o">=</span><span class="n">role</span><span class="p">,</span>
+                <span class="n">task_include</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                <span class="n">use_handlers</span><span class="o">=</span><span class="n">use_handlers</span><span class="p">,</span>
+                <span class="n">variable_manager</span><span class="o">=</span><span class="n">variable_manager</span><span class="p">,</span>
+                <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">task_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s">&#39;include&#39;</span> <span class="ow">in</span> <span class="n">task_ds</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">use_handlers</span><span class="p">:</span>
+                    <span class="n">t</span> <span class="o">=</span> <span class="n">HandlerTaskInclude</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">task_ds</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="n">block</span><span class="p">,</span> <span class="n">role</span><span class="o">=</span><span class="n">role</span><span class="p">,</span> <span class="n">task_include</span><span class="o">=</span><span class="n">task_include</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="n">variable_manager</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">t</span> <span class="o">=</span> <span class="n">TaskInclude</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">task_ds</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="n">block</span><span class="p">,</span> <span class="n">role</span><span class="o">=</span><span class="n">role</span><span class="p">,</span> <span class="n">task_include</span><span class="o">=</span><span class="n">task_include</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="n">variable_manager</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">)</span>
+                <span class="n">all_vars</span> <span class="o">=</span> <span class="n">variable_manager</span><span class="o">.</span><span class="n">get_vars</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span> <span class="n">play</span><span class="o">=</span><span class="n">play</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">t</span><span class="p">)</span>
+                <span class="n">templar</span> <span class="o">=</span> <span class="n">Templar</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="n">all_vars</span><span class="p">)</span>
+
+                <span class="c"># check to see if this include is dynamic or static:</span>
+                <span class="c"># 1. the user has set the &#39;static&#39; option to false or true</span>
+                <span class="c"># 2. one of the appropriate config options was set</span>
+                <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">static</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">is_static</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">static</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">is_static</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_TASK_INCLUDES_STATIC</span> <span class="ow">or</span> \
+                                <span class="p">(</span><span class="n">use_handlers</span> <span class="ow">and</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_HANDLER_INCLUDES_STATIC</span><span class="p">)</span> <span class="ow">or</span> \
+                                <span class="p">(</span><span class="ow">not</span> <span class="n">templar</span><span class="o">.</span><span class="n">_contains_vars</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s">&#39;_raw_params&#39;</span><span class="p">])</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">t</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">is_static</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">loop</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&quot;You cannot use &#39;static&#39; on an include with a loop&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">task_ds</span><span class="p">)</span>
+
+                    <span class="c"># FIXME: all of this code is very similar (if not identical) to that in</span>
+                    <span class="c">#        plugins/strategy/__init__.py, and should be unified to avoid</span>
+                    <span class="c">#        patches only being applied to one or the other location</span>
+                    <span class="k">if</span> <span class="n">task_include</span><span class="p">:</span>
+                        <span class="c"># handle relative includes by walking up the list of parent include</span>
+                        <span class="c"># tasks and checking the relative result to see if it exists</span>
+                        <span class="n">parent_include</span> <span class="o">=</span> <span class="n">task_include</span>
+                        <span class="n">cumulative_path</span> <span class="o">=</span> <span class="bp">None</span>
+                        <span class="k">while</span> <span class="n">parent_include</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                            <span class="n">parent_include_dir</span> <span class="o">=</span> <span class="n">templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">parent_include</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;_raw_params&#39;</span><span class="p">)))</span>
+                            <span class="k">if</span> <span class="n">cumulative_path</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                                <span class="n">cumulative_path</span> <span class="o">=</span> <span class="n">parent_include_dir</span>
+                            <span class="k">elif</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isabs</span><span class="p">(</span><span class="n">cumulative_path</span><span class="p">):</span>
+                                <span class="n">cumulative_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parent_include_dir</span><span class="p">,</span> <span class="n">cumulative_path</span><span class="p">)</span>
+                            <span class="n">include_target</span> <span class="o">=</span> <span class="n">templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s">&#39;_raw_params&#39;</span><span class="p">])</span>
+                            <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">_role</span><span class="p">:</span>
+                                <span class="n">new_basedir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">_role</span><span class="o">.</span><span class="n">_role_path</span><span class="p">,</span> <span class="s">&#39;tasks&#39;</span><span class="p">,</span> <span class="n">cumulative_path</span><span class="p">)</span>
+                                <span class="n">include_file</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">path_dwim_relative</span><span class="p">(</span><span class="n">new_basedir</span><span class="p">,</span> <span class="s">&#39;tasks&#39;</span><span class="p">,</span> <span class="n">include_target</span><span class="p">)</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">include_file</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">path_dwim_relative</span><span class="p">(</span><span class="n">loader</span><span class="o">.</span><span class="n">get_basedir</span><span class="p">(),</span> <span class="n">cumulative_path</span><span class="p">,</span> <span class="n">include_target</span><span class="p">)</span>
+
+                            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">include_file</span><span class="p">):</span>
+                                <span class="k">break</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">parent_include</span> <span class="o">=</span> <span class="n">parent_include</span><span class="o">.</span><span class="n">_task_include</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">include_target</span> <span class="o">=</span> <span class="n">templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s">&#39;_raw_params&#39;</span><span class="p">])</span>
+                        <span class="k">except</span> <span class="n">AnsibleUndefinedVariable</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span>
+                                      <span class="s">&quot;Error when evaluating variable in include name: </span><span class="si">%s</span><span class="s">.</span><span class="se">\n\n</span><span class="s">&quot;</span> \
+                                      <span class="s">&quot;When using static includes, ensure that any variables used in their names are defined in vars/vars_files</span><span class="se">\n</span><span class="s">&quot;</span> \
+                                      <span class="s">&quot;or extra-vars passed in from the command line. Static includes cannot use variables from inventory</span><span class="se">\n</span><span class="s">&quot;</span> \
+                                      <span class="s">&quot;sources like group or host vars.&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s">&#39;_raw_params&#39;</span><span class="p">],</span>
+                                      <span class="n">obj</span><span class="o">=</span><span class="n">task_ds</span><span class="p">,</span>
+                                      <span class="n">suppress_extended_error</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                  <span class="p">)</span>
+                        <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">_role</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">use_handlers</span><span class="p">:</span>
+                                <span class="n">include_file</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">path_dwim_relative</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">_role</span><span class="o">.</span><span class="n">_role_path</span><span class="p">,</span> <span class="s">&#39;handlers&#39;</span><span class="p">,</span> <span class="n">include_target</span><span class="p">)</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">include_file</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">path_dwim_relative</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">_role</span><span class="o">.</span><span class="n">_role_path</span><span class="p">,</span> <span class="s">&#39;tasks&#39;</span><span class="p">,</span> <span class="n">include_target</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">include_file</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">path_dwim</span><span class="p">(</span><span class="n">include_target</span><span class="p">)</span>
+
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">data</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">load_from_file</span><span class="p">(</span><span class="n">include_file</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                            <span class="k">return</span> <span class="p">[]</span>
+                        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;included task files must contain a list of tasks&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="n">AnsibleFileNotFound</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">static</span> <span class="ow">or</span> \
+                           <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_TASK_INCLUDES_STATIC</span> <span class="ow">or</span> \
+                           <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_HANDLER_INCLUDES_STATIC</span> <span class="ow">and</span> <span class="n">use_handlers</span><span class="p">:</span>
+                            <span class="k">raise</span>
+                        <span class="n">display</span><span class="o">.</span><span class="n">deprecated</span><span class="p">(</span>
+                            <span class="s">&quot;Included file &#39;</span><span class="si">%s</span><span class="s">&#39; not found, however since this include is not &quot;</span> \
+                            <span class="s">&quot;explicitly marked as &#39;static: yes&#39;, we will try and include it dynamically &quot;</span> \
+                            <span class="s">&quot;later. In the future, this will be an error unless &#39;static: no&#39; is used &quot;</span> \
+                            <span class="s">&quot;on the include task. If you do not want missing includes to be considered &quot;</span> \
+                            <span class="s">&quot;dynamic, use &#39;static: yes&#39; on the include or set the global ansible.cfg &quot;</span> \
+                            <span class="s">&quot;options to make all inclues static for tasks and/or handlers&quot;</span> <span class="o">%</span> <span class="n">include_file</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="n">task_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+                        <span class="k">continue</span>
+
+                    <span class="n">included_blocks</span> <span class="o">=</span> <span class="n">load_list_of_blocks</span><span class="p">(</span>
+                        <span class="n">data</span><span class="p">,</span>
+                        <span class="n">play</span><span class="o">=</span><span class="n">play</span><span class="p">,</span>
+                        <span class="n">parent_block</span><span class="o">=</span><span class="n">block</span><span class="p">,</span>
+                        <span class="n">task_include</span><span class="o">=</span><span class="n">t</span><span class="p">,</span>
+                        <span class="n">role</span><span class="o">=</span><span class="n">role</span><span class="p">,</span>
+                        <span class="n">use_handlers</span><span class="o">=</span><span class="n">use_handlers</span><span class="p">,</span>
+                        <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span>
+                        <span class="n">variable_manager</span><span class="o">=</span><span class="n">variable_manager</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+                    <span class="c"># pop tags out of the include args, if they were specified there, and assign</span>
+                    <span class="c"># them to the include. If the include already had tags specified, we raise an</span>
+                    <span class="c"># error so that users know not to specify them both ways</span>
+                    <span class="n">tags</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">vars</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;tags&#39;</span><span class="p">,</span> <span class="p">[])</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span> <span class="n">string_types</span><span class="p">):</span>
+                        <span class="n">tags</span> <span class="o">=</span> <span class="n">tags</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">tags</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span>
+                                <span class="s">&quot;Include tasks should not specify tags in more than one way (both via args and directly on the task).&quot;</span> \
+                                <span class="s">&quot; Mixing tag specify styles is prohibited for whole import hierarchy, not only for single import statement&quot;</span><span class="p">,</span>
+                                <span class="n">obj</span><span class="o">=</span><span class="n">task_ds</span><span class="p">,</span>
+                                <span class="n">suppress_extended_error</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                            <span class="p">)</span>
+                        <span class="n">display</span><span class="o">.</span><span class="n">deprecated</span><span class="p">(</span><span class="s">&quot;You should not specify tags in the include parameters. All tags should be specified using the task-level option&quot;</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">tags</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">tags</span><span class="p">[:]</span>
+
+                    <span class="c"># now we extend the tags on each of the included blocks</span>
+                    <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">included_blocks</span><span class="p">:</span>
+                        <span class="n">b</span><span class="o">.</span><span class="n">tags</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">tags</span><span class="p">)</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">tags</span><span class="p">))</span>
+                    <span class="c"># END FIXME</span>
+
+                    <span class="c"># FIXME: send callback here somehow...</span>
+                    <span class="c"># FIXME: handlers shouldn&#39;t need this special handling, but do</span>
+                    <span class="c">#        right now because they don&#39;t iterate blocks correctly</span>
+                    <span class="k">if</span> <span class="n">use_handlers</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">included_blocks</span><span class="p">:</span>
+                            <span class="n">task_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">block</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">task_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">included_blocks</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">task_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">use_handlers</span><span class="p">:</span>
+                    <span class="n">t</span> <span class="o">=</span> <span class="n">Handler</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">task_ds</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="n">block</span><span class="p">,</span> <span class="n">role</span><span class="o">=</span><span class="n">role</span><span class="p">,</span> <span class="n">task_include</span><span class="o">=</span><span class="n">task_include</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="n">variable_manager</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">t</span> <span class="o">=</span> <span class="n">Task</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">task_ds</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="n">block</span><span class="p">,</span> <span class="n">role</span><span class="o">=</span><span class="n">role</span><span class="p">,</span> <span class="n">task_include</span><span class="o">=</span><span class="n">task_include</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="n">variable_manager</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">)</span>
+                <span class="n">task_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">task_list</span></div>
+
+
+<div class="viewcode-block" id="load_list_of_roles"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.helpers.load_list_of_roles">[docs]</a><span class="k">def</span> <span class="nf">load_list_of_roles</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">play</span><span class="p">,</span> <span class="n">current_role_path</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Loads and returns a list of RoleInclude objects from the datastructure</span>
+<span class="sd">    list of role definitions</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c"># we import here to prevent a circular dependency with imports</span>
+    <span class="kn">from</span> <span class="nn">ansible.playbook.role.include</span> <span class="kn">import</span> <span class="n">RoleInclude</span>
+
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
+
+    <span class="n">roles</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">role_def</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">RoleInclude</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">role_def</span><span class="p">,</span> <span class="n">play</span><span class="o">=</span><span class="n">play</span><span class="p">,</span> <span class="n">current_role_path</span><span class="o">=</span><span class="n">current_role_path</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="n">variable_manager</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">)</span>
+        <span class="n">roles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">roles</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

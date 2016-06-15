@@ -1,0 +1,861 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.cli.galaxy &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="ansible.cli" href="../cli.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../cli.html">ansible.cli</a> &raquo;</li>
+      
+    <li>ansible.cli.galaxy</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.cli.galaxy</h1><div class="highlight"><pre>
+<span class="c">########################################################################</span>
+<span class="c">#</span>
+<span class="c"># (C) 2013, James Cammarata &lt;jcammarata@ansible.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+<span class="c">#</span>
+<span class="c">########################################################################</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">os.path</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">yaml</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">jinja2</span> <span class="kn">import</span> <span class="n">Environment</span>
+
+<span class="kn">import</span> <span class="nn">ansible.constants</span> <span class="kn">as</span> <span class="nn">C</span>
+<span class="kn">from</span> <span class="nn">ansible.cli</span> <span class="kn">import</span> <span class="n">CLI</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span><span class="p">,</span> <span class="n">AnsibleOptionsError</span>
+<span class="kn">from</span> <span class="nn">ansible.galaxy</span> <span class="kn">import</span> <span class="n">Galaxy</span>
+<span class="kn">from</span> <span class="nn">ansible.galaxy.api</span> <span class="kn">import</span> <span class="n">GalaxyAPI</span>
+<span class="kn">from</span> <span class="nn">ansible.galaxy.role</span> <span class="kn">import</span> <span class="n">GalaxyRole</span>
+<span class="kn">from</span> <span class="nn">ansible.galaxy.login</span> <span class="kn">import</span> <span class="n">GalaxyLogin</span>
+<span class="kn">from</span> <span class="nn">ansible.galaxy.token</span> <span class="kn">import</span> <span class="n">GalaxyToken</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.role.requirement</span> <span class="kn">import</span> <span class="n">RoleRequirement</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.unicode</span> <span class="kn">import</span> <span class="n">to_unicode</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+<div class="viewcode-block" id="GalaxyCLI"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.galaxy.GalaxyCLI">[docs]</a><span class="k">class</span> <span class="nc">GalaxyCLI</span><span class="p">(</span><span class="n">CLI</span><span class="p">):</span>
+
+    <span class="n">SKIP_INFO_KEYS</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;name&quot;</span><span class="p">,</span> <span class="s">&quot;description&quot;</span><span class="p">,</span> <span class="s">&quot;readme_html&quot;</span><span class="p">,</span> <span class="s">&quot;related&quot;</span><span class="p">,</span> <span class="s">&quot;summary_fields&quot;</span><span class="p">,</span> <span class="s">&quot;average_aw_composite&quot;</span><span class="p">,</span> <span class="s">&quot;average_aw_score&quot;</span><span class="p">,</span> <span class="s">&quot;url&quot;</span> <span class="p">)</span>
+    <span class="n">VALID_ACTIONS</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;delete&quot;</span><span class="p">,</span> <span class="s">&quot;import&quot;</span><span class="p">,</span> <span class="s">&quot;info&quot;</span><span class="p">,</span> <span class="s">&quot;init&quot;</span><span class="p">,</span> <span class="s">&quot;install&quot;</span><span class="p">,</span> <span class="s">&quot;list&quot;</span><span class="p">,</span> <span class="s">&quot;login&quot;</span><span class="p">,</span> <span class="s">&quot;remove&quot;</span><span class="p">,</span> <span class="s">&quot;search&quot;</span><span class="p">,</span> <span class="s">&quot;setup&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">galaxy</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">GalaxyCLI</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+<div class="viewcode-block" id="GalaxyCLI.parse"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.galaxy.GalaxyCLI.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; create an options parser for bin/ansible &#39;&#39;&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span> <span class="o">=</span> <span class="n">CLI</span><span class="o">.</span><span class="n">base_parser</span><span class="p">(</span>
+            <span class="n">usage</span> <span class="o">=</span> <span class="s">&quot;usage: </span><span class="si">%%</span><span class="s">prog [</span><span class="si">%s</span><span class="s">] [--help] [options] ...&quot;</span> <span class="o">%</span> <span class="s">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">VALID_ACTIONS</span><span class="p">),</span>
+            <span class="n">epilog</span> <span class="o">=</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">See &#39;</span><span class="si">%s</span><span class="s"> &lt;command&gt; --help&#39; for more information on a specific command.</span><span class="se">\n\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="p">)</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_action</span><span class="p">()</span>
+
+        <span class="c"># common</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-s&#39;</span><span class="p">,</span> <span class="s">&#39;--server&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;api_server&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">GALAXY_SERVER</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;The API server destination&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-c&#39;</span><span class="p">,</span> <span class="s">&#39;--ignore-certs&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;ignore_certs&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">GALAXY_IGNORE_CERTS</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;Ignore SSL certificate validation errors.&#39;</span><span class="p">)</span>
+
+        <span class="c"># specific to actions</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="s">&quot;delete&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">set_usage</span><span class="p">(</span><span class="s">&quot;usage: %prog delete [options] github_user github_repo&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="s">&quot;import&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">set_usage</span><span class="p">(</span><span class="s">&quot;usage: %prog import [options] github_user github_repo&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--no-wait&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;wait&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_false&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;Don</span><span class="se">\&#39;</span><span class="s">t wait for import results.&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--branch&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;reference&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;The name of a branch to import. Defaults to the repository</span><span class="se">\&#39;</span><span class="s">s default branch (usually master)&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--status&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;check_status&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;Check the status of the most recent import request for given github_user/github_repo.&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="s">&quot;info&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">set_usage</span><span class="p">(</span><span class="s">&quot;usage: %prog info [options] role_name[,version]&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="s">&quot;init&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">set_usage</span><span class="p">(</span><span class="s">&quot;usage: %prog init [options] role_name&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-p&#39;</span><span class="p">,</span> <span class="s">&#39;--init-path&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;init_path&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s">&quot;./&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;The path in which the skeleton role will be created. The default is the current working directory.&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="s">&quot;install&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">set_usage</span><span class="p">(</span><span class="s">&quot;usage: %prog install [options] [-r FILE | role_name(s)[,version] | scm+role_repo_url[,version] | tar_file(s)]&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-i&#39;</span><span class="p">,</span> <span class="s">&#39;--ignore-errors&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;ignore_errors&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;Ignore errors and continue with the next specified role.&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-n&#39;</span><span class="p">,</span> <span class="s">&#39;--no-deps&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;no_deps&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;Don</span><span class="se">\&#39;</span><span class="s">t download roles listed as dependencies&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-r&#39;</span><span class="p">,</span> <span class="s">&#39;--role-file&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;role_file&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;A file containing a list of roles to be imported&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="s">&quot;remove&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">set_usage</span><span class="p">(</span><span class="s">&quot;usage: %prog remove role1 role2 ...&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="s">&quot;list&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">set_usage</span><span class="p">(</span><span class="s">&quot;usage: %prog list [role_name]&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="s">&quot;login&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">set_usage</span><span class="p">(</span><span class="s">&quot;usage: %prog login [options]&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--github-token&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;token&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;Identify with github token rather than username and password.&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="s">&quot;search&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">set_usage</span><span class="p">(</span><span class="s">&quot;usage: %prog search [searchterm1 searchterm2] [--galaxy-tags galaxy_tag1,galaxy_tag2] [--platforms platform1,platform2] [--author username]&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--platforms&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;platforms&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;list of OS platforms to filter by&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--galaxy-tags&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;tags&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;list of galaxy tags to filter by&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--author&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;author&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;GitHub username&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="s">&quot;setup&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">set_usage</span><span class="p">(</span><span class="s">&quot;usage: %prog setup [options] source github_user github_repo secret&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--remove&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;remove_id&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;Remove the integration matching the provided ID value. Use --list to see ID values.&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--list&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&quot;setup_list&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;List all of your integrations.&#39;</span><span class="p">)</span>
+
+        <span class="c"># options that apply to more than one action</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">action</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;init&#39;</span><span class="p">,</span> <span class="s">&#39;info&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span> <span class="s">&#39;--offline&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;offline&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&quot;Don&#39;t query the galaxy API when creating roles&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">action</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&quot;delete&quot;</span><span class="p">,</span><span class="s">&quot;import&quot;</span><span class="p">,</span><span class="s">&quot;init&quot;</span><span class="p">,</span><span class="s">&quot;login&quot;</span><span class="p">,</span><span class="s">&quot;setup&quot;</span><span class="p">):</span>
+            <span class="c"># NOTE: while the option type=str, the default is a list, and the</span>
+            <span class="c"># callback will set the value to a list.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-p&#39;</span><span class="p">,</span> <span class="s">&#39;--roles-path&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;roles_path&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&quot;callback&quot;</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">CLI</span><span class="o">.</span><span class="n">expand_paths</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_ROLES_PATH</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&#39;The path to the directory containing your roles. The default is the roles_path configured in your ansible.cfg file (/etc/ansible/roles if not configured)&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">action</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&quot;init&quot;</span><span class="p">,</span><span class="s">&quot;install&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-f&#39;</span><span class="p">,</span> <span class="s">&#39;--force&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;force&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;Force overwriting an existing role&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">verbosity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">galaxy</span> <span class="o">=</span> <span class="n">Galaxy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">True</span></div>
+
+<div class="viewcode-block" id="GalaxyCLI.run"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.galaxy.GalaxyCLI.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">GalaxyCLI</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">api</span> <span class="o">=</span> <span class="n">GalaxyAPI</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">galaxy</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="GalaxyCLI.exit_without_ignore"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.galaxy.GalaxyCLI.exit_without_ignore">[docs]</a>    <span class="k">def</span> <span class="nf">exit_without_ignore</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Exits with the specified return code unless the</span>
+<span class="sd">        option --ignore-errors was specified</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_opt</span><span class="p">(</span><span class="s">&quot;ignore_errors&quot;</span><span class="p">,</span> <span class="bp">False</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&#39;- you can use --ignore-errors to skip failed roles and finish processing the list.&#39;</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_display_role_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">role_info</span><span class="p">):</span>
+
+        <span class="n">text</span> <span class="o">=</span> <span class="p">[</span><span class="s">u&quot;&quot;</span><span class="p">,</span> <span class="s">u&quot;Role: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">role_info</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">])]</span>
+        <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">u&quot;</span><span class="se">\t</span><span class="s">description: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">role_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;description&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">role_info</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">SKIP_INFO_KEYS</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">role_info</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">u&quot;</span><span class="se">\t</span><span class="si">%s</span><span class="s">:&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">role_info</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                    <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">SKIP_INFO_KEYS</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">u&quot;</span><span class="se">\t\t</span><span class="si">%s</span><span class="s">: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">role_info</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">key</span><span class="p">]))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">u&quot;</span><span class="se">\t</span><span class="si">%s</span><span class="s">: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">role_info</span><span class="p">[</span><span class="n">k</span><span class="p">]))</span>
+
+        <span class="k">return</span> <span class="s">u&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+
+<span class="c">############################</span>
+<span class="c"># execute actions</span>
+<span class="c">############################</span>
+
+<div class="viewcode-block" id="GalaxyCLI.execute_init"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.galaxy.GalaxyCLI.execute_init">[docs]</a>    <span class="k">def</span> <span class="nf">execute_init</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Executes the init action, which creates the skeleton framework</span>
+<span class="sd">        of a role that complies with the galaxy metadata format.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">init_path</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_opt</span><span class="p">(</span><span class="s">&#39;init_path&#39;</span><span class="p">,</span> <span class="s">&#39;./&#39;</span><span class="p">)</span>
+        <span class="n">force</span>      <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_opt</span><span class="p">(</span><span class="s">&#39;force&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+        <span class="n">offline</span>    <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_opt</span><span class="p">(</span><span class="s">&#39;offline&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+
+        <span class="n">role_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="k">else</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">role_name</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleOptionsError</span><span class="p">(</span><span class="s">&quot;- no role name specified for init&quot;</span><span class="p">)</span>
+        <span class="n">role_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">init_path</span><span class="p">,</span> <span class="n">role_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">role_path</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">role_path</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;- the path </span><span class="si">%s</span><span class="s"> already exists, but is a file - aborting&quot;</span> <span class="o">%</span> <span class="n">role_path</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="n">force</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;- the directory </span><span class="si">%s</span><span class="s"> already exists.&quot;</span>
+                            <span class="s">&quot;you can use --force to re-initialize this directory,</span><span class="se">\n</span><span class="s">&quot;</span>
+                            <span class="s">&quot;however it will reset any main.yml files that may have</span><span class="se">\n</span><span class="s">&quot;</span>
+                            <span class="s">&quot;been modified there already.&quot;</span> <span class="o">%</span> <span class="n">role_path</span><span class="p">)</span>
+
+        <span class="c"># create default README.md</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">role_path</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">role_path</span><span class="p">)</span>
+        <span class="n">readme_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">role_path</span><span class="p">,</span> <span class="s">&quot;README.md&quot;</span><span class="p">)</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">readme_path</span><span class="p">,</span> <span class="s">&quot;wb&quot;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">galaxy</span><span class="o">.</span><span class="n">default_readme</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="c"># create default .travis.yml</span>
+        <span class="n">travis</span> <span class="o">=</span> <span class="n">Environment</span><span class="p">()</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">galaxy</span><span class="o">.</span><span class="n">default_travis</span><span class="p">)</span><span class="o">.</span><span class="n">render</span><span class="p">()</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">role_path</span><span class="p">,</span> <span class="s">&#39;.travis.yml&#39;</span><span class="p">),</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">travis</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="nb">dir</span> <span class="ow">in</span> <span class="n">GalaxyRole</span><span class="o">.</span><span class="n">ROLE_DIRS</span><span class="p">:</span>
+            <span class="n">dir_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">init_path</span><span class="p">,</span> <span class="n">role_name</span><span class="p">,</span> <span class="nb">dir</span><span class="p">)</span>
+            <span class="n">main_yml_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dir_path</span><span class="p">,</span> <span class="s">&#39;main.yml&#39;</span><span class="p">)</span>
+
+            <span class="c"># create the directory if it doesn&#39;t exist already</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">dir_path</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span>
+
+            <span class="c"># now create the main.yml file for that directory</span>
+            <span class="k">if</span> <span class="nb">dir</span> <span class="o">==</span> <span class="s">&quot;meta&quot;</span><span class="p">:</span>
+                <span class="c"># create a skeleton meta/main.yml with a valid galaxy_info</span>
+                <span class="c"># datastructure in place, plus with all of the available</span>
+                <span class="c"># platforms included (but commented out), the galaxy_tags</span>
+                <span class="c"># list, and the dependencies section</span>
+                <span class="n">platforms</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">offline</span><span class="p">:</span>
+                    <span class="n">platforms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get_list</span><span class="p">(</span><span class="s">&quot;platforms&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+
+                <span class="c"># group the list of platforms from the api based</span>
+                <span class="c"># on their names, with the release field being</span>
+                <span class="c"># appended to a list of versions</span>
+                <span class="n">platform_groups</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">platform</span> <span class="ow">in</span> <span class="n">platforms</span><span class="p">:</span>
+                    <span class="n">platform_groups</span><span class="p">[</span><span class="n">platform</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">platform</span><span class="p">[</span><span class="s">&#39;release&#39;</span><span class="p">])</span>
+                    <span class="n">platform_groups</span><span class="p">[</span><span class="n">platform</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+
+                <span class="n">inject</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                    <span class="n">author</span> <span class="o">=</span> <span class="s">&#39;your name&#39;</span><span class="p">,</span>
+                    <span class="n">description</span> <span class="o">=</span> <span class="s">&#39;your description&#39;</span><span class="p">,</span>
+                    <span class="n">company</span> <span class="o">=</span> <span class="s">&#39;your company (optional)&#39;</span><span class="p">,</span>
+                    <span class="n">license</span> <span class="o">=</span> <span class="s">&#39;license (GPLv2, CC-BY, etc)&#39;</span><span class="p">,</span>
+                    <span class="n">issue_tracker_url</span> <span class="o">=</span> <span class="s">&#39;http://example.com/issue/tracker&#39;</span><span class="p">,</span>
+                    <span class="n">min_ansible_version</span> <span class="o">=</span> <span class="s">&#39;1.2&#39;</span><span class="p">,</span>
+                    <span class="n">platforms</span> <span class="o">=</span> <span class="n">platform_groups</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">rendered_meta</span> <span class="o">=</span> <span class="n">Environment</span><span class="p">()</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">galaxy</span><span class="o">.</span><span class="n">default_meta</span><span class="p">)</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">inject</span><span class="p">)</span>
+                <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">main_yml_path</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">rendered_meta</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="k">pass</span>
+            <span class="k">elif</span> <span class="nb">dir</span> <span class="o">==</span> <span class="s">&quot;tests&quot;</span><span class="p">:</span>
+                <span class="c"># create tests/test.yml</span>
+                <span class="n">inject</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                    <span class="n">role_name</span> <span class="o">=</span> <span class="n">role_name</span>
+                <span class="p">)</span>
+                <span class="n">playbook</span> <span class="o">=</span> <span class="n">Environment</span><span class="p">()</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">galaxy</span><span class="o">.</span><span class="n">default_test</span><span class="p">)</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">inject</span><span class="p">)</span>
+                <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dir_path</span><span class="p">,</span> <span class="s">&#39;test.yml&#39;</span><span class="p">),</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">playbook</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+                <span class="c"># create tests/inventory</span>
+                <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dir_path</span><span class="p">,</span> <span class="s">&#39;inventory&#39;</span><span class="p">),</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;localhost&#39;</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="nb">dir</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;files&#39;</span><span class="p">,</span><span class="s">&#39;templates&#39;</span><span class="p">):</span>
+                <span class="c"># just write a (mostly) empty YAML file for main.yml</span>
+                <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">main_yml_path</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;---</span><span class="se">\n</span><span class="s"># </span><span class="si">%s</span><span class="s"> file for </span><span class="si">%s</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">dir</span><span class="p">,</span><span class="n">role_name</span><span class="p">))</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;- </span><span class="si">%s</span><span class="s"> was created successfully&quot;</span> <span class="o">%</span> <span class="n">role_name</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="GalaxyCLI.execute_info"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.galaxy.GalaxyCLI.execute_info">[docs]</a>    <span class="k">def</span> <span class="nf">execute_info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Executes the info action. This action prints out detailed</span>
+<span class="sd">        information about an installed role as well as info available</span>
+<span class="sd">        from the galaxy API.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c"># the user needs to specify a role</span>
+            <span class="k">raise</span> <span class="n">AnsibleOptionsError</span><span class="p">(</span><span class="s">&quot;- you must specify a user/role name&quot;</span><span class="p">)</span>
+
+        <span class="n">roles_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_opt</span><span class="p">(</span><span class="s">&quot;roles_path&quot;</span><span class="p">)</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">role</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
+
+            <span class="n">role_info</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;path&#39;</span><span class="p">:</span> <span class="n">roles_path</span><span class="p">}</span>
+            <span class="n">gr</span> <span class="o">=</span> <span class="n">GalaxyRole</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">galaxy</span><span class="p">,</span> <span class="n">role</span><span class="p">)</span>
+
+            <span class="n">install_info</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">install_info</span>
+            <span class="k">if</span> <span class="n">install_info</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s">&#39;version&#39;</span> <span class="ow">in</span> <span class="n">install_info</span><span class="p">:</span>
+                    <span class="n">install_info</span><span class="p">[</span><span class="s">&#39;intalled_version&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">install_info</span><span class="p">[</span><span class="s">&#39;version&#39;</span><span class="p">]</span>
+                    <span class="k">del</span> <span class="n">install_info</span><span class="p">[</span><span class="s">&#39;version&#39;</span><span class="p">]</span>
+                <span class="n">role_info</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">install_info</span><span class="p">)</span>
+
+            <span class="n">remote_data</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">offline</span><span class="p">:</span>
+                <span class="n">remote_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">lookup_role_by_name</span><span class="p">(</span><span class="n">role</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">remote_data</span><span class="p">:</span>
+                <span class="n">role_info</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">remote_data</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">gr</span><span class="o">.</span><span class="n">metadata</span><span class="p">:</span>
+                <span class="n">role_info</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">gr</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
+
+            <span class="n">req</span> <span class="o">=</span> <span class="n">RoleRequirement</span><span class="p">()</span>
+            <span class="n">role_spec</span><span class="o">=</span> <span class="n">req</span><span class="o">.</span><span class="n">role_yaml_parse</span><span class="p">({</span><span class="s">&#39;role&#39;</span><span class="p">:</span> <span class="n">role</span><span class="p">})</span>
+            <span class="k">if</span> <span class="n">role_spec</span><span class="p">:</span>
+                <span class="n">role_info</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">role_spec</span><span class="p">)</span>
+
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_display_role_info</span><span class="p">(</span><span class="n">role_info</span><span class="p">)</span>
+            <span class="c">### FIXME: This is broken in both 1.9 and 2.0 as</span>
+            <span class="c"># _display_role_info() always returns something</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="s">u&quot;</span><span class="se">\n</span><span class="s">- the role </span><span class="si">%s</span><span class="s"> was not found&quot;</span> <span class="o">%</span> <span class="n">role</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pager</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="GalaxyCLI.execute_install"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.galaxy.GalaxyCLI.execute_install">[docs]</a>    <span class="k">def</span> <span class="nf">execute_install</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Executes the installation action. The args list contains the</span>
+<span class="sd">        roles to be installed, unless -f was specified. The list of roles</span>
+<span class="sd">        can be a name (which will be downloaded via the galaxy API and github),</span>
+<span class="sd">        or it can be a local .tar.gz file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">role_file</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_opt</span><span class="p">(</span><span class="s">&quot;role_file&quot;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">role_file</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c"># the user needs to specify one of either --role-file</span>
+            <span class="c"># or specify a single user/role name</span>
+            <span class="k">raise</span> <span class="n">AnsibleOptionsError</span><span class="p">(</span><span class="s">&quot;- you must specify a user/role name or a roles file&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">role_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c"># using a role file is mutually exclusive of specifying</span>
+            <span class="c"># the role name on the command line</span>
+            <span class="k">raise</span> <span class="n">AnsibleOptionsError</span><span class="p">(</span><span class="s">&quot;- please specify a user/role name, or a roles file, but not both&quot;</span><span class="p">)</span>
+
+        <span class="n">no_deps</span>    <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_opt</span><span class="p">(</span><span class="s">&quot;no_deps&quot;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+        <span class="n">force</span>      <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_opt</span><span class="p">(</span><span class="s">&#39;force&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+
+        <span class="n">roles_left</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">role_file</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">role_file</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">role_file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;.yaml&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">role_file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;.yml&#39;</span><span class="p">):</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">required_roles</span> <span class="o">=</span>  <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Unable to load data from the requirements file: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">role_file</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">required_roles</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;No roles found in file: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">role_file</span><span class="p">)</span>
+
+                    <span class="k">for</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">required_roles</span><span class="p">:</span>
+                        <span class="n">role</span> <span class="o">=</span> <span class="n">RoleRequirement</span><span class="o">.</span><span class="n">role_yaml_parse</span><span class="p">(</span><span class="n">role</span><span class="p">)</span>
+                        <span class="n">display</span><span class="o">.</span><span class="n">vvv</span><span class="p">(</span><span class="s">&#39;found role </span><span class="si">%s</span><span class="s"> in yaml file&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">role</span><span class="p">))</span>
+                        <span class="k">if</span> <span class="s">&#39;name&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">role</span> <span class="ow">and</span> <span class="s">&#39;scm&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">role</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Must specify name or src for role&quot;</span><span class="p">)</span>
+                        <span class="n">roles_left</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">GalaxyRole</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">galaxy</span><span class="p">,</span> <span class="o">**</span><span class="n">role</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">deprecated</span><span class="p">(</span><span class="s">&quot;going forward only the yaml format will be supported&quot;</span><span class="p">)</span>
+                    <span class="c"># roles listed in a file, one per line</span>
+                    <span class="k">for</span> <span class="n">rline</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="n">rline</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&quot;#&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">rline</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+                            <span class="k">continue</span>
+                        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;found role </span><span class="si">%s</span><span class="s"> in text file&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">rline</span><span class="p">))</span>
+                        <span class="n">role</span> <span class="o">=</span> <span class="n">RoleRequirement</span><span class="o">.</span><span class="n">role_yaml_parse</span><span class="p">(</span><span class="n">rline</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+                        <span class="n">roles_left</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">GalaxyRole</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">galaxy</span><span class="p">,</span> <span class="o">**</span><span class="n">role</span><span class="p">))</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">IOError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;Unable to open </span><span class="si">%s</span><span class="s">: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">role_file</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># roles were specified directly, so we&#39;ll just go out grab them</span>
+            <span class="c"># (and their dependencies, unless the user doesn&#39;t want us to).</span>
+            <span class="k">for</span> <span class="n">rname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
+                <span class="n">role</span> <span class="o">=</span> <span class="n">RoleRequirement</span><span class="o">.</span><span class="n">role_yaml_parse</span><span class="p">(</span><span class="n">rname</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+                <span class="n">roles_left</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">GalaxyRole</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">galaxy</span><span class="p">,</span> <span class="o">**</span><span class="n">role</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">roles_left</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">vvv</span><span class="p">(</span><span class="s">&#39;Installing role </span><span class="si">%s</span><span class="s"> &#39;</span> <span class="o">%</span> <span class="n">role</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="c"># query the galaxy API for the role data</span>
+
+            <span class="k">if</span> <span class="n">role</span><span class="o">.</span><span class="n">install_info</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">force</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&#39;- </span><span class="si">%s</span><span class="s"> is already installed, skipping.&#39;</span> <span class="o">%</span> <span class="n">role</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">installed</span> <span class="o">=</span> <span class="n">role</span><span class="o">.</span><span class="n">install</span><span class="p">()</span>
+            <span class="k">except</span> <span class="n">AnsibleError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;- </span><span class="si">%s</span><span class="s"> was NOT installed successfully: </span><span class="si">%s</span><span class="s"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">role</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">exit_without_ignore</span><span class="p">()</span>
+                <span class="k">continue</span>
+
+            <span class="c"># install dependencies, if we want them</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">no_deps</span> <span class="ow">and</span> <span class="n">installed</span><span class="p">:</span>
+                <span class="n">role_dependencies</span> <span class="o">=</span> <span class="n">role</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;dependencies&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">role_dependencies</span><span class="p">:</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Installing dep </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">dep</span><span class="p">)</span>
+                    <span class="n">dep_req</span> <span class="o">=</span> <span class="n">RoleRequirement</span><span class="p">()</span>
+                    <span class="n">dep_info</span> <span class="o">=</span> <span class="n">dep_req</span><span class="o">.</span><span class="n">role_yaml_parse</span><span class="p">(</span><span class="n">dep</span><span class="p">)</span>
+                    <span class="n">dep_role</span> <span class="o">=</span> <span class="n">GalaxyRole</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">galaxy</span><span class="p">,</span> <span class="o">**</span><span class="n">dep_info</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="s">&#39;.&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dep_role</span><span class="o">.</span><span class="n">name</span> <span class="ow">and</span> <span class="s">&#39;.&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dep_role</span><span class="o">.</span><span class="n">src</span> <span class="ow">and</span> <span class="n">dep_role</span><span class="o">.</span><span class="n">scm</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                        <span class="c"># we know we can skip this, as it&#39;s not going to</span>
+                        <span class="c"># be found on galaxy.ansible.com</span>
+                        <span class="k">continue</span>
+                    <span class="k">if</span> <span class="n">dep_role</span><span class="o">.</span><span class="n">install_info</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">force</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">dep_role</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">roles_left</span><span class="p">:</span>
+                            <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&#39;- adding dependency: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">dep_role</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                            <span class="n">roles_left</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dep_role</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&#39;- dependency </span><span class="si">%s</span><span class="s"> already pending installation.&#39;</span> <span class="o">%</span> <span class="n">dep_role</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&#39;- dependency </span><span class="si">%s</span><span class="s"> is already installed, skipping.&#39;</span> <span class="o">%</span> <span class="n">dep_role</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">installed</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;- </span><span class="si">%s</span><span class="s"> was NOT installed successfully.&quot;</span> <span class="o">%</span> <span class="n">role</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">exit_without_ignore</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="GalaxyCLI.execute_remove"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.galaxy.GalaxyCLI.execute_remove">[docs]</a>    <span class="k">def</span> <span class="nf">execute_remove</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Executes the remove action. The args list contains the list</span>
+<span class="sd">        of roles to be removed. This list can contain more than one role.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleOptionsError</span><span class="p">(</span><span class="s">&#39;- you must specify at least one role to remove.&#39;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">role_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
+            <span class="n">role</span> <span class="o">=</span> <span class="n">GalaxyRole</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">galaxy</span><span class="p">,</span> <span class="n">role_name</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">role</span><span class="o">.</span><span class="n">remove</span><span class="p">():</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&#39;- successfully removed </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">role_name</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&#39;- </span><span class="si">%s</span><span class="s"> is not installed, skipping.&#39;</span> <span class="o">%</span> <span class="n">role_name</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Failed to remove role </span><span class="si">%s</span><span class="s">: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">role_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="GalaxyCLI.execute_list"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.galaxy.GalaxyCLI.execute_list">[docs]</a>    <span class="k">def</span> <span class="nf">execute_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Executes the list action. The args list can contain zero</span>
+<span class="sd">        or one role. If one is specified, only that role will be</span>
+<span class="sd">        shown, otherwise all roles in the specified directory will</span>
+<span class="sd">        be shown.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleOptionsError</span><span class="p">(</span><span class="s">&quot;- please specify only one role to list, or specify no roles to see a full list&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c"># show only the request role, if it exists</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="n">gr</span> <span class="o">=</span> <span class="n">GalaxyRole</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">galaxy</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">gr</span><span class="o">.</span><span class="n">metadata</span><span class="p">:</span>
+                <span class="n">install_info</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">install_info</span>
+                <span class="n">version</span> <span class="o">=</span> <span class="bp">None</span>
+                <span class="k">if</span> <span class="n">install_info</span><span class="p">:</span>
+                    <span class="n">version</span> <span class="o">=</span> <span class="n">install_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;version&quot;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">version</span><span class="p">:</span>
+                    <span class="n">version</span> <span class="o">=</span> <span class="s">&quot;(unknown version)&quot;</span>
+                <span class="c"># show some more info about single roles here</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;- </span><span class="si">%s</span><span class="s">, </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">version</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;- the role </span><span class="si">%s</span><span class="s"> was not found&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># show all valid roles in the roles_path directory</span>
+            <span class="n">roles_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_opt</span><span class="p">(</span><span class="s">&#39;roles_path&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">roles_path</span><span class="p">:</span>
+                <span class="n">role_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">role_path</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="n">AnsibleOptionsError</span><span class="p">(</span><span class="s">&quot;- the path </span><span class="si">%s</span><span class="s"> does not exist. Please specify a valid path with --roles-path&quot;</span> <span class="o">%</span> <span class="n">role_path</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">role_path</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="n">AnsibleOptionsError</span><span class="p">(</span><span class="s">&quot;- </span><span class="si">%s</span><span class="s"> exists, but it is not a directory. Please specify a valid path with --roles-path&quot;</span> <span class="o">%</span> <span class="n">role_path</span><span class="p">)</span>
+                <span class="n">path_files</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">role_path</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">path_file</span> <span class="ow">in</span> <span class="n">path_files</span><span class="p">:</span>
+                    <span class="n">gr</span> <span class="o">=</span> <span class="n">GalaxyRole</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">galaxy</span><span class="p">,</span> <span class="n">path_file</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">gr</span><span class="o">.</span><span class="n">metadata</span><span class="p">:</span>
+                        <span class="n">install_info</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">install_info</span>
+                        <span class="n">version</span> <span class="o">=</span> <span class="bp">None</span>
+                        <span class="k">if</span> <span class="n">install_info</span><span class="p">:</span>
+                            <span class="n">version</span> <span class="o">=</span> <span class="n">install_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;version&quot;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">version</span><span class="p">:</span>
+                            <span class="n">version</span> <span class="o">=</span> <span class="s">&quot;(unknown version)&quot;</span>
+                        <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;- </span><span class="si">%s</span><span class="s">, </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">path_file</span><span class="p">,</span> <span class="n">version</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="GalaxyCLI.execute_search"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.galaxy.GalaxyCLI.execute_search">[docs]</a>    <span class="k">def</span> <span class="nf">execute_search</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">page_size</span> <span class="o">=</span> <span class="mi">1000</span>
+        <span class="n">search</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">):</span>
+            <span class="n">terms</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)):</span>
+               <span class="n">terms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">())</span>
+            <span class="n">search</span> <span class="o">=</span> <span class="s">&#39;+&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">terms</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">search</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">platforms</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">tags</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">author</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Invalid query. At least one search term, platform, galaxy tag or author must be provided.&quot;</span><span class="p">)</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">search_roles</span><span class="p">(</span><span class="n">search</span><span class="p">,</span> <span class="n">platforms</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">platforms</span><span class="p">,</span>
+            <span class="n">tags</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">tags</span><span class="p">,</span> <span class="n">author</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">author</span><span class="p">,</span> <span class="n">page_size</span><span class="o">=</span><span class="n">page_size</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">response</span><span class="p">[</span><span class="s">&#39;count&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;No roles match your search.&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_ERROR</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="s">u&#39;&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">response</span><span class="p">[</span><span class="s">&#39;count&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">page_size</span><span class="p">:</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">u&quot;Found </span><span class="si">%d</span><span class="s"> roles matching your search. Showing first </span><span class="si">%s</span><span class="s">.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="s">&#39;count&#39;</span><span class="p">],</span> <span class="n">page_size</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">u&quot;Found </span><span class="si">%d</span><span class="s"> roles matching your search:&quot;</span> <span class="o">%</span> <span class="n">response</span><span class="p">[</span><span class="s">&#39;count&#39;</span><span class="p">])</span>
+
+        <span class="n">max_len</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">response</span><span class="p">[</span><span class="s">&#39;results&#39;</span><span class="p">]:</span>
+            <span class="n">max_len</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">role</span><span class="p">[</span><span class="s">&#39;username&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s">&#39;.&#39;</span> <span class="o">+</span> <span class="n">role</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]))</span>
+        <span class="n">name_len</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_len</span><span class="p">)</span>
+        <span class="n">format_str</span> <span class="o">=</span> <span class="s">u&quot; </span><span class="si">%%</span><span class="s">-</span><span class="si">%d</span><span class="s">s </span><span class="si">%%</span><span class="s">s&quot;</span> <span class="o">%</span> <span class="n">name_len</span>
+        <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">u&#39;&#39;</span><span class="p">)</span>
+        <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">format_str</span> <span class="o">%</span> <span class="p">(</span><span class="s">u&quot;Name&quot;</span><span class="p">,</span> <span class="s">u&quot;Description&quot;</span><span class="p">))</span>
+        <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">format_str</span> <span class="o">%</span> <span class="p">(</span><span class="s">u&quot;----&quot;</span><span class="p">,</span> <span class="s">u&quot;-----------&quot;</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">response</span><span class="p">[</span><span class="s">&#39;results&#39;</span><span class="p">]:</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">format_str</span> <span class="o">%</span> <span class="p">(</span><span class="s">u&#39;</span><span class="si">%s</span><span class="s">.</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">role</span><span class="p">[</span><span class="s">&#39;username&#39;</span><span class="p">],</span> <span class="n">role</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]),</span> <span class="n">role</span><span class="p">[</span><span class="s">&#39;description&#39;</span><span class="p">]))</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="s">u&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pager</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">True</span></div>
+
+<div class="viewcode-block" id="GalaxyCLI.execute_login"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.galaxy.GalaxyCLI.execute_login">[docs]</a>    <span class="k">def</span> <span class="nf">execute_login</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Verify user&#39;s identify via Github and retreive an auth token from Galaxy.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># Authenticate with github and retrieve a token</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">token</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">login</span> <span class="o">=</span> <span class="n">GalaxyLogin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">galaxy</span><span class="p">)</span>
+            <span class="n">github_token</span> <span class="o">=</span> <span class="n">login</span><span class="o">.</span><span class="n">create_github_token</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">github_token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">token</span>
+
+        <span class="n">galaxy_response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">authenticate</span><span class="p">(</span><span class="n">github_token</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">token</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c"># Remove the token we created</span>
+            <span class="n">login</span><span class="o">.</span><span class="n">remove_github_token</span><span class="p">()</span>
+
+        <span class="c"># Store the Galaxy token</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="n">GalaxyToken</span><span class="p">()</span>
+        <span class="n">token</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">galaxy_response</span><span class="p">[</span><span class="s">&#39;token&#39;</span><span class="p">])</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;Succesfully logged into Galaxy as </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">galaxy_response</span><span class="p">[</span><span class="s">&#39;username&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="GalaxyCLI.execute_import"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.galaxy.GalaxyCLI.execute_import">[docs]</a>    <span class="k">def</span> <span class="nf">execute_import</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Import a role into Galaxy</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">colors</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;INFO&#39;</span><span class="p">:</span>    <span class="s">&#39;normal&#39;</span><span class="p">,</span>
+            <span class="s">&#39;WARNING&#39;</span><span class="p">:</span> <span class="n">C</span><span class="o">.</span><span class="n">COLOR_WARN</span><span class="p">,</span>
+            <span class="s">&#39;ERROR&#39;</span><span class="p">:</span>   <span class="n">C</span><span class="o">.</span><span class="n">COLOR_ERROR</span><span class="p">,</span>
+            <span class="s">&#39;SUCCESS&#39;</span><span class="p">:</span> <span class="n">C</span><span class="o">.</span><span class="n">COLOR_OK</span><span class="p">,</span>
+            <span class="s">&#39;FAILED&#39;</span><span class="p">:</span> <span class="n">C</span><span class="o">.</span><span class="n">COLOR_ERROR</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Expected a github_username and github_repository. Use --help.&quot;</span><span class="p">)</span>
+
+        <span class="n">github_repo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+        <span class="n">github_user</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">check_status</span><span class="p">:</span>
+            <span class="n">task</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get_import_task</span><span class="p">(</span><span class="n">github_user</span><span class="o">=</span><span class="n">github_user</span><span class="p">,</span> <span class="n">github_repo</span><span class="o">=</span><span class="n">github_repo</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># Submit an import request</span>
+            <span class="n">task</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">create_import_task</span><span class="p">(</span><span class="n">github_user</span><span class="p">,</span> <span class="n">github_repo</span><span class="p">,</span> <span class="n">reference</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">reference</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">task</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="c"># found multiple roles associated with github_user/github_repo</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;WARNING: More than one Galaxy role associated with Github repo </span><span class="si">%s</span><span class="s">/</span><span class="si">%s</span><span class="s">.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">github_user</span><span class="p">,</span><span class="n">github_repo</span><span class="p">),</span>
+                    <span class="n">color</span><span class="o">=</span><span class="s">&#39;yellow&#39;</span><span class="p">)</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;The following Galaxy roles are being updated:&quot;</span> <span class="o">+</span> <span class="s">u&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_CHANGED</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">task</span><span class="p">:</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">.</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="s">&#39;summary_fields&#39;</span><span class="p">][</span><span class="s">&#39;role&#39;</span><span class="p">][</span><span class="s">&#39;namespace&#39;</span><span class="p">],</span><span class="n">t</span><span class="p">[</span><span class="s">&#39;summary_fields&#39;</span><span class="p">][</span><span class="s">&#39;role&#39;</span><span class="p">][</span><span class="s">&#39;name&#39;</span><span class="p">]),</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_CHANGED</span><span class="p">)</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">u&#39;</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">+</span> <span class="s">&quot;To properly namespace this role, remove each of the above and re-import </span><span class="si">%s</span><span class="s">/</span><span class="si">%s</span><span class="s"> from scratch&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">github_user</span><span class="p">,</span><span class="n">github_repo</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_CHANGED</span><span class="p">)</span>
+                <span class="k">return</span> <span class="mi">0</span>
+            <span class="c"># found a single role as expected</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;Successfully submitted import request </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">task</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s">&#39;id&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">wait</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;Role name: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">task</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s">&#39;summary_fields&#39;</span><span class="p">][</span><span class="s">&#39;role&#39;</span><span class="p">][</span><span class="s">&#39;name&#39;</span><span class="p">])</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;Repo: </span><span class="si">%s</span><span class="s">/</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">task</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s">&#39;github_user&#39;</span><span class="p">],</span><span class="n">task</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s">&#39;github_repo&#39;</span><span class="p">]))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">check_status</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">wait</span><span class="p">:</span>
+            <span class="c"># Get the status of the import</span>
+            <span class="n">msg_list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">finished</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">while</span> <span class="ow">not</span> <span class="n">finished</span><span class="p">:</span>
+                <span class="n">task</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get_import_task</span><span class="p">(</span><span class="n">task_id</span><span class="o">=</span><span class="n">task</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s">&#39;id&#39;</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">task</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s">&#39;summary_fields&#39;</span><span class="p">][</span><span class="s">&#39;task_messages&#39;</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="n">msg</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">msg_list</span><span class="p">:</span>
+                        <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">msg</span><span class="p">[</span><span class="s">&#39;message_text&#39;</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">msg</span><span class="p">[</span><span class="s">&#39;message_type&#39;</span><span class="p">]])</span>
+                        <span class="n">msg_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msg</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">task</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s">&#39;state&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;SUCCESS&#39;</span><span class="p">,</span> <span class="s">&#39;FAILED&#39;</span><span class="p">]:</span>
+                    <span class="n">finished</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="GalaxyCLI.execute_setup"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.galaxy.GalaxyCLI.execute_setup">[docs]</a>    <span class="k">def</span> <span class="nf">execute_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Setup an integration from Github or Travis</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">setup_list</span><span class="p">:</span>
+            <span class="c"># List existing integration secrets</span>
+            <span class="n">secrets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">list_secrets</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">secrets</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c"># None found</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;No integrations found.&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="mi">0</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">u&#39;</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">+</span> <span class="s">&quot;ID         Source     Repo&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_OK</span><span class="p">)</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;---------- ---------- ----------&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_OK</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">secret</span> <span class="ow">in</span> <span class="n">secrets</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%-10s</span><span class="s"> </span><span class="si">%-10s</span><span class="s"> </span><span class="si">%s</span><span class="s">/</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">secret</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">],</span> <span class="n">secret</span><span class="p">[</span><span class="s">&#39;source&#39;</span><span class="p">],</span> <span class="n">secret</span><span class="p">[</span><span class="s">&#39;github_user&#39;</span><span class="p">],</span>
+                    <span class="n">secret</span><span class="p">[</span><span class="s">&#39;github_repo&#39;</span><span class="p">]),</span><span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_OK</span><span class="p">)</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">remove_id</span><span class="p">:</span>
+            <span class="c"># Remove a secret</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">remove_secret</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">remove_id</span><span class="p">)</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;Secret removed. Integrations using this secret will not longer work.&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_OK</span><span class="p">)</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Missing one or more arguments. Expecting: source github_user github_repo secret&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+        <span class="n">secret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+        <span class="n">github_repo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+        <span class="n">github_user</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+        <span class="n">source</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+
+        <span class="n">resp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">add_secret</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">github_user</span><span class="p">,</span> <span class="n">github_repo</span><span class="p">,</span> <span class="n">secret</span><span class="p">)</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;Added integration for </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s">/</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">resp</span><span class="p">[</span><span class="s">&#39;source&#39;</span><span class="p">],</span> <span class="n">resp</span><span class="p">[</span><span class="s">&#39;github_user&#39;</span><span class="p">],</span> <span class="n">resp</span><span class="p">[</span><span class="s">&#39;github_repo&#39;</span><span class="p">]))</span>
+
+        <span class="k">return</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="GalaxyCLI.execute_delete"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.galaxy.GalaxyCLI.execute_delete">[docs]</a>    <span class="k">def</span> <span class="nf">execute_delete</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Delete a role from galaxy.ansible.com</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Missing one or more arguments. Expected: github_user github_repo&quot;</span><span class="p">)</span>
+
+        <span class="n">github_repo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+        <span class="n">github_user</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+        <span class="n">resp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">delete_role</span><span class="p">(</span><span class="n">github_user</span><span class="p">,</span> <span class="n">github_repo</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">resp</span><span class="p">[</span><span class="s">&#39;deleted_roles&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;Deleted the following roles:&quot;</span><span class="p">)</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;ID     User            Name&quot;</span><span class="p">)</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;------ --------------- ----------&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">resp</span><span class="p">[</span><span class="s">&#39;deleted_roles&#39;</span><span class="p">]:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%-8s</span><span class="s"> </span><span class="si">%-15s</span><span class="s"> </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">role</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="n">role</span><span class="o">.</span><span class="n">namespace</span><span class="p">,</span><span class="n">role</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">resp</span><span class="p">[</span><span class="s">&#39;status&#39;</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">True</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,672 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.plugins.filter.core &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="ansible.plugins" href="../../plugins.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../../plugins.html">ansible.plugins</a> &raquo;</li>
+      
+    <li>ansible.plugins.filter.core</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.plugins.filter.core</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012, Jeroen Hoekx &lt;jeroen@hoekx.be&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">base64</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">os.path</span>
+<span class="kn">import</span> <span class="nn">ntpath</span>
+<span class="kn">import</span> <span class="nn">types</span>
+<span class="kn">import</span> <span class="nn">pipes</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">crypt</span>
+<span class="kn">import</span> <span class="nn">hashlib</span>
+<span class="kn">import</span> <span class="nn">string</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">import</span> <span class="nn">operator</span> <span class="kn">as</span> <span class="nn">py_operator</span>
+<span class="kn">from</span> <span class="nn">random</span> <span class="kn">import</span> <span class="n">SystemRandom</span><span class="p">,</span> <span class="n">shuffle</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+
+<span class="kn">import</span> <span class="nn">yaml</span>
+<span class="kn">from</span> <span class="nn">jinja2.filters</span> <span class="kn">import</span> <span class="n">environmentfilter</span>
+<span class="kn">from</span> <span class="nn">distutils.version</span> <span class="kn">import</span> <span class="n">LooseVersion</span><span class="p">,</span> <span class="n">StrictVersion</span>
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">iteritems</span><span class="p">,</span> <span class="n">string_types</span>
+
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">errors</span>
+<span class="kn">from</span> <span class="nn">ansible.parsing.yaml.dumper</span> <span class="kn">import</span> <span class="n">AnsibleDumper</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.hashing</span> <span class="kn">import</span> <span class="n">md5s</span><span class="p">,</span> <span class="n">checksum_s</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.unicode</span> <span class="kn">import</span> <span class="n">unicode_wrap</span><span class="p">,</span> <span class="n">to_unicode</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.vars</span> <span class="kn">import</span> <span class="n">merge_hash</span>
+<span class="kn">from</span> <span class="nn">ansible.vars.hostvars</span> <span class="kn">import</span> <span class="n">HostVars</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">passlib.hash</span>
+    <span class="n">HAS_PASSLIB</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="n">HAS_PASSLIB</span> <span class="o">=</span> <span class="bp">False</span>
+
+
+<span class="n">UUID_NAMESPACE_ANSIBLE</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span><span class="p">(</span><span class="s">&#39;361E6D51-FAEC-444A-9079-341386DA8E2E&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AnsibleJSONEncoder"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.AnsibleJSONEncoder">[docs]</a><span class="k">class</span> <span class="nc">AnsibleJSONEncoder</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">JSONEncoder</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Simple encoder class to deal with JSON encoding of internal</span>
+<span class="sd">    types like HostVars</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+<div class="viewcode-block" id="AnsibleJSONEncoder.default"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.AnsibleJSONEncoder.default">[docs]</a>    <span class="k">def</span> <span class="nf">default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">o</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">HostVars</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">o</span></div></div>
+
+<div class="viewcode-block" id="to_yaml"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.to_yaml">[docs]</a><span class="k">def</span> <span class="nf">to_yaml</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Make verbose, human readable yaml&#39;&#39;&#39;</span>
+    <span class="n">transformed</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">Dumper</span><span class="o">=</span><span class="n">AnsibleDumper</span><span class="p">,</span> <span class="n">allow_unicode</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">transformed</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="to_nice_yaml"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.to_nice_yaml">[docs]</a><span class="k">def</span> <span class="nf">to_nice_yaml</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Make verbose, human readable yaml&#39;&#39;&#39;</span>
+    <span class="n">transformed</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">Dumper</span><span class="o">=</span><span class="n">AnsibleDumper</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="n">indent</span><span class="p">,</span> <span class="n">allow_unicode</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">default_flow_style</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">transformed</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="to_json"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.to_json">[docs]</a><span class="k">def</span> <span class="nf">to_json</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Convert the value to JSON &#39;&#39;&#39;</span>
+    <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">cls</span><span class="o">=</span><span class="n">AnsibleJSONEncoder</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="to_nice_json"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.to_nice_json">[docs]</a><span class="k">def</span> <span class="nf">to_nice_json</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Make verbose, human readable JSON&#39;&#39;&#39;</span>
+    <span class="c"># python-2.6&#39;s json encoder is buggy (can&#39;t encode hostvars)</span>
+    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&lt;</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">7</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">simplejson</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">major</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">simplejson</span><span class="o">.</span><span class="n">__version__</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">pass</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">major</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">simplejson</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="n">indent</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="n">indent</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">cls</span><span class="o">=</span><span class="n">AnsibleJSONEncoder</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="c"># Fallback to the to_json filter</span>
+        <span class="k">return</span> <span class="n">to_json</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="to_bool"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.to_bool">[docs]</a><span class="k">def</span> <span class="nf">to_bool</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; return a bool for the arg &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="n">a</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">==</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">a</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">string_types</span><span class="p">):</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">a</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;yes&#39;</span><span class="p">,</span> <span class="s">&#39;on&#39;</span><span class="p">,</span> <span class="s">&#39;1&#39;</span><span class="p">,</span> <span class="s">&#39;true&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span></div>
+
+<div class="viewcode-block" id="quote"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.quote">[docs]</a><span class="k">def</span> <span class="nf">quote</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; return its argument quoted for shell usage &#39;&#39;&#39;</span>
+    <span class="k">return</span> <span class="n">pipes</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">a</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="fileglob"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.fileglob">[docs]</a><span class="k">def</span> <span class="nf">fileglob</span><span class="p">(</span><span class="n">pathname</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; return list of matched files for glob &#39;&#39;&#39;</span>
+    <span class="k">return</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">pathname</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="regex_replace"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.regex_replace">[docs]</a><span class="k">def</span> <span class="nf">regex_replace</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">replacement</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">ignorecase</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Perform a `re.sub` returning a string &#39;&#39;&#39;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">ignorecase</span><span class="p">:</span>
+        <span class="n">flags</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">flags</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">flags</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">replacement</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="regex_findall"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.regex_findall">[docs]</a><span class="k">def</span> <span class="nf">regex_findall</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">regex</span><span class="p">,</span> <span class="n">multiline</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">ignorecase</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Perform re.findall and return the list of matches &#39;&#39;&#39;</span>
+    <span class="n">flags</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">ignorecase</span><span class="p">:</span>
+        <span class="n">flags</span> <span class="o">|=</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span>
+    <span class="k">if</span> <span class="n">multiline</span><span class="p">:</span>
+        <span class="n">flags</span> <span class="o">|=</span> <span class="n">re</span><span class="o">.</span><span class="n">M</span>
+    <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">regex</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">flags</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="regex_search"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.regex_search">[docs]</a><span class="k">def</span> <span class="nf">regex_search</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">regex</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Perform re.search and return the list of matches or a backref &#39;&#39;&#39;</span>
+
+    <span class="n">groups</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">arg</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\\</span><span class="s">g&#39;</span><span class="p">):</span>
+            <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">r&#39;</span><span class="se">\\</span><span class="s">g&lt;(\S+)&gt;&#39;</span><span class="p">,</span> <span class="n">arg</span><span class="p">)</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">groups</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">match</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">arg</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\\</span><span class="s">&#39;</span><span class="p">):</span>
+            <span class="n">match</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">r&#39;</span><span class="se">\\</span><span class="s">(\d+)&#39;</span><span class="p">,</span> <span class="n">arg</span><span class="p">)</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">groups</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">match</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleFilterError</span><span class="p">(</span><span class="s">&#39;Unknown argument&#39;</span><span class="p">)</span>
+
+    <span class="n">flags</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ignorecase&#39;</span><span class="p">):</span>
+        <span class="n">flags</span> <span class="o">|=</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span>
+    <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;multiline&#39;</span><span class="p">):</span>
+        <span class="n">flags</span> <span class="o">|=</span> <span class="n">re</span><span class="o">.</span><span class="n">M</span>
+
+    <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">regex</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">flags</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">groups</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">items</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">:</span>
+                <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">items</span></div>
+
+<div class="viewcode-block" id="ternary"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.ternary">[docs]</a><span class="k">def</span> <span class="nf">ternary</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">true_val</span><span class="p">,</span> <span class="n">false_val</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;  value ? true_val : false_val &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="n">value</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">true_val</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">false_val</span></div>
+
+
+<div class="viewcode-block" id="version_compare"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.version_compare">[docs]</a><span class="k">def</span> <span class="nf">version_compare</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">version</span><span class="p">,</span> <span class="n">operator</span><span class="o">=</span><span class="s">&#39;eq&#39;</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Perform a version comparison on a value &#39;&#39;&#39;</span>
+    <span class="n">op_map</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&#39;==&#39;</span><span class="p">:</span> <span class="s">&#39;eq&#39;</span><span class="p">,</span> <span class="s">&#39;=&#39;</span><span class="p">:</span>  <span class="s">&#39;eq&#39;</span><span class="p">,</span> <span class="s">&#39;eq&#39;</span><span class="p">:</span> <span class="s">&#39;eq&#39;</span><span class="p">,</span>
+        <span class="s">&#39;&lt;&#39;</span><span class="p">:</span>  <span class="s">&#39;lt&#39;</span><span class="p">,</span> <span class="s">&#39;lt&#39;</span><span class="p">:</span> <span class="s">&#39;lt&#39;</span><span class="p">,</span>
+        <span class="s">&#39;&lt;=&#39;</span><span class="p">:</span> <span class="s">&#39;le&#39;</span><span class="p">,</span> <span class="s">&#39;le&#39;</span><span class="p">:</span> <span class="s">&#39;le&#39;</span><span class="p">,</span>
+        <span class="s">&#39;&gt;&#39;</span><span class="p">:</span>  <span class="s">&#39;gt&#39;</span><span class="p">,</span> <span class="s">&#39;gt&#39;</span><span class="p">:</span> <span class="s">&#39;gt&#39;</span><span class="p">,</span>
+        <span class="s">&#39;&gt;=&#39;</span><span class="p">:</span> <span class="s">&#39;ge&#39;</span><span class="p">,</span> <span class="s">&#39;ge&#39;</span><span class="p">:</span> <span class="s">&#39;ge&#39;</span><span class="p">,</span>
+        <span class="s">&#39;!=&#39;</span><span class="p">:</span> <span class="s">&#39;ne&#39;</span><span class="p">,</span> <span class="s">&#39;&lt;&gt;&#39;</span><span class="p">:</span> <span class="s">&#39;ne&#39;</span><span class="p">,</span> <span class="s">&#39;ne&#39;</span><span class="p">:</span> <span class="s">&#39;ne&#39;</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="n">strict</span><span class="p">:</span>
+        <span class="n">Version</span> <span class="o">=</span> <span class="n">StrictVersion</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">Version</span> <span class="o">=</span> <span class="n">LooseVersion</span>
+
+    <span class="k">if</span> <span class="n">operator</span> <span class="ow">in</span> <span class="n">op_map</span><span class="p">:</span>
+        <span class="n">operator</span> <span class="o">=</span> <span class="n">op_map</span><span class="p">[</span><span class="n">operator</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleFilterError</span><span class="p">(</span><span class="s">&#39;Invalid operator type&#39;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">py_operator</span><span class="p">,</span> <span class="n">operator</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">method</span><span class="p">(</span><span class="n">Version</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)),</span> <span class="n">Version</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">version</span><span class="p">)))</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleFilterError</span><span class="p">(</span><span class="s">&#39;Version comparison: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">e</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="regex_escape"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.regex_escape">[docs]</a><span class="k">def</span> <span class="nf">regex_escape</span><span class="p">(</span><span class="n">string</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Escape all regular expressions special characters from STRING.&#39;&#39;&#39;</span>
+    <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">string</span><span class="p">)</span></div>
+
+<span class="nd">@environmentfilter</span>
+<div class="viewcode-block" id="rand"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.rand">[docs]</a><span class="k">def</span> <span class="nf">rand</span><span class="p">(</span><span class="n">environment</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">SystemRandom</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">end</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">long</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">start</span><span class="p">:</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">step</span><span class="p">:</span>
+            <span class="n">step</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">r</span><span class="o">.</span><span class="n">randrange</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">end</span><span class="p">,</span> <span class="s">&#39;__iter__&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">start</span> <span class="ow">or</span> <span class="n">step</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleFilterError</span><span class="p">(</span><span class="s">&#39;start and step can only be used with integer values&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">r</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">end</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleFilterError</span><span class="p">(</span><span class="s">&#39;random can only be used on sequences and integers&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="randomize_list"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.randomize_list">[docs]</a><span class="k">def</span> <span class="nf">randomize_list</span><span class="p">(</span><span class="n">mylist</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">mylist</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mylist</span><span class="p">)</span>
+        <span class="n">shuffle</span><span class="p">(</span><span class="n">mylist</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">return</span> <span class="n">mylist</span></div>
+
+<div class="viewcode-block" id="get_hash"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.get_hash">[docs]</a><span class="k">def</span> <span class="nf">get_hash</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">hashtype</span><span class="o">=</span><span class="s">&#39;sha1&#39;</span><span class="p">):</span>
+
+    <span class="k">try</span><span class="p">:</span> <span class="c"># see if hash is supported</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">hashtype</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="n">h</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">h</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="get_encrypted_password"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.get_encrypted_password">[docs]</a><span class="k">def</span> <span class="nf">get_encrypted_password</span><span class="p">(</span><span class="n">password</span><span class="p">,</span> <span class="n">hashtype</span><span class="o">=</span><span class="s">&#39;sha512&#39;</span><span class="p">,</span> <span class="n">salt</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+    <span class="c"># TODO: find a way to construct dynamically from system</span>
+    <span class="n">cryptmethod</span><span class="o">=</span> <span class="p">{</span>
+        <span class="s">&#39;md5&#39;</span><span class="p">:</span>      <span class="s">&#39;1&#39;</span><span class="p">,</span>
+        <span class="s">&#39;blowfish&#39;</span><span class="p">:</span> <span class="s">&#39;2a&#39;</span><span class="p">,</span>
+        <span class="s">&#39;sha256&#39;</span><span class="p">:</span>   <span class="s">&#39;5&#39;</span><span class="p">,</span>
+        <span class="s">&#39;sha512&#39;</span><span class="p">:</span>   <span class="s">&#39;6&#39;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="n">hastype</span> <span class="o">=</span> <span class="n">hashtype</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">hashtype</span> <span class="ow">in</span> <span class="n">cryptmethod</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">salt</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">SystemRandom</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">hashtype</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;md5&#39;</span><span class="p">]:</span>
+                <span class="n">saltsize</span> <span class="o">=</span> <span class="mi">8</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">saltsize</span> <span class="o">=</span> <span class="mi">16</span>
+            <span class="n">salt</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">r</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">ascii_letters</span> <span class="o">+</span> <span class="n">string</span><span class="o">.</span><span class="n">digits</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">saltsize</span><span class="p">)])</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">HAS_PASSLIB</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;darwin&#39;</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleFilterError</span><span class="p">(</span><span class="s">&#39;|password_hash requires the passlib python module to generate password hashes on Mac OS X/Darwin&#39;</span><span class="p">)</span>
+            <span class="n">saltstring</span> <span class="o">=</span>  <span class="s">&quot;$</span><span class="si">%s</span><span class="s">$</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">cryptmethod</span><span class="p">[</span><span class="n">hashtype</span><span class="p">],</span><span class="n">salt</span><span class="p">)</span>
+            <span class="n">encrypted</span> <span class="o">=</span> <span class="n">crypt</span><span class="o">.</span><span class="n">crypt</span><span class="p">(</span><span class="n">password</span><span class="p">,</span> <span class="n">saltstring</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cls</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">passlib</span><span class="o">.</span><span class="n">hash</span><span class="p">,</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">_crypt&#39;</span> <span class="o">%</span> <span class="n">hashtype</span><span class="p">)</span>
+            <span class="n">encrypted</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">password</span><span class="p">,</span> <span class="n">salt</span><span class="o">=</span><span class="n">salt</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">encrypted</span>
+
+    <span class="k">return</span> <span class="bp">None</span></div>
+
+<div class="viewcode-block" id="to_uuid"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.to_uuid">[docs]</a><span class="k">def</span> <span class="nf">to_uuid</span><span class="p">(</span><span class="n">string</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid5</span><span class="p">(</span><span class="n">UUID_NAMESPACE_ANSIBLE</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">string</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="mandatory"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.mandatory">[docs]</a><span class="k">def</span> <span class="nf">mandatory</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">jinja2.runtime</span> <span class="kn">import</span> <span class="n">Undefined</span>
+
+    <span class="sd">&#39;&#39;&#39; Make a variable mandatory &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">Undefined</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleFilterError</span><span class="p">(</span><span class="s">&#39;Mandatory variable not defined.&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">a</span></div>
+
+<div class="viewcode-block" id="combine"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.combine">[docs]</a><span class="k">def</span> <span class="nf">combine</span><span class="p">(</span><span class="o">*</span><span class="n">terms</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">recursive</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;recursive&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="s">&#39;recursive&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleFilterError</span><span class="p">(</span><span class="s">&quot;&#39;recursive&#39; is the only valid keyword argument&quot;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">terms</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleFilterError</span><span class="p">(</span><span class="s">&quot;|combine expects dictionaries, got &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">t</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">recursive</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">reduce</span><span class="p">(</span><span class="n">merge_hash</span><span class="p">,</span> <span class="n">terms</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="nb">map</span><span class="p">(</span><span class="n">iteritems</span><span class="p">,</span> <span class="n">terms</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="comment"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.comment">[docs]</a><span class="k">def</span> <span class="nf">comment</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s">&#39;plain&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="c"># Predefined comment types</span>
+    <span class="n">comment_styles</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&#39;plain&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s">&#39;decoration&#39;</span><span class="p">:</span> <span class="s">&#39;# &#39;</span>
+        <span class="p">},</span>
+        <span class="s">&#39;erlang&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s">&#39;decoration&#39;</span><span class="p">:</span> <span class="s">&#39;% &#39;</span>
+        <span class="p">},</span>
+        <span class="s">&#39;c&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s">&#39;decoration&#39;</span><span class="p">:</span> <span class="s">&#39;// &#39;</span>
+        <span class="p">},</span>
+        <span class="s">&#39;cblock&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s">&#39;beginning&#39;</span><span class="p">:</span> <span class="s">&#39;/*&#39;</span><span class="p">,</span>
+            <span class="s">&#39;decoration&#39;</span><span class="p">:</span> <span class="s">&#39; * &#39;</span><span class="p">,</span>
+            <span class="s">&#39;end&#39;</span><span class="p">:</span> <span class="s">&#39; */&#39;</span>
+        <span class="p">},</span>
+        <span class="s">&#39;xml&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s">&#39;beginning&#39;</span><span class="p">:</span> <span class="s">&#39;&lt;!--&#39;</span><span class="p">,</span>
+            <span class="s">&#39;decoration&#39;</span><span class="p">:</span> <span class="s">&#39; - &#39;</span><span class="p">,</span>
+            <span class="s">&#39;end&#39;</span><span class="p">:</span> <span class="s">&#39;--&gt;&#39;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c"># Pointer to the right comment type</span>
+    <span class="n">style_params</span> <span class="o">=</span> <span class="n">comment_styles</span><span class="p">[</span><span class="n">style</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="s">&#39;decoration&#39;</span> <span class="ow">in</span> <span class="n">kw</span><span class="p">:</span>
+        <span class="n">prepostfix</span> <span class="o">=</span> <span class="n">kw</span><span class="p">[</span><span class="s">&#39;decoration&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">prepostfix</span> <span class="o">=</span> <span class="n">style_params</span><span class="p">[</span><span class="s">&#39;decoration&#39;</span><span class="p">]</span>
+
+    <span class="c"># Default params</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&#39;newline&#39;</span><span class="p">:</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span>
+        <span class="s">&#39;beginning&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
+        <span class="s">&#39;prefix&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">prepostfix</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(),</span>
+        <span class="s">&#39;prefix_count&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s">&#39;decoration&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
+        <span class="s">&#39;postfix&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">prepostfix</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(),</span>
+        <span class="s">&#39;postfix_count&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s">&#39;end&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span>
+    <span class="p">}</span>
+
+    <span class="c"># Update default params</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">style_params</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kw</span><span class="p">)</span>
+
+    <span class="c"># Compose substrings for the final string</span>
+    <span class="n">str_beginning</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="k">if</span> <span class="n">p</span><span class="p">[</span><span class="s">&#39;beginning&#39;</span><span class="p">]:</span>
+        <span class="n">str_beginning</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s">&#39;beginning&#39;</span><span class="p">],</span> <span class="n">p</span><span class="p">[</span><span class="s">&#39;newline&#39;</span><span class="p">])</span>
+    <span class="n">str_prefix</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+        <span class="s">&quot;</span><span class="si">%s%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s">&#39;prefix&#39;</span><span class="p">],</span> <span class="n">p</span><span class="p">[</span><span class="s">&#39;newline&#39;</span><span class="p">]))</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s">&#39;prefix_count&#39;</span><span class="p">])</span>
+    <span class="n">str_text</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;</span><span class="si">%s%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+        <span class="n">p</span><span class="p">[</span><span class="s">&#39;decoration&#39;</span><span class="p">],</span>
+        <span class="c"># Prepend each line of the text with the decorator</span>
+        <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
+            <span class="n">p</span><span class="p">[</span><span class="s">&#39;newline&#39;</span><span class="p">],</span> <span class="s">&quot;</span><span class="si">%s%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s">&#39;newline&#39;</span><span class="p">],</span> <span class="n">p</span><span class="p">[</span><span class="s">&#39;decoration&#39;</span><span class="p">]))))</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
+                <span class="c"># Remove trailing spaces when only decorator is on the line</span>
+                <span class="s">&quot;</span><span class="si">%s%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s">&#39;decoration&#39;</span><span class="p">],</span> <span class="n">p</span><span class="p">[</span><span class="s">&#39;newline&#39;</span><span class="p">]),</span>
+                <span class="s">&quot;</span><span class="si">%s%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s">&#39;decoration&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(),</span> <span class="n">p</span><span class="p">[</span><span class="s">&#39;newline&#39;</span><span class="p">]))</span>
+    <span class="n">str_postfix</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="s">&#39;newline&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="p">[</span><span class="s">&#39;&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="s">&#39;postfix&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s">&#39;postfix_count&#39;</span><span class="p">])])</span>
+    <span class="n">str_end</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="k">if</span> <span class="n">p</span><span class="p">[</span><span class="s">&#39;end&#39;</span><span class="p">]:</span>
+        <span class="n">str_end</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s">&#39;newline&#39;</span><span class="p">],</span> <span class="n">p</span><span class="p">[</span><span class="s">&#39;end&#39;</span><span class="p">])</span>
+
+    <span class="c"># Return the final string</span>
+    <span class="k">return</span> <span class="s">&quot;</span><span class="si">%s%s%s%s%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+        <span class="n">str_beginning</span><span class="p">,</span>
+        <span class="n">str_prefix</span><span class="p">,</span>
+        <span class="n">str_text</span><span class="p">,</span>
+        <span class="n">str_postfix</span><span class="p">,</span>
+        <span class="n">str_end</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="extract"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.extract">[docs]</a><span class="k">def</span> <span class="nf">extract</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">container</span><span class="p">,</span> <span class="n">morekeys</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">jinja2.runtime</span> <span class="kn">import</span> <span class="n">Undefined</span>
+
+    <span class="n">value</span> <span class="o">=</span> <span class="n">container</span><span class="p">[</span><span class="n">item</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">Undefined</span> <span class="ow">and</span> <span class="n">morekeys</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">morekeys</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">morekeys</span> <span class="o">=</span> <span class="p">[</span><span class="n">morekeys</span><span class="p">]</span>
+
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">d</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">morekeys</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">value</span></div>
+
+<div class="viewcode-block" id="FilterModule"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.FilterModule">[docs]</a><span class="k">class</span> <span class="nc">FilterModule</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Ansible core jinja2 filters &#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="FilterModule.filters"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.core.FilterModule.filters">[docs]</a>    <span class="k">def</span> <span class="nf">filters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="c"># base 64</span>
+            <span class="s">&#39;b64decode&#39;</span><span class="p">:</span> <span class="n">partial</span><span class="p">(</span><span class="n">unicode_wrap</span><span class="p">,</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">),</span>
+            <span class="s">&#39;b64encode&#39;</span><span class="p">:</span> <span class="n">partial</span><span class="p">(</span><span class="n">unicode_wrap</span><span class="p">,</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">),</span>
+
+            <span class="c"># uuid</span>
+            <span class="s">&#39;to_uuid&#39;</span><span class="p">:</span> <span class="n">to_uuid</span><span class="p">,</span>
+
+            <span class="c"># json</span>
+            <span class="s">&#39;to_json&#39;</span><span class="p">:</span> <span class="n">to_json</span><span class="p">,</span>
+            <span class="s">&#39;to_nice_json&#39;</span><span class="p">:</span> <span class="n">to_nice_json</span><span class="p">,</span>
+            <span class="s">&#39;from_json&#39;</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">,</span>
+
+            <span class="c"># yaml</span>
+            <span class="s">&#39;to_yaml&#39;</span><span class="p">:</span> <span class="n">to_yaml</span><span class="p">,</span>
+            <span class="s">&#39;to_nice_yaml&#39;</span><span class="p">:</span> <span class="n">to_nice_yaml</span><span class="p">,</span>
+            <span class="s">&#39;from_yaml&#39;</span><span class="p">:</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">,</span>
+
+            <span class="c"># path</span>
+            <span class="s">&#39;basename&#39;</span><span class="p">:</span> <span class="n">partial</span><span class="p">(</span><span class="n">unicode_wrap</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">),</span>
+            <span class="s">&#39;dirname&#39;</span><span class="p">:</span> <span class="n">partial</span><span class="p">(</span><span class="n">unicode_wrap</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">),</span>
+            <span class="s">&#39;expanduser&#39;</span><span class="p">:</span> <span class="n">partial</span><span class="p">(</span><span class="n">unicode_wrap</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">),</span>
+            <span class="s">&#39;realpath&#39;</span><span class="p">:</span> <span class="n">partial</span><span class="p">(</span><span class="n">unicode_wrap</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">),</span>
+            <span class="s">&#39;relpath&#39;</span><span class="p">:</span> <span class="n">partial</span><span class="p">(</span><span class="n">unicode_wrap</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">relpath</span><span class="p">),</span>
+            <span class="s">&#39;splitext&#39;</span><span class="p">:</span> <span class="n">partial</span><span class="p">(</span><span class="n">unicode_wrap</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">),</span>
+            <span class="s">&#39;win_basename&#39;</span><span class="p">:</span> <span class="n">partial</span><span class="p">(</span><span class="n">unicode_wrap</span><span class="p">,</span> <span class="n">ntpath</span><span class="o">.</span><span class="n">basename</span><span class="p">),</span>
+            <span class="s">&#39;win_dirname&#39;</span><span class="p">:</span> <span class="n">partial</span><span class="p">(</span><span class="n">unicode_wrap</span><span class="p">,</span> <span class="n">ntpath</span><span class="o">.</span><span class="n">dirname</span><span class="p">),</span>
+            <span class="s">&#39;win_splitdrive&#39;</span><span class="p">:</span> <span class="n">partial</span><span class="p">(</span><span class="n">unicode_wrap</span><span class="p">,</span> <span class="n">ntpath</span><span class="o">.</span><span class="n">splitdrive</span><span class="p">),</span>
+
+            <span class="c"># value as boolean</span>
+            <span class="s">&#39;bool&#39;</span><span class="p">:</span> <span class="n">to_bool</span><span class="p">,</span>
+
+            <span class="c"># quote string for shell usage</span>
+            <span class="s">&#39;quote&#39;</span><span class="p">:</span> <span class="n">quote</span><span class="p">,</span>
+
+            <span class="c"># hash filters</span>
+            <span class="c"># md5 hex digest of string</span>
+            <span class="s">&#39;md5&#39;</span><span class="p">:</span> <span class="n">md5s</span><span class="p">,</span>
+            <span class="c"># sha1 hex digeset of string</span>
+            <span class="s">&#39;sha1&#39;</span><span class="p">:</span> <span class="n">checksum_s</span><span class="p">,</span>
+            <span class="c"># checksum of string as used by ansible for checksuming files</span>
+            <span class="s">&#39;checksum&#39;</span><span class="p">:</span> <span class="n">checksum_s</span><span class="p">,</span>
+            <span class="c"># generic hashing</span>
+            <span class="s">&#39;password_hash&#39;</span><span class="p">:</span> <span class="n">get_encrypted_password</span><span class="p">,</span>
+            <span class="s">&#39;hash&#39;</span><span class="p">:</span> <span class="n">get_hash</span><span class="p">,</span>
+
+            <span class="c"># file glob</span>
+            <span class="s">&#39;fileglob&#39;</span><span class="p">:</span> <span class="n">fileglob</span><span class="p">,</span>
+
+            <span class="c"># regex</span>
+            <span class="s">&#39;regex_replace&#39;</span><span class="p">:</span> <span class="n">regex_replace</span><span class="p">,</span>
+            <span class="s">&#39;regex_escape&#39;</span><span class="p">:</span> <span class="n">regex_escape</span><span class="p">,</span>
+            <span class="s">&#39;regex_search&#39;</span><span class="p">:</span> <span class="n">regex_search</span><span class="p">,</span>
+            <span class="s">&#39;regex_findall&#39;</span><span class="p">:</span> <span class="n">regex_findall</span><span class="p">,</span>
+
+            <span class="c"># ? : ;</span>
+            <span class="s">&#39;ternary&#39;</span><span class="p">:</span> <span class="n">ternary</span><span class="p">,</span>
+
+            <span class="c"># list</span>
+            <span class="c"># version comparison</span>
+            <span class="s">&#39;version_compare&#39;</span><span class="p">:</span> <span class="n">version_compare</span><span class="p">,</span>
+
+            <span class="c"># random stuff</span>
+            <span class="s">&#39;random&#39;</span><span class="p">:</span> <span class="n">rand</span><span class="p">,</span>
+            <span class="s">&#39;shuffle&#39;</span><span class="p">:</span> <span class="n">randomize_list</span><span class="p">,</span>
+            <span class="c"># undefined</span>
+            <span class="s">&#39;mandatory&#39;</span><span class="p">:</span> <span class="n">mandatory</span><span class="p">,</span>
+
+            <span class="c"># merge dicts</span>
+            <span class="s">&#39;combine&#39;</span><span class="p">:</span> <span class="n">combine</span><span class="p">,</span>
+
+            <span class="c"># comment-style decoration</span>
+            <span class="s">&#39;comment&#39;</span><span class="p">:</span> <span class="n">comment</span><span class="p">,</span>
+
+            <span class="c"># array and dict lookups</span>
+            <span class="s">&#39;extract&#39;</span><span class="p">:</span> <span class="n">extract</span><span class="p">,</span>
+        <span class="p">}</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

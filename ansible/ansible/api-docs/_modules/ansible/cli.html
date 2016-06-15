@@ -1,0 +1,744 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.cli &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../index.html"/>
+        <link rel="up" title="Module code" href="../index.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      
+    <li>ansible.cli</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.cli</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">operator</span>
+<span class="kn">import</span> <span class="nn">optparse</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">yaml</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">getpass</span>
+<span class="kn">import</span> <span class="nn">signal</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+
+<span class="kn">from</span> <span class="nn">ansible.release</span> <span class="kn">import</span> <span class="n">__version__</span>
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span><span class="p">,</span> <span class="n">AnsibleOptionsError</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.unicode</span> <span class="kn">import</span> <span class="n">to_bytes</span><span class="p">,</span> <span class="n">to_unicode</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="SortedOptParser"><a class="viewcode-back" href="../../rst/ansible.cli.html#ansible.cli.SortedOptParser">[docs]</a><span class="k">class</span> <span class="nc">SortedOptParser</span><span class="p">(</span><span class="n">optparse</span><span class="o">.</span><span class="n">OptionParser</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Optparser which sorts the options by opt before outputting --help&#39;&#39;&#39;</span>
+
+    <span class="c"># FIXME: epilog parsing: OptionParser.format_epilog = lambda self, formatter: self.epilog</span>
+
+<div class="viewcode-block" id="SortedOptParser.format_help"><a class="viewcode-back" href="../../rst/ansible.cli.html#ansible.cli.SortedOptParser.format_help">[docs]</a>    <span class="k">def</span> <span class="nf">format_help</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">formatter</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">epilog</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">option_list</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">methodcaller</span><span class="p">(</span><span class="s">&#39;get_opt_string&#39;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">optparse</span><span class="o">.</span><span class="n">OptionParser</span><span class="o">.</span><span class="n">format_help</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">formatter</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="CLI"><a class="viewcode-back" href="../../rst/ansible.cli.html#ansible.cli.CLI">[docs]</a><span class="k">class</span> <span class="nc">CLI</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; code behind bin/ansible* programs &#39;&#39;&#39;</span>
+
+    <span class="n">VALID_ACTIONS</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;No Actions&#39;</span><span class="p">]</span>
+
+    <span class="n">_ITALIC</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">r&quot;I\(([^)]+)\)&quot;</span><span class="p">)</span>
+    <span class="n">_BOLD</span>   <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">r&quot;B\(([^)]+)\)&quot;</span><span class="p">)</span>
+    <span class="n">_MODULE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">r&quot;M\(([^)]+)\)&quot;</span><span class="p">)</span>
+    <span class="n">_URL</span>    <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">r&quot;U\(([^)]+)\)&quot;</span><span class="p">)</span>
+    <span class="n">_CONST</span>  <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">r&quot;C\(([^)]+)\)&quot;</span><span class="p">)</span>
+
+    <span class="n">PAGER</span>   <span class="o">=</span> <span class="s">&#39;less&#39;</span>
+    <span class="n">LESS_OPTS</span> <span class="o">=</span> <span class="s">&#39;FRSX&#39;</span>  <span class="c"># -F (quit-if-one-screen) -R (allow raw ansi control chars)</span>
+                        <span class="c"># -S (chop long lines) -X (disable termcap init and de-init)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Base init method for all command line programs</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">action</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">callback</span> <span class="o">=</span> <span class="n">callback</span>
+
+<div class="viewcode-block" id="CLI.set_action"><a class="viewcode-back" href="../../rst/ansible.cli.html#ansible.cli.CLI.set_action">[docs]</a>    <span class="k">def</span> <span class="nf">set_action</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the action the user wants to execute from the sys argv list.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)):</span>
+            <span class="n">arg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">arg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">VALID_ACTIONS</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">action</span> <span class="o">=</span> <span class="n">arg</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="k">break</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">action</span><span class="p">:</span>
+            <span class="c"># if no need for action if version/help</span>
+            <span class="n">tmp_options</span><span class="p">,</span> <span class="n">tmp_args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span><span class="p">(</span><span class="nb">hasattr</span><span class="p">(</span><span class="n">tmp_options</span><span class="p">,</span> <span class="s">&#39;help&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">tmp_options</span><span class="o">.</span><span class="n">help</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">hasattr</span><span class="p">(</span><span class="n">tmp_options</span><span class="p">,</span> <span class="s">&#39;version&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">tmp_options</span><span class="o">.</span><span class="n">version</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">AnsibleOptionsError</span><span class="p">(</span><span class="s">&quot;Missing required action&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CLI.execute"><a class="viewcode-back" href="../../rst/ansible.cli.html#ansible.cli.CLI.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Actually runs a child defined method using the execute_&lt;action&gt; pattern</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">fn</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&quot;execute_</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">action</span><span class="p">)</span>
+        <span class="n">fn</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="CLI.parse"><a class="viewcode-back" href="../../rst/ansible.cli.html#ansible.cli.CLI.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;Need to implement!&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CLI.run"><a class="viewcode-back" href="../../rst/ansible.cli.html#ansible.cli.CLI.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">C</span><span class="o">.</span><span class="n">CONFIG_FILE</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">u&quot;Using </span><span class="si">%s</span><span class="s"> as config file&quot;</span> <span class="o">%</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">CONFIG_FILE</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">u&quot;No config file found; using defaults&quot;</span><span class="p">)</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="CLI.ask_vault_passwords"><a class="viewcode-back" href="../../rst/ansible.cli.html#ansible.cli.CLI.ask_vault_passwords">[docs]</a>    <span class="k">def</span> <span class="nf">ask_vault_passwords</span><span class="p">(</span><span class="n">ask_new_vault_pass</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">rekey</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; prompt for vault password and/or password change &#39;&#39;&#39;</span>
+
+        <span class="n">vault_pass</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">new_vault_pass</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">rekey</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">ask_new_vault_pass</span><span class="p">:</span>
+                <span class="n">vault_pass</span> <span class="o">=</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getpass</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="s">&quot;Vault password: &quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">ask_new_vault_pass</span><span class="p">:</span>
+                <span class="n">new_vault_pass</span> <span class="o">=</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getpass</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="s">&quot;New Vault password: &quot;</span><span class="p">)</span>
+                <span class="n">new_vault_pass2</span> <span class="o">=</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getpass</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="s">&quot;Confirm New Vault password: &quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">new_vault_pass</span> <span class="o">!=</span> <span class="n">new_vault_pass2</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Passwords do not match&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">EOFError</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="c"># enforce no newline chars at the end of passwords</span>
+        <span class="k">if</span> <span class="n">vault_pass</span><span class="p">:</span>
+            <span class="n">vault_pass</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">vault_pass</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">,</span> <span class="n">nonstring</span><span class="o">=</span><span class="s">&#39;simplerepr&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">new_vault_pass</span><span class="p">:</span>
+            <span class="n">new_vault_pass</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">new_vault_pass</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">,</span> <span class="n">nonstring</span><span class="o">=</span><span class="s">&#39;simplerepr&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">ask_new_vault_pass</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">rekey</span><span class="p">:</span>
+            <span class="n">vault_pass</span> <span class="o">=</span> <span class="n">new_vault_pass</span>
+
+        <span class="k">return</span> <span class="n">vault_pass</span><span class="p">,</span> <span class="n">new_vault_pass</span></div>
+
+<div class="viewcode-block" id="CLI.ask_passwords"><a class="viewcode-back" href="../../rst/ansible.cli.html#ansible.cli.CLI.ask_passwords">[docs]</a>    <span class="k">def</span> <span class="nf">ask_passwords</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; prompt for connection and become passwords if needed &#39;&#39;&#39;</span>
+
+        <span class="n">op</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span>
+        <span class="n">sshpass</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">becomepass</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">become_prompt</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">op</span><span class="o">.</span><span class="n">ask_pass</span><span class="p">:</span>
+                <span class="n">sshpass</span> <span class="o">=</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getpass</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="s">&quot;SSH password: &quot;</span><span class="p">)</span>
+                <span class="n">become_prompt</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s"> password[defaults to SSH password]: &quot;</span> <span class="o">%</span> <span class="n">op</span><span class="o">.</span><span class="n">become_method</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">sshpass</span><span class="p">:</span>
+                    <span class="n">sshpass</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">sshpass</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">,</span> <span class="n">nonstring</span><span class="o">=</span><span class="s">&#39;simplerepr&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">become_prompt</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s"> password: &quot;</span> <span class="o">%</span> <span class="n">op</span><span class="o">.</span><span class="n">become_method</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">op</span><span class="o">.</span><span class="n">become_ask_pass</span><span class="p">:</span>
+                <span class="n">becomepass</span> <span class="o">=</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getpass</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="n">become_prompt</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">op</span><span class="o">.</span><span class="n">ask_pass</span> <span class="ow">and</span> <span class="n">becomepass</span> <span class="o">==</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+                    <span class="n">becomepass</span> <span class="o">=</span> <span class="n">sshpass</span>
+                <span class="k">if</span> <span class="n">becomepass</span><span class="p">:</span>
+                    <span class="n">becomepass</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">becomepass</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">EOFError</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">sshpass</span><span class="p">,</span> <span class="n">becomepass</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CLI.normalize_become_options"><a class="viewcode-back" href="../../rst/ansible.cli.html#ansible.cli.CLI.normalize_become_options">[docs]</a>    <span class="k">def</span> <span class="nf">normalize_become_options</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; this keeps backwards compatibility with sudo/su self.options &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">become_ask_pass</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">become_ask_pass</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">ask_sudo_pass</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">ask_su_pass</span> <span class="ow">or</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_BECOME_ASK_PASS</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">become_user</span>     <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">become_user</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">sudo_user</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">su_user</span> <span class="ow">or</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_BECOME_USER</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">become</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">sudo</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">become</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">become_method</span> <span class="o">=</span> <span class="s">&#39;sudo&#39;</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">su</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">become</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">become_method</span> <span class="o">=</span> <span class="s">&#39;su&#39;</span></div>
+
+<div class="viewcode-block" id="CLI.validate_conflicts"><a class="viewcode-back" href="../../rst/ansible.cli.html#ansible.cli.CLI.validate_conflicts">[docs]</a>    <span class="k">def</span> <span class="nf">validate_conflicts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vault_opts</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">runas_opts</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">fork_opts</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; check for conflicting options &#39;&#39;&#39;</span>
+
+        <span class="n">op</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span>
+
+        <span class="k">if</span> <span class="n">vault_opts</span><span class="p">:</span>
+            <span class="c"># Check for vault related conflicts</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">ask_vault_pass</span> <span class="ow">and</span> <span class="n">op</span><span class="o">.</span><span class="n">vault_password_file</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;--ask-vault-pass and --vault-password-file are mutually exclusive&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">runas_opts</span><span class="p">:</span>
+            <span class="c"># Check for privilege escalation conflicts</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">su</span> <span class="ow">or</span> <span class="n">op</span><span class="o">.</span><span class="n">su_user</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">sudo</span> <span class="ow">or</span> <span class="n">op</span><span class="o">.</span><span class="n">sudo_user</span><span class="p">)</span> <span class="ow">or</span> \
+                <span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">su</span> <span class="ow">or</span> <span class="n">op</span><span class="o">.</span><span class="n">su_user</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">become</span> <span class="ow">or</span> <span class="n">op</span><span class="o">.</span><span class="n">become_user</span><span class="p">)</span> <span class="ow">or</span> \
+                <span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">sudo</span> <span class="ow">or</span> <span class="n">op</span><span class="o">.</span><span class="n">sudo_user</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">become</span> <span class="ow">or</span> <span class="n">op</span><span class="o">.</span><span class="n">become_user</span><span class="p">):</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;Sudo arguments (&#39;--sudo&#39;, &#39;--sudo-user&#39;, and &#39;--ask-sudo-pass&#39;) &quot;</span>
+                                  <span class="s">&quot;and su arguments (&#39;-su&#39;, &#39;--su-user&#39;, and &#39;--ask-su-pass&#39;) &quot;</span>
+                                  <span class="s">&quot;and become arguments (&#39;--become&#39;, &#39;--become-user&#39;, and &#39;--ask-become-pass&#39;)&quot;</span>
+                                  <span class="s">&quot; are exclusive of each other&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">fork_opts</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">op</span><span class="o">.</span><span class="n">forks</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;The number of processes (--forks) must be &gt;= 1&quot;</span><span class="p">)</span></div>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="CLI.expand_tilde"><a class="viewcode-back" href="../../rst/ansible.cli.html#ansible.cli.CLI.expand_tilde">[docs]</a>    <span class="k">def</span> <span class="nf">expand_tilde</span><span class="p">(</span><span class="n">option</span><span class="p">,</span> <span class="n">opt</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">parser</span><span class="p">):</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">option</span><span class="o">.</span><span class="n">dest</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">value</span><span class="p">))</span></div>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="CLI.expand_paths"><a class="viewcode-back" href="../../rst/ansible.cli.html#ansible.cli.CLI.expand_paths">[docs]</a>    <span class="k">def</span> <span class="nf">expand_paths</span><span class="p">(</span><span class="n">option</span><span class="p">,</span> <span class="n">opt</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">parser</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;optparse action callback to convert a PATH style string arg to a list of path strings.</span>
+
+<span class="sd">        For ex, cli arg of &#39;-p /blip/foo:/foo/bar&#39; would be split on the</span>
+<span class="sd">        default os.pathsep and the option value would be set to</span>
+<span class="sd">        the list [&#39;/blip/foo&#39;, &#39;/foo/bar&#39;]. Each path string in the list</span>
+<span class="sd">        will also have &#39;~/&#39; values expand via os.path.expanduser().&quot;&quot;&quot;</span>
+        <span class="n">path_entries</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">pathsep</span><span class="p">)</span>
+        <span class="n">expanded_path_entries</span> <span class="o">=</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">path_entry</span><span class="p">)</span> <span class="k">for</span> <span class="n">path_entry</span> <span class="ow">in</span> <span class="n">path_entries</span><span class="p">]</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">option</span><span class="o">.</span><span class="n">dest</span><span class="p">,</span> <span class="n">expanded_path_entries</span><span class="p">)</span></div>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="CLI.base_parser"><a class="viewcode-back" href="../../rst/ansible.cli.html#ansible.cli.CLI.base_parser">[docs]</a>    <span class="k">def</span> <span class="nf">base_parser</span><span class="p">(</span><span class="n">usage</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">,</span> <span class="n">output_opts</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">runas_opts</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">meta_opts</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">runtask_opts</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">vault_opts</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">module_opts</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+            <span class="n">async_opts</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">connect_opts</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">subset_opts</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">check_opts</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">inventory_opts</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">epilog</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">fork_opts</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">runas_prompt_opts</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; create an options parser for most ansible scripts &#39;&#39;&#39;</span>
+
+        <span class="c"># TODO: implement epilog parsing</span>
+        <span class="c">#       OptionParser.format_epilog = lambda self, formatter: self.epilog</span>
+
+        <span class="c"># base opts</span>
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">SortedOptParser</span><span class="p">(</span><span class="n">usage</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="n">CLI</span><span class="o">.</span><span class="n">version</span><span class="p">(</span><span class="s">&quot;%prog&quot;</span><span class="p">))</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-v&#39;</span><span class="p">,</span><span class="s">&#39;--verbose&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;verbosity&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&quot;count&quot;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s">&quot;verbose mode (-vvv for more, -vvvv to enable connection debugging)&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">inventory_opts</span><span class="p">:</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-i&#39;</span><span class="p">,</span> <span class="s">&#39;--inventory-file&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;inventory&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;specify inventory host path (default=</span><span class="si">%s</span><span class="s">) or comma separated host list.&quot;</span> <span class="o">%</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_HOST_LIST</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_HOST_LIST</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&quot;callback&quot;</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">CLI</span><span class="o">.</span><span class="n">expand_tilde</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--list-hosts&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;listhosts&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&#39;outputs a list of matching hosts; does not execute anything else&#39;</span><span class="p">)</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-l&#39;</span><span class="p">,</span> <span class="s">&#39;--limit&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_SUBSET</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;subset&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&#39;further limit selected hosts to an additional pattern&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">module_opts</span><span class="p">:</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-M&#39;</span><span class="p">,</span> <span class="s">&#39;--module-path&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;module_path&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;specify path(s) to module library (default=</span><span class="si">%s</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_MODULE_PATH</span><span class="p">,</span>
+                <span class="n">action</span><span class="o">=</span><span class="s">&quot;callback&quot;</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">CLI</span><span class="o">.</span><span class="n">expand_tilde</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">runtask_opts</span><span class="p">:</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-e&#39;</span><span class="p">,</span> <span class="s">&#39;--extra-vars&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&quot;extra_vars&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&quot;append&quot;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;set additional variables as key=value or YAML/JSON&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[])</span>
+
+        <span class="k">if</span> <span class="n">fork_opts</span><span class="p">:</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-f&#39;</span><span class="p">,</span><span class="s">&#39;--forks&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;forks&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_FORKS</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;specify number of parallel processes to use (default=</span><span class="si">%s</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_FORKS</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">vault_opts</span><span class="p">:</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--ask-vault-pass&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_ASK_VAULT_PASS</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;ask_vault_pass&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&#39;ask for vault password&#39;</span><span class="p">)</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--vault-password-file&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_VAULT_PASSWORD_FILE</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;vault_password_file&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;vault password file&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&quot;callback&quot;</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">CLI</span><span class="o">.</span><span class="n">expand_tilde</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--new-vault-password-file&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;new_vault_password_file&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;new vault password file for rekey&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&quot;callback&quot;</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">CLI</span><span class="o">.</span><span class="n">expand_tilde</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--output&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;output_file&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&#39;output file name for encrypt or decrypt; use - for stdout&#39;</span><span class="p">,</span>
+                <span class="n">action</span><span class="o">=</span><span class="s">&quot;callback&quot;</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">CLI</span><span class="o">.</span><span class="n">expand_tilde</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">subset_opts</span><span class="p">:</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-t&#39;</span><span class="p">,</span> <span class="s">&#39;--tags&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;tags&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;only run plays and tasks tagged with these values&quot;</span><span class="p">)</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--skip-tags&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;skip_tags&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;only run plays and tasks whose tags do not match these values&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">output_opts</span><span class="p">:</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-o&#39;</span><span class="p">,</span> <span class="s">&#39;--one-line&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;one_line&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&#39;condense output&#39;</span><span class="p">)</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-t&#39;</span><span class="p">,</span> <span class="s">&#39;--tree&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;tree&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&#39;log output to this directory&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">connect_opts</span><span class="p">:</span>
+            <span class="n">connect_group</span> <span class="o">=</span> <span class="n">optparse</span><span class="o">.</span><span class="n">OptionGroup</span><span class="p">(</span><span class="n">parser</span><span class="p">,</span> <span class="s">&quot;Connection Options&quot;</span><span class="p">,</span> <span class="s">&quot;control as whom and how to connect to hosts&quot;</span><span class="p">)</span>
+            <span class="n">connect_group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-k&#39;</span><span class="p">,</span> <span class="s">&#39;--ask-pass&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_ASK_PASS</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;ask_pass&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&#39;ask for connection password&#39;</span><span class="p">)</span>
+            <span class="n">connect_group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--private-key&#39;</span><span class="p">,</span><span class="s">&#39;--key-file&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_PRIVATE_KEY_FILE</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;private_key_file&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&#39;use this file to authenticate the connection&#39;</span><span class="p">)</span>
+            <span class="n">connect_group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-u&#39;</span><span class="p">,</span> <span class="s">&#39;--user&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_REMOTE_USER</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;remote_user&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&#39;connect as this user (default=</span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_REMOTE_USER</span><span class="p">)</span>
+            <span class="n">connect_group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-c&#39;</span><span class="p">,</span> <span class="s">&#39;--connection&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;connection&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_TRANSPORT</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;connection type to use (default=</span><span class="si">%s</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_TRANSPORT</span><span class="p">)</span>
+            <span class="n">connect_group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-T&#39;</span><span class="p">,</span> <span class="s">&#39;--timeout&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_TIMEOUT</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;timeout&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;override the connection timeout in seconds (default=</span><span class="si">%s</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_TIMEOUT</span><span class="p">)</span>
+            <span class="n">connect_group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--ssh-common-args&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;ssh_common_args&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;specify common arguments to pass to sftp/scp/ssh (e.g. ProxyCommand)&quot;</span><span class="p">)</span>
+            <span class="n">connect_group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--sftp-extra-args&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;sftp_extra_args&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;specify extra arguments to pass to sftp only (e.g. -f, -l)&quot;</span><span class="p">)</span>
+            <span class="n">connect_group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--scp-extra-args&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;scp_extra_args&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;specify extra arguments to pass to scp only (e.g. -l)&quot;</span><span class="p">)</span>
+            <span class="n">connect_group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--ssh-extra-args&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;ssh_extra_args&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;specify extra arguments to pass to ssh only (e.g. -R)&quot;</span><span class="p">)</span>
+
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_option_group</span><span class="p">(</span><span class="n">connect_group</span><span class="p">)</span>
+
+        <span class="n">runas_group</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">rg</span> <span class="o">=</span> <span class="n">optparse</span><span class="o">.</span><span class="n">OptionGroup</span><span class="p">(</span><span class="n">parser</span><span class="p">,</span> <span class="s">&quot;Privilege Escalation Options&quot;</span><span class="p">,</span> <span class="s">&quot;control how and which user you become as on target hosts&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">runas_opts</span><span class="p">:</span>
+            <span class="n">runas_group</span> <span class="o">=</span> <span class="n">rg</span>
+            <span class="c"># priv user defaults to root later on to enable detecting when this option was given here</span>
+            <span class="n">runas_group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;-s&quot;</span><span class="p">,</span> <span class="s">&quot;--sudo&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_SUDO</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;sudo&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;run operations with sudo (nopasswd) (deprecated, use become)&quot;</span><span class="p">)</span>
+            <span class="n">runas_group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-U&#39;</span><span class="p">,</span> <span class="s">&#39;--sudo-user&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;sudo_user&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                              <span class="n">help</span><span class="o">=</span><span class="s">&#39;desired sudo user (default=root) (deprecated, use become)&#39;</span><span class="p">)</span>
+            <span class="n">runas_group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-S&#39;</span><span class="p">,</span> <span class="s">&#39;--su&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_SU</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&#39;run operations with su (deprecated, use become)&#39;</span><span class="p">)</span>
+            <span class="n">runas_group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-R&#39;</span><span class="p">,</span> <span class="s">&#39;--su-user&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&#39;run operations with su as this user (default=</span><span class="si">%s</span><span class="s">) (deprecated, use become)&#39;</span> <span class="o">%</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_SU_USER</span><span class="p">)</span>
+
+            <span class="c"># consolidated privilege escalation (become)</span>
+            <span class="n">runas_group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;-b&quot;</span><span class="p">,</span> <span class="s">&quot;--become&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_BECOME</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;become&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;run operations with become (does not imply password prompting)&quot;</span><span class="p">)</span>
+            <span class="n">runas_group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--become-method&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;become_method&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_BECOME_METHOD</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;choice&#39;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">BECOME_METHODS</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;privilege escalation method to use (default=</span><span class="si">%s</span><span class="s">), valid choices: [ </span><span class="si">%s</span><span class="s"> ]&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_BECOME_METHOD</span><span class="p">,</span> <span class="s">&#39; | &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">BECOME_METHODS</span><span class="p">)))</span>
+            <span class="n">runas_group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--become-user&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;become_user&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&#39;run operations as this user (default=</span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_BECOME_USER</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">runas_opts</span> <span class="ow">or</span> <span class="n">runas_prompt_opts</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">runas_group</span><span class="p">:</span>
+                <span class="n">runas_group</span> <span class="o">=</span> <span class="n">rg</span>
+            <span class="n">runas_group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--ask-sudo-pass&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_ASK_SUDO_PASS</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;ask_sudo_pass&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&#39;ask for sudo password (deprecated, use become)&#39;</span><span class="p">)</span>
+            <span class="n">runas_group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--ask-su-pass&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_ASK_SU_PASS</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;ask_su_pass&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&#39;ask for su password (deprecated, use become)&#39;</span><span class="p">)</span>
+            <span class="n">runas_group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-K&#39;</span><span class="p">,</span> <span class="s">&#39;--ask-become-pass&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;become_ask_pass&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&#39;ask for privilege escalation password&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">runas_group</span><span class="p">:</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_option_group</span><span class="p">(</span><span class="n">runas_group</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">async_opts</span><span class="p">:</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-P&#39;</span><span class="p">,</span> <span class="s">&#39;--poll&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_POLL_INTERVAL</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;poll_interval&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;set the poll interval if using -B (default=</span><span class="si">%s</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_POLL_INTERVAL</span><span class="p">)</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-B&#39;</span><span class="p">,</span> <span class="s">&#39;--background&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;seconds&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&#39;run asynchronously, failing after X seconds (default=N/A)&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">check_opts</span><span class="p">:</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;-C&quot;</span><span class="p">,</span> <span class="s">&quot;--check&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;check&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;don&#39;t make any changes; instead, try to predict some of the changes that may occur&quot;</span><span class="p">)</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--syntax-check&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;syntax&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;perform a syntax check on the playbook, but do not execute it&quot;</span><span class="p">)</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;-D&quot;</span><span class="p">,</span> <span class="s">&quot;--diff&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;diff&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;when changing (small) files and templates, show the differences in those files; works great with --check&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">meta_opts</span><span class="p">:</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--force-handlers&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_FORCE_HANDLERS</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;force_handlers&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;run handlers even if a task fails&quot;</span><span class="p">)</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--flush-cache&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;flush_cache&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;clear the fact cache&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">parser</span></div>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="CLI.version"><a class="viewcode-back" href="../../rst/ansible.cli.html#ansible.cli.CLI.version">[docs]</a>    <span class="k">def</span> <span class="nf">version</span><span class="p">(</span><span class="n">prog</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; return ansible version &#39;&#39;&#39;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="s">&quot;{0} {1}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prog</span><span class="p">,</span> <span class="n">__version__</span><span class="p">)</span>
+        <span class="n">gitinfo</span> <span class="o">=</span> <span class="n">CLI</span><span class="o">.</span><span class="n">_gitinfo</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">gitinfo</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">result</span> <span class="o">+</span> <span class="s">&quot; {0}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">gitinfo</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">+=</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">  config file = </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">C</span><span class="o">.</span><span class="n">CONFIG_FILE</span>
+        <span class="k">if</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_MODULE_PATH</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">cpath</span> <span class="o">=</span> <span class="s">&quot;Default w/o overrides&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cpath</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_MODULE_PATH</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">result</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">  configured module search path = </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">cpath</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="CLI.version_info"><a class="viewcode-back" href="../../rst/ansible.cli.html#ansible.cli.CLI.version_info">[docs]</a>    <span class="k">def</span> <span class="nf">version_info</span><span class="p">(</span><span class="n">gitinfo</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; return full ansible version info &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">gitinfo</span><span class="p">:</span>
+            <span class="c"># expensive call, user with care</span>
+            <span class="n">ansible_version_string</span> <span class="o">=</span> <span class="n">CLI</span><span class="o">.</span><span class="n">version</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ansible_version_string</span> <span class="o">=</span> <span class="n">__version__</span>
+        <span class="n">ansible_version</span> <span class="o">=</span> <span class="n">ansible_version_string</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">ansible_versions</span> <span class="o">=</span> <span class="n">ansible_version</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">counter</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ansible_versions</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">ansible_versions</span><span class="p">[</span><span class="n">counter</span><span class="p">]</span> <span class="o">==</span> <span class="s">&quot;&quot;</span><span class="p">:</span>
+                <span class="n">ansible_versions</span><span class="p">[</span><span class="n">counter</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">ansible_versions</span><span class="p">[</span><span class="n">counter</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ansible_versions</span><span class="p">[</span><span class="n">counter</span><span class="p">])</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">pass</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ansible_versions</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">counter</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ansible_versions</span><span class="p">),</span> <span class="mi">3</span><span class="p">):</span>
+                <span class="n">ansible_versions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s">&#39;string&#39;</span><span class="p">:</span>      <span class="n">ansible_version_string</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+                <span class="s">&#39;full&#39;</span><span class="p">:</span>        <span class="n">ansible_version</span><span class="p">,</span>
+                <span class="s">&#39;major&#39;</span><span class="p">:</span>       <span class="n">ansible_versions</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="s">&#39;minor&#39;</span><span class="p">:</span>       <span class="n">ansible_versions</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                <span class="s">&#39;revision&#39;</span><span class="p">:</span>    <span class="n">ansible_versions</span><span class="p">[</span><span class="mi">2</span><span class="p">]}</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_git_repo_info</span><span class="p">(</span><span class="n">repo_path</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; returns a string containing git branch, commit id and commit date &#39;&#39;&#39;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">repo_path</span><span class="p">):</span>
+            <span class="c"># Check if the .git is a file. If it is a file, it means that we are in a submodule structure.</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">repo_path</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">gitdir</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">repo_path</span><span class="p">))</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;gitdir&#39;</span><span class="p">)</span>
+                    <span class="c"># There is a possibility the .git file to have an absolute path.</span>
+                    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isabs</span><span class="p">(</span><span class="n">gitdir</span><span class="p">):</span>
+                        <span class="n">repo_path</span> <span class="o">=</span> <span class="n">gitdir</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">repo_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repo_path</span><span class="p">[:</span><span class="o">-</span><span class="mi">4</span><span class="p">],</span> <span class="n">gitdir</span><span class="p">)</span>
+                <span class="k">except</span> <span class="p">(</span><span class="ne">IOError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="s">&#39;&#39;</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repo_path</span><span class="p">,</span> <span class="s">&quot;HEAD&quot;</span><span class="p">))</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&quot;ref:&quot;</span><span class="p">):</span>
+                <span class="n">branch_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repo_path</span><span class="p">,</span> <span class="n">line</span><span class="p">[</span><span class="mi">5</span><span class="p">:])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">branch_path</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">branch_path</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">branch_path</span><span class="p">):</span>
+                <span class="n">branch</span> <span class="o">=</span> <span class="s">&#39;/&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="mi">2</span><span class="p">:])</span>
+                <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">branch_path</span><span class="p">)</span>
+                <span class="n">commit</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()[:</span><span class="mi">10</span><span class="p">]</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># detached HEAD</span>
+                <span class="n">commit</span> <span class="o">=</span> <span class="n">line</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span>
+                <span class="n">branch</span> <span class="o">=</span> <span class="s">&#39;detached HEAD&#39;</span>
+                <span class="n">branch_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repo_path</span><span class="p">,</span> <span class="s">&quot;HEAD&quot;</span><span class="p">)</span>
+
+            <span class="n">date</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">localtime</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">branch_path</span><span class="p">)</span><span class="o">.</span><span class="n">st_mtime</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">time</span><span class="o">.</span><span class="n">daylight</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">offset</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">timezone</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">offset</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">altzone</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="s">&quot;({0} {1}) last updated {2} (GMT {3:+04d})&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">branch</span><span class="p">,</span> <span class="n">commit</span><span class="p">,</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&quot;%Y/%m/</span><span class="si">%d</span><span class="s"> %H:%M:%S&quot;</span><span class="p">,</span> <span class="n">date</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">offset</span> <span class="o">/</span> <span class="o">-</span><span class="mi">36</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_gitinfo</span><span class="p">():</span>
+        <span class="n">basedir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">__file__</span><span class="p">),</span> <span class="s">&#39;..&#39;</span><span class="p">,</span> <span class="s">&#39;..&#39;</span><span class="p">,</span> <span class="s">&#39;..&#39;</span><span class="p">)</span>
+        <span class="n">repo_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s">&#39;.git&#39;</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">CLI</span><span class="o">.</span><span class="n">_git_repo_info</span><span class="p">(</span><span class="n">repo_path</span><span class="p">)</span>
+        <span class="n">submodules</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s">&#39;.gitmodules&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">submodules</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">result</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">submodules</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">tokens</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;path&#39;</span><span class="p">:</span>
+                <span class="n">submodule_path</span> <span class="o">=</span> <span class="n">tokens</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                <span class="n">submodule_info</span> <span class="o">=</span> <span class="n">CLI</span><span class="o">.</span><span class="n">_git_repo_info</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="n">submodule_path</span><span class="p">,</span> <span class="s">&#39;.git&#39;</span><span class="p">))</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">submodule_info</span><span class="p">:</span>
+                    <span class="n">submodule_info</span> <span class="o">=</span> <span class="s">&#39; not found - use git submodule update --init &#39;</span> <span class="o">+</span> <span class="n">submodule_path</span>
+                <span class="n">result</span> <span class="o">+=</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">  {0}: {1}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">submodule_path</span><span class="p">,</span> <span class="n">submodule_info</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+<div class="viewcode-block" id="CLI.pager"><a class="viewcode-back" href="../../rst/ansible.cli.html#ansible.cli.CLI.pager">[docs]</a>    <span class="k">def</span> <span class="nf">pager</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; find reasonable way to display text &#39;&#39;&#39;</span>
+        <span class="c"># this is a much simpler form of what is in pydoc.py</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">isatty</span><span class="p">():</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="s">&#39;PAGER&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s">&#39;win32&#39;</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pager_pipe</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;PAGER&#39;</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s">&#39;(less --version) &amp;&gt; /dev/null&#39;</span><span class="p">,</span> <span class="n">shell</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pager_pipe</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="s">&#39;less&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">text</span><span class="p">)</span></div>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="CLI.pager_pipe"><a class="viewcode-back" href="../../rst/ansible.cli.html#ansible.cli.CLI.pager_pipe">[docs]</a>    <span class="k">def</span> <span class="nf">pager_pipe</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">cmd</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; pipe text through a pager &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="s">&#39;LESS&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;LESS&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">CLI</span><span class="o">.</span><span class="n">LESS_OPTS</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">stdin</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span>
+            <span class="n">cmd</span><span class="o">.</span><span class="n">communicate</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">text</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="k">pass</span></div>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="CLI.tty_ify"><a class="viewcode-back" href="../../rst/ansible.cli.html#ansible.cli.CLI.tty_ify">[docs]</a>    <span class="k">def</span> <span class="nf">tty_ify</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+
+        <span class="n">t</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_ITALIC</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">&quot;`&quot;</span> <span class="o">+</span> <span class="s">r&quot;\1&quot;</span> <span class="o">+</span> <span class="s">&quot;&#39;&quot;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>    <span class="c"># I(word) =&gt; `word&#39;</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_BOLD</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">&quot;*&quot;</span> <span class="o">+</span> <span class="s">r&quot;\1&quot;</span> <span class="o">+</span> <span class="s">&quot;*&quot;</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>         <span class="c"># B(word) =&gt; *word*</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_MODULE</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">&quot;[&quot;</span> <span class="o">+</span> <span class="s">r&quot;\1&quot;</span> <span class="o">+</span> <span class="s">&quot;]&quot;</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>       <span class="c"># M(word) =&gt; [word]</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_URL</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">r&quot;\1&quot;</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>                      <span class="c"># U(word) =&gt; word</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_CONST</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">&quot;`&quot;</span> <span class="o">+</span> <span class="s">r&quot;\1&quot;</span> <span class="o">+</span> <span class="s">&quot;&#39;&quot;</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>        <span class="c"># C(word) =&gt; `word&#39;</span>
+
+        <span class="k">return</span> <span class="n">t</span></div>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="CLI.read_vault_password_file"><a class="viewcode-back" href="../../rst/ansible.cli.html#ansible.cli.CLI.read_vault_password_file">[docs]</a>    <span class="k">def</span> <span class="nf">read_vault_password_file</span><span class="p">(</span><span class="n">vault_password_file</span><span class="p">,</span> <span class="n">loader</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read a vault password from a file or if executable, execute the script and</span>
+<span class="sd">        retrieve password from STDOUT</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">this_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">vault_password_file</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">this_path</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;The vault password file </span><span class="si">%s</span><span class="s"> was not found&quot;</span> <span class="o">%</span> <span class="n">this_path</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">loader</span><span class="o">.</span><span class="n">is_executable</span><span class="p">(</span><span class="n">this_path</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c"># STDERR not captured to make it easier for users to prompt for input in their scripts</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">this_path</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Problem running vault password script </span><span class="si">%s</span><span class="s"> (</span><span class="si">%s</span><span class="s">). If this is not a script, remove the executable bit from the file.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">this_path</span><span class="p">),</span> <span class="n">e</span><span class="p">))</span>
+            <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">communicate</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Vault password script </span><span class="si">%s</span><span class="s"> returned non-zero (</span><span class="si">%s</span><span class="s">): </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">this_path</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">returncode</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">stderr</span><span class="p">))</span>
+            <span class="n">vault_pass</span> <span class="o">=</span> <span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\r\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">this_path</span><span class="p">,</span> <span class="s">&quot;rb&quot;</span><span class="p">)</span>
+                <span class="n">vault_pass</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">IOError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Could not read vault password file </span><span class="si">%s</span><span class="s">: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">this_path</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">vault_pass</span></div>
+
+<div class="viewcode-block" id="CLI.get_opt"><a class="viewcode-back" href="../../rst/ansible.cli.html#ansible.cli.CLI.get_opt">[docs]</a>    <span class="k">def</span> <span class="nf">get_opt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">defval</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns an option from an Optparse values instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">defval</span>
+        <span class="c"># FIXME: Can this be removed if cli and/or constants ensures it&#39;s a</span>
+        <span class="c"># list?</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s">&quot;roles_path&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">pathsep</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">pathsep</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">data</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

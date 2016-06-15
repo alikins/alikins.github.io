@@ -1,0 +1,556 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.parsing.dataloader &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>ansible.parsing.dataloader</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.parsing.dataloader</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">from</span> <span class="nn">yaml</span> <span class="kn">import</span> <span class="n">YAMLError</span>
+
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">text_type</span><span class="p">,</span> <span class="n">string_types</span>
+
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleFileNotFound</span><span class="p">,</span> <span class="n">AnsibleParserError</span><span class="p">,</span> <span class="n">AnsibleError</span>
+<span class="kn">from</span> <span class="nn">ansible.errors.yaml_strings</span> <span class="kn">import</span> <span class="n">YAML_SYNTAX_ERROR</span>
+<span class="kn">from</span> <span class="nn">ansible.parsing.vault</span> <span class="kn">import</span> <span class="n">VaultLib</span>
+<span class="kn">from</span> <span class="nn">ansible.parsing.quoting</span> <span class="kn">import</span> <span class="n">unquote</span>
+<span class="kn">from</span> <span class="nn">ansible.parsing.yaml.loader</span> <span class="kn">import</span> <span class="n">AnsibleLoader</span>
+<span class="kn">from</span> <span class="nn">ansible.parsing.yaml.objects</span> <span class="kn">import</span> <span class="n">AnsibleBaseYAMLObject</span><span class="p">,</span> <span class="n">AnsibleUnicode</span>
+<span class="kn">from</span> <span class="nn">ansible.module_utils.basic</span> <span class="kn">import</span> <span class="n">is_executable</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.path</span> <span class="kn">import</span> <span class="n">unfrackpath</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.unicode</span> <span class="kn">import</span> <span class="n">to_unicode</span><span class="p">,</span> <span class="n">to_bytes</span>
+
+<div class="viewcode-block" id="DataLoader"><a class="viewcode-back" href="../../../rst/ansible.parsing.html#ansible.parsing.dataloader.DataLoader">[docs]</a><span class="k">class</span> <span class="nc">DataLoader</span><span class="p">():</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    The DataLoader class is used to load and parse YAML or JSON content,</span>
+<span class="sd">    either from a given file name or from a string that was previously</span>
+<span class="sd">    read in through other means. A Vault password can be specified, and</span>
+<span class="sd">    any vault-encrypted files will be decrypted.</span>
+
+<span class="sd">    Data read from files will also be cached, so the file will never be</span>
+<span class="sd">    read from disk more than once.</span>
+
+<span class="sd">    Usage:</span>
+
+<span class="sd">        dl = DataLoader()</span>
+<span class="sd">        # optionally: dl.set_vault_password(&#39;foo&#39;)</span>
+<span class="sd">        ds = dl.load(&#39;...&#39;)</span>
+<span class="sd">        ds = dl.load_from_file(&#39;/path/to/file&#39;)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_basedir</span> <span class="o">=</span> <span class="s">&#39;.&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_FILE_CACHE</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tempfiles</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+        <span class="c"># initialize the vault stuff with an empty password</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_vault_password</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DataLoader.set_vault_password"><a class="viewcode-back" href="../../../rst/ansible.parsing.html#ansible.parsing.dataloader.DataLoader.set_vault_password">[docs]</a>    <span class="k">def</span> <span class="nf">set_vault_password</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vault_password</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_vault_password</span> <span class="o">=</span> <span class="n">vault_password</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_vault</span> <span class="o">=</span> <span class="n">VaultLib</span><span class="p">(</span><span class="n">password</span><span class="o">=</span><span class="n">vault_password</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DataLoader.load"><a class="viewcode-back" href="../../../rst/ansible.parsing.html#ansible.parsing.dataloader.DataLoader.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">file_name</span><span class="o">=</span><span class="s">&#39;&lt;string&gt;&#39;</span><span class="p">,</span> <span class="n">show_content</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Creates a python datastructure from the given data, which can be either</span>
+<span class="sd">        a JSON or YAML string.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">new_data</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># we first try to load this data as JSON</span>
+            <span class="n">new_data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="c"># must not be JSON, let the rest try</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">AnsibleUnicode</span><span class="p">):</span>
+                <span class="c"># The PyYAML&#39;s libyaml bindings use PyUnicode_CheckExact so</span>
+                <span class="c"># they are unable to cope with our subclass.</span>
+                <span class="c"># Unwrap and re-wrap the unicode so we can keep track of line</span>
+                <span class="c"># numbers</span>
+                <span class="n">in_data</span> <span class="o">=</span> <span class="n">text_type</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">in_data</span> <span class="o">=</span> <span class="n">data</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">new_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_safe_load</span><span class="p">(</span><span class="n">in_data</span><span class="p">,</span> <span class="n">file_name</span><span class="o">=</span><span class="n">file_name</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">YAMLError</span> <span class="k">as</span> <span class="n">yaml_exc</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_handle_error</span><span class="p">(</span><span class="n">yaml_exc</span><span class="p">,</span> <span class="n">file_name</span><span class="p">,</span> <span class="n">show_content</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">AnsibleUnicode</span><span class="p">):</span>
+                <span class="n">new_data</span> <span class="o">=</span> <span class="n">AnsibleUnicode</span><span class="p">(</span><span class="n">new_data</span><span class="p">)</span>
+                <span class="n">new_data</span><span class="o">.</span><span class="n">ansible_pos</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">ansible_pos</span>
+
+        <span class="k">return</span> <span class="n">new_data</span></div>
+
+<div class="viewcode-block" id="DataLoader.load_from_file"><a class="viewcode-back" href="../../../rst/ansible.parsing.html#ansible.parsing.dataloader.DataLoader.load_from_file">[docs]</a>    <span class="k">def</span> <span class="nf">load_from_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_name</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Loads data from a file, which can contain either JSON or YAML.  &#39;&#39;&#39;</span>
+
+        <span class="n">file_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_dwim</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+
+        <span class="c"># if the file has already been read in and cached, we&#39;ll</span>
+        <span class="c"># return those results to avoid more file/vault operations</span>
+        <span class="k">if</span> <span class="n">file_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_FILE_CACHE</span><span class="p">:</span>
+            <span class="n">parsed_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_FILE_CACHE</span><span class="p">[</span><span class="n">file_name</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># read the file contents and load the data structure from them</span>
+            <span class="p">(</span><span class="n">file_data</span><span class="p">,</span> <span class="n">show_content</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_file_contents</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+            <span class="n">parsed_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">file_data</span><span class="p">,</span> <span class="n">file_name</span><span class="o">=</span><span class="n">file_name</span><span class="p">,</span> <span class="n">show_content</span><span class="o">=</span><span class="n">show_content</span><span class="p">)</span>
+
+            <span class="c"># cache the file contents for next time</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_FILE_CACHE</span><span class="p">[</span><span class="n">file_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">parsed_data</span>
+
+        <span class="c"># return a deep copy here, so the cache is not affected</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">parsed_data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DataLoader.path_exists"><a class="viewcode-back" href="../../../rst/ansible.parsing.html#ansible.parsing.dataloader.DataLoader.path_exists">[docs]</a>    <span class="k">def</span> <span class="nf">path_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_dwim</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="DataLoader.is_file"><a class="viewcode-back" href="../../../rst/ansible.parsing.html#ansible.parsing.dataloader.DataLoader.is_file">[docs]</a>    <span class="k">def</span> <span class="nf">is_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_dwim</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">))</span> <span class="ow">or</span> <span class="n">path</span> <span class="o">==</span> <span class="n">os</span><span class="o">.</span><span class="n">devnull</span></div>
+
+<div class="viewcode-block" id="DataLoader.is_directory"><a class="viewcode-back" href="../../../rst/ansible.parsing.html#ansible.parsing.dataloader.DataLoader.is_directory">[docs]</a>    <span class="k">def</span> <span class="nf">is_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_dwim</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="DataLoader.list_directory"><a class="viewcode-back" href="../../../rst/ansible.parsing.html#ansible.parsing.dataloader.DataLoader.list_directory">[docs]</a>    <span class="k">def</span> <span class="nf">list_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_dwim</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DataLoader.is_executable"><a class="viewcode-back" href="../../../rst/ansible.parsing.html#ansible.parsing.dataloader.DataLoader.is_executable">[docs]</a>    <span class="k">def</span> <span class="nf">is_executable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;is the given path executable?&#39;&#39;&#39;</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_dwim</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">is_executable</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_safe_load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">file_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Implements yaml.safe_load(), except using our custom loader class. &#39;&#39;&#39;</span>
+
+        <span class="n">loader</span> <span class="o">=</span> <span class="n">AnsibleLoader</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">file_name</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">loader</span><span class="o">.</span><span class="n">get_single_data</span><span class="p">()</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">loader</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="k">pass</span> <span class="c"># older versions of yaml don&#39;t have dispose function, ignore</span>
+
+    <span class="k">def</span> <span class="nf">_get_file_contents</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_name</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Reads the file contents from the given file name, and will decrypt them</span>
+<span class="sd">        if they are found to be vault-encrypted.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">file_name</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">string_types</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&quot;Invalid filename: &#39;</span><span class="si">%s</span><span class="s">&#39;&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">file_name</span><span class="p">))</span>
+
+        <span class="n">b_file_name</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_exists</span><span class="p">(</span><span class="n">b_file_name</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_file</span><span class="p">(</span><span class="n">b_file_name</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">AnsibleFileNotFound</span><span class="p">(</span><span class="s">&quot;the file_name &#39;</span><span class="si">%s</span><span class="s">&#39; does not exist, or is not readable&quot;</span> <span class="o">%</span> <span class="n">file_name</span><span class="p">)</span>
+
+        <span class="n">show_content</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">b_file_name</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vault</span><span class="o">.</span><span class="n">is_encrypted</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vault</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                    <span class="n">show_content</span> <span class="o">=</span> <span class="bp">False</span>
+
+            <span class="n">data</span> <span class="o">=</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">show_content</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="p">(</span><span class="ne">IOError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&quot;an error occurred while trying to read the file &#39;</span><span class="si">%s</span><span class="s">&#39;: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+
+    <span class="k">def</span> <span class="nf">_handle_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">yaml_exc</span><span class="p">,</span> <span class="n">file_name</span><span class="p">,</span> <span class="n">show_content</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Optionally constructs an object (AnsibleBaseYAMLObject) to encapsulate the</span>
+<span class="sd">        file name/position where a YAML exception occurred, and raises an AnsibleParserError</span>
+<span class="sd">        to display the syntax exception information.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c"># if the YAML exception contains a problem mark, use it to construct</span>
+        <span class="c"># an object the error class can use to display the faulty line</span>
+        <span class="n">err_obj</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">yaml_exc</span><span class="p">,</span> <span class="s">&#39;problem_mark&#39;</span><span class="p">):</span>
+            <span class="n">err_obj</span> <span class="o">=</span> <span class="n">AnsibleBaseYAMLObject</span><span class="p">()</span>
+            <span class="n">err_obj</span><span class="o">.</span><span class="n">ansible_pos</span> <span class="o">=</span> <span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">yaml_exc</span><span class="o">.</span><span class="n">problem_mark</span><span class="o">.</span><span class="n">line</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">yaml_exc</span><span class="o">.</span><span class="n">problem_mark</span><span class="o">.</span><span class="n">column</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="n">YAML_SYNTAX_ERROR</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">err_obj</span><span class="p">,</span> <span class="n">show_content</span><span class="o">=</span><span class="n">show_content</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DataLoader.get_basedir"><a class="viewcode-back" href="../../../rst/ansible.parsing.html#ansible.parsing.dataloader.DataLoader.get_basedir">[docs]</a>    <span class="k">def</span> <span class="nf">get_basedir</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; returns the current basedir &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_basedir</span></div>
+
+<div class="viewcode-block" id="DataLoader.set_basedir"><a class="viewcode-back" href="../../../rst/ansible.parsing.html#ansible.parsing.dataloader.DataLoader.set_basedir">[docs]</a>    <span class="k">def</span> <span class="nf">set_basedir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">basedir</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; sets the base directory, used to find files when a relative path is given &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="n">basedir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_basedir</span> <span class="o">=</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">basedir</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DataLoader.path_dwim"><a class="viewcode-back" href="../../../rst/ansible.parsing.html#ansible.parsing.dataloader.DataLoader.path_dwim">[docs]</a>    <span class="k">def</span> <span class="nf">path_dwim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">given</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        make relative paths work like folks expect.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">given</span> <span class="o">=</span> <span class="n">unquote</span><span class="p">(</span><span class="n">given</span><span class="p">)</span>
+        <span class="n">given</span> <span class="o">=</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">given</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">given</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">u&quot;/&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">given</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">given</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">u&quot;~&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">given</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">basedir</span> <span class="o">=</span> <span class="n">to_unicode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_basedir</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="n">given</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="DataLoader.path_dwim_relative"><a class="viewcode-back" href="../../../rst/ansible.parsing.html#ansible.parsing.dataloader.DataLoader.path_dwim_relative">[docs]</a>    <span class="k">def</span> <span class="nf">path_dwim_relative</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">dirname</span><span class="p">,</span> <span class="n">source</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        find one file in either a role or playbook dir with or without</span>
+<span class="sd">        explicitly named dirname subdirs</span>
+
+<span class="sd">        Used in action plugins and lookups to find supplemental files that</span>
+<span class="sd">        could be in either place.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">search</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">isrole</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="c"># I have full path, nothing else needs to be looked at</span>
+        <span class="k">if</span> <span class="n">source</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;~&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">source</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">):</span>
+            <span class="n">search</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path_dwim</span><span class="p">(</span><span class="n">source</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># base role/play path + templates/files/vars + relative filename</span>
+            <span class="n">search</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">dirname</span><span class="p">,</span> <span class="n">source</span><span class="p">))</span>
+
+            <span class="n">basedir</span> <span class="o">=</span> <span class="n">unfrackpath</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+            <span class="c"># is it a role and if so make sure you get correct base path</span>
+            <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;tasks&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="s">&#39;main.yml&#39;</span><span class="p">),</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">))</span> \
+                <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="s">&#39;tasks/main.yml&#39;</span><span class="p">),</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)):</span>
+                <span class="n">isrole</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;tasks&#39;</span><span class="p">):</span>
+                    <span class="n">basedir</span> <span class="o">=</span> <span class="n">unfrackpath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+
+            <span class="n">cur_basedir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_basedir</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_basedir</span><span class="p">(</span><span class="n">basedir</span><span class="p">)</span>
+            <span class="c"># resolved base role/play path + templates/files/vars + relative filename</span>
+            <span class="n">search</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path_dwim</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="n">dirname</span><span class="p">,</span> <span class="n">source</span><span class="p">)))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_basedir</span><span class="p">(</span><span class="n">cur_basedir</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">isrole</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">source</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">dirname</span><span class="p">):</span>
+                <span class="c"># look in role&#39;s tasks dir w/o dirname</span>
+                <span class="n">search</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path_dwim</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s">&#39;tasks&#39;</span><span class="p">,</span> <span class="n">source</span><span class="p">)))</span>
+
+            <span class="c"># try to create absolute path for loader basedir + templates/files/vars + filename</span>
+            <span class="n">search</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path_dwim</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirname</span><span class="p">,</span><span class="n">source</span><span class="p">)))</span>
+            <span class="n">search</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path_dwim</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="n">source</span><span class="p">)))</span>
+
+            <span class="c"># try to create absolute path for loader basedir + filename</span>
+            <span class="n">search</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path_dwim</span><span class="p">(</span><span class="n">source</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="n">search</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)):</span>
+                <span class="k">break</span>
+
+        <span class="k">return</span> <span class="n">candidate</span></div>
+
+<div class="viewcode-block" id="DataLoader.read_vault_password_file"><a class="viewcode-back" href="../../../rst/ansible.parsing.html#ansible.parsing.dataloader.DataLoader.read_vault_password_file">[docs]</a>    <span class="k">def</span> <span class="nf">read_vault_password_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vault_password_file</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read a vault password from a file or if executable, execute the script and</span>
+<span class="sd">        retrieve password from STDOUT</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">this_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">vault_password_file</span><span class="p">),</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">this_path</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="n">AnsibleFileNotFound</span><span class="p">(</span><span class="s">&quot;The vault password file </span><span class="si">%s</span><span class="s"> was not found&quot;</span> <span class="o">%</span> <span class="n">this_path</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_executable</span><span class="p">(</span><span class="n">this_path</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c"># STDERR not captured to make it easier for users to prompt for input in their scripts</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">this_path</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Problem running vault password script </span><span class="si">%s</span><span class="s"> (</span><span class="si">%s</span><span class="s">). If this is not a script, remove the executable bit from the file.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">this_path</span><span class="p">),</span> <span class="n">e</span><span class="p">))</span>
+            <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">communicate</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_vault_password</span><span class="p">(</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\r\n</span><span class="s">&#39;</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">this_path</span><span class="p">,</span> <span class="s">&quot;rb&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set_vault_password</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">IOError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Could not read vault password file </span><span class="si">%s</span><span class="s">: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">this_path</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span></div>
+
+    <span class="k">def</span> <span class="nf">_create_content_tempfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">content</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Create a tempfile containing defined content &#39;&#39;&#39;</span>
+        <span class="n">fd</span><span class="p">,</span> <span class="n">content_tempfile</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">()</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">fdopen</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="s">&#39;wb&#39;</span><span class="p">)</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">content_tempfile</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">content_tempfile</span>
+
+<div class="viewcode-block" id="DataLoader.get_real_file"><a class="viewcode-back" href="../../../rst/ansible.parsing.html#ansible.parsing.dataloader.DataLoader.get_real_file">[docs]</a>    <span class="k">def</span> <span class="nf">get_real_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        If the file is vault encrypted return a path to a temporary decrypted file</span>
+<span class="sd">        If the file is not encrypted then the path is returned</span>
+<span class="sd">        Temporary files are cleanup in the destructor</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">file_path</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">string_types</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&quot;Invalid filename: &#39;</span><span class="si">%s</span><span class="s">&#39;&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_exists</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">AnsibleFileNotFound</span><span class="p">(</span><span class="s">&quot;the file_name &#39;</span><span class="si">%s</span><span class="s">&#39; does not exist, or is not readable&quot;</span> <span class="o">%</span> <span class="n">file_path</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vault</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_vault</span> <span class="o">=</span> <span class="n">VaultLib</span><span class="p">(</span><span class="n">password</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">)</span>
+
+        <span class="n">real_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_dwim</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">real_path</span><span class="p">),</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vault</span><span class="o">.</span><span class="n">is_encrypted</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+                    <span class="c"># if the file is encrypted and no password was specified,</span>
+                    <span class="c"># the decrypt call would throw an error, but we check first</span>
+                    <span class="c"># since the decrypt function doesn&#39;t know the file name</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vault_password</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&quot;A vault password must be specified to decrypt </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">file_path</span><span class="p">)</span>
+
+                    <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vault</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                    <span class="c"># Make a temp file</span>
+                    <span class="n">real_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_content_tempfile</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_tempfiles</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">real_path</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">real_path</span>
+
+        <span class="k">except</span> <span class="p">(</span><span class="ne">IOError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&quot;an error occurred while trying to read the file &#39;</span><span class="si">%s</span><span class="s">&#39;: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">real_path</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="DataLoader.cleanup_tmp_file"><a class="viewcode-back" href="../../../rst/ansible.parsing.html#ansible.parsing.dataloader.DataLoader.cleanup_tmp_file">[docs]</a>    <span class="k">def</span> <span class="nf">cleanup_tmp_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Removes any temporary files created from a previous call to</span>
+<span class="sd">        get_real_file. file_path must be the path returned from a</span>
+<span class="sd">        previous call to get_real_file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">file_path</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tempfiles</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">unlink</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tempfiles</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">file_path</span><span class="p">);</span></div>
+
+<div class="viewcode-block" id="DataLoader.cleanup_all_tmp_files"><a class="viewcode-back" href="../../../rst/ansible.parsing.html#ansible.parsing.dataloader.DataLoader.cleanup_all_tmp_files">[docs]</a>    <span class="k">def</span> <span class="nf">cleanup_all_tmp_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tempfiles</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">cleanup_tmp_file</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">pass</span> <span class="c">#TODO: this should at least warn</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

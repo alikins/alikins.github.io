@@ -1,0 +1,1132 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.module_utils.urls &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>ansible.module_utils.urls</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.module_utils.urls</h1><div class="highlight"><pre>
+<span class="c"># This code is part of Ansible, but is an independent component.</span>
+<span class="c"># This particular file snippet, and this file snippet only, is BSD licensed.</span>
+<span class="c"># Modules you write using this snippet, which is embedded dynamically by Ansible</span>
+<span class="c"># still belong to the author of the module, and may assign their own license</span>
+<span class="c"># to the complete work.</span>
+<span class="c">#</span>
+<span class="c"># Copyright (c), Michael DeHaan &lt;michael.dehaan@gmail.com&gt;, 2012-2013</span>
+<span class="c"># Copyright (c), Toshio Kuratomi &lt;tkuratomi@ansible.com&gt;, 2015</span>
+<span class="c"># All rights reserved.</span>
+<span class="c">#</span>
+<span class="c"># Redistribution and use in source and binary forms, with or without modification,</span>
+<span class="c"># are permitted provided that the following conditions are met:</span>
+<span class="c">#</span>
+<span class="c">#    * Redistributions of source code must retain the above copyright</span>
+<span class="c">#      notice, this list of conditions and the following disclaimer.</span>
+<span class="c">#    * Redistributions in binary form must reproduce the above copyright notice,</span>
+<span class="c">#      this list of conditions and the following disclaimer in the documentation</span>
+<span class="c">#      and/or other materials provided with the distribution.</span>
+<span class="c">#</span>
+<span class="c"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND</span>
+<span class="c"># ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED</span>
+<span class="c"># WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.</span>
+<span class="c"># IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,</span>
+<span class="c"># INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,</span>
+<span class="c"># PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS</span>
+<span class="c"># INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT</span>
+<span class="c"># LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE</span>
+<span class="c"># USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</span>
+<span class="c">#</span>
+<span class="c"># The match_hostname function and supporting code is under the terms and</span>
+<span class="c"># conditions of the Python Software Foundation License.  They were taken from</span>
+<span class="c"># the Python3 standard library and adapted for use in Python2.  See comments in the</span>
+<span class="c"># source for which code precisely is under this License.  PSF License text</span>
+<span class="c"># follows:</span>
+<span class="c">#</span>
+<span class="c"># PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2</span>
+<span class="c"># --------------------------------------------</span>
+<span class="c">#</span>
+<span class="c"># 1. This LICENSE AGREEMENT is between the Python Software Foundation</span>
+<span class="c"># (&quot;PSF&quot;), and the Individual or Organization (&quot;Licensee&quot;) accessing and</span>
+<span class="c"># otherwise using this software (&quot;Python&quot;) in source or binary form and</span>
+<span class="c"># its associated documentation.</span>
+<span class="c">#</span>
+<span class="c"># 2. Subject to the terms and conditions of this License Agreement, PSF hereby</span>
+<span class="c"># grants Licensee a nonexclusive, royalty-free, world-wide license to reproduce,</span>
+<span class="c"># analyze, test, perform and/or display publicly, prepare derivative works,</span>
+<span class="c"># distribute, and otherwise use Python alone or in any derivative version,</span>
+<span class="c"># provided, however, that PSF&#39;s License Agreement and PSF&#39;s notice of copyright,</span>
+<span class="c"># i.e., &quot;Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,</span>
+<span class="c"># 2011, 2012, 2013, 2014 Python Software Foundation; All Rights Reserved&quot; are</span>
+<span class="c"># retained in Python alone or in any derivative version prepared by Licensee.</span>
+<span class="c">#</span>
+<span class="c"># 3. In the event Licensee prepares a derivative work that is based on</span>
+<span class="c"># or incorporates Python or any part thereof, and wants to make</span>
+<span class="c"># the derivative work available to others as provided herein, then</span>
+<span class="c"># Licensee hereby agrees to include in any such work a brief summary of</span>
+<span class="c"># the changes made to Python.</span>
+<span class="c">#</span>
+<span class="c"># 4. PSF is making Python available to Licensee on an &quot;AS IS&quot;</span>
+<span class="c"># basis.  PSF MAKES NO REPRESENTATIONS OR WARRANTIES, EXPRESS OR</span>
+<span class="c"># IMPLIED.  BY WAY OF EXAMPLE, BUT NOT LIMITATION, PSF MAKES NO AND</span>
+<span class="c"># DISCLAIMS ANY REPRESENTATION OR WARRANTY OF MERCHANTABILITY OR FITNESS</span>
+<span class="c"># FOR ANY PARTICULAR PURPOSE OR THAT THE USE OF PYTHON WILL NOT</span>
+<span class="c"># INFRINGE ANY THIRD PARTY RIGHTS.</span>
+<span class="c">#</span>
+<span class="c"># 5. PSF SHALL NOT BE LIABLE TO LICENSEE OR ANY OTHER USERS OF PYTHON</span>
+<span class="c"># FOR ANY INCIDENTAL, SPECIAL, OR CONSEQUENTIAL DAMAGES OR LOSS AS</span>
+<span class="c"># A RESULT OF MODIFYING, DISTRIBUTING, OR OTHERWISE USING PYTHON,</span>
+<span class="c"># OR ANY DERIVATIVE THEREOF, EVEN IF ADVISED OF THE POSSIBILITY THEREOF.</span>
+<span class="c">#</span>
+<span class="c"># 6. This License Agreement will automatically terminate upon a material</span>
+<span class="c"># breach of its terms and conditions.</span>
+<span class="c">#</span>
+<span class="c"># 7. Nothing in this License Agreement shall be deemed to create any</span>
+<span class="c"># relationship of agency, partnership, or joint venture between PSF and</span>
+<span class="c"># Licensee.  This License Agreement does not grant permission to use PSF</span>
+<span class="c"># trademarks or trade name in a trademark sense to endorse or promote</span>
+<span class="c"># products or services of Licensee, or any third party.</span>
+<span class="c">#</span>
+<span class="c"># 8. By copying, installing or otherwise using Python, Licensee</span>
+<span class="c"># agrees to be bound by the terms and conditions of this License</span>
+<span class="c"># Agreement.</span>
+
+<span class="kn">import</span> <span class="nn">netrc</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+<span class="kn">import</span> <span class="nn">platform</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">import</span> <span class="nn">base64</span>
+
+<span class="kn">from</span> <span class="nn">ansible.module_utils.basic</span> <span class="kn">import</span> <span class="n">get_distribution</span><span class="p">,</span> <span class="n">get_exception</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">httplib</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="c"># Python 3</span>
+    <span class="kn">import</span> <span class="nn">http.client</span> <span class="kn">as</span> <span class="nn">httplib</span>
+
+<span class="kn">import</span> <span class="nn">ansible.module_utils.six.moves.urllib.request</span> <span class="kn">as</span> <span class="nn">urllib_request</span>
+<span class="kn">import</span> <span class="nn">ansible.module_utils.six.moves.urllib.error</span> <span class="kn">as</span> <span class="nn">urllib_error</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="c"># python3</span>
+    <span class="kn">import</span> <span class="nn">urllib.request</span> <span class="kn">as</span> <span class="nn">urllib_request</span>
+    <span class="kn">from</span> <span class="nn">urllib.request</span> <span class="kn">import</span> <span class="n">AbstractHTTPHandler</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="c"># python2</span>
+    <span class="kn">import</span> <span class="nn">urllib2</span> <span class="kn">as</span> <span class="nn">urllib_request</span>
+    <span class="kn">from</span> <span class="nn">urllib2</span> <span class="kn">import</span> <span class="n">AbstractHTTPHandler</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.module_utils.six.moves.urllib.parse</span> <span class="kn">import</span> <span class="n">urlparse</span><span class="p">,</span> <span class="n">urlunparse</span>
+    <span class="n">HAS_URLPARSE</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="n">HAS_URLPARSE</span> <span class="o">=</span> <span class="bp">False</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">ssl</span>
+    <span class="n">HAS_SSL</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="n">HAS_SSL</span> <span class="o">=</span> <span class="bp">False</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="c"># SNI Handling needs python2.7.9&#39;s SSLContext</span>
+    <span class="kn">from</span> <span class="nn">ssl</span> <span class="kn">import</span> <span class="n">create_default_context</span><span class="p">,</span> <span class="n">SSLContext</span>
+    <span class="n">HAS_SSLCONTEXT</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">HAS_SSLCONTEXT</span> <span class="o">=</span> <span class="bp">False</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">urllib3.contrib.pyopenssl</span> <span class="kn">import</span> <span class="n">ssl_wrap_socket</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">requests.packages.urllib3.contrib.pyopenssl</span> <span class="kn">import</span> <span class="n">ssl_wrap_socket</span>
+    <span class="n">HAS_URLLIB3_SNI_SUPPORT</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">HAS_URLLIB3_SNI_SUPPORT</span> <span class="o">=</span> <span class="bp">False</span>
+
+<span class="c"># Select a protocol that includes all secure tls protocols</span>
+<span class="c"># Exclude insecure ssl protocols if possible</span>
+
+<span class="k">if</span> <span class="n">HAS_SSL</span><span class="p">:</span>
+    <span class="c"># If we can&#39;t find extra tls methods, ssl.PROTOCOL_TLSv1 is sufficient</span>
+    <span class="n">PROTOCOL</span> <span class="o">=</span> <span class="n">ssl</span><span class="o">.</span><span class="n">PROTOCOL_TLSv1</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">HAS_SSLCONTEXT</span> <span class="ow">and</span> <span class="n">HAS_SSL</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">ctypes</span>
+        <span class="kn">import</span> <span class="nn">ctypes.util</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="c"># python 2.4 (likely rhel5 which doesn&#39;t have tls1.1 support in its openssl)</span>
+        <span class="k">pass</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">libssl_name</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_library</span><span class="p">(</span><span class="s">&#39;ssl&#39;</span><span class="p">)</span>
+        <span class="n">libssl</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">CDLL</span><span class="p">(</span><span class="n">libssl_name</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;TLSv1_1_method&#39;</span><span class="p">,</span> <span class="s">&#39;TLSv1_2_method&#39;</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">libssl</span><span class="p">[</span><span class="n">method</span><span class="p">]</span>
+                <span class="c"># Found something - we&#39;ll let openssl autonegotiate and hope</span>
+                <span class="c"># the server has disabled sslv2 and 3.  best we can do.</span>
+                <span class="n">PROTOCOL</span> <span class="o">=</span> <span class="n">ssl</span><span class="o">.</span><span class="n">PROTOCOL_SSLv23</span>
+                <span class="k">break</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="k">pass</span>
+        <span class="k">del</span> <span class="n">libssl</span>
+
+
+<span class="n">HAS_MATCH_HOSTNAME</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ssl</span> <span class="kn">import</span> <span class="n">match_hostname</span><span class="p">,</span> <span class="n">CertificateError</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">backports.ssl_match_hostname</span> <span class="kn">import</span> <span class="n">match_hostname</span><span class="p">,</span> <span class="n">CertificateError</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="n">HAS_MATCH_HOSTNAME</span> <span class="o">=</span> <span class="bp">False</span>
+
+<span class="k">if</span> <span class="ow">not</span> <span class="n">HAS_MATCH_HOSTNAME</span><span class="p">:</span>
+    <span class="c">###</span>
+    <span class="c">### The following block of code is under the terms and conditions of the</span>
+    <span class="c">### Python Software Foundation License</span>
+    <span class="c">###</span>
+
+    <span class="sd">&quot;&quot;&quot;The match_hostname() function from Python 3.4, essential when using SSL.&quot;&quot;&quot;</span>
+
+    <span class="k">class</span> <span class="nc">CertificateError</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+
+    <span class="k">def</span> <span class="nf">_dnsname_match</span><span class="p">(</span><span class="n">dn</span><span class="p">,</span> <span class="n">hostname</span><span class="p">,</span> <span class="n">max_wildcards</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Matching according to RFC 6125, section 6.4.3</span>
+
+<span class="sd">        http://tools.ietf.org/html/rfc6125#section-6.4.3</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pats</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">dn</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="c"># Ported from python3-syntax:</span>
+        <span class="c"># leftmost, *remainder = dn.split(r&#39;.&#39;)</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="n">dn</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">r&#39;.&#39;</span><span class="p">)</span>
+        <span class="n">leftmost</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">remainder</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+
+        <span class="n">wildcards</span> <span class="o">=</span> <span class="n">leftmost</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s">&#39;*&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">wildcards</span> <span class="o">&gt;</span> <span class="n">max_wildcards</span><span class="p">:</span>
+            <span class="c"># Issue #17980: avoid denials of service by refusing more</span>
+            <span class="c"># than one wildcard per fragment.  A survey of established</span>
+            <span class="c"># policy among SSL implementations showed it to be a</span>
+            <span class="c"># reasonable choice.</span>
+            <span class="k">raise</span> <span class="n">CertificateError</span><span class="p">(</span>
+                <span class="s">&quot;too many wildcards in certificate DNS name: &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">dn</span><span class="p">))</span>
+
+        <span class="c"># speed up common case w/o wildcards</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">wildcards</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">dn</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">hostname</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="c"># RFC 6125, section 6.4.3, subitem 1.</span>
+        <span class="c"># The client SHOULD NOT attempt to match a presented identifier in which</span>
+        <span class="c"># the wildcard character comprises a label other than the left-most label.</span>
+        <span class="k">if</span> <span class="n">leftmost</span> <span class="o">==</span> <span class="s">&#39;*&#39;</span><span class="p">:</span>
+            <span class="c"># When &#39;*&#39; is a fragment by itself, it matches a non-empty dotless</span>
+            <span class="c"># fragment.</span>
+            <span class="n">pats</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;[^.]+&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">leftmost</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;xn--&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">hostname</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;xn--&#39;</span><span class="p">):</span>
+            <span class="c"># RFC 6125, section 6.4.3, subitem 3.</span>
+            <span class="c"># The client SHOULD NOT attempt to match a presented identifier</span>
+            <span class="c"># where the wildcard character is embedded within an A-label or</span>
+            <span class="c"># U-label of an internationalized domain name.</span>
+            <span class="n">pats</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">leftmost</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># Otherwise, &#39;*&#39; matches any dotless string, e.g. www*</span>
+            <span class="n">pats</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">leftmost</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">r&#39;\*&#39;</span><span class="p">,</span> <span class="s">&#39;[^.]*&#39;</span><span class="p">))</span>
+
+        <span class="c"># add the remaining fragments, ignore any wildcards</span>
+        <span class="k">for</span> <span class="n">frag</span> <span class="ow">in</span> <span class="n">remainder</span><span class="p">:</span>
+            <span class="n">pats</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">frag</span><span class="p">))</span>
+
+        <span class="n">pat</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">r&#39;\A&#39;</span> <span class="o">+</span> <span class="s">r&#39;\.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pats</span><span class="p">)</span> <span class="o">+</span> <span class="s">r&#39;\Z&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pat</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">hostname</span><span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">match_hostname</span><span class="p">(</span><span class="n">cert</span><span class="p">,</span> <span class="n">hostname</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Verify that *cert* (in decoded format as returned by</span>
+<span class="sd">        SSLSocket.getpeercert()) matches the *hostname*.  RFC 2818 and RFC 6125</span>
+<span class="sd">        rules are followed, but IP addresses are not accepted for *hostname*.</span>
+
+<span class="sd">        CertificateError is raised on failure. On success, the function</span>
+<span class="sd">        returns nothing.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cert</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;empty or no certificate&quot;</span><span class="p">)</span>
+        <span class="n">dnsnames</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">san</span> <span class="o">=</span> <span class="n">cert</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;subjectAltName&#39;</span><span class="p">,</span> <span class="p">())</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">san</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s">&#39;DNS&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">_dnsname_match</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">hostname</span><span class="p">):</span>
+                    <span class="k">return</span>
+                <span class="n">dnsnames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">dnsnames</span><span class="p">:</span>
+            <span class="c"># The subject is only checked when there is no dNSName entry</span>
+            <span class="c"># in subjectAltName</span>
+            <span class="k">for</span> <span class="n">sub</span> <span class="ow">in</span> <span class="n">cert</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;subject&#39;</span><span class="p">,</span> <span class="p">()):</span>
+                <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">sub</span><span class="p">:</span>
+                    <span class="c"># XXX according to RFC 2818, the most specific Common Name</span>
+                    <span class="c"># must be used.</span>
+                    <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s">&#39;commonName&#39;</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">_dnsname_match</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">hostname</span><span class="p">):</span>
+                            <span class="k">return</span>
+                        <span class="n">dnsnames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dnsnames</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">CertificateError</span><span class="p">(</span><span class="s">&quot;hostname </span><span class="si">%r</span><span class="s"> &quot;</span>
+                <span class="s">&quot;doesn&#39;t match either of </span><span class="si">%s</span><span class="s">&quot;</span>
+                <span class="o">%</span> <span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">repr</span><span class="p">,</span> <span class="n">dnsnames</span><span class="p">))))</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">dnsnames</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">CertificateError</span><span class="p">(</span><span class="s">&quot;hostname </span><span class="si">%r</span><span class="s"> &quot;</span>
+                <span class="s">&quot;doesn&#39;t match </span><span class="si">%r</span><span class="s">&quot;</span>
+                <span class="o">%</span> <span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">dnsnames</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">CertificateError</span><span class="p">(</span><span class="s">&quot;no appropriate commonName or &quot;</span>
+                <span class="s">&quot;subjectAltName fields were found&quot;</span><span class="p">)</span>
+
+    <span class="c">###</span>
+    <span class="c">### End of Python Software Foundation Licensed code</span>
+    <span class="c">###</span>
+
+    <span class="n">HAS_MATCH_HOSTNAME</span> <span class="o">=</span> <span class="bp">True</span>
+
+
+<span class="c"># This is a dummy cacert provided for Mac OS since you need at least 1</span>
+<span class="c"># ca cert, regardless of validity, for Python on Mac OS to use the</span>
+<span class="c"># keychain functionality in OpenSSL for validating SSL certificates.</span>
+<span class="c"># See: http://mercurial.selenic.com/wiki/CACertificates#Mac_OS_X_10.6_and_higher</span>
+<span class="n">DUMMY_CA_CERT</span> <span class="o">=</span> <span class="s">&quot;&quot;&quot;-----BEGIN CERTIFICATE-----</span>
+<span class="s">MIICvDCCAiWgAwIBAgIJAO8E12S7/qEpMA0GCSqGSIb3DQEBBQUAMEkxCzAJBgNV</span>
+<span class="s">BAYTAlVTMRcwFQYDVQQIEw5Ob3J0aCBDYXJvbGluYTEPMA0GA1UEBxMGRHVyaGFt</span>
+<span class="s">MRAwDgYDVQQKEwdBbnNpYmxlMB4XDTE0MDMxODIyMDAyMloXDTI0MDMxNTIyMDAy</span>
+<span class="s">MlowSTELMAkGA1UEBhMCVVMxFzAVBgNVBAgTDk5vcnRoIENhcm9saW5hMQ8wDQYD</span>
+<span class="s">VQQHEwZEdXJoYW0xEDAOBgNVBAoTB0Fuc2libGUwgZ8wDQYJKoZIhvcNAQEBBQAD</span>
+<span class="s">gY0AMIGJAoGBANtvpPq3IlNlRbCHhZAcP6WCzhc5RbsDqyh1zrkmLi0GwcQ3z/r9</span>
+<span class="s">gaWfQBYhHpobK2Tiq11TfraHeNB3/VfNImjZcGpN8Fl3MWwu7LfVkJy3gNNnxkA1</span>
+<span class="s">4Go0/LmIvRFHhbzgfuo9NFgjPmmab9eqXJceqZIlz2C8xA7EeG7ku0+vAgMBAAGj</span>
+<span class="s">gaswgagwHQYDVR0OBBYEFPnN1nPRqNDXGlCqCvdZchRNi/FaMHkGA1UdIwRyMHCA</span>
+<span class="s">FPnN1nPRqNDXGlCqCvdZchRNi/FaoU2kSzBJMQswCQYDVQQGEwJVUzEXMBUGA1UE</span>
+<span class="s">CBMOTm9ydGggQ2Fyb2xpbmExDzANBgNVBAcTBkR1cmhhbTEQMA4GA1UEChMHQW5z</span>
+<span class="s">aWJsZYIJAO8E12S7/qEpMAwGA1UdEwQFMAMBAf8wDQYJKoZIhvcNAQEFBQADgYEA</span>
+<span class="s">MUB80IR6knq9K/tY+hvPsZer6eFMzO3JGkRFBh2kn6JdMDnhYGX7AXVHGflrwNQH</span>
+<span class="s">qFy+aenWXsC0ZvrikFxbQnX8GVtDADtVznxOi7XzFw7JOxdsVrpXgSN0eh0aMzvV</span>
+<span class="s">zKPZsZ2miVGclicJHzm5q080b1p/sZtuKIEZk6vZqEg=</span>
+<span class="s">-----END CERTIFICATE-----</span>
+<span class="s">&quot;&quot;&quot;</span>
+
+<span class="c">#</span>
+<span class="c"># Exceptions</span>
+<span class="c">#</span>
+
+
+<div class="viewcode-block" id="ConnectionError"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.urls.ConnectionError">[docs]</a><span class="k">class</span> <span class="nc">ConnectionError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Failed to connect to the server&quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="ProxyError"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.urls.ProxyError">[docs]</a><span class="k">class</span> <span class="nc">ProxyError</span><span class="p">(</span><span class="n">ConnectionError</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Failure to connect because of a proxy&quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="SSLValidationError"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.urls.SSLValidationError">[docs]</a><span class="k">class</span> <span class="nc">SSLValidationError</span><span class="p">(</span><span class="n">ConnectionError</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Failure to connect due to SSL validation failing&quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="NoSSLError"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.urls.NoSSLError">[docs]</a><span class="k">class</span> <span class="nc">NoSSLError</span><span class="p">(</span><span class="n">SSLValidationError</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Needed to connect to an HTTPS url but no ssl library available to verify the certificate&quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+<span class="c"># Some environments (Google Compute Engine&#39;s CoreOS deploys) do not compile</span>
+<span class="c"># against openssl and thus do not have any HTTPS support.</span>
+<span class="n">CustomHTTPSConnection</span> <span class="o">=</span> <span class="n">CustomHTTPSHandler</span> <span class="o">=</span> <span class="bp">None</span>
+<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">httplib</span><span class="p">,</span> <span class="s">&#39;HTTPSConnection&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">urllib_request</span><span class="p">,</span> <span class="s">&#39;HTTPSHandler&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="CustomHTTPSConnection"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.urls.CustomHTTPSConnection">[docs]</a>    <span class="k">class</span> <span class="nc">CustomHTTPSConnection</span><span class="p">(</span><span class="n">httplib</span><span class="o">.</span><span class="n">HTTPSConnection</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">httplib</span><span class="o">.</span><span class="n">HTTPSConnection</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">HAS_SSLCONTEXT</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="n">create_default_context</span><span class="p">()</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cert_file</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">load_cert_chain</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cert_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">key_file</span><span class="p">)</span>
+
+<div class="viewcode-block" id="CustomHTTPSConnection.connect"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.urls.CustomHTTPSConnection.connect">[docs]</a>        <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="s">&quot;Connect to a host on a given (SSL) port.&quot;</span>
+
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;source_address&#39;</span><span class="p">):</span>
+                <span class="n">sock</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">create_connection</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_address</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">sock</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">create_connection</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span><span class="p">)</span>
+
+            <span class="n">server_hostname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">host</span>
+            <span class="c"># Note: self._tunnel_host is not available on py &lt; 2.6 but this code</span>
+            <span class="c"># isn&#39;t used on py &lt; 2.6 (lack of create_connection)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tunnel_host</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sock</span> <span class="o">=</span> <span class="n">sock</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_tunnel</span><span class="p">()</span>
+                <span class="n">server_hostname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tunnel_host</span>
+
+            <span class="k">if</span> <span class="n">HAS_SSLCONTEXT</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sock</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">wrap_socket</span><span class="p">(</span><span class="n">sock</span><span class="p">,</span> <span class="n">server_hostname</span><span class="o">=</span><span class="n">server_hostname</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">HAS_URLLIB3_SNI_SUPPORT</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sock</span> <span class="o">=</span> <span class="n">ssl_wrap_socket</span><span class="p">(</span><span class="n">sock</span><span class="p">,</span> <span class="n">keyfile</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">key_file</span><span class="p">,</span> <span class="n">cert_reqs</span><span class="o">=</span><span class="n">ssl</span><span class="o">.</span><span class="n">CERT_NONE</span><span class="p">,</span> <span class="n">certfile</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cert_file</span><span class="p">,</span> <span class="n">ssl_version</span><span class="o">=</span><span class="n">PROTOCOL</span><span class="p">,</span>
+                        <span class="n">server_hostname</span><span class="o">=</span><span class="n">server_hostname</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sock</span> <span class="o">=</span> <span class="n">ssl</span><span class="o">.</span><span class="n">wrap_socket</span><span class="p">(</span><span class="n">sock</span><span class="p">,</span> <span class="n">keyfile</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">key_file</span><span class="p">,</span> <span class="n">certfile</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cert_file</span><span class="p">,</span> <span class="n">ssl_version</span><span class="o">=</span><span class="n">PROTOCOL</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="CustomHTTPSHandler"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.urls.CustomHTTPSHandler">[docs]</a>    <span class="k">class</span> <span class="nc">CustomHTTPSHandler</span><span class="p">(</span><span class="n">urllib_request</span><span class="o">.</span><span class="n">HTTPSHandler</span><span class="p">):</span>
+
+<div class="viewcode-block" id="CustomHTTPSHandler.https_open"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.urls.CustomHTTPSHandler.https_open">[docs]</a>        <span class="k">def</span> <span class="nf">https_open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">req</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_open</span><span class="p">(</span><span class="n">CustomHTTPSConnection</span><span class="p">,</span> <span class="n">req</span><span class="p">)</span></div>
+
+        <span class="n">https_request</span> <span class="o">=</span> <span class="n">AbstractHTTPHandler</span><span class="o">.</span><span class="n">do_request_</span></div>
+
+
+<div class="viewcode-block" id="generic_urlparse"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.urls.generic_urlparse">[docs]</a><span class="k">def</span> <span class="nf">generic_urlparse</span><span class="p">(</span><span class="n">parts</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Returns a dictionary of url parts as parsed by urlparse,</span>
+<span class="sd">    but accounts for the fact that older versions of that</span>
+<span class="sd">    library do not support named attributes (ie. .netloc)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">generic_parts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">parts</span><span class="p">,</span> <span class="s">&#39;netloc&#39;</span><span class="p">):</span>
+        <span class="c"># urlparse is newer, just read the fields straight</span>
+        <span class="c"># from the parts object</span>
+        <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;scheme&#39;</span><span class="p">]</span>   <span class="o">=</span> <span class="n">parts</span><span class="o">.</span><span class="n">scheme</span>
+        <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;netloc&#39;</span><span class="p">]</span>   <span class="o">=</span> <span class="n">parts</span><span class="o">.</span><span class="n">netloc</span>
+        <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;path&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="n">parts</span><span class="o">.</span><span class="n">path</span>
+        <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;params&#39;</span><span class="p">]</span>   <span class="o">=</span> <span class="n">parts</span><span class="o">.</span><span class="n">params</span>
+        <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;query&#39;</span><span class="p">]</span>    <span class="o">=</span> <span class="n">parts</span><span class="o">.</span><span class="n">query</span>
+        <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;fragment&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parts</span><span class="o">.</span><span class="n">fragment</span>
+        <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;username&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parts</span><span class="o">.</span><span class="n">username</span>
+        <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;password&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parts</span><span class="o">.</span><span class="n">password</span>
+        <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;hostname&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parts</span><span class="o">.</span><span class="n">hostname</span>
+        <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;port&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="n">parts</span><span class="o">.</span><span class="n">port</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c"># we have to use indexes, and then parse out</span>
+        <span class="c"># the other parts not supported by indexing</span>
+        <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;scheme&#39;</span><span class="p">]</span>   <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;netloc&#39;</span><span class="p">]</span>   <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;path&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;params&#39;</span><span class="p">]</span>   <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;query&#39;</span><span class="p">]</span>    <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+        <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;fragment&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+        <span class="c"># get the username, password, etc.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">netloc_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">r&#39;^((?:\w)+(?::(?:\w)+)?@)?([A-Za-z0-9.-]+)(:\d+)?$&#39;</span><span class="p">)</span>
+            <span class="n">match</span> <span class="o">=</span> <span class="n">netloc_re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">auth</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">hostname</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">port</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">port</span><span class="p">:</span>
+                <span class="c"># the capture group for the port will include the &#39;:&#39;,</span>
+                <span class="c"># so remove it and convert the port to an integer</span>
+                <span class="n">port</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">port</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+            <span class="k">if</span> <span class="n">auth</span><span class="p">:</span>
+                <span class="c"># the capture group above inclues the @, so remove it</span>
+                <span class="c"># and then split it up based on the first &#39;:&#39; found</span>
+                <span class="n">auth</span> <span class="o">=</span> <span class="n">auth</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">username</span><span class="p">,</span> <span class="n">password</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">username</span> <span class="o">=</span> <span class="n">password</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;username&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">username</span>
+            <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;password&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">password</span>
+            <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;hostname&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hostname</span>
+            <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;port&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="n">port</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;username&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;password&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;hostname&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">generic_parts</span><span class="p">[</span><span class="s">&#39;port&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">return</span> <span class="n">generic_parts</span></div>
+
+
+<div class="viewcode-block" id="RequestWithMethod"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.urls.RequestWithMethod">[docs]</a><span class="k">class</span> <span class="nc">RequestWithMethod</span><span class="p">(</span><span class="n">urllib_request</span><span class="o">.</span><span class="n">Request</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Workaround for using DELETE/PUT/etc with urllib2</span>
+<span class="sd">    Originally contained in library/net_infrastructure/dnsmadeeasy</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">headers</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">headers</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_method</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+        <span class="n">urllib_request</span><span class="o">.</span><span class="n">Request</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
+
+<div class="viewcode-block" id="RequestWithMethod.get_method"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.urls.RequestWithMethod.get_method">[docs]</a>    <span class="k">def</span> <span class="nf">get_method</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_method</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_method</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">urllib_request</span><span class="o">.</span><span class="n">Request</span><span class="o">.</span><span class="n">get_method</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="RedirectHandlerFactory"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.urls.RedirectHandlerFactory">[docs]</a><span class="k">def</span> <span class="nf">RedirectHandlerFactory</span><span class="p">(</span><span class="n">follow_redirects</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">validate_certs</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This is a class factory that closes over the value of</span>
+<span class="sd">    ``follow_redirects`` so that the RedirectHandler class has access to</span>
+<span class="sd">    that value without having to use globals, and potentially cause problems</span>
+<span class="sd">    where ``open_url`` or ``fetch_url`` are used multiple times in a module.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">class</span> <span class="nc">RedirectHandler</span><span class="p">(</span><span class="n">urllib_request</span><span class="o">.</span><span class="n">HTTPRedirectHandler</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This is an implementation of a RedirectHandler to match the</span>
+<span class="sd">        functionality provided by httplib2. It will utilize the value of</span>
+<span class="sd">        ``follow_redirects`` that is passed into ``RedirectHandlerFactory``</span>
+<span class="sd">        to determine how redirects should be handled in urllib2.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">redirect_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">req</span><span class="p">,</span> <span class="n">fp</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">hdrs</span><span class="p">,</span> <span class="n">newurl</span><span class="p">):</span>
+            <span class="n">handler</span> <span class="o">=</span> <span class="n">maybe_add_ssl_handler</span><span class="p">(</span><span class="n">newurl</span><span class="p">,</span> <span class="n">validate_certs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">handler</span><span class="p">:</span>
+                <span class="n">urllib_request</span><span class="o">.</span><span class="n">_opener</span><span class="o">.</span><span class="n">add_handler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">follow_redirects</span> <span class="o">==</span> <span class="s">&#39;urllib2&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">urllib_request</span><span class="o">.</span><span class="n">HTTPRedirectHandler</span><span class="o">.</span><span class="n">redirect_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">req</span><span class="p">,</span> <span class="n">fp</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">hdrs</span><span class="p">,</span> <span class="n">newurl</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">follow_redirects</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;no&#39;</span><span class="p">,</span> <span class="s">&#39;none&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="n">urllib_error</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">(</span><span class="n">newurl</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">hdrs</span><span class="p">,</span> <span class="n">fp</span><span class="p">)</span>
+
+            <span class="n">do_redirect</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">if</span> <span class="n">follow_redirects</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;all&#39;</span><span class="p">,</span> <span class="s">&#39;yes&#39;</span><span class="p">,</span> <span class="bp">True</span><span class="p">]:</span>
+                <span class="n">do_redirect</span> <span class="o">=</span> <span class="p">(</span><span class="n">code</span> <span class="o">&gt;=</span> <span class="mi">300</span> <span class="ow">and</span> <span class="n">code</span> <span class="o">&lt;</span> <span class="mi">400</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="n">follow_redirects</span> <span class="o">==</span> <span class="s">&#39;safe&#39;</span><span class="p">:</span>
+                <span class="n">m</span> <span class="o">=</span> <span class="n">req</span><span class="o">.</span><span class="n">get_method</span><span class="p">()</span>
+                <span class="n">do_redirect</span> <span class="o">=</span> <span class="p">(</span><span class="n">code</span> <span class="o">&gt;=</span> <span class="mi">300</span> <span class="ow">and</span> <span class="n">code</span> <span class="o">&lt;</span> <span class="mi">400</span> <span class="ow">and</span> <span class="n">m</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;GET&#39;</span><span class="p">,</span> <span class="s">&#39;HEAD&#39;</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="n">do_redirect</span><span class="p">:</span>
+                <span class="c"># be conciliant with URIs containing a space</span>
+                <span class="n">newurl</span> <span class="o">=</span> <span class="n">newurl</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">,</span> <span class="s">&#39;%20&#39;</span><span class="p">)</span>
+                <span class="n">newheaders</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">((</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">req</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                                  <span class="k">if</span> <span class="n">k</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&quot;content-length&quot;</span><span class="p">,</span> <span class="s">&quot;content-type&quot;</span><span class="p">)</span>
+                                 <span class="p">)</span>
+                <span class="k">return</span> <span class="n">urllib_request</span><span class="o">.</span><span class="n">Request</span><span class="p">(</span><span class="n">newurl</span><span class="p">,</span>
+                               <span class="n">headers</span><span class="o">=</span><span class="n">newheaders</span><span class="p">,</span>
+                               <span class="n">origin_req_host</span><span class="o">=</span><span class="n">req</span><span class="o">.</span><span class="n">get_origin_req_host</span><span class="p">(),</span>
+                               <span class="n">unverifiable</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">urllib_error</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">(</span><span class="n">req</span><span class="o">.</span><span class="n">get_full_url</span><span class="p">(),</span> <span class="n">code</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">hdrs</span><span class="p">,</span> <span class="n">fp</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">RedirectHandler</span></div>
+
+
+<div class="viewcode-block" id="build_ssl_validation_error"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.urls.build_ssl_validation_error">[docs]</a><span class="k">def</span> <span class="nf">build_ssl_validation_error</span><span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">paths</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Inteligently build out the SSLValidationError based on what support</span>
+<span class="sd">    you have installed</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">msg</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s">&#39;Failed to validate the SSL certificate for </span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">.&#39;</span>
+         <span class="s">&#39; Make sure your managed systems have a valid CA&#39;</span>
+         <span class="s">&#39; certificate installed.&#39;</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">HAS_SSLCONTEXT</span><span class="p">:</span>
+        <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;If the website serving the url uses SNI you need&#39;</span>
+                   <span class="s">&#39; python &gt;= 2.7.9 on your managed machine&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">HAS_URLLIB3_SNI_SUPPORT</span><span class="p">:</span>
+            <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;or you can install the `urllib3`, `pyopenssl`,&#39;</span>
+                       <span class="s">&#39; `ndg-httpsclient`, and `pyasn1` python modules&#39;</span><span class="p">)</span>
+
+        <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;to perform SNI verification in python &gt;= 2.6.&#39;</span><span class="p">)</span>
+
+    <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;You can use validate_certs=False if you do&#39;</span>
+               <span class="s">&#39; not need to confirm the servers identity but this is&#39;</span>
+               <span class="s">&#39; unsafe and not recommended.&#39;</span>
+               <span class="s">&#39; Paths checked for this platform: </span><span class="si">%s</span><span class="s">&#39;</span><span class="p">)</span>
+
+    <span class="k">raise</span> <span class="n">SSLValidationError</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="s">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">paths</span><span class="p">)))</span></div>
+
+
+<div class="viewcode-block" id="SSLValidationHandler"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.urls.SSLValidationHandler">[docs]</a><span class="k">class</span> <span class="nc">SSLValidationHandler</span><span class="p">(</span><span class="n">urllib_request</span><span class="o">.</span><span class="n">BaseHandler</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    A custom handler class for SSL validation.</span>
+
+<span class="sd">    Based on:</span>
+<span class="sd">    http://stackoverflow.com/questions/1087227/validate-ssl-certificates-with-python</span>
+<span class="sd">    http://techknack.net/python-urllib2-handlers/</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">CONNECT_COMMAND</span> <span class="o">=</span> <span class="s">&quot;CONNECT </span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s"> HTTP/1.0</span><span class="se">\r\n</span><span class="s">Connection: close</span><span class="se">\r\n</span><span class="s">&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hostname</span><span class="p">,</span> <span class="n">port</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hostname</span> <span class="o">=</span> <span class="n">hostname</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="n">port</span>
+
+<div class="viewcode-block" id="SSLValidationHandler.get_ca_certs"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.urls.SSLValidationHandler.get_ca_certs">[docs]</a>    <span class="k">def</span> <span class="nf">get_ca_certs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># tries to find a valid CA cert in one of the</span>
+        <span class="c"># standard locations for the current distribution</span>
+
+        <span class="n">ca_certs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">paths_checked</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">system</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">()</span>
+        <span class="c"># build a list of paths to check for .crt/.pem files</span>
+        <span class="c"># based on the platform type</span>
+        <span class="n">paths_checked</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;/etc/ssl/certs&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">system</span> <span class="o">==</span> <span class="s">&#39;Linux&#39;</span><span class="p">:</span>
+            <span class="n">paths_checked</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;/etc/pki/ca-trust/extracted/pem&#39;</span><span class="p">)</span>
+            <span class="n">paths_checked</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;/etc/pki/tls/certs&#39;</span><span class="p">)</span>
+            <span class="n">paths_checked</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;/usr/share/ca-certificates/cacert.org&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">system</span> <span class="o">==</span> <span class="s">&#39;FreeBSD&#39;</span><span class="p">:</span>
+            <span class="n">paths_checked</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;/usr/local/share/certs&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">system</span> <span class="o">==</span> <span class="s">&#39;OpenBSD&#39;</span><span class="p">:</span>
+            <span class="n">paths_checked</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;/etc/ssl&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">system</span> <span class="o">==</span> <span class="s">&#39;NetBSD&#39;</span><span class="p">:</span>
+            <span class="n">ca_certs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;/etc/openssl/certs&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">system</span> <span class="o">==</span> <span class="s">&#39;SunOS&#39;</span><span class="p">:</span>
+            <span class="n">paths_checked</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;/opt/local/etc/openssl/certs&#39;</span><span class="p">)</span>
+
+        <span class="c"># fall back to a user-deployed cert in a standard</span>
+        <span class="c"># location if the OS platform one is not available</span>
+        <span class="n">paths_checked</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;/etc/ansible&#39;</span><span class="p">)</span>
+
+        <span class="n">tmp_fd</span><span class="p">,</span> <span class="n">tmp_path</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">()</span>
+
+        <span class="c"># Write the dummy ca cert if we are running on Mac OS X</span>
+        <span class="k">if</span> <span class="n">system</span> <span class="o">==</span> <span class="s">&#39;Darwin&#39;</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">tmp_fd</span><span class="p">,</span> <span class="n">DUMMY_CA_CERT</span><span class="p">)</span>
+            <span class="c"># Default Homebrew path for OpenSSL certs</span>
+            <span class="n">paths_checked</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;/usr/local/etc/openssl&#39;</span><span class="p">)</span>
+
+        <span class="c"># for all of the paths, find any  .crt or .pem files</span>
+        <span class="c"># and compile them into single temp file for use</span>
+        <span class="c"># in the ssl check to speed up the test</span>
+        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">paths_checked</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+                <span class="n">dir_contents</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">dir_contents</span><span class="p">:</span>
+                    <span class="n">full_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">full_path</span><span class="p">)</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">f</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;.crt&#39;</span><span class="p">,</span><span class="s">&#39;.pem&#39;</span><span class="p">):</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">cert_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">full_path</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
+                            <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">tmp_fd</span><span class="p">,</span> <span class="n">cert_file</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+                            <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">tmp_fd</span><span class="p">,</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+                            <span class="n">cert_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                        <span class="k">except</span><span class="p">:</span>
+                            <span class="k">pass</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">tmp_path</span><span class="p">,</span> <span class="n">paths_checked</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SSLValidationHandler.validate_proxy_response"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.urls.SSLValidationHandler.validate_proxy_response">[docs]</a>    <span class="k">def</span> <span class="nf">validate_proxy_response</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">,</span> <span class="n">valid_codes</span><span class="o">=</span><span class="p">[</span><span class="mi">200</span><span class="p">]):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        make sure we get back a valid code from the proxy</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="p">(</span><span class="n">http_version</span><span class="p">,</span> <span class="n">resp_code</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">r&#39;(HTTP/\d\.\d) (\d\d\d) (.*)&#39;</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span><span class="o">.</span><span class="n">groups</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">resp_code</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">valid_codes</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ProxyError</span><span class="p">(</span><span class="s">&#39;Connection to proxy failed&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SSLValidationHandler.detect_no_proxy"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.urls.SSLValidationHandler.detect_no_proxy">[docs]</a>    <span class="k">def</span> <span class="nf">detect_no_proxy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Detect if the &#39;no_proxy&#39; environment variable is set and honor those locations.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">env_no_proxy</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;no_proxy&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">env_no_proxy</span><span class="p">:</span>
+            <span class="n">env_no_proxy</span> <span class="o">=</span> <span class="n">env_no_proxy</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)</span>
+            <span class="n">netloc</span> <span class="o">=</span> <span class="n">urlparse</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">netloc</span>
+
+            <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">env_no_proxy</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">netloc</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">host</span><span class="p">)</span> <span class="ow">or</span> <span class="n">netloc</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">host</span><span class="p">):</span>
+                    <span class="c"># Our requested URL matches something in no_proxy, so don&#39;t</span>
+                    <span class="c"># use the proxy for this</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="bp">True</span></div>
+
+    <span class="k">def</span> <span class="nf">_make_context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tmp_ca_cert_path</span><span class="p">):</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="n">create_default_context</span><span class="p">()</span>
+        <span class="n">context</span><span class="o">.</span><span class="n">load_verify_locations</span><span class="p">(</span><span class="n">tmp_ca_cert_path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">context</span>
+
+<div class="viewcode-block" id="SSLValidationHandler.http_request"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.urls.SSLValidationHandler.http_request">[docs]</a>    <span class="k">def</span> <span class="nf">http_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">req</span><span class="p">):</span>
+        <span class="n">tmp_ca_cert_path</span><span class="p">,</span> <span class="n">paths_checked</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_ca_certs</span><span class="p">()</span>
+        <span class="n">https_proxy</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;https_proxy&#39;</span><span class="p">)</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">HAS_SSLCONTEXT</span><span class="p">:</span>
+            <span class="n">context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_context</span><span class="p">(</span><span class="n">tmp_ca_cert_path</span><span class="p">)</span>
+
+        <span class="c"># Detect if &#39;no_proxy&#39; environment variable is set and if our URL is included</span>
+        <span class="n">use_proxy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">detect_no_proxy</span><span class="p">(</span><span class="n">req</span><span class="o">.</span><span class="n">get_full_url</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">use_proxy</span><span class="p">:</span>
+            <span class="c"># ignore proxy settings for this host request</span>
+            <span class="k">return</span> <span class="n">req</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">https_proxy</span><span class="p">:</span>
+                <span class="n">proxy_parts</span> <span class="o">=</span> <span class="n">generic_urlparse</span><span class="p">(</span><span class="n">urlparse</span><span class="p">(</span><span class="n">https_proxy</span><span class="p">))</span>
+                <span class="n">port</span> <span class="o">=</span> <span class="n">proxy_parts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;port&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">443</span>
+                <span class="n">s</span><span class="o">.</span><span class="n">connect</span><span class="p">((</span><span class="n">proxy_parts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;hostname&#39;</span><span class="p">),</span> <span class="n">port</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">proxy_parts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;scheme&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s">&#39;http&#39;</span><span class="p">:</span>
+                    <span class="n">s</span><span class="o">.</span><span class="n">sendall</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CONNECT_COMMAND</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">))</span>
+                    <span class="k">if</span> <span class="n">proxy_parts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;username&#39;</span><span class="p">):</span>
+                        <span class="n">credentials</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">proxy_parts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;username&#39;</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">),</span> <span class="n">proxy_parts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;password&#39;</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">))</span>
+                        <span class="n">s</span><span class="o">.</span><span class="n">sendall</span><span class="p">(</span><span class="s">&#39;Proxy-Authorization: Basic </span><span class="si">%s</span><span class="se">\r\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">credentials</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s">&#39;base64&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+                    <span class="n">s</span><span class="o">.</span><span class="n">sendall</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\r\n</span><span class="s">&#39;</span><span class="p">)</span>
+                    <span class="n">connect_result</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="mi">4096</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">validate_proxy_response</span><span class="p">(</span><span class="n">connect_result</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">context</span><span class="p">:</span>
+                        <span class="n">ssl_s</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">wrap_socket</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">server_hostname</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">HAS_URLLIB3_SNI_SUPPORT</span><span class="p">:</span>
+                        <span class="n">ssl_s</span> <span class="o">=</span> <span class="n">ssl_wrap_socket</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">ca_certs</span><span class="o">=</span><span class="n">tmp_ca_cert_path</span><span class="p">,</span> <span class="n">cert_reqs</span><span class="o">=</span><span class="n">ssl</span><span class="o">.</span><span class="n">CERT_REQUIRED</span><span class="p">,</span> <span class="n">ssl_version</span><span class="o">=</span><span class="n">PROTOCOL</span><span class="p">,</span> <span class="n">server_hostname</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">ssl_s</span> <span class="o">=</span> <span class="n">ssl</span><span class="o">.</span><span class="n">wrap_socket</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">ca_certs</span><span class="o">=</span><span class="n">tmp_ca_cert_path</span><span class="p">,</span> <span class="n">cert_reqs</span><span class="o">=</span><span class="n">ssl</span><span class="o">.</span><span class="n">CERT_REQUIRED</span><span class="p">,</span> <span class="n">ssl_version</span><span class="o">=</span><span class="n">PROTOCOL</span><span class="p">)</span>
+                        <span class="n">match_hostname</span><span class="p">(</span><span class="n">ssl_s</span><span class="o">.</span><span class="n">getpeercert</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">ProxyError</span><span class="p">(</span><span class="s">&#39;Unsupported proxy scheme: </span><span class="si">%s</span><span class="s">. Currently ansible only supports HTTP proxies.&#39;</span> <span class="o">%</span> <span class="n">proxy_parts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;scheme&#39;</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">s</span><span class="o">.</span><span class="n">connect</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">context</span><span class="p">:</span>
+                    <span class="n">ssl_s</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">wrap_socket</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">server_hostname</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">HAS_URLLIB3_SNI_SUPPORT</span><span class="p">:</span>
+                    <span class="n">ssl_s</span> <span class="o">=</span> <span class="n">ssl_wrap_socket</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">ca_certs</span><span class="o">=</span><span class="n">tmp_ca_cert_path</span><span class="p">,</span> <span class="n">cert_reqs</span><span class="o">=</span><span class="n">ssl</span><span class="o">.</span><span class="n">CERT_REQUIRED</span><span class="p">,</span> <span class="n">ssl_version</span><span class="o">=</span><span class="n">PROTOCOL</span><span class="p">,</span> <span class="n">server_hostname</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">ssl_s</span> <span class="o">=</span> <span class="n">ssl</span><span class="o">.</span><span class="n">wrap_socket</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">ca_certs</span><span class="o">=</span><span class="n">tmp_ca_cert_path</span><span class="p">,</span> <span class="n">cert_reqs</span><span class="o">=</span><span class="n">ssl</span><span class="o">.</span><span class="n">CERT_REQUIRED</span><span class="p">,</span> <span class="n">ssl_version</span><span class="o">=</span><span class="n">PROTOCOL</span><span class="p">)</span>
+                    <span class="n">match_hostname</span><span class="p">(</span><span class="n">ssl_s</span><span class="o">.</span><span class="n">getpeercert</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">)</span>
+            <span class="c"># close the ssl connection</span>
+            <span class="c">#ssl_s.unwrap()</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">ssl</span><span class="o">.</span><span class="n">SSLError</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">error</span><span class="p">):</span>
+            <span class="n">e</span> <span class="o">=</span> <span class="n">get_exception</span><span class="p">()</span>
+            <span class="c"># fail if we tried all of the certs but none worked</span>
+            <span class="k">if</span> <span class="s">&#39;connection refused&#39;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="n">ConnectionError</span><span class="p">(</span><span class="s">&#39;Failed to connect to </span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">.&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">build_ssl_validation_error</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">,</span> <span class="n">paths_checked</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">CertificateError</span><span class="p">:</span>
+            <span class="n">build_ssl_validation_error</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">,</span> <span class="n">paths_checked</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># cleanup the temp file created, don&#39;t worry</span>
+            <span class="c"># if it fails for some reason</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tmp_ca_cert_path</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">return</span> <span class="n">req</span></div>
+
+    <span class="n">https_request</span> <span class="o">=</span> <span class="n">http_request</span></div>
+
+
+<div class="viewcode-block" id="maybe_add_ssl_handler"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.urls.maybe_add_ssl_handler">[docs]</a><span class="k">def</span> <span class="nf">maybe_add_ssl_handler</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">validate_certs</span><span class="p">):</span>
+    <span class="c"># FIXME: change the following to use the generic_urlparse function</span>
+    <span class="c">#        to remove the indexed references for &#39;parsed&#39;</span>
+    <span class="n">parsed</span> <span class="o">=</span> <span class="n">urlparse</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">parsed</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;https&#39;</span> <span class="ow">and</span> <span class="n">validate_certs</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">HAS_SSL</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NoSSLError</span><span class="p">(</span><span class="s">&#39;SSL validation is not available in your version of python. You can use validate_certs=False,&#39;</span>
+                             <span class="s">&#39; however this is unsafe and not recommended&#39;</span><span class="p">)</span>
+
+        <span class="c"># do the cert validation</span>
+        <span class="n">netloc</span> <span class="o">=</span> <span class="n">parsed</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s">&#39;@&#39;</span> <span class="ow">in</span> <span class="n">netloc</span><span class="p">:</span>
+            <span class="n">netloc</span> <span class="o">=</span> <span class="n">netloc</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;@&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s">&#39;:&#39;</span> <span class="ow">in</span> <span class="n">netloc</span><span class="p">:</span>
+            <span class="n">hostname</span><span class="p">,</span> <span class="n">port</span> <span class="o">=</span> <span class="n">netloc</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">port</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">port</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">hostname</span> <span class="o">=</span> <span class="n">netloc</span>
+            <span class="n">port</span> <span class="o">=</span> <span class="mi">443</span>
+        <span class="c"># create the SSL validation handler and</span>
+        <span class="c"># add it to the list of handlers</span>
+        <span class="k">return</span> <span class="n">SSLValidationHandler</span><span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="open_url"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.urls.open_url">[docs]</a><span class="k">def</span> <span class="nf">open_url</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">use_proxy</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="n">force</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">last_mod_time</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">validate_certs</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="n">url_username</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">url_password</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">http_agent</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">force_basic_auth</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">follow_redirects</span><span class="o">=</span><span class="s">&#39;urllib2&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Fetches a file from an HTTP/FTP server using urllib2</span>
+
+<span class="sd">    Does not require the module environment</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">handlers</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">ssl_handler</span> <span class="o">=</span> <span class="n">maybe_add_ssl_handler</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">validate_certs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ssl_handler</span><span class="p">:</span>
+        <span class="n">handlers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ssl_handler</span><span class="p">)</span>
+
+    <span class="c"># FIXME: change the following to use the generic_urlparse function</span>
+    <span class="c">#        to remove the indexed references for &#39;parsed&#39;</span>
+    <span class="n">parsed</span> <span class="o">=</span> <span class="n">urlparse</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">parsed</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s">&#39;ftp&#39;</span><span class="p">:</span>
+        <span class="n">username</span> <span class="o">=</span> <span class="n">url_username</span>
+
+        <span class="k">if</span> <span class="n">headers</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">headers</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="n">username</span><span class="p">:</span>
+            <span class="n">password</span> <span class="o">=</span> <span class="n">url_password</span>
+            <span class="n">netloc</span> <span class="o">=</span> <span class="n">parsed</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="s">&#39;@&#39;</span> <span class="ow">in</span> <span class="n">parsed</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">credentials</span><span class="p">,</span> <span class="n">netloc</span> <span class="o">=</span> <span class="n">parsed</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;@&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s">&#39;:&#39;</span> <span class="ow">in</span> <span class="n">credentials</span><span class="p">:</span>
+                <span class="n">username</span><span class="p">,</span> <span class="n">password</span> <span class="o">=</span> <span class="n">credentials</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">username</span> <span class="o">=</span> <span class="n">credentials</span>
+                <span class="n">password</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+
+            <span class="n">parsed</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">parsed</span><span class="p">)</span>
+            <span class="n">parsed</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">netloc</span>
+
+            <span class="c"># reconstruct url without credentials</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">urlunparse</span><span class="p">(</span><span class="n">parsed</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">username</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">force_basic_auth</span><span class="p">:</span>
+            <span class="n">passman</span> <span class="o">=</span> <span class="n">urllib_request</span><span class="o">.</span><span class="n">HTTPPasswordMgrWithDefaultRealm</span><span class="p">()</span>
+
+            <span class="c"># this creates a password manager</span>
+            <span class="n">passman</span><span class="o">.</span><span class="n">add_password</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="n">netloc</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
+
+            <span class="c"># because we have put None at the start it will always</span>
+            <span class="c"># use this username/password combination for  urls</span>
+            <span class="c"># for which `theurl` is a super-url</span>
+            <span class="n">authhandler</span> <span class="o">=</span> <span class="n">urllib_request</span><span class="o">.</span><span class="n">HTTPBasicAuthHandler</span><span class="p">(</span><span class="n">passman</span><span class="p">)</span>
+
+            <span class="c"># create the AuthHandler</span>
+            <span class="n">handlers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">authhandler</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">username</span> <span class="ow">and</span> <span class="n">force_basic_auth</span><span class="p">:</span>
+            <span class="n">headers</span><span class="p">[</span><span class="s">&quot;Authorization&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">basic_auth_header</span><span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">rc</span> <span class="o">=</span> <span class="n">netrc</span><span class="o">.</span><span class="n">netrc</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;NETRC&#39;</span><span class="p">))</span>
+                <span class="n">login</span> <span class="o">=</span> <span class="n">rc</span><span class="o">.</span><span class="n">authenticators</span><span class="p">(</span><span class="n">parsed</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+                <span class="n">login</span> <span class="o">=</span> <span class="bp">None</span>
+
+            <span class="k">if</span> <span class="n">login</span><span class="p">:</span>
+                <span class="n">username</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">password</span> <span class="o">=</span> <span class="n">login</span>
+                <span class="k">if</span> <span class="n">username</span> <span class="ow">and</span> <span class="n">password</span><span class="p">:</span>
+                    <span class="n">headers</span><span class="p">[</span><span class="s">&quot;Authorization&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">basic_auth_header</span><span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">use_proxy</span><span class="p">:</span>
+        <span class="n">proxyhandler</span> <span class="o">=</span> <span class="n">urllib_request</span><span class="o">.</span><span class="n">ProxyHandler</span><span class="p">({})</span>
+        <span class="n">handlers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">proxyhandler</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">HAS_SSLCONTEXT</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">validate_certs</span><span class="p">:</span>
+        <span class="c"># In 2.7.9, the default context validates certificates</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="n">SSLContext</span><span class="p">(</span><span class="n">ssl</span><span class="o">.</span><span class="n">PROTOCOL_SSLv23</span><span class="p">)</span>
+        <span class="n">context</span><span class="o">.</span><span class="n">options</span> <span class="o">|=</span> <span class="n">ssl</span><span class="o">.</span><span class="n">OP_NO_SSLv2</span>
+        <span class="n">context</span><span class="o">.</span><span class="n">options</span> <span class="o">|=</span> <span class="n">ssl</span><span class="o">.</span><span class="n">OP_NO_SSLv3</span>
+        <span class="n">context</span><span class="o">.</span><span class="n">verify_mode</span> <span class="o">=</span> <span class="n">ssl</span><span class="o">.</span><span class="n">CERT_NONE</span>
+        <span class="n">context</span><span class="o">.</span><span class="n">check_hostname</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="n">handlers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">urllib_request</span><span class="o">.</span><span class="n">HTTPSHandler</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">context</span><span class="p">))</span>
+
+    <span class="c"># pre-2.6 versions of python cannot use the custom https</span>
+    <span class="c"># handler, since the socket class is lacking create_connection.</span>
+    <span class="c"># Some python builds lack HTTPS support.</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">socket</span><span class="p">,</span> <span class="s">&#39;create_connection&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">CustomHTTPSHandler</span><span class="p">:</span>
+        <span class="n">handlers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">CustomHTTPSHandler</span><span class="p">)</span>
+
+    <span class="n">handlers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">RedirectHandlerFactory</span><span class="p">(</span><span class="n">follow_redirects</span><span class="p">,</span> <span class="n">validate_certs</span><span class="p">))</span>
+
+    <span class="n">opener</span> <span class="o">=</span> <span class="n">urllib_request</span><span class="o">.</span><span class="n">build_opener</span><span class="p">(</span><span class="o">*</span><span class="n">handlers</span><span class="p">)</span>
+    <span class="n">urllib_request</span><span class="o">.</span><span class="n">install_opener</span><span class="p">(</span><span class="n">opener</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">method</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">method</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;OPTIONS&#39;</span><span class="p">,</span><span class="s">&#39;GET&#39;</span><span class="p">,</span><span class="s">&#39;HEAD&#39;</span><span class="p">,</span><span class="s">&#39;POST&#39;</span><span class="p">,</span><span class="s">&#39;PUT&#39;</span><span class="p">,</span><span class="s">&#39;DELETE&#39;</span><span class="p">,</span><span class="s">&#39;TRACE&#39;</span><span class="p">,</span><span class="s">&#39;CONNECT&#39;</span><span class="p">,</span><span class="s">&#39;PATCH&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ConnectionError</span><span class="p">(</span><span class="s">&#39;invalid HTTP request method; </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">method</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>
+        <span class="n">request</span> <span class="o">=</span> <span class="n">RequestWithMethod</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">method</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="n">data</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">request</span> <span class="o">=</span> <span class="n">urllib_request</span><span class="o">.</span><span class="n">Request</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+    <span class="c"># add the custom agent header, to help prevent issues</span>
+    <span class="c"># with sites that block the default urllib agent string</span>
+    <span class="n">request</span><span class="o">.</span><span class="n">add_header</span><span class="p">(</span><span class="s">&#39;User-agent&#39;</span><span class="p">,</span> <span class="n">http_agent</span><span class="p">)</span>
+
+    <span class="c"># if we&#39;re ok with getting a 304, set the timestamp in the</span>
+    <span class="c"># header, otherwise make sure we don&#39;t get a cached copy</span>
+    <span class="k">if</span> <span class="n">last_mod_time</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">force</span><span class="p">:</span>
+        <span class="n">tstamp</span> <span class="o">=</span> <span class="n">last_mod_time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%a, </span><span class="si">%d</span><span class="s"> %b %Y %H:%M:%S +0000&#39;</span><span class="p">)</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">add_header</span><span class="p">(</span><span class="s">&#39;If-Modified-Since&#39;</span><span class="p">,</span> <span class="n">tstamp</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">add_header</span><span class="p">(</span><span class="s">&#39;cache-control&#39;</span><span class="p">,</span> <span class="s">&#39;no-cache&#39;</span><span class="p">)</span>
+
+    <span class="c"># user defined headers now, which may override things we&#39;ve set above</span>
+    <span class="k">if</span> <span class="n">headers</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">headers</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;headers provided to fetch_url() must be a dict&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">header</span> <span class="ow">in</span> <span class="n">headers</span><span class="p">:</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">add_header</span><span class="p">(</span><span class="n">header</span><span class="p">,</span> <span class="n">headers</span><span class="p">[</span><span class="n">header</span><span class="p">])</span>
+
+    <span class="n">urlopen_args</span> <span class="o">=</span> <span class="p">[</span><span class="n">request</span><span class="p">,</span> <span class="bp">None</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">0</span><span class="p">):</span>
+        <span class="c"># urlopen in python prior to 2.6.0 did not</span>
+        <span class="c"># have a timeout parameter</span>
+        <span class="n">urlopen_args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
+
+    <span class="n">r</span> <span class="o">=</span> <span class="n">urllib_request</span><span class="o">.</span><span class="n">urlopen</span><span class="p">(</span><span class="o">*</span><span class="n">urlopen_args</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">r</span></div>
+
+<span class="c">#</span>
+<span class="c"># Module-related functions</span>
+<span class="c">#</span>
+
+
+<div class="viewcode-block" id="basic_auth_header"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.urls.basic_auth_header">[docs]</a><span class="k">def</span> <span class="nf">basic_auth_header</span><span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s">&quot;Basic </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="url_argument_spec"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.urls.url_argument_spec">[docs]</a><span class="k">def</span> <span class="nf">url_argument_spec</span><span class="p">():</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Creates an argument spec that can be used with any module</span>
+<span class="sd">    that will be requesting content via urllib/urllib2</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(),</span>
+        <span class="n">force</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;no&#39;</span><span class="p">,</span> <span class="n">aliases</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;thirsty&#39;</span><span class="p">],</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">),</span>
+        <span class="n">http_agent</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;ansible-httpget&#39;</span><span class="p">),</span>
+        <span class="n">use_proxy</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;yes&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">),</span>
+        <span class="n">validate_certs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;yes&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">),</span>
+        <span class="n">url_username</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">),</span>
+        <span class="n">url_password</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">),</span>
+        <span class="n">force_basic_auth</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s">&#39;no&#39;</span><span class="p">),</span>
+
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="fetch_url"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.urls.fetch_url">[docs]</a><span class="k">def</span> <span class="nf">fetch_url</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+              <span class="n">use_proxy</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">last_mod_time</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Fetches a file from an HTTP/FTP server using urllib2.  Requires the module environment</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">HAS_URLPARSE</span><span class="p">:</span>
+        <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&#39;urlparse is not installed&#39;</span><span class="p">)</span>
+
+    <span class="c"># Get validate_certs from the module params</span>
+    <span class="n">validate_certs</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;validate_certs&#39;</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+
+    <span class="n">username</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;url_username&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">password</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;url_password&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">http_agent</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;http_agent&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+    <span class="n">force_basic_auth</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;force_basic_auth&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+
+    <span class="n">follow_redirects</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;follow_redirects&#39;</span><span class="p">,</span> <span class="s">&#39;urllib2&#39;</span><span class="p">)</span>
+
+    <span class="n">r</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">info</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">open_url</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
+                     <span class="n">use_proxy</span><span class="o">=</span><span class="n">use_proxy</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="n">force</span><span class="p">,</span> <span class="n">last_mod_time</span><span class="o">=</span><span class="n">last_mod_time</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+                     <span class="n">validate_certs</span><span class="o">=</span><span class="n">validate_certs</span><span class="p">,</span> <span class="n">url_username</span><span class="o">=</span><span class="n">username</span><span class="p">,</span>
+                     <span class="n">url_password</span><span class="o">=</span><span class="n">password</span><span class="p">,</span> <span class="n">http_agent</span><span class="o">=</span><span class="n">http_agent</span><span class="p">,</span> <span class="n">force_basic_auth</span><span class="o">=</span><span class="n">force_basic_auth</span><span class="p">,</span>
+                     <span class="n">follow_redirects</span><span class="o">=</span><span class="n">follow_redirects</span><span class="p">)</span>
+        <span class="n">info</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">info</span><span class="p">())</span>
+        <span class="n">info</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;OK (</span><span class="si">%s</span><span class="s"> bytes)&quot;</span> <span class="o">%</span> <span class="n">r</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;Content-Length&#39;</span><span class="p">,</span> <span class="s">&#39;unknown&#39;</span><span class="p">),</span> <span class="n">url</span><span class="o">=</span><span class="n">r</span><span class="o">.</span><span class="n">geturl</span><span class="p">(),</span> <span class="n">status</span><span class="o">=</span><span class="n">r</span><span class="o">.</span><span class="n">code</span><span class="p">))</span>
+    <span class="k">except</span> <span class="n">NoSSLError</span><span class="p">:</span>
+        <span class="n">e</span> <span class="o">=</span> <span class="n">get_exception</span><span class="p">()</span>
+        <span class="n">distribution</span> <span class="o">=</span> <span class="n">get_distribution</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">distribution</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">distribution</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;redhat&#39;</span><span class="p">:</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">. You can also install python-ssl from EPEL&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+    <span class="k">except</span> <span class="p">(</span><span class="n">ConnectionError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+        <span class="n">e</span> <span class="o">=</span> <span class="n">get_exception</span><span class="p">()</span>
+        <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+    <span class="k">except</span> <span class="n">urllib_error</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">:</span>
+        <span class="n">e</span> <span class="o">=</span> <span class="n">get_exception</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">body</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="n">body</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="n">info</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">body</span><span class="o">=</span><span class="n">body</span><span class="p">,</span> <span class="o">**</span><span class="n">e</span><span class="o">.</span><span class="n">info</span><span class="p">()))</span>
+        <span class="n">info</span><span class="p">[</span><span class="s">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="n">code</span>
+    <span class="k">except</span> <span class="n">urllib_error</span><span class="o">.</span><span class="n">URLError</span><span class="p">:</span>
+        <span class="n">e</span> <span class="o">=</span> <span class="n">get_exception</span><span class="p">()</span>
+        <span class="n">code</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="s">&#39;code&#39;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">info</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;Request failed: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">status</span><span class="o">=</span><span class="n">code</span><span class="p">))</span>
+    <span class="k">except</span> <span class="n">socket</span><span class="o">.</span><span class="n">error</span><span class="p">:</span>
+        <span class="n">e</span> <span class="o">=</span> <span class="n">get_exception</span><span class="p">()</span>
+        <span class="n">info</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;Connection failure: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">status</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">e</span> <span class="o">=</span> <span class="n">get_exception</span><span class="p">()</span>
+        <span class="n">info</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;An unknown error occurred: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">status</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">r</span><span class="p">,</span> <span class="n">info</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

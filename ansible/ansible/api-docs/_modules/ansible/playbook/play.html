@@ -1,0 +1,543 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.playbook.play &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="ansible.playbook" href="../playbook.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../playbook.html">ansible.playbook</a> &raquo;</li>
+      
+    <li>ansible.playbook.play</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.playbook.play</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">string_types</span>
+
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleParserError</span>
+
+<span class="kn">from</span> <span class="nn">ansible.playbook.attribute</span> <span class="kn">import</span> <span class="n">FieldAttribute</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.base</span> <span class="kn">import</span> <span class="n">Base</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.become</span> <span class="kn">import</span> <span class="n">Become</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.block</span> <span class="kn">import</span> <span class="n">Block</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.helpers</span> <span class="kn">import</span> <span class="n">load_list_of_blocks</span><span class="p">,</span> <span class="n">load_list_of_roles</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.role</span> <span class="kn">import</span> <span class="n">Role</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.taggable</span> <span class="kn">import</span> <span class="n">Taggable</span>
+<span class="kn">from</span> <span class="nn">ansible.vars</span> <span class="kn">import</span> <span class="n">preprocess_vars</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;Play&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="Play"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.play.Play">[docs]</a><span class="k">class</span> <span class="nc">Play</span><span class="p">(</span><span class="n">Base</span><span class="p">,</span> <span class="n">Taggable</span><span class="p">,</span> <span class="n">Become</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A play is a language feature that represents a list of roles and/or</span>
+<span class="sd">    task/handler blocks to execute on a given set of hosts.</span>
+
+<span class="sd">    Usage:</span>
+
+<span class="sd">       Play.load(datastructure) -&gt; Play</span>
+<span class="sd">       Play.something(...)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c"># =================================================================================</span>
+    <span class="c"># Connection-Related Attributes</span>
+
+    <span class="c"># TODO: generalize connection</span>
+    <span class="n">_accelerate</span>          <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">always_post_validate</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">_accelerate_ipv6</span>     <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">always_post_validate</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">_accelerate_port</span>     <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">5099</span><span class="p">,</span> <span class="n">always_post_validate</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="c"># Connection</span>
+    <span class="n">_gather_facts</span>        <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">always_post_validate</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">_gather_subset</span>       <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;barelist&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">always_post_validate</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">_hosts</span>               <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;list&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">listof</span><span class="o">=</span><span class="n">string_types</span><span class="p">,</span> <span class="n">always_post_validate</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">_name</span>                <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">always_post_validate</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="c"># Variable Attributes</span>
+    <span class="n">_vars_files</span>          <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;list&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[],</span> <span class="n">priority</span><span class="o">=</span><span class="mi">99</span><span class="p">)</span>
+    <span class="n">_vars_prompt</span>         <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;list&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[],</span> <span class="n">always_post_validate</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">_vault_password</span>      <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">,</span> <span class="n">always_post_validate</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="c"># Role Attributes</span>
+    <span class="n">_roles</span>               <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;list&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[],</span> <span class="n">priority</span><span class="o">=</span><span class="mi">90</span><span class="p">)</span>
+
+    <span class="c"># Block (Task) Lists Attributes</span>
+    <span class="n">_handlers</span>            <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;list&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[])</span>
+    <span class="n">_pre_tasks</span>           <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;list&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[])</span>
+    <span class="n">_post_tasks</span>          <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;list&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[])</span>
+    <span class="n">_tasks</span>               <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;list&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[])</span>
+
+    <span class="c"># Flag/Setting Attributes</span>
+    <span class="n">_any_errors_fatal</span>    <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">always_post_validate</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">_force_handlers</span>      <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">,</span> <span class="n">always_post_validate</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">_max_fail_percentage</span> <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;percent&#39;</span><span class="p">,</span> <span class="n">always_post_validate</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">_serial</span>              <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">,</span>  <span class="n">always_post_validate</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">_strategy</span>            <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s">&#39;linear&#39;</span><span class="p">,</span> <span class="n">always_post_validate</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="c"># =================================================================================</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Play</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_included_path</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ROLE_CACHE</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Play.get_name"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.play.Play.get_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; return the name of the Play &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">)</span></div>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Play.load"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.play.Play.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="s">&#39;name&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span> <span class="ow">or</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="s">&#39;hosts&#39;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;hosts&#39;</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">data</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;hosts&#39;</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                 <span class="n">data</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;hosts&#39;</span><span class="p">]</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">Play</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">p</span><span class="o">.</span><span class="n">load_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="n">variable_manager</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Play.preprocess_data"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.play.Play.preprocess_data">[docs]</a>    <span class="k">def</span> <span class="nf">preprocess_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ds</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Adjusts play datastructure to cleanup old/legacy items</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+
+        <span class="c"># The use of &#39;user&#39; in the Play datastructure was deprecated to</span>
+        <span class="c"># line up with the same change for Tasks, due to the fact that</span>
+        <span class="c"># &#39;user&#39; conflicted with the user module.</span>
+        <span class="k">if</span> <span class="s">&#39;user&#39;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+            <span class="c"># this should never happen, but error out with a helpful message</span>
+            <span class="c"># to the user if it does...</span>
+            <span class="k">if</span> <span class="s">&#39;remote_user&#39;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&quot;both &#39;user&#39; and &#39;remote_user&#39; are set for </span><span class="si">%s</span><span class="s">.&quot;</span>
+                        <span class="s">&quot; The use of &#39;user&#39; is deprecated, and should be removed&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_name</span><span class="p">(),</span> <span class="n">obj</span><span class="o">=</span><span class="n">ds</span><span class="p">)</span>
+
+            <span class="n">ds</span><span class="p">[</span><span class="s">&#39;remote_user&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s">&#39;user&#39;</span><span class="p">]</span>
+            <span class="k">del</span> <span class="n">ds</span><span class="p">[</span><span class="s">&#39;user&#39;</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">Play</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">preprocess_data</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_load_hosts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">ds</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Loads the hosts from the given datastructure, which might be a list</span>
+<span class="sd">        or a simple string. We also switch integers in this list back to strings,</span>
+<span class="sd">        as the YAML parser will turn things that look like numbers into numbers.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="p">(</span><span class="n">string_types</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="p">[</span> <span class="n">ds</span> <span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&quot;&#39;hosts&#39; must be specified as a list or a single pattern&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">ds</span><span class="p">)</span>
+
+        <span class="c"># YAML parsing of things that look like numbers may have</span>
+        <span class="c"># resulted in integers showing up in the list, so convert</span>
+        <span class="c"># them back to strings to prevent problems</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span><span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ds</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                <span class="n">ds</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">item</span>
+
+        <span class="k">return</span> <span class="n">ds</span>
+
+    <span class="k">def</span> <span class="nf">_load_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">ds</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Loads a list of blocks from a list which may be mixed tasks/blocks.</span>
+<span class="sd">        Bare tasks outside of a block are given an implicit block.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">load_list_of_blocks</span><span class="p">(</span><span class="n">ds</span><span class="o">=</span><span class="n">ds</span><span class="p">,</span> <span class="n">play</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AssertionError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&quot;A malformed block was encountered.&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ds</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_load_pre_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">ds</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Loads a list of blocks from a list which may be mixed tasks/blocks.</span>
+<span class="sd">        Bare tasks outside of a block are given an implicit block.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">load_list_of_blocks</span><span class="p">(</span><span class="n">ds</span><span class="o">=</span><span class="n">ds</span><span class="p">,</span> <span class="n">play</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AssertionError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&quot;A malformed block was encountered.&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ds</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_load_post_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">ds</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Loads a list of blocks from a list which may be mixed tasks/blocks.</span>
+<span class="sd">        Bare tasks outside of a block are given an implicit block.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">load_list_of_blocks</span><span class="p">(</span><span class="n">ds</span><span class="o">=</span><span class="n">ds</span><span class="p">,</span> <span class="n">play</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AssertionError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&quot;A malformed block was encountered.&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ds</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_load_handlers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">ds</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Loads a list of blocks from a list which may be mixed handlers/blocks.</span>
+<span class="sd">        Bare handlers outside of a block are given an implicit block.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">load_list_of_blocks</span><span class="p">(</span><span class="n">ds</span><span class="o">=</span><span class="n">ds</span><span class="p">,</span> <span class="n">play</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">use_handlers</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AssertionError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&quot;A malformed block was encountered.&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ds</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_load_roles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">ds</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Loads and returns a list of RoleInclude objects from the datastructure</span>
+<span class="sd">        list of role definitions and creates the Role from those objects</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="n">ds</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">role_includes</span> <span class="o">=</span> <span class="n">load_list_of_roles</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">play</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AssertionError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&quot;A malformed role declaration was encountered.&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ds</span><span class="p">)</span>
+
+        <span class="n">roles</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">ri</span> <span class="ow">in</span> <span class="n">role_includes</span><span class="p">:</span>
+            <span class="n">roles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Role</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">ri</span><span class="p">,</span> <span class="n">play</span><span class="o">=</span><span class="bp">self</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">roles</span>
+
+    <span class="k">def</span> <span class="nf">_load_vars_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">ds</span><span class="p">):</span>
+        <span class="n">new_ds</span> <span class="o">=</span> <span class="n">preprocess_vars</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+        <span class="n">vars_prompts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">prompt_data</span> <span class="ow">in</span> <span class="n">new_ds</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s">&#39;name&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prompt_data</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">deprecated</span><span class="p">(</span><span class="s">&quot;Using the &#39;short form&#39; for vars_prompt has been deprecated&quot;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">vname</span><span class="p">,</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">prompt_data</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                    <span class="n">vars_prompts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span>
+                        <span class="n">name</span>      <span class="o">=</span> <span class="n">vname</span><span class="p">,</span>
+                        <span class="n">prompt</span>    <span class="o">=</span> <span class="n">prompt</span><span class="p">,</span>
+                        <span class="n">default</span>   <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+                        <span class="n">private</span>   <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+                        <span class="n">confirm</span>   <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+                        <span class="n">encrypt</span>   <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+                        <span class="n">salt_size</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+                        <span class="n">salt</span>      <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+                    <span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">vars_prompts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">prompt_data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">vars_prompts</span>
+
+    <span class="k">def</span> <span class="nf">_compile_roles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Handles the role compilation step, returning a flat list of tasks</span>
+<span class="sd">        with the lowest level dependencies first. For example, if a role R</span>
+<span class="sd">        has a dependency D1, which also has a dependency D2, the tasks from</span>
+<span class="sd">        D2 are merged first, followed by D1, and lastly by the tasks from</span>
+<span class="sd">        the parent role R last. This is done for all roles in the Play.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">block_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">roles</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">roles</span><span class="p">:</span>
+                <span class="n">block_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">play</span><span class="o">=</span><span class="bp">self</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">block_list</span>
+
+<div class="viewcode-block" id="Play.compile_roles_handlers"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.play.Play.compile_roles_handlers">[docs]</a>    <span class="k">def</span> <span class="nf">compile_roles_handlers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Handles the role handler compilation step, returning a flat list of Handlers</span>
+<span class="sd">        This is done for all roles in the Play.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">block_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">roles</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">roles</span><span class="p">:</span>
+                <span class="n">block_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">get_handler_blocks</span><span class="p">())</span>
+
+        <span class="k">return</span> <span class="n">block_list</span></div>
+
+<div class="viewcode-block" id="Play.compile"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.play.Play.compile">[docs]</a>    <span class="k">def</span> <span class="nf">compile</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Compiles and returns the task list for this play, compiled from the</span>
+<span class="sd">        roles (which are themselves compiled recursively) and/or the list of</span>
+<span class="sd">        tasks specified in the play.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c"># create a block containing a single flush handlers meta</span>
+        <span class="c"># task, so we can be sure to run handlers at certain points</span>
+        <span class="c"># of the playbook execution</span>
+        <span class="n">flush_block</span> <span class="o">=</span> <span class="n">Block</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
+            <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;meta&#39;</span><span class="p">:</span> <span class="s">&#39;flush_handlers&#39;</span><span class="p">},</span>
+            <span class="n">play</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+            <span class="n">variable_manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="p">,</span>
+            <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span>
+        <span class="p">)</span>
+
+        <span class="n">block_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">block_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pre_tasks</span><span class="p">)</span>
+        <span class="n">block_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">flush_block</span><span class="p">)</span>
+        <span class="n">block_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_compile_roles</span><span class="p">())</span>
+        <span class="n">block_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">)</span>
+        <span class="n">block_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">flush_block</span><span class="p">)</span>
+        <span class="n">block_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">post_tasks</span><span class="p">)</span>
+        <span class="n">block_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">flush_block</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">block_list</span></div>
+
+<div class="viewcode-block" id="Play.get_vars"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.play.Play.get_vars">[docs]</a>    <span class="k">def</span> <span class="nf">get_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vars</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Play.get_vars_files"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.play.Play.get_vars_files">[docs]</a>    <span class="k">def</span> <span class="nf">get_vars_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vars_files</span></div>
+
+<div class="viewcode-block" id="Play.get_handlers"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.play.Play.get_handlers">[docs]</a>    <span class="k">def</span> <span class="nf">get_handlers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">handlers</span><span class="p">[:]</span></div>
+
+<div class="viewcode-block" id="Play.get_roles"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.play.Play.get_roles">[docs]</a>    <span class="k">def</span> <span class="nf">get_roles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">roles</span><span class="p">[:]</span></div>
+
+<div class="viewcode-block" id="Play.get_tasks"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.play.Play.get_tasks">[docs]</a>    <span class="k">def</span> <span class="nf">get_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">tasklist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_tasks</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">post_tasks</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">Block</span><span class="p">):</span>
+                <span class="n">tasklist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">block</span> <span class="o">+</span> <span class="n">task</span><span class="o">.</span><span class="n">rescue</span> <span class="o">+</span> <span class="n">task</span><span class="o">.</span><span class="n">always</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">tasklist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">tasklist</span></div>
+
+<div class="viewcode-block" id="Play.serialize"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.play.Play.serialize">[docs]</a>    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">Play</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">serialize</span><span class="p">()</span>
+
+        <span class="n">roles</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">role</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_roles</span><span class="p">():</span>
+            <span class="n">roles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">role</span><span class="o">.</span><span class="n">serialize</span><span class="p">())</span>
+        <span class="n">data</span><span class="p">[</span><span class="s">&#39;roles&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">roles</span>
+        <span class="n">data</span><span class="p">[</span><span class="s">&#39;included_path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_included_path</span>
+
+        <span class="k">return</span> <span class="n">data</span></div>
+
+<div class="viewcode-block" id="Play.deserialize"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.play.Play.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Play</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_included_path</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;included_path&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s">&#39;roles&#39;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">role_data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;roles&#39;</span><span class="p">,</span> <span class="p">[])</span>
+            <span class="n">roles</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">role_data</span><span class="p">:</span>
+                <span class="n">r</span> <span class="o">=</span> <span class="n">Role</span><span class="p">()</span>
+                <span class="n">r</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">role</span><span class="p">)</span>
+                <span class="n">roles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;roles&#39;</span><span class="p">,</span> <span class="n">roles</span><span class="p">)</span>
+            <span class="k">del</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;roles&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Play.copy"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.play.Play.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">new_me</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">Play</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">new_me</span><span class="o">.</span><span class="n">ROLE_CACHE</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ROLE_CACHE</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">new_me</span><span class="o">.</span><span class="n">_included_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_included_path</span>
+        <span class="k">return</span> <span class="n">new_me</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

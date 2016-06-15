@@ -1,0 +1,287 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.plugins.shell.fish &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="ansible.plugins.shell" href="../shell.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../../plugins.html">ansible.plugins</a> &raquo;</li>
+      
+          <li><a href="../shell.html">ansible.plugins.shell</a> &raquo;</li>
+      
+    <li>ansible.plugins.shell.fish</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.plugins.shell.fish</h1><div class="highlight"><pre>
+<span class="c"># (c) 2014, Chris Church &lt;chris@ninemoreminutes.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">pipes</span>
+<span class="kn">from</span> <span class="nn">ansible.plugins.shell.sh</span> <span class="kn">import</span> <span class="n">ShellModule</span> <span class="k">as</span> <span class="n">ShModule</span>
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">text_type</span>
+
+<div class="viewcode-block" id="ShellModule"><a class="viewcode-back" href="../../../../rst/ansible.plugins.shell.html#ansible.plugins.shell.fish.ShellModule">[docs]</a><span class="k">class</span> <span class="nc">ShellModule</span><span class="p">(</span><span class="n">ShModule</span><span class="p">):</span>
+
+    <span class="c"># Common shell filenames that this plugin handles</span>
+    <span class="n">COMPATIBLE_SHELLS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">((</span><span class="s">&#39;fish&#39;</span><span class="p">,))</span>
+    <span class="c"># Family of shells this has.  Must match the filename without extension</span>
+    <span class="n">SHELL_FAMILY</span> <span class="o">=</span> <span class="s">&#39;fish&#39;</span>
+
+    <span class="n">_SHELL_EMBEDDED_PY_EOL</span> <span class="o">=</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span>
+    <span class="n">_SHELL_REDIRECT_ALLNULL</span> <span class="o">=</span> <span class="s">&#39;&gt; /dev/null 2&gt;&amp;1&#39;</span>
+    <span class="n">_SHELL_AND</span> <span class="o">=</span> <span class="s">&#39;; and&#39;</span>
+    <span class="n">_SHELL_OR</span> <span class="o">=</span> <span class="s">&#39;; or&#39;</span>
+    <span class="n">_SHELL_SUB_LEFT</span> <span class="o">=</span> <span class="s">&#39;(&#39;</span>
+    <span class="n">_SHELL_SUB_RIGHT</span> <span class="o">=</span> <span class="s">&#39;)&#39;</span>
+    <span class="n">_SHELL_GROUP_LEFT</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">_SHELL_GROUP_RIGHT</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+
+<div class="viewcode-block" id="ShellModule.env_prefix"><a class="viewcode-back" href="../../../../rst/ansible.plugins.shell.html#ansible.plugins.shell.fish.ShellModule.env_prefix">[docs]</a>    <span class="k">def</span> <span class="nf">env_prefix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">env</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;set -lx </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s">;&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">pipes</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">text_type</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">env</span><span class="o">.</span><span class="n">items</span><span class="p">()])</span></div>
+
+<div class="viewcode-block" id="ShellModule.build_module_command"><a class="viewcode-back" href="../../../../rst/ansible.plugins.shell.html#ansible.plugins.shell.fish.ShellModule.build_module_command">[docs]</a>    <span class="k">def</span> <span class="nf">build_module_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">env_string</span><span class="p">,</span> <span class="n">shebang</span><span class="p">,</span> <span class="n">cmd</span><span class="p">,</span> <span class="n">arg_path</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">rm_tmp</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="c"># don&#39;t quote the cmd if it&#39;s an empty string, because this will break pipelining mode</span>
+        <span class="k">if</span> <span class="n">cmd</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">!=</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="n">pipes</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+        <span class="n">cmd_parts</span> <span class="o">=</span> <span class="p">[</span><span class="n">env_string</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span> <span class="n">shebang</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot;#!&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span> <span class="n">cmd</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">arg_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">cmd_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arg_path</span><span class="p">)</span>
+        <span class="n">new_cmd</span> <span class="o">=</span> <span class="s">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cmd_parts</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">rm_tmp</span><span class="p">:</span>
+            <span class="n">new_cmd</span> <span class="o">=</span> <span class="s">&#39;begin ; </span><span class="si">%s</span><span class="s">; rm -rf &quot;</span><span class="si">%s</span><span class="s">&quot; </span><span class="si">%s</span><span class="s"> ; end&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">new_cmd</span><span class="p">,</span> <span class="n">rm_tmp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SHELL_REDIRECT_ALLNULL</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_cmd</span></div>
+
+<div class="viewcode-block" id="ShellModule.checksum"><a class="viewcode-back" href="../../../../rst/ansible.plugins.shell.html#ansible.plugins.shell.fish.ShellModule.checksum">[docs]</a>    <span class="k">def</span> <span class="nf">checksum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">python_interp</span><span class="p">):</span>
+        <span class="c"># The following test is fish-compliant.</span>
+        <span class="c">#</span>
+        <span class="c"># In the following test, each condition is a check and logical</span>
+        <span class="c"># comparison (or or and) that sets the rc value.  Every check is run so</span>
+        <span class="c"># the last check in the series to fail will be the rc that is</span>
+        <span class="c"># returned.</span>
+        <span class="c">#</span>
+        <span class="c"># If a check fails we error before invoking the hash functions because</span>
+        <span class="c"># hash functions may successfully take the hash of a directory on BSDs</span>
+        <span class="c"># (UFS filesystem?) which is not what the rest of the ansible code</span>
+        <span class="c"># expects</span>
+        <span class="c">#</span>
+        <span class="c"># If all of the available hashing methods fail we fail with an rc of</span>
+        <span class="c"># 0.  This logic is added to the end of the cmd at the bottom of this</span>
+        <span class="c"># function.</span>
+
+        <span class="c"># Return codes:</span>
+        <span class="c"># checksum: success!</span>
+        <span class="c"># 0: Unknown error</span>
+        <span class="c"># 1: Remote file does not exist</span>
+        <span class="c"># 2: No read permissions on the file</span>
+        <span class="c"># 3: File is a directory</span>
+        <span class="c"># 4: No python interpreter</span>
+
+        <span class="c"># Quoting gets complex here.  We&#39;re writing a python string that&#39;s</span>
+        <span class="c"># used by a variety of shells on the remote host to invoke a python</span>
+        <span class="c"># &quot;one-liner&quot;.</span>
+        <span class="n">shell_escaped_path</span> <span class="o">=</span> <span class="n">pipes</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">test</span> <span class="o">=</span> <span class="s">&quot;set rc flag; [ -r </span><span class="si">%(p)s</span><span class="s"> ] </span><span class="si">%(shell_or)s</span><span class="s"> set rc 2; [ -f </span><span class="si">%(p)s</span><span class="s"> ] </span><span class="si">%(shell_or)s</span><span class="s"> set rc 1; [ -d </span><span class="si">%(p)s</span><span class="s"> ] </span><span class="si">%(shell_and)s</span><span class="s"> set rc 3; </span><span class="si">%(i)s</span><span class="s"> -V 2&gt;/dev/null </span><span class="si">%(shell_or)s</span><span class="s"> set rc 4; [ x</span><span class="se">\&quot;</span><span class="s">$rc</span><span class="se">\&quot;</span><span class="s"> != </span><span class="se">\&quot;</span><span class="s">xflag</span><span class="se">\&quot;</span><span class="s"> ] </span><span class="si">%(shell_and)s</span><span class="s"> echo </span><span class="se">\&quot;</span><span class="s">$rc  </span><span class="se">\&quot;</span><span class="si">%(p)s</span><span class="s"> </span><span class="si">%(shell_and)s</span><span class="s"> exit 0&quot;</span> <span class="o">%</span> <span class="nb">dict</span><span class="p">(</span><span class="n">p</span><span class="o">=</span><span class="n">shell_escaped_path</span><span class="p">,</span> <span class="n">i</span><span class="o">=</span><span class="n">python_interp</span><span class="p">,</span> <span class="n">shell_and</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_SHELL_AND</span><span class="p">,</span> <span class="n">shell_or</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_SHELL_OR</span><span class="p">)</span>
+        <span class="n">csums</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s">u&quot;({0} -c &#39;import hashlib; BLOCKSIZE = 65536; hasher = hashlib.sha1();{2}afile = open(</span><span class="se">\&quot;</span><span class="s">&#39;{1}&#39;</span><span class="se">\&quot;</span><span class="s">, </span><span class="se">\&quot;</span><span class="s">rb</span><span class="se">\&quot;</span><span class="s">){2}buf = afile.read(BLOCKSIZE){2}while len(buf) &gt; 0:{2}</span><span class="se">\t</span><span class="s">hasher.update(buf){2}</span><span class="se">\t</span><span class="s">buf = afile.read(BLOCKSIZE){2}afile.close(){2}print(hasher.hexdigest())&#39; 2&gt;/dev/null)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">python_interp</span><span class="p">,</span> <span class="n">shell_escaped_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SHELL_EMBEDDED_PY_EOL</span><span class="p">),</span>      <span class="c"># Python &gt; 2.4 (including python3)</span>
+            <span class="s">u&quot;({0} -c &#39;import sha; BLOCKSIZE = 65536; hasher = sha.sha();{2}afile = open(</span><span class="se">\&quot;</span><span class="s">&#39;{1}&#39;</span><span class="se">\&quot;</span><span class="s">, </span><span class="se">\&quot;</span><span class="s">rb</span><span class="se">\&quot;</span><span class="s">){2}buf = afile.read(BLOCKSIZE){2}while len(buf) &gt; 0:{2}</span><span class="se">\t</span><span class="s">hasher.update(buf){2}</span><span class="se">\t</span><span class="s">buf = afile.read(BLOCKSIZE){2}afile.close(){2}print(hasher.hexdigest())&#39; 2&gt;/dev/null)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">python_interp</span><span class="p">,</span> <span class="n">shell_escaped_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SHELL_EMBEDDED_PY_EOL</span><span class="p">),</span>      <span class="c"># Python == 2.4</span>
+        <span class="p">]</span>
+
+        <span class="n">cmd</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot; </span><span class="si">%s</span><span class="s"> &quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SHELL_OR</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">csums</span><span class="p">)</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">; </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s"> (echo </span><span class="se">\&#39;</span><span class="s">0  </span><span class="se">\&#39;</span><span class="si">%s</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">cmd</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SHELL_OR</span><span class="p">,</span> <span class="n">shell_escaped_path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cmd</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

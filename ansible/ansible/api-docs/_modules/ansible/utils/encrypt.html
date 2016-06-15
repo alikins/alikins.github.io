@@ -1,0 +1,340 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.utils.encrypt &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>ansible.utils.encrypt</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.utils.encrypt</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">stat</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">import</span> <span class="nn">multiprocessing</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="n">PASSLIB_AVAILABLE</span> <span class="o">=</span> <span class="bp">False</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">passlib.hash</span>
+    <span class="n">PASSLIB_AVAILABLE</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+<span class="n">KEYCZAR_AVAILABLE</span><span class="o">=</span><span class="bp">False</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c"># some versions of pycrypto may not have this?</span>
+        <span class="kn">from</span> <span class="nn">Crypto.pct_warnings</span> <span class="kn">import</span> <span class="n">PowmInsecureWarning</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="n">PowmInsecureWarning</span> <span class="o">=</span> <span class="ne">RuntimeWarning</span>
+
+    <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">(</span><span class="n">record</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">warning_handler</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s">&quot;error&quot;</span><span class="p">,</span> <span class="n">PowmInsecureWarning</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">keyczar.errors</span> <span class="kn">as</span> <span class="nn">key_errors</span>
+            <span class="kn">from</span> <span class="nn">keyczar.keys</span> <span class="kn">import</span> <span class="n">AesKey</span>
+        <span class="k">except</span> <span class="n">PowmInsecureWarning</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">system_warning</span><span class="p">(</span>
+                <span class="s">&quot;The version of gmp you have installed has a known issue regarding &quot;</span> <span class="o">+</span> \
+                <span class="s">&quot;timing vulnerabilities when used with pycrypto. &quot;</span> <span class="o">+</span> \
+                <span class="s">&quot;If possible, you should update it (i.e. yum update gmp).&quot;</span>
+            <span class="p">)</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">resetwarnings</span><span class="p">()</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s">&quot;ignore&quot;</span><span class="p">)</span>
+            <span class="kn">import</span> <span class="nn">keyczar.errors</span> <span class="kn">as</span> <span class="nn">key_errors</span>
+            <span class="kn">from</span> <span class="nn">keyczar.keys</span> <span class="kn">import</span> <span class="n">AesKey</span>
+        <span class="n">KEYCZAR_AVAILABLE</span><span class="o">=</span><span class="bp">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;do_encrypt&#39;</span><span class="p">]</span>
+
+<span class="n">_LOCK</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="do_encrypt"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.encrypt.do_encrypt">[docs]</a><span class="k">def</span> <span class="nf">do_encrypt</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">encrypt</span><span class="p">,</span> <span class="n">salt_size</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">salt</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">PASSLIB_AVAILABLE</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">crypt</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">passlib</span><span class="o">.</span><span class="n">hash</span><span class="p">,</span> <span class="n">encrypt</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;passlib does not support &#39;</span><span class="si">%s</span><span class="s">&#39; algorithm&quot;</span> <span class="o">%</span> <span class="n">encrypt</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">salt_size</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">crypt</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">salt_size</span><span class="o">=</span><span class="n">salt_size</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">salt</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">crypt</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">salt</span><span class="o">=</span><span class="n">salt</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">crypt</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;passlib must be installed to encrypt vars_prompt values&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">result</span></div>
+
+<span class="k">def</span> <span class="nf">key_for_hostname</span><span class="p">(</span><span class="n">hostname</span><span class="p">):</span>
+    <span class="c"># fireball mode is an implementation of ansible firing up zeromq via SSH</span>
+    <span class="c"># to use no persistent daemons or key management</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">KEYCZAR_AVAILABLE</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;python-keyczar must be installed on the control machine to use accelerated modes&quot;</span><span class="p">)</span>
+
+    <span class="n">key_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">ACCELERATE_KEYS_DIR</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">key_path</span><span class="p">):</span>
+        <span class="c"># avoid race with multiple forks trying to create paths on host</span>
+        <span class="c"># but limit when locking is needed to creation only</span>
+        <span class="k">with</span><span class="p">(</span><span class="n">_LOCK</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">key_path</span><span class="p">):</span>
+                <span class="c"># use a temp directory and rename to ensure the directory</span>
+                <span class="c"># searched for only appears after permissions applied.</span>
+                <span class="n">tmp_dir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">(</span><span class="nb">dir</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">key_path</span><span class="p">))</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="n">tmp_dir</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">ACCELERATE_KEYS_DIR_PERMS</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">tmp_dir</span><span class="p">,</span> <span class="n">key_path</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">key_path</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&#39;ACCELERATE_KEYS_DIR is not a directory.&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_IMODE</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">key_path</span><span class="p">)</span><span class="o">.</span><span class="n">st_mode</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">int</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">ACCELERATE_KEYS_DIR_PERMS</span><span class="p">,</span> <span class="mi">8</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&#39;Incorrect permissions on the private key directory. Use `chmod 0</span><span class="si">%o</span><span class="s"> </span><span class="si">%s</span><span class="s">` to correct this issue, and make sure any of the keys files contained within that directory are set to 0</span><span class="si">%o</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">ACCELERATE_KEYS_DIR_PERMS</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="n">C</span><span class="o">.</span><span class="n">ACCELERATE_KEYS_DIR</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">ACCELERATE_KEYS_FILE_PERMS</span><span class="p">,</span> <span class="mi">8</span><span class="p">)))</span>
+
+    <span class="n">key_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">key_path</span><span class="p">,</span> <span class="n">hostname</span><span class="p">)</span>
+
+    <span class="c"># use new AES keys every 2 hours, which means fireball must not allow running for longer either</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">key_path</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="n">key_path</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">60</span><span class="o">*</span><span class="mi">60</span><span class="o">*</span><span class="mi">2</span><span class="p">):</span>
+        <span class="c"># avoid race with multiple forks trying to create key</span>
+        <span class="c"># but limit when locking is needed to creation only</span>
+        <span class="k">with</span><span class="p">(</span><span class="n">_LOCK</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">key_path</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="n">key_path</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">60</span><span class="o">*</span><span class="mi">60</span><span class="o">*</span><span class="mi">2</span><span class="p">):</span>
+                <span class="n">key</span> <span class="o">=</span> <span class="n">AesKey</span><span class="o">.</span><span class="n">Generate</span><span class="p">()</span>
+                <span class="c"># use temp file to ensure file only appears once it has</span>
+                <span class="c"># desired contents and permissions</span>
+                <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s">&#39;w&#39;</span><span class="p">,</span> <span class="nb">dir</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">key_path</span><span class="p">),</span> <span class="n">delete</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+                    <span class="n">tmp_key_path</span> <span class="o">=</span> <span class="n">fh</span><span class="o">.</span><span class="n">name</span>
+                    <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="n">tmp_key_path</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">ACCELERATE_KEYS_FILE_PERMS</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">tmp_key_path</span><span class="p">,</span> <span class="n">key_path</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">key</span>
+
+    <span class="k">if</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_IMODE</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">key_path</span><span class="p">)</span><span class="o">.</span><span class="n">st_mode</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">int</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">ACCELERATE_KEYS_FILE_PERMS</span><span class="p">,</span> <span class="mi">8</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&#39;Incorrect permissions on the key file for this host. Use `chmod 0</span><span class="si">%o</span><span class="s"> </span><span class="si">%s</span><span class="s">` to correct this issue.&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">ACCELERATE_KEYS_FILE_PERMS</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="n">key_path</span><span class="p">))</span>
+    <span class="n">fh</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">key_path</span><span class="p">)</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">AesKey</span><span class="o">.</span><span class="n">Read</span><span class="p">(</span><span class="n">fh</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+    <span class="n">fh</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">key</span>
+
+<span class="k">def</span> <span class="nf">keyczar_encrypt</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">key</span><span class="o">.</span><span class="n">Encrypt</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s">&#39;utf-8&#39;</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">keyczar_decrypt</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">key</span><span class="o">.</span><span class="n">Decrypt</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">key_errors</span><span class="o">.</span><span class="n">InvalidSignatureError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;decryption failed&quot;</span><span class="p">)</span>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,340 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.utils.vars &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>ansible.utils.vars</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.utils.vars</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">ast</span>
+<span class="kn">from</span> <span class="nn">json</span> <span class="kn">import</span> <span class="n">dumps</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">MutableMapping</span>
+
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">iteritems</span><span class="p">,</span> <span class="n">string_types</span>
+
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span>
+<span class="kn">from</span> <span class="nn">ansible.parsing.splitter</span> <span class="kn">import</span> <span class="n">parse_kv</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.unicode</span> <span class="kn">import</span> <span class="n">to_unicode</span><span class="p">,</span> <span class="n">to_str</span>
+
+
+<span class="k">def</span> <span class="nf">_validate_mutable_mappings</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Internal convenience function to ensure arguments are MutableMappings</span>
+
+<span class="sd">    This checks that all arguments are MutableMappings or raises an error</span>
+
+<span class="sd">    :raises AnsibleError: if one of the arguments is not a MutableMapping</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c"># If this becomes generally needed, change the signature to operate on</span>
+    <span class="c"># a variable number of arguments instead.</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">MutableMapping</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">MutableMapping</span><span class="p">)):</span>
+        <span class="n">myvars</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">]:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">myvars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dumps</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">myvars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">to_str</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+        <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;failed to combine variables, expected dicts but got a &#39;{0}&#39; and a &#39;{1}&#39;: </span><span class="se">\n</span><span class="s">{2}</span><span class="se">\n</span><span class="s">{3}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">a</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="n">myvars</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">myvars</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="combine_vars"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.vars.combine_vars">[docs]</a><span class="k">def</span> <span class="nf">combine_vars</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a copy of dictionaries of variables based on configured hash behavior</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_HASH_BEHAVIOUR</span> <span class="o">==</span> <span class="s">&quot;merge&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">merge_hash</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c"># HASH_BEHAVIOUR == &#39;replace&#39;</span>
+        <span class="n">_validate_mutable_mappings</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="merge_hash"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.vars.merge_hash">[docs]</a><span class="k">def</span> <span class="nf">merge_hash</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Recursively merges hash b into a so that keys from b take precedence over keys from a</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_validate_mutable_mappings</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+
+    <span class="c"># if a is empty or equal to b, return b</span>
+    <span class="k">if</span> <span class="n">a</span> <span class="o">==</span> <span class="p">{}</span> <span class="ow">or</span> <span class="n">a</span> <span class="o">==</span> <span class="n">b</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">b</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="c"># if b is empty the below unfolds quickly</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="c"># next, iterate over b keys and values</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="n">b</span><span class="p">):</span>
+        <span class="c"># if there&#39;s already such key in a</span>
+        <span class="c"># and that key contains a MutableMapping</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">result</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">MutableMapping</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">MutableMapping</span><span class="p">):</span>
+            <span class="c"># merge those dicts recursively</span>
+            <span class="n">result</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">merge_hash</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">v</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># otherwise, just copy the value from b to a</span>
+            <span class="n">result</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+
+    <span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="load_extra_vars"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.vars.load_extra_vars">[docs]</a><span class="k">def</span> <span class="nf">load_extra_vars</span><span class="p">(</span><span class="n">loader</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
+    <span class="n">extra_vars</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">extra_vars_opt</span> <span class="ow">in</span> <span class="n">options</span><span class="o">.</span><span class="n">extra_vars</span><span class="p">:</span>
+        <span class="n">extra_vars_opt</span> <span class="o">=</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">extra_vars_opt</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">extra_vars_opt</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">u&quot;@&quot;</span><span class="p">):</span>
+            <span class="c"># Argument is a YAML file (JSON is a subset of YAML)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">load_from_file</span><span class="p">(</span><span class="n">extra_vars_opt</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="k">elif</span> <span class="n">extra_vars_opt</span> <span class="ow">and</span> <span class="n">extra_vars_opt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="s">u&#39;[{&#39;</span><span class="p">:</span>
+            <span class="c"># Arguments as YAML</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">extra_vars_opt</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># Arguments as Key-value</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">parse_kv</span><span class="p">(</span><span class="n">extra_vars_opt</span><span class="p">)</span>
+        <span class="n">extra_vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">extra_vars</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">extra_vars</span></div>
+
+<div class="viewcode-block" id="load_options_vars"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.vars.load_options_vars">[docs]</a><span class="k">def</span> <span class="nf">load_options_vars</span><span class="p">(</span><span class="n">options</span><span class="p">):</span>
+    <span class="n">options_vars</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="c"># For now only return check mode, but we can easily return more</span>
+    <span class="c"># options if we need variables for them</span>
+    <span class="n">options_vars</span><span class="p">[</span><span class="s">&#39;ansible_check_mode&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">check</span>
+    <span class="k">return</span> <span class="n">options_vars</span></div>
+
+<div class="viewcode-block" id="isidentifier"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.vars.isidentifier">[docs]</a><span class="k">def</span> <span class="nf">isidentifier</span><span class="p">(</span><span class="n">ident</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determines, if string is valid Python identifier using the ast module.</span>
+<span class="sd">    Orignally posted at: http://stackoverflow.com/a/29586366</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ident</span><span class="p">,</span> <span class="n">string_types</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">root</span> <span class="o">=</span> <span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">ident</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">SyntaxError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">root</span><span class="o">.</span><span class="n">body</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">root</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ast</span><span class="o">.</span><span class="n">Expr</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">root</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Name</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">if</span> <span class="n">root</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">id</span> <span class="o">!=</span> <span class="n">ident</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">return</span> <span class="bp">True</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,509 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.cli.doc &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="ansible.cli" href="../cli.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../cli.html">ansible.cli</a> &raquo;</li>
+      
+    <li>ansible.cli.doc</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.cli.doc</h1><div class="highlight"><pre>
+<span class="c"># (c) 2014, James Tanner &lt;tanner.jc@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+<span class="c">#</span>
+<span class="c"># ansible-vault is a script that encrypts/decrypts YAML files. See</span>
+<span class="c"># http://docs.ansible.com/playbooks_vault.html for more details.</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+<span class="kn">import</span> <span class="nn">textwrap</span>
+
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">iteritems</span>
+
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span><span class="p">,</span> <span class="n">AnsibleOptionsError</span>
+<span class="kn">from</span> <span class="nn">ansible.plugins</span> <span class="kn">import</span> <span class="n">module_loader</span>
+<span class="kn">from</span> <span class="nn">ansible.cli</span> <span class="kn">import</span> <span class="n">CLI</span>
+<span class="kn">from</span> <span class="nn">ansible.utils</span> <span class="kn">import</span> <span class="n">module_docs</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="DocCLI"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.doc.DocCLI">[docs]</a><span class="k">class</span> <span class="nc">DocCLI</span><span class="p">(</span><span class="n">CLI</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Vault command line class &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">DocCLI</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="DocCLI.parse"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.doc.DocCLI.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span> <span class="o">=</span> <span class="n">CLI</span><span class="o">.</span><span class="n">base_parser</span><span class="p">(</span>
+            <span class="n">usage</span><span class="o">=</span><span class="s">&#39;usage: %prog [options] [module...]&#39;</span><span class="p">,</span>
+            <span class="n">epilog</span><span class="o">=</span><span class="s">&#39;Show Ansible module documentation&#39;</span><span class="p">,</span>
+            <span class="n">module_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;-l&quot;</span><span class="p">,</span> <span class="s">&quot;--list&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;list_dir&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&#39;List available modules&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;-s&quot;</span><span class="p">,</span> <span class="s">&quot;--snippet&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;show_snippet&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&#39;Show playbook snippet for specified module(s)&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">verbosity</span></div>
+
+<div class="viewcode-block" id="DocCLI.run"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.doc.DocCLI.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">DocCLI</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">module_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">module_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">pathsep</span><span class="p">):</span>
+                <span class="n">module_loader</span><span class="o">.</span><span class="n">add_directory</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+
+        <span class="c"># list modules</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">list_dir</span><span class="p">:</span>
+            <span class="n">paths</span> <span class="o">=</span> <span class="n">module_loader</span><span class="o">.</span><span class="n">_get_paths</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">paths</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">find_modules</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">pager</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_module_list_text</span><span class="p">())</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleOptionsError</span><span class="p">(</span><span class="s">&quot;Incorrect options passed&quot;</span><span class="p">)</span>
+
+        <span class="c"># process command line module list</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c"># if the module lives in a non-python file (eg, win_X.ps1), require the corresponding python file for docs</span>
+                <span class="n">filename</span> <span class="o">=</span> <span class="n">module_loader</span><span class="o">.</span><span class="n">find_plugin</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">mod_type</span><span class="o">=</span><span class="s">&#39;.py&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;module </span><span class="si">%s</span><span class="s"> not found in </span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">DocCLI</span><span class="o">.</span><span class="n">print_paths</span><span class="p">(</span><span class="n">module_loader</span><span class="p">)))</span>
+                    <span class="k">continue</span>
+
+                <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">filename</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">C</span><span class="o">.</span><span class="n">BLACKLIST_EXTS</span><span class="p">):</span>
+                    <span class="k">continue</span>
+
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">doc</span><span class="p">,</span> <span class="n">plainexamples</span><span class="p">,</span> <span class="n">returndocs</span> <span class="o">=</span> <span class="n">module_docs</span><span class="o">.</span><span class="n">get_docstring</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">))</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">vvv</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">())</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;module </span><span class="si">%s</span><span class="s"> has a documentation error formatting or is missing documentation</span><span class="se">\n</span><span class="s">To see exact traceback use -vvv&quot;</span> <span class="o">%</span> <span class="n">module</span><span class="p">)</span>
+                    <span class="k">continue</span>
+
+                <span class="k">if</span> <span class="n">doc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+
+                    <span class="n">all_keys</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]):</span>
+                        <span class="n">all_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+                    <span class="n">all_keys</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">all_keys</span><span class="p">)</span>
+                    <span class="n">doc</span><span class="p">[</span><span class="s">&#39;option_keys&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">all_keys</span>
+
+                    <span class="n">doc</span><span class="p">[</span><span class="s">&#39;filename&#39;</span><span class="p">]</span>         <span class="o">=</span> <span class="n">filename</span>
+                    <span class="n">doc</span><span class="p">[</span><span class="s">&#39;docuri&#39;</span><span class="p">]</span>           <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="s">&#39;module&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">,</span> <span class="s">&#39;-&#39;</span><span class="p">)</span>
+                    <span class="n">doc</span><span class="p">[</span><span class="s">&#39;now_date&#39;</span><span class="p">]</span>         <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y-%m-</span><span class="si">%d</span><span class="s">&#39;</span><span class="p">)</span>
+                    <span class="n">doc</span><span class="p">[</span><span class="s">&#39;plainexamples&#39;</span><span class="p">]</span>    <span class="o">=</span> <span class="n">plainexamples</span>
+                    <span class="n">doc</span><span class="p">[</span><span class="s">&#39;returndocs&#39;</span><span class="p">]</span>       <span class="o">=</span> <span class="n">returndocs</span>
+
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">show_snippet</span><span class="p">:</span>
+                        <span class="n">text</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_snippet_text</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">text</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_man_text</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c"># this typically means we couldn&#39;t even parse the docstring, not just that the YAML is busted,</span>
+                    <span class="c"># probably a quoting issue.</span>
+                    <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Parsing produced an empty object.&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">vvv</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">())</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;module </span><span class="si">%s</span><span class="s"> missing documentation (or could not parse documentation): </span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pager</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="DocCLI.find_modules"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.doc.DocCLI.find_modules">[docs]</a>    <span class="k">def</span> <span class="nf">find_modules</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">module</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">module</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">find_modules</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">any</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">C</span><span class="o">.</span><span class="n">BLACKLIST_EXTS</span><span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="k">elif</span> <span class="n">module</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;__&#39;</span><span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="k">elif</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">C</span><span class="o">.</span><span class="n">IGNORE_FILES</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">elif</span> <span class="n">module</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">):</span>
+                    <span class="n">fullpath</span> <span class="o">=</span> <span class="s">&#39;/&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">path</span><span class="p">,</span><span class="n">module</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">islink</span><span class="p">(</span><span class="n">fullpath</span><span class="p">):</span> <span class="c"># avoids aliases</span>
+                        <span class="k">continue</span>
+
+                <span class="n">module</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">module</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="c"># removes the extension</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">module_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">module</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DocCLI.get_module_list_text"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.doc.DocCLI.get_module_list_text">[docs]</a>    <span class="k">def</span> <span class="nf">get_module_list_text</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">columns</span> <span class="o">=</span> <span class="n">display</span><span class="o">.</span><span class="n">columns</span>
+        <span class="n">displace</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">module_list</span><span class="p">)</span>
+        <span class="n">linelimit</span> <span class="o">=</span> <span class="n">columns</span> <span class="o">-</span> <span class="n">displace</span> <span class="o">-</span> <span class="mi">5</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">deprecated</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">module_list</span><span class="p">)):</span>
+
+            <span class="k">if</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">module_docs</span><span class="o">.</span><span class="n">BLACKLIST_MODULES</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="c"># if the module lives in a non-python file (eg, win_X.ps1), require the corresponding python file for docs</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="n">module_loader</span><span class="o">.</span><span class="n">find_plugin</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">mod_type</span><span class="o">=</span><span class="s">&#39;.py&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">filename</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&quot;.ps1&quot;</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+                <span class="k">continue</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">doc</span><span class="p">,</span> <span class="n">plainexamples</span><span class="p">,</span> <span class="n">returndocs</span> <span class="o">=</span> <span class="n">module_docs</span><span class="o">.</span><span class="n">get_docstring</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+                <span class="n">desc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tty_ify</span><span class="p">(</span><span class="n">doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;short_description&#39;</span><span class="p">,</span> <span class="s">&#39;?&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">desc</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">linelimit</span><span class="p">:</span>
+                    <span class="n">desc</span> <span class="o">=</span> <span class="n">desc</span><span class="p">[:</span><span class="n">linelimit</span><span class="p">]</span> <span class="o">+</span> <span class="s">&#39;...&#39;</span>
+
+                <span class="k">if</span> <span class="n">module</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">):</span> <span class="c"># Handle deprecated</span>
+                    <span class="n">deprecated</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%-*s</span><span class="s"> </span><span class="si">%-*.*s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">displace</span><span class="p">,</span> <span class="n">module</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">linelimit</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">desc</span><span class="p">),</span> <span class="n">desc</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%-*s</span><span class="s"> </span><span class="si">%-*.*s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">displace</span><span class="p">,</span> <span class="n">module</span><span class="p">,</span> <span class="n">linelimit</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">desc</span><span class="p">),</span> <span class="n">desc</span><span class="p">))</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;module </span><span class="si">%s</span><span class="s"> has a documentation error formatting or is missing documentation</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">module</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">deprecated</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">DEPRECATED:&quot;</span><span class="p">)</span>
+            <span class="n">text</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">deprecated</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">text</span><span class="p">)</span></div>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="DocCLI.print_paths"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.doc.DocCLI.print_paths">[docs]</a>    <span class="k">def</span> <span class="nf">print_paths</span><span class="p">(</span><span class="n">finder</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Returns a string suitable for printing of the search path &#39;&#39;&#39;</span>
+
+        <span class="c"># Uses a list to get the order right</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">finder</span><span class="o">.</span><span class="n">_get_paths</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">pathsep</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DocCLI.get_snippet_text"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.doc.DocCLI.get_snippet_text">[docs]</a>    <span class="k">def</span> <span class="nf">get_snippet_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+
+        <span class="n">text</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">desc</span> <span class="o">=</span> <span class="n">CLI</span><span class="o">.</span><span class="n">tty_ify</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s">&#39;short_description&#39;</span><span class="p">])</span>
+        <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;- name: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">desc</span><span class="p">))</span>
+        <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;  action: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s">&#39;module&#39;</span><span class="p">]))</span>
+        <span class="n">pad</span> <span class="o">=</span> <span class="mi">31</span>
+        <span class="n">subdent</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&quot; &quot;</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">pad</span><span class="p">)])</span>
+        <span class="n">limit</span> <span class="o">=</span> <span class="n">display</span><span class="o">.</span><span class="n">columns</span> <span class="o">-</span> <span class="n">pad</span>
+
+        <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="n">opt</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="n">o</span><span class="p">]</span>
+            <span class="n">desc</span> <span class="o">=</span> <span class="n">CLI</span><span class="o">.</span><span class="n">tty_ify</span><span class="p">(</span><span class="s">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">opt</span><span class="p">[</span><span class="s">&#39;description&#39;</span><span class="p">]))</span>
+
+            <span class="n">required</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;required&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">required</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+                <span class="k">raise</span><span class="p">(</span><span class="s">&quot;Incorrect value for &#39;Required&#39;, a boolean is needed.: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">required</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">required</span><span class="p">:</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="n">o</span> <span class="o">+</span> <span class="s">&quot;=&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="n">o</span>
+            <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;      </span><span class="si">%-20s</span><span class="s">   # </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">desc</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">subsequent_indent</span><span class="o">=</span><span class="n">subdent</span><span class="p">)))</span>
+        <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">text</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DocCLI.get_man_text"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.doc.DocCLI.get_man_text">[docs]</a>    <span class="k">def</span> <span class="nf">get_man_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+
+        <span class="n">opt_indent</span><span class="o">=</span><span class="s">&quot;        &quot;</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;&gt; </span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">doc</span><span class="p">[</span><span class="s">&#39;module&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>
+        <span class="n">pad</span> <span class="o">=</span> <span class="n">display</span><span class="o">.</span><span class="n">columns</span> <span class="o">*</span> <span class="mf">0.20</span>
+        <span class="n">limit</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">display</span><span class="o">.</span><span class="n">columns</span> <span class="o">-</span> <span class="nb">int</span><span class="p">(</span><span class="n">pad</span><span class="p">),</span> <span class="mi">70</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s">&#39;description&#39;</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">desc</span> <span class="o">=</span> <span class="s">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s">&#39;description&#39;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">desc</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="s">&#39;description&#39;</span><span class="p">]</span>
+
+        <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">CLI</span><span class="o">.</span><span class="n">tty_ify</span><span class="p">(</span><span class="n">desc</span><span class="p">),</span> <span class="n">limit</span><span class="p">,</span> <span class="n">initial_indent</span><span class="o">=</span><span class="s">&quot;  &quot;</span><span class="p">,</span> <span class="n">subsequent_indent</span><span class="o">=</span><span class="s">&quot;  &quot;</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="s">&#39;deprecated&#39;</span> <span class="ow">in</span> <span class="n">doc</span> <span class="ow">and</span> <span class="n">doc</span><span class="p">[</span><span class="s">&#39;deprecated&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s">&#39;deprecated&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;DEPRECATED: </span><span class="se">\n</span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">doc</span><span class="p">[</span><span class="s">&#39;deprecated&#39;</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="s">&#39;option_keys&#39;</span> <span class="ow">in</span> <span class="n">doc</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s">&#39;option_keys&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;Options (= is mandatory):</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s">&#39;option_keys&#39;</span><span class="p">]):</span>
+            <span class="n">opt</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="n">o</span><span class="p">]</span>
+
+            <span class="n">required</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;required&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">required</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+                <span class="k">raise</span><span class="p">(</span><span class="s">&quot;Incorrect value for &#39;Required&#39;, a boolean is needed.: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">required</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">required</span><span class="p">:</span>
+                <span class="n">opt_leadin</span> <span class="o">=</span> <span class="s">&quot;=&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">opt_leadin</span> <span class="o">=</span> <span class="s">&quot;-&quot;</span>
+
+            <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">opt_leadin</span><span class="p">,</span> <span class="n">o</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">opt</span><span class="p">[</span><span class="s">&#39;description&#39;</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">desc</span> <span class="o">=</span> <span class="s">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">opt</span><span class="p">[</span><span class="s">&#39;description&#39;</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">desc</span> <span class="o">=</span> <span class="n">opt</span><span class="p">[</span><span class="s">&#39;description&#39;</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="s">&#39;choices&#39;</span> <span class="ow">in</span> <span class="n">opt</span><span class="p">:</span>
+                <span class="n">choices</span> <span class="o">=</span> <span class="s">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">opt</span><span class="p">[</span><span class="s">&#39;choices&#39;</span><span class="p">])</span>
+                <span class="n">desc</span> <span class="o">=</span> <span class="n">desc</span> <span class="o">+</span> <span class="s">&quot; (Choices: &quot;</span> <span class="o">+</span> <span class="n">choices</span> <span class="o">+</span> <span class="s">&quot;)&quot;</span>
+            <span class="k">if</span> <span class="s">&#39;default&#39;</span> <span class="ow">in</span> <span class="n">opt</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">required</span><span class="p">:</span>
+                <span class="n">default</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">opt</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;default&#39;</span><span class="p">,</span> <span class="s">&#39;(null)&#39;</span><span class="p">))</span>
+                <span class="n">desc</span> <span class="o">=</span> <span class="n">desc</span> <span class="o">+</span> <span class="s">&quot; [Default: &quot;</span> <span class="o">+</span> <span class="n">default</span> <span class="o">+</span> <span class="s">&quot;]&quot;</span>
+            <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">CLI</span><span class="o">.</span><span class="n">tty_ify</span><span class="p">(</span><span class="n">desc</span><span class="p">),</span> <span class="n">limit</span><span class="p">,</span> <span class="n">initial_indent</span><span class="o">=</span><span class="n">opt_indent</span><span class="p">,</span> <span class="n">subsequent_indent</span><span class="o">=</span><span class="n">opt_indent</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="s">&#39;notes&#39;</span> <span class="ow">in</span> <span class="n">doc</span> <span class="ow">and</span> <span class="n">doc</span><span class="p">[</span><span class="s">&#39;notes&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s">&#39;notes&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">notes</span> <span class="o">=</span> <span class="s">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s">&#39;notes&#39;</span><span class="p">])</span>
+            <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;Notes:</span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">CLI</span><span class="o">.</span><span class="n">tty_ify</span><span class="p">(</span><span class="n">notes</span><span class="p">),</span> <span class="n">limit</span><span class="o">-</span><span class="mi">6</span><span class="p">,</span> <span class="n">initial_indent</span><span class="o">=</span><span class="s">&quot;  &quot;</span><span class="p">,</span> <span class="n">subsequent_indent</span><span class="o">=</span><span class="n">opt_indent</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="s">&#39;requirements&#39;</span> <span class="ow">in</span> <span class="n">doc</span> <span class="ow">and</span> <span class="n">doc</span><span class="p">[</span><span class="s">&#39;requirements&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s">&#39;requirements&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">req</span> <span class="o">=</span> <span class="s">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s">&#39;requirements&#39;</span><span class="p">])</span>
+            <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;Requirements:</span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">CLI</span><span class="o">.</span><span class="n">tty_ify</span><span class="p">(</span><span class="n">req</span><span class="p">),</span> <span class="n">limit</span><span class="o">-</span><span class="mi">16</span><span class="p">,</span> <span class="n">initial_indent</span><span class="o">=</span><span class="s">&quot;  &quot;</span><span class="p">,</span> <span class="n">subsequent_indent</span><span class="o">=</span><span class="n">opt_indent</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="s">&#39;examples&#39;</span> <span class="ow">in</span> <span class="n">doc</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s">&#39;examples&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;Example</span><span class="si">%s</span><span class="s">:</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="s">&#39;&#39;</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s">&#39;examples&#39;</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="k">else</span> <span class="s">&#39;s&#39;</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">ex</span> <span class="ow">in</span> <span class="n">doc</span><span class="p">[</span><span class="s">&#39;examples&#39;</span><span class="p">]:</span>
+                <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">ex</span><span class="p">[</span><span class="s">&#39;code&#39;</span><span class="p">]))</span>
+
+        <span class="k">if</span> <span class="s">&#39;plainexamples&#39;</span> <span class="ow">in</span> <span class="n">doc</span> <span class="ow">and</span> <span class="n">doc</span><span class="p">[</span><span class="s">&#39;plainexamples&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;EXAMPLES:&quot;</span><span class="p">)</span>
+            <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s">&#39;plainexamples&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s">&#39;returndocs&#39;</span> <span class="ow">in</span> <span class="n">doc</span> <span class="ow">and</span> <span class="n">doc</span><span class="p">[</span><span class="s">&#39;returndocs&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;RETURN VALUES:&quot;</span><span class="p">)</span>
+            <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s">&#39;returndocs&#39;</span><span class="p">])</span>
+        <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+
+        <span class="n">maintainers</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s">&#39;author&#39;</span> <span class="ow">in</span> <span class="n">doc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s">&#39;author&#39;</span><span class="p">],</span> <span class="nb">basestring</span><span class="p">):</span>
+                <span class="n">maintainers</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s">&#39;author&#39;</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">maintainers</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s">&#39;author&#39;</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="s">&#39;maintainers&#39;</span> <span class="ow">in</span> <span class="n">doc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s">&#39;maintainers&#39;</span><span class="p">],</span> <span class="nb">basestring</span><span class="p">):</span>
+                <span class="n">maintainers</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s">&#39;author&#39;</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">maintainers</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s">&#39;author&#39;</span><span class="p">])</span>
+
+        <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;MAINTAINERS: &#39;</span> <span class="o">+</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">maintainers</span><span class="p">))</span>
+        <span class="n">text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">text</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

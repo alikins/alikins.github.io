@@ -1,0 +1,661 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.plugins.connection.paramiko_ssh &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="ansible.plugins.connection" href="../connection.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../../plugins.html">ansible.plugins</a> &raquo;</li>
+      
+          <li><a href="../connection.html">ansible.plugins.connection</a> &raquo;</li>
+      
+    <li>ansible.plugins.connection.paramiko_ssh</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.plugins.connection.paramiko_ssh</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="c"># ---</span>
+<span class="c"># The paramiko transport is provided because many distributions, in particular EL6 and before</span>
+<span class="c"># do not support ControlPersist in their SSH implementations.  This is needed on the Ansible</span>
+<span class="c"># control machine to be reasonably efficient with connections.  Thus paramiko is faster</span>
+<span class="c"># for most users on these platforms.  Users with ControlPersist capability can consider</span>
+<span class="c"># using -c ssh or configuring the transport in ansible.cfg.</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+<span class="kn">import</span> <span class="nn">fcntl</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="kn">from</span> <span class="nn">termios</span> <span class="kn">import</span> <span class="n">tcflush</span><span class="p">,</span> <span class="n">TCIFLUSH</span>
+<span class="kn">from</span> <span class="nn">binascii</span> <span class="kn">import</span> <span class="n">hexlify</span>
+
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">iteritems</span>
+
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span><span class="p">,</span> <span class="n">AnsibleConnectionFailure</span><span class="p">,</span> <span class="n">AnsibleFileNotFound</span>
+<span class="kn">from</span> <span class="nn">ansible.plugins.connection</span> <span class="kn">import</span> <span class="n">ConnectionBase</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.path</span> <span class="kn">import</span> <span class="n">makedirs_safe</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.unicode</span> <span class="kn">import</span> <span class="n">to_bytes</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+<span class="n">AUTHENTICITY_MSG</span><span class="o">=</span><span class="s">&quot;&quot;&quot;</span>
+<span class="s">paramiko: The authenticity of host &#39;</span><span class="si">%s</span><span class="s">&#39; can&#39;t be established.</span>
+<span class="s">The </span><span class="si">%s</span><span class="s"> key fingerprint is </span><span class="si">%s</span><span class="s">.</span>
+<span class="s">Are you sure you want to continue connecting (yes/no)?</span>
+<span class="s">&quot;&quot;&quot;</span>
+
+<span class="c"># SSH Options Regex</span>
+<span class="n">SETTINGS_REGEX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">r&#39;(\w+)(?:\s*=\s*|\s+)(.+)&#39;</span><span class="p">)</span>
+
+<span class="c"># prevent paramiko warning noise -- see http://stackoverflow.com/questions/3920502/</span>
+<span class="n">HAVE_PARAMIKO</span><span class="o">=</span><span class="bp">False</span>
+<span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s">&quot;ignore&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">paramiko</span>
+        <span class="n">HAVE_PARAMIKO</span><span class="o">=</span><span class="bp">True</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&quot;paramiko&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+
+<div class="viewcode-block" id="MyAddPolicy"><a class="viewcode-back" href="../../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.paramiko_ssh.MyAddPolicy">[docs]</a><span class="k">class</span> <span class="nc">MyAddPolicy</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Based on AutoAddPolicy in paramiko so we can determine when keys are added</span>
+<span class="sd">    and also prompt for input.</span>
+
+<span class="sd">    Policy for automatically adding the hostname and new host key to the</span>
+<span class="sd">    local L{HostKeys} object, and saving it.  This is used by L{SSHClient}.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_stdin</span><span class="p">,</span> <span class="n">connection</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_new_stdin</span> <span class="o">=</span> <span class="n">new_stdin</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="o">=</span> <span class="n">connection</span>
+
+<div class="viewcode-block" id="MyAddPolicy.missing_host_key"><a class="viewcode-back" href="../../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.paramiko_ssh.MyAddPolicy.missing_host_key">[docs]</a>    <span class="k">def</span> <span class="nf">missing_host_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">,</span> <span class="n">hostname</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">C</span><span class="o">.</span><span class="n">HOST_KEY_CHECKING</span><span class="p">:</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">connection_lock</span><span class="p">()</span>
+
+            <span class="n">old_stdin</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_new_stdin</span>
+
+            <span class="c"># clear out any premature input on sys.stdin</span>
+            <span class="n">tcflush</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="p">,</span> <span class="n">TCIFLUSH</span><span class="p">)</span>
+
+            <span class="n">fingerprint</span> <span class="o">=</span> <span class="n">hexlify</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">get_fingerprint</span><span class="p">())</span>
+            <span class="n">ktype</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span>
+
+            <span class="n">inp</span> <span class="o">=</span> <span class="nb">raw_input</span><span class="p">(</span><span class="n">AUTHENTICITY_MSG</span> <span class="o">%</span> <span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">ktype</span><span class="p">,</span> <span class="n">fingerprint</span><span class="p">))</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="n">old_stdin</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">connection_unlock</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">inp</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;yes&#39;</span><span class="p">,</span><span class="s">&#39;y&#39;</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;host connection rejected by user&quot;</span><span class="p">)</span>
+
+        <span class="n">key</span><span class="o">.</span><span class="n">_added_by_ansible_this_time</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="c"># existing implementation below:</span>
+        <span class="n">client</span><span class="o">.</span><span class="n">_host_keys</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">key</span><span class="o">.</span><span class="n">get_name</span><span class="p">(),</span> <span class="n">key</span><span class="p">)</span></div></div>
+
+        <span class="c"># host keys are actually saved in close() function below</span>
+        <span class="c"># in order to control ordering.</span>
+
+
+<span class="c"># keep connection objects on a per host basis to avoid repeated attempts to reconnect</span>
+
+<span class="n">SSH_CONNECTION_CACHE</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">SFTP_CONNECTION_CACHE</span> <span class="o">=</span> <span class="p">{}</span>
+
+
+<div class="viewcode-block" id="Connection"><a class="viewcode-back" href="../../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.paramiko_ssh.Connection">[docs]</a><span class="k">class</span> <span class="nc">Connection</span><span class="p">(</span><span class="n">ConnectionBase</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; SSH based connections with Paramiko &#39;&#39;&#39;</span>
+
+    <span class="n">transport</span> <span class="o">=</span> <span class="s">&#39;paramiko&#39;</span>
+
+    <span class="k">def</span> <span class="nf">_cache_key</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">__</span><span class="si">%s</span><span class="s">__&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_addr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_user</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">cache_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache_key</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">cache_key</span> <span class="ow">in</span> <span class="n">SSH_CONNECTION_CACHE</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ssh</span> <span class="o">=</span> <span class="n">SSH_CONNECTION_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ssh</span> <span class="o">=</span> <span class="n">SSH_CONNECTION_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connect_uncached</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">_parse_proxy_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">22</span><span class="p">):</span>
+        <span class="n">proxy_command</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="c"># Parse ansible_ssh_common_args, specifically looking for ProxyCommand</span>
+        <span class="n">ssh_args</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="p">,</span> <span class="s">&#39;ssh_extra_args&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">),</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="p">,</span> <span class="s">&#39;ssh_common_args&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">),</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="p">,</span> <span class="s">&#39;ssh_args&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">),</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="n">ssh_args</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_split_ssh_args</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ssh_args</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">arg</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">arg</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;proxycommand&#39;</span><span class="p">:</span>
+                    <span class="c"># _split_ssh_args split ProxyCommand from the command itself</span>
+                    <span class="n">proxy_command</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c"># ProxyCommand and the command itself are a single string</span>
+                    <span class="n">match</span> <span class="o">=</span> <span class="n">SETTINGS_REGEX</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;proxycommand&#39;</span><span class="p">:</span>
+                            <span class="n">proxy_command</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">proxy_command</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+        <span class="n">proxy_command</span> <span class="o">=</span> <span class="n">proxy_command</span> <span class="ow">or</span> <span class="n">C</span><span class="o">.</span><span class="n">PARAMIKO_PROXY_COMMAND</span>
+
+        <span class="n">sock_kwarg</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">proxy_command</span><span class="p">:</span>
+            <span class="n">replacers</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s">&#39;%h&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_addr</span><span class="p">,</span>
+                <span class="s">&#39;%p&#39;</span><span class="p">:</span> <span class="n">port</span><span class="p">,</span>
+                <span class="s">&#39;</span><span class="si">%r</span><span class="s">&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_user</span>
+            <span class="p">}</span>
+            <span class="k">for</span> <span class="n">find</span><span class="p">,</span> <span class="n">replace</span> <span class="ow">in</span> <span class="n">replacers</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">proxy_command</span> <span class="o">=</span> <span class="n">proxy_command</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">find</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">replace</span><span class="p">))</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">sock_kwarg</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;sock&#39;</span><span class="p">:</span> <span class="n">paramiko</span><span class="o">.</span><span class="n">ProxyCommand</span><span class="p">(</span><span class="n">proxy_command</span><span class="p">)}</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">vvv</span><span class="p">(</span><span class="s">&quot;CONFIGURE PROXY COMMAND FOR CONNECTION: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">proxy_command</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_addr</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Paramiko ProxyCommand support unavailable. &#39;</span>
+                                <span class="s">&#39;Please upgrade to Paramiko 1.9.0 or newer. &#39;</span>
+                                <span class="s">&#39;Not using configured ProxyCommand&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">sock_kwarg</span>
+
+    <span class="k">def</span> <span class="nf">_connect_uncached</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; activates the connection object &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">HAVE_PARAMIKO</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;paramiko is not installed&quot;</span><span class="p">)</span>
+
+        <span class="n">port</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">port</span> <span class="ow">or</span> <span class="mi">22</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">vvv</span><span class="p">(</span><span class="s">&quot;ESTABLISH CONNECTION FOR USER: </span><span class="si">%s</span><span class="s"> on PORT </span><span class="si">%s</span><span class="s"> TO </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_user</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_addr</span><span class="p">),</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_addr</span><span class="p">)</span>
+
+        <span class="n">ssh</span> <span class="o">=</span> <span class="n">paramiko</span><span class="o">.</span><span class="n">SSHClient</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">keyfile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="s">&quot;~/.ssh/known_hosts&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">C</span><span class="o">.</span><span class="n">HOST_KEY_CHECKING</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">ssh_known_hosts</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&quot;/etc/ssh/ssh_known_hosts&quot;</span><span class="p">,</span> <span class="s">&quot;/etc/openssh/ssh_known_hosts&quot;</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="c">#TODO: check if we need to look at several possible locations, possible for loop</span>
+                    <span class="n">ssh</span><span class="o">.</span><span class="n">load_system_host_keys</span><span class="p">(</span><span class="n">ssh_known_hosts</span><span class="p">)</span>
+                    <span class="k">break</span>
+                <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+                    <span class="k">pass</span> <span class="c"># file was not found, but not required to function</span>
+            <span class="n">ssh</span><span class="o">.</span><span class="n">load_system_host_keys</span><span class="p">()</span>
+
+        <span class="n">sock_kwarg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_proxy_command</span><span class="p">(</span><span class="n">port</span><span class="p">)</span>
+
+        <span class="n">ssh</span><span class="o">.</span><span class="n">set_missing_host_key_policy</span><span class="p">(</span><span class="n">MyAddPolicy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_new_stdin</span><span class="p">,</span> <span class="bp">self</span><span class="p">))</span>
+
+        <span class="n">allow_agent</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">password</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">allow_agent</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">key_filename</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">private_key_file</span><span class="p">:</span>
+                <span class="n">key_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">private_key_file</span><span class="p">)</span>
+
+            <span class="n">ssh</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_addr</span><span class="p">,</span>
+                <span class="n">username</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_user</span><span class="p">,</span>
+                <span class="n">allow_agent</span><span class="o">=</span><span class="n">allow_agent</span><span class="p">,</span>
+                <span class="n">look_for_keys</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                <span class="n">key_filename</span><span class="o">=</span><span class="n">key_filename</span><span class="p">,</span>
+                <span class="n">password</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">password</span><span class="p">,</span>
+                <span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">timeout</span><span class="p">,</span>
+                <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">sock_kwarg</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s">&quot;PID check failed&quot;</span> <span class="ow">in</span> <span class="n">msg</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;paramiko version issue, please upgrade paramiko on the machine running ansible&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="s">&quot;Private key file is encrypted&quot;</span> <span class="ow">in</span> <span class="n">msg</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;ssh </span><span class="si">%s</span><span class="s">@</span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s"> : </span><span class="si">%s</span><span class="se">\n</span><span class="s">To connect as a different user, use -u &lt;username&gt;.&#39;</span> <span class="o">%</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_user</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_addr</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="n">AnsibleConnectionFailure</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleConnectionFailure</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ssh</span>
+
+<div class="viewcode-block" id="Connection.exec_command"><a class="viewcode-back" href="../../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.paramiko_ssh.Connection.exec_command">[docs]</a>    <span class="k">def</span> <span class="nf">exec_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">,</span> <span class="n">in_data</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; run a command on the remote host &#39;&#39;&#39;</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">Connection</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">exec_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">in_data</span><span class="o">=</span><span class="n">in_data</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="n">sudoable</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">in_data</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Internal Error: this module does not support optimized module pipelining&quot;</span><span class="p">)</span>
+
+        <span class="n">bufsize</span> <span class="o">=</span> <span class="mi">4096</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">get_transport</span><span class="p">()</span><span class="o">.</span><span class="n">set_keepalive</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+            <span class="n">chan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">get_transport</span><span class="p">()</span><span class="o">.</span><span class="n">open_session</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;Failed to open session&quot;</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot;: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">AnsibleConnectionFailure</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="c"># sudo usually requires a PTY (cf. requiretty option), therefore</span>
+        <span class="c"># we give it one by default (pty=True in ansble.cfg), and we try</span>
+        <span class="c"># to initialise from the calling environment when sudoable is enabled</span>
+        <span class="k">if</span> <span class="n">C</span><span class="o">.</span><span class="n">PARAMIKO_PTY</span> <span class="ow">and</span> <span class="n">sudoable</span><span class="p">:</span>
+            <span class="n">chan</span><span class="o">.</span><span class="n">get_pty</span><span class="p">(</span><span class="n">term</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s">&#39;TERM&#39;</span><span class="p">,</span> <span class="s">&#39;vt100&#39;</span><span class="p">),</span> <span class="n">width</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s">&#39;COLUMNS&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span> <span class="n">height</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s">&#39;LINES&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)))</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">vvv</span><span class="p">(</span><span class="s">&quot;EXEC </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">cmd</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_addr</span><span class="p">)</span>
+
+        <span class="n">cmd</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+
+        <span class="n">no_prompt_out</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="n">no_prompt_err</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="n">become_output</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">chan</span><span class="o">.</span><span class="n">exec_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">prompt</span><span class="p">:</span>
+                <span class="n">passprompt</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="n">become_sucess</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="k">while</span> <span class="ow">not</span> <span class="p">(</span><span class="n">become_sucess</span> <span class="ow">or</span> <span class="n">passprompt</span><span class="p">):</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Waiting for Privilege Escalation input&#39;</span><span class="p">)</span>
+
+                    <span class="n">chunk</span> <span class="o">=</span> <span class="n">chan</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="n">bufsize</span><span class="p">)</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;chunk is: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">chunk</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">chunk</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="s">&#39;unknown user&#39;</span> <span class="ow">in</span> <span class="n">become_output</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span> <span class="s">&#39;user </span><span class="si">%s</span><span class="s"> does not exist&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become_user</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">break</span>
+                            <span class="c">#raise AnsibleError(&#39;ssh connection closed waiting for password prompt&#39;)</span>
+                    <span class="n">become_output</span> <span class="o">+=</span> <span class="n">chunk</span>
+
+                    <span class="c"># need to check every line because we might get lectured</span>
+                    <span class="c"># and we might get the middle of a line in a chunk</span>
+                    <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">become_output</span><span class="o">.</span><span class="n">splitlines</span><span class="p">(</span><span class="bp">True</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_become_success</span><span class="p">(</span><span class="n">l</span><span class="p">):</span>
+                            <span class="n">become_sucess</span> <span class="o">=</span> <span class="bp">True</span>
+                            <span class="k">break</span>
+                        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_password_prompt</span><span class="p">(</span><span class="n">l</span><span class="p">):</span>
+                            <span class="n">passprompt</span> <span class="o">=</span> <span class="bp">True</span>
+                            <span class="k">break</span>
+
+                <span class="k">if</span> <span class="n">passprompt</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become_pass</span><span class="p">:</span>
+                        <span class="n">chan</span><span class="o">.</span><span class="n">sendall</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become_pass</span> <span class="o">+</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;A password is reqired but none was supplied&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">no_prompt_out</span> <span class="o">+=</span> <span class="n">become_output</span>
+                    <span class="n">no_prompt_err</span> <span class="o">+=</span> <span class="n">become_output</span>
+        <span class="k">except</span> <span class="n">socket</span><span class="o">.</span><span class="n">timeout</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&#39;ssh timed out waiting for privilege escalation.</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">+</span> <span class="n">become_output</span><span class="p">)</span>
+
+        <span class="n">stdout</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">chan</span><span class="o">.</span><span class="n">makefile</span><span class="p">(</span><span class="s">&#39;rb&#39;</span><span class="p">,</span> <span class="n">bufsize</span><span class="p">))</span>
+        <span class="n">stderr</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">chan</span><span class="o">.</span><span class="n">makefile_stderr</span><span class="p">(</span><span class="s">&#39;rb&#39;</span><span class="p">,</span> <span class="n">bufsize</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">chan</span><span class="o">.</span><span class="n">recv_exit_status</span><span class="p">(),</span> <span class="n">no_prompt_out</span> <span class="o">+</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">no_prompt_out</span> <span class="o">+</span> <span class="n">stderr</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Connection.put_file"><a class="viewcode-back" href="../../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.paramiko_ssh.Connection.put_file">[docs]</a>    <span class="k">def</span> <span class="nf">put_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_path</span><span class="p">,</span> <span class="n">out_path</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; transfer a file from local to remote &#39;&#39;&#39;</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">Connection</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">put_file</span><span class="p">(</span><span class="n">in_path</span><span class="p">,</span> <span class="n">out_path</span><span class="p">)</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">vvv</span><span class="p">(</span><span class="s">&quot;PUT </span><span class="si">%s</span><span class="s"> TO </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">in_path</span><span class="p">,</span> <span class="n">out_path</span><span class="p">),</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_addr</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">in_path</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="n">AnsibleFileNotFound</span><span class="p">(</span><span class="s">&quot;file or module does not exist: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">in_path</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sftp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">open_sftp</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;failed to open a SFTP connection (</span><span class="si">%s</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="n">e</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sftp</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">in_path</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">),</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">out_path</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;failed to transfer file to </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">out_path</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_connect_sftp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">cache_key</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">__</span><span class="si">%s</span><span class="s">__&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_addr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_user</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cache_key</span> <span class="ow">in</span> <span class="n">SFTP_CONNECTION_CACHE</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SFTP_CONNECTION_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">SFTP_CONNECTION_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connect</span><span class="p">()</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">open_sftp</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">result</span>
+
+<div class="viewcode-block" id="Connection.fetch_file"><a class="viewcode-back" href="../../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.paramiko_ssh.Connection.fetch_file">[docs]</a>    <span class="k">def</span> <span class="nf">fetch_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_path</span><span class="p">,</span> <span class="n">out_path</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; save a remote file to the specified path &#39;&#39;&#39;</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">Connection</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">fetch_file</span><span class="p">(</span><span class="n">in_path</span><span class="p">,</span> <span class="n">out_path</span><span class="p">)</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">vvv</span><span class="p">(</span><span class="s">&quot;FETCH </span><span class="si">%s</span><span class="s"> TO </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">in_path</span><span class="p">,</span> <span class="n">out_path</span><span class="p">),</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_addr</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sftp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connect_sftp</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;failed to open a SFTP connection (</span><span class="si">%s</span><span class="s">)&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sftp</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">in_path</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">),</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">out_path</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;failed to transfer file from </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">in_path</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_any_keys_added</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="k">for</span> <span class="n">hostname</span><span class="p">,</span> <span class="n">keys</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">_host_keys</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">keytype</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="n">keys</span><span class="p">):</span>
+                <span class="n">added_this_time</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s">&#39;_added_by_ansible_this_time&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">added_this_time</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">_save_ssh_host_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        not using the paramiko save_ssh_host_keys function as we want to add new SSH keys at the bottom so folks</span>
+<span class="sd">        don&#39;t complain about it :)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_any_keys_added</span><span class="p">():</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="s">&quot;~/.ssh&quot;</span><span class="p">)</span>
+        <span class="n">makedirs_safe</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">hostname</span><span class="p">,</span> <span class="n">keys</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">_host_keys</span><span class="p">):</span>
+
+            <span class="k">for</span> <span class="n">keytype</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="n">keys</span><span class="p">):</span>
+
+                <span class="c"># was f.write</span>
+                <span class="n">added_this_time</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s">&#39;_added_by_ansible_this_time&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">added_this_time</span><span class="p">:</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">keytype</span><span class="p">,</span> <span class="n">key</span><span class="o">.</span><span class="n">get_base64</span><span class="p">()))</span>
+
+        <span class="k">for</span> <span class="n">hostname</span><span class="p">,</span> <span class="n">keys</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">_host_keys</span><span class="p">):</span>
+
+            <span class="k">for</span> <span class="n">keytype</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="n">keys</span><span class="p">):</span>
+                <span class="n">added_this_time</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s">&#39;_added_by_ansible_this_time&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">added_this_time</span><span class="p">:</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">keytype</span><span class="p">,</span> <span class="n">key</span><span class="o">.</span><span class="n">get_base64</span><span class="p">()))</span>
+
+        <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Connection.close"><a class="viewcode-back" href="../../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.paramiko_ssh.Connection.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; terminate the connection &#39;&#39;&#39;</span>
+
+        <span class="n">cache_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache_key</span><span class="p">()</span>
+        <span class="n">SSH_CONNECTION_CACHE</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="n">SFTP_CONNECTION_CACHE</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sftp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sftp</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">C</span><span class="o">.</span><span class="n">HOST_KEY_CHECKING</span> <span class="ow">and</span> <span class="n">C</span><span class="o">.</span><span class="n">PARAMIKO_RECORD_HOST_KEYS</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_any_keys_added</span><span class="p">():</span>
+
+            <span class="c"># add any new SSH host keys -- warning -- this could be slow</span>
+            <span class="c"># (This doesn&#39;t acquire the connection lock because it needs</span>
+            <span class="c"># to exclude only other known_hosts writers, not connections</span>
+            <span class="c"># that are starting up.)</span>
+            <span class="n">lockfile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">keyfile</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot;known_hosts&quot;</span><span class="p">,</span><span class="s">&quot;.known_hosts.lock&quot;</span><span class="p">)</span>
+            <span class="n">dirname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">keyfile</span><span class="p">)</span>
+            <span class="n">makedirs_safe</span><span class="p">(</span><span class="n">dirname</span><span class="p">)</span>
+
+            <span class="n">KEY_LOCK</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">lockfile</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
+            <span class="n">fcntl</span><span class="o">.</span><span class="n">lockf</span><span class="p">(</span><span class="n">KEY_LOCK</span><span class="p">,</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">LOCK_EX</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c"># just in case any were added recently</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">load_system_host_keys</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">_host_keys</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">_system_host_keys</span><span class="p">)</span>
+
+                <span class="c"># gather information about the current key file, so</span>
+                <span class="c"># we can ensure the new file has the correct mode/owner</span>
+
+                <span class="n">key_dir</span>  <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">keyfile</span><span class="p">)</span>
+                <span class="n">key_stat</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">keyfile</span><span class="p">)</span>
+
+                <span class="c"># Save the new keys to a temporary file and move it into place</span>
+                <span class="c"># rather than rewriting the file. We set delete=False because</span>
+                <span class="c"># the file will be moved into place rather than cleaned up.</span>
+
+                <span class="n">tmp_keyfile</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="nb">dir</span><span class="o">=</span><span class="n">key_dir</span><span class="p">,</span> <span class="n">delete</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="n">tmp_keyfile</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">key_stat</span><span class="o">.</span><span class="n">st_mode</span> <span class="o">&amp;</span> <span class="mi">0</span><span class="n">o7777</span><span class="p">)</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">chown</span><span class="p">(</span><span class="n">tmp_keyfile</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">key_stat</span><span class="o">.</span><span class="n">st_uid</span><span class="p">,</span> <span class="n">key_stat</span><span class="o">.</span><span class="n">st_gid</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">_save_ssh_host_keys</span><span class="p">(</span><span class="n">tmp_keyfile</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="n">tmp_keyfile</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+                <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">tmp_keyfile</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">keyfile</span><span class="p">)</span>
+
+            <span class="k">except</span><span class="p">:</span>
+
+                <span class="c"># unable to save keys, including scenario when key was invalid</span>
+                <span class="c"># and caught earlier</span>
+                <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span>
+                <span class="k">pass</span>
+            <span class="n">fcntl</span><span class="o">.</span><span class="n">lockf</span><span class="p">(</span><span class="n">KEY_LOCK</span><span class="p">,</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">LOCK_UN</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

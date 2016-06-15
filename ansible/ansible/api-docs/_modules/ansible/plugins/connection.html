@@ -1,0 +1,467 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.plugins.connection &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="ansible.plugins" href="../plugins.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../plugins.html">ansible.plugins</a> &raquo;</li>
+      
+    <li>ansible.plugins.connection</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.plugins.connection</h1><div class="highlight"><pre>
+
+<span class="c"># (c) 2015 Toshio Kuratomi &lt;tkuratomi@ansible.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">fcntl</span>
+<span class="kn">import</span> <span class="nn">gettext</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">shlex</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABCMeta</span><span class="p">,</span> <span class="n">abstractmethod</span><span class="p">,</span> <span class="n">abstractproperty</span>
+
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">wraps</span>
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">with_metaclass</span>
+
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span>
+<span class="kn">from</span> <span class="nn">ansible.plugins</span> <span class="kn">import</span> <span class="n">shell_loader</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.unicode</span> <span class="kn">import</span> <span class="n">to_bytes</span><span class="p">,</span> <span class="n">to_unicode</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;ConnectionBase&#39;</span><span class="p">,</span> <span class="s">&#39;ensure_connect&#39;</span><span class="p">]</span>
+
+<span class="n">BUFSIZE</span> <span class="o">=</span> <span class="mi">65536</span>
+
+
+<div class="viewcode-block" id="ensure_connect"><a class="viewcode-back" href="../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.ensure_connect">[docs]</a><span class="k">def</span> <span class="nf">ensure_connect</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+    <span class="nd">@wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">wrapped</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connect</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">wrapped</span></div>
+
+
+<div class="viewcode-block" id="ConnectionBase"><a class="viewcode-back" href="../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.ConnectionBase">[docs]</a><span class="k">class</span> <span class="nc">ConnectionBase</span><span class="p">(</span><span class="n">with_metaclass</span><span class="p">(</span><span class="n">ABCMeta</span><span class="p">,</span> <span class="nb">object</span><span class="p">)):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    A base class for connections to contain common code.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">has_pipelining</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="n">become_methods</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">BECOME_METHODS</span>
+    <span class="c"># When running over this connection type, prefer modules written in a certain language</span>
+    <span class="c"># as discovered by the specified file extension.  An empty string as the</span>
+    <span class="c"># language means any language.</span>
+    <span class="n">module_implementation_preferences</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">,)</span>
+    <span class="n">allow_executable</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">play_context</span><span class="p">,</span> <span class="n">new_stdin</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c"># All these hasattrs allow subclasses to override these parameters</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_play_context&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span> <span class="o">=</span> <span class="n">play_context</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_new_stdin&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_new_stdin</span> <span class="o">=</span> <span class="n">new_stdin</span>
+        <span class="c"># Backwards compat: self._display isn&#39;t really needed, just import the global display and use that.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_display&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_display</span> <span class="o">=</span> <span class="n">display</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_connected&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_connected</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">success_key</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prompt</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connected</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="c"># load the shell plugin for this action/connection</span>
+        <span class="k">if</span> <span class="n">play_context</span><span class="o">.</span><span class="n">shell</span><span class="p">:</span>
+            <span class="n">shell_type</span> <span class="o">=</span> <span class="n">play_context</span><span class="o">.</span><span class="n">shell</span>
+        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_shell_type&#39;</span><span class="p">):</span>
+            <span class="n">shell_type</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_shell_type&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">shell_type</span> <span class="o">=</span> <span class="s">&#39;sh&#39;</span>
+            <span class="n">shell_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">executable</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">shell</span> <span class="ow">in</span> <span class="n">shell_loader</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">shell_filename</span> <span class="ow">in</span> <span class="n">shell</span><span class="o">.</span><span class="n">COMPATIBLE_SHELLS</span><span class="p">:</span>
+                    <span class="n">shell_type</span> <span class="o">=</span> <span class="n">shell</span><span class="o">.</span><span class="n">SHELL_FAMILY</span>
+                    <span class="k">break</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_shell</span> <span class="o">=</span> <span class="n">shell_loader</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">shell_type</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shell</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Invalid shell type specified (</span><span class="si">%s</span><span class="s">), or the plugin for that shell type is missing.&quot;</span> <span class="o">%</span> <span class="n">shell_type</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">connected</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Read-only property holding whether the connection to the remote host is active or closed.&#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connected</span>
+
+    <span class="k">def</span> <span class="nf">_become_method_supported</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Checks if the current class supports this privilege escalation method &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become_method</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_methods</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+        <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Internal Error: this connection module does not support running commands via </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become_method</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ConnectionBase.set_host_overrides"><a class="viewcode-back" href="../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.ConnectionBase.set_host_overrides">[docs]</a>    <span class="k">def</span> <span class="nf">set_host_overrides</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">hostvars</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        An optional method, which can be used to set connection plugin parameters</span>
+<span class="sd">        from variables set on the host (or groups to which the host belongs)</span>
+
+<span class="sd">        Any connection plugin using this should first initialize its attributes in</span>
+<span class="sd">        an overridden `def __init__(self):`, and then use `host.get_vars()` to find</span>
+<span class="sd">        variables which may be used to set those attributes in this method.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">pass</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_split_ssh_args</span><span class="p">(</span><span class="n">argstring</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Takes a string like &#39;-o Foo=1 -o Bar=&quot;foo bar&quot;&#39; and returns a</span>
+<span class="sd">        list [&#39;-o&#39;, &#39;Foo=1&#39;, &#39;-o&#39;, &#39;Bar=foo bar&#39;] that can be added to</span>
+<span class="sd">        the argument list. The list will not contain any empty elements.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># Python 2.6.x shlex doesn&#39;t handle unicode type so we have to</span>
+            <span class="c"># convert args to byte string for that case.  More efficient to</span>
+            <span class="c"># try without conversion first but python2.6 doesn&#39;t throw an</span>
+            <span class="c"># exception, it merely mangles the output:</span>
+            <span class="c"># &gt;&gt;&gt; shlex.split(u&#39;t e&#39;)</span>
+            <span class="c"># [&#39;t\x00\x00\x00&#39;, &#39;\x00\x00\x00e\x00\x00\x00&#39;]</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">to_unicode</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">shlex</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">argstring</span><span class="p">))</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">to_unicode</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">shlex</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">argstring</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+
+    <span class="nd">@abstractproperty</span>
+    <span class="k">def</span> <span class="nf">transport</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;String used to identify this Connection class from other classes&quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Connect to the host we&#39;ve been initialized with&quot;&quot;&quot;</span>
+
+        <span class="c"># Check if PE is supported</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_become_method_supported</span><span class="p">()</span>
+
+    <span class="nd">@ensure_connect</span>
+    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="ConnectionBase.exec_command"><a class="viewcode-back" href="../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.ConnectionBase.exec_command">[docs]</a>    <span class="k">def</span> <span class="nf">exec_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">,</span> <span class="n">in_data</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Run a command on the remote host.</span>
+
+<span class="sd">        :param cmd: byte string containing the command</span>
+<span class="sd">        :type cmd: bytestring</span>
+<span class="sd">        :kwarg in_data: If set, this data is passed to the command&#39;s stdin.</span>
+<span class="sd">            This is used to implement pipelining.  Currently not all</span>
+<span class="sd">            connection plugins implement pipelining.</span>
+<span class="sd">        :kwarg sudoable: Tell the connection plugin if we&#39;re executing</span>
+<span class="sd">            a command via a privilege escalation mechanism.  This may affect</span>
+<span class="sd">            how the connection plugin returns data.  Note that not all</span>
+<span class="sd">            connections can handle privilege escalation.</span>
+<span class="sd">        :returns: a tuple of (return code, stdout, stderr)  The return code is</span>
+<span class="sd">            an int while stdout and stderr are both byte strings.</span>
+
+<span class="sd">        When a command is executed, it goes through multiple commands to get</span>
+<span class="sd">        there.  It looks approximately like this::</span>
+
+<span class="sd">            [LocalShell] ConnectionCommand [UsersLoginShell (*)] ANSIBLE_SHELL_EXECUTABLE [(BecomeCommand ANSIBLE_SHELL_EXECUTABLE)] Command</span>
+
+<span class="sd">        :LocalShell: Is optional.  It is run locally to invoke the</span>
+<span class="sd">            ``Connection Command``.  In most instances, the</span>
+<span class="sd">            ``ConnectionCommand`` can be invoked directly instead.  The ssh</span>
+<span class="sd">            connection plugin which can have values that need expanding</span>
+<span class="sd">            locally specified via ssh_args is the sole known exception to</span>
+<span class="sd">            this.  Shell metacharacters in the command itself should be</span>
+<span class="sd">            processed on the remote machine, not on the local machine so no</span>
+<span class="sd">            shell is needed on the local machine.  (Example, ``/bin/sh``)</span>
+<span class="sd">        :ConnectionCommand: This is the command that connects us to the remote</span>
+<span class="sd">            machine to run the rest of the command.  ``ansible_ssh_user``,</span>
+<span class="sd">            ``ansible_ssh_host`` and so forth are fed to this piece of the</span>
+<span class="sd">            command to connect to the correct host (Examples ``ssh``,</span>
+<span class="sd">            ``chroot``)</span>
+<span class="sd">        :UsersLoginShell: This shell may or may not be created depending on</span>
+<span class="sd">            the ConnectionCommand used by the connection plugin.  This is the</span>
+<span class="sd">            shell that the ``ansible_ssh_user`` has configured as their login</span>
+<span class="sd">            shell.  In traditional UNIX parlance, this is the last field of</span>
+<span class="sd">            a user&#39;s ``/etc/passwd`` entry   We do not specifically try to run</span>
+<span class="sd">            the ``UsersLoginShell`` when we connect.  Instead it is implicit</span>
+<span class="sd">            in the actions that the ``ConnectionCommand`` takes when it</span>
+<span class="sd">            connects to a remote machine.  ``ansible_shell_type`` may be set</span>
+<span class="sd">            to inform ansible of differences in how the ``UsersLoginShell``</span>
+<span class="sd">            handles things like quoting if a shell has different semantics</span>
+<span class="sd">            than the Bourne shell.</span>
+<span class="sd">        :ANSIBLE_SHELL_EXECUTABLE: This is the shell set via the inventory var</span>
+<span class="sd">            ``ansible_shell_executable`` or via</span>
+<span class="sd">            ``constants.DEFAULT_EXECUTABLE`` if the inventory var is not set.</span>
+<span class="sd">            We explicitly invoke this shell so that we have predictable</span>
+<span class="sd">            quoting rules at this point.  ``ANSIBLE_SHELL_EXECUTABLE`` is only</span>
+<span class="sd">            settable by the user because some sudo setups may only allow</span>
+<span class="sd">            invoking a specific shell.  (For instance, ``/bin/bash`` may be</span>
+<span class="sd">            allowed but ``/bin/sh``, our default, may not).  We invoke this</span>
+<span class="sd">            twice, once after the ``ConnectionCommand`` and once after the</span>
+<span class="sd">            ``BecomeCommand``.  After the ConnectionCommand, this is run by</span>
+<span class="sd">            the ``UsersLoginShell``.  After the ``BecomeCommand`` we specify</span>
+<span class="sd">            that the ``ANSIBLE_SHELL_EXECUTABLE`` is being invoked directly.</span>
+<span class="sd">        :BecomeComand ANSIBLE_SHELL_EXECUTABLE: Is the command that performs</span>
+<span class="sd">            privilege escalation.  Setting this up is performed by the action</span>
+<span class="sd">            plugin prior to running ``exec_command``. So we just get passed</span>
+<span class="sd">            :param `cmd` which has the BecomeCommand already added.</span>
+<span class="sd">            (Examples: sudo, su)  If we have a BecomeCommand then we will</span>
+<span class="sd">            invoke a ANSIBLE_SHELL_EXECUTABLE shell inside of it so that we</span>
+<span class="sd">            have a consistent view of quoting.</span>
+<span class="sd">        :Command: Is the command we&#39;re actually trying to run remotely.</span>
+<span class="sd">            (Examples: mkdir -p $HOME/.ansible, python $HOME/.ansible/tmp-script-file)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+    <span class="nd">@ensure_connect</span>
+    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="ConnectionBase.put_file"><a class="viewcode-back" href="../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.ConnectionBase.put_file">[docs]</a>    <span class="k">def</span> <span class="nf">put_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_path</span><span class="p">,</span> <span class="n">out_path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Transfer a file from local to remote&quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+    <span class="nd">@ensure_connect</span>
+    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="ConnectionBase.fetch_file"><a class="viewcode-back" href="../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.ConnectionBase.fetch_file">[docs]</a>    <span class="k">def</span> <span class="nf">fetch_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_path</span><span class="p">,</span> <span class="n">out_path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Fetch a file from remote to local&quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="ConnectionBase.close"><a class="viewcode-back" href="../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.ConnectionBase.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Terminate the connection&quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="ConnectionBase.check_become_success"><a class="viewcode-back" href="../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.ConnectionBase.check_become_success">[docs]</a>    <span class="k">def</span> <span class="nf">check_become_success</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">output</span><span class="o">.</span><span class="n">splitlines</span><span class="p">(</span><span class="bp">True</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">success_key</span> <span class="o">==</span> <span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">():</span>
+                <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="bp">False</span></div>
+
+<div class="viewcode-block" id="ConnectionBase.check_password_prompt"><a class="viewcode-back" href="../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.ConnectionBase.check_password_prompt">[docs]</a>    <span class="k">def</span> <span class="nf">check_password_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">prompt</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">prompt</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">output</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">prompt</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">prompt</span><span class="p">(</span><span class="n">output</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConnectionBase.check_incorrect_password"><a class="viewcode-back" href="../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.ConnectionBase.check_incorrect_password">[docs]</a>    <span class="k">def</span> <span class="nf">check_incorrect_password</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">):</span>
+        <span class="n">incorrect_password</span> <span class="o">=</span> <span class="n">gettext</span><span class="o">.</span><span class="n">dgettext</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become_method</span><span class="p">,</span> <span class="n">C</span><span class="o">.</span><span class="n">BECOME_ERROR_STRINGS</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become_method</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">incorrect_password</span> <span class="ow">and</span> <span class="n">incorrect_password</span> <span class="ow">in</span> <span class="n">output</span></div>
+
+<div class="viewcode-block" id="ConnectionBase.check_missing_password"><a class="viewcode-back" href="../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.ConnectionBase.check_missing_password">[docs]</a>    <span class="k">def</span> <span class="nf">check_missing_password</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">):</span>
+        <span class="n">missing_password</span> <span class="o">=</span> <span class="n">gettext</span><span class="o">.</span><span class="n">dgettext</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become_method</span><span class="p">,</span> <span class="n">C</span><span class="o">.</span><span class="n">BECOME_MISSING_STRINGS</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become_method</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">missing_password</span> <span class="ow">and</span> <span class="n">missing_password</span> <span class="ow">in</span> <span class="n">output</span></div>
+
+<div class="viewcode-block" id="ConnectionBase.connection_lock"><a class="viewcode-back" href="../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.ConnectionBase.connection_lock">[docs]</a>    <span class="k">def</span> <span class="nf">connection_lock</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">connection_lockfd</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">vvvv</span><span class="p">(</span><span class="s">&#39;CONNECTION: pid </span><span class="si">%d</span><span class="s"> waiting for lock on </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">(),</span> <span class="n">f</span><span class="p">),</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_addr</span><span class="p">)</span>
+        <span class="n">fcntl</span><span class="o">.</span><span class="n">lockf</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">LOCK_EX</span><span class="p">)</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">vvvv</span><span class="p">(</span><span class="s">&#39;CONNECTION: pid </span><span class="si">%d</span><span class="s"> acquired lock on </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">(),</span> <span class="n">f</span><span class="p">),</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_addr</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConnectionBase.connection_unlock"><a class="viewcode-back" href="../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.ConnectionBase.connection_unlock">[docs]</a>    <span class="k">def</span> <span class="nf">connection_unlock</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">connection_lockfd</span>
+        <span class="n">fcntl</span><span class="o">.</span><span class="n">lockf</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">LOCK_UN</span><span class="p">)</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">vvvv</span><span class="p">(</span><span class="s">&#39;CONNECTION: pid </span><span class="si">%d</span><span class="s"> released lock on </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">(),</span> <span class="n">f</span><span class="p">),</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_addr</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

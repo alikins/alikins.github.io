@@ -1,0 +1,408 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.cli.playbook &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="ansible.cli" href="../cli.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../cli.html">ansible.cli</a> &raquo;</li>
+      
+    <li>ansible.cli.playbook</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.cli.playbook</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+
+<span class="c"># (c) 2012, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c">########################################################</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">stat</span>
+
+<span class="kn">from</span> <span class="nn">ansible.cli</span> <span class="kn">import</span> <span class="n">CLI</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span><span class="p">,</span> <span class="n">AnsibleOptionsError</span>
+<span class="kn">from</span> <span class="nn">ansible.executor.playbook_executor</span> <span class="kn">import</span> <span class="n">PlaybookExecutor</span>
+<span class="kn">from</span> <span class="nn">ansible.inventory</span> <span class="kn">import</span> <span class="n">Inventory</span>
+<span class="kn">from</span> <span class="nn">ansible.parsing.dataloader</span> <span class="kn">import</span> <span class="n">DataLoader</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.block</span> <span class="kn">import</span> <span class="n">Block</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.play_context</span> <span class="kn">import</span> <span class="n">PlayContext</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.vars</span> <span class="kn">import</span> <span class="n">load_extra_vars</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.vars</span> <span class="kn">import</span> <span class="n">load_options_vars</span>
+<span class="kn">from</span> <span class="nn">ansible.vars</span> <span class="kn">import</span> <span class="n">VariableManager</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+
+<span class="c">#---------------------------------------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="PlaybookCLI"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.playbook.PlaybookCLI">[docs]</a><span class="k">class</span> <span class="nc">PlaybookCLI</span><span class="p">(</span><span class="n">CLI</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; code behind ansible playbook cli&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="PlaybookCLI.parse"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.playbook.PlaybookCLI.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="c"># create parser for CLI options</span>
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">CLI</span><span class="o">.</span><span class="n">base_parser</span><span class="p">(</span>
+            <span class="n">usage</span> <span class="o">=</span> <span class="s">&quot;%prog playbook.yml&quot;</span><span class="p">,</span>
+            <span class="n">connect_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">meta_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">runas_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">subset_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">check_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">inventory_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">runtask_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">vault_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">fork_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">module_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c"># ansible playbook specific opts</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--list-tasks&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;listtasks&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s">&quot;list all tasks that would be executed&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--list-tags&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;listtags&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s">&quot;list all available tags&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--step&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;step&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s">&quot;one-step-at-a-time: confirm each task before running&quot;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--start-at-task&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;start_at_task&#39;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s">&quot;start the playbook at the task matching this name&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span> <span class="o">=</span> <span class="n">parser</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleOptionsError</span><span class="p">(</span><span class="s">&quot;You must specify a playbook file to run&quot;</span><span class="p">)</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">verbosity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">validate_conflicts</span><span class="p">(</span><span class="n">runas_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">vault_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">fork_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PlaybookCLI.run"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.playbook.PlaybookCLI.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">PlaybookCLI</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+        <span class="c"># Note: slightly wrong, this is written so that implicit localhost</span>
+        <span class="c"># Manage passwords</span>
+        <span class="n">sshpass</span>    <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">becomepass</span>    <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">vault_pass</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">passwords</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c"># don&#39;t deal with privilege escalation or passwords when we don&#39;t need to</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">listhosts</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">listtasks</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">listtags</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">syntax</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">normalize_become_options</span><span class="p">()</span>
+            <span class="p">(</span><span class="n">sshpass</span><span class="p">,</span> <span class="n">becomepass</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ask_passwords</span><span class="p">()</span>
+            <span class="n">passwords</span> <span class="o">=</span> <span class="p">{</span> <span class="s">&#39;conn_pass&#39;</span><span class="p">:</span> <span class="n">sshpass</span><span class="p">,</span> <span class="s">&#39;become_pass&#39;</span><span class="p">:</span> <span class="n">becomepass</span> <span class="p">}</span>
+
+        <span class="n">loader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">vault_password_file</span><span class="p">:</span>
+            <span class="c"># read vault_pass from a file</span>
+            <span class="n">vault_pass</span> <span class="o">=</span> <span class="n">CLI</span><span class="o">.</span><span class="n">read_vault_password_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">vault_password_file</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">)</span>
+            <span class="n">loader</span><span class="o">.</span><span class="n">set_vault_password</span><span class="p">(</span><span class="n">vault_pass</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">ask_vault_pass</span><span class="p">:</span>
+            <span class="n">vault_pass</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ask_vault_passwords</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">loader</span><span class="o">.</span><span class="n">set_vault_password</span><span class="p">(</span><span class="n">vault_pass</span><span class="p">)</span>
+
+        <span class="c"># initial error check, to make sure all specified playbooks are accessible</span>
+        <span class="c"># before we start running anything through the playbook executor</span>
+        <span class="k">for</span> <span class="n">playbook</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">playbook</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;the playbook: </span><span class="si">%s</span><span class="s"> could not be found&quot;</span> <span class="o">%</span> <span class="n">playbook</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">playbook</span><span class="p">)</span> <span class="ow">or</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_ISFIFO</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">playbook</span><span class="p">)</span><span class="o">.</span><span class="n">st_mode</span><span class="p">)):</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;the playbook: </span><span class="si">%s</span><span class="s"> does not appear to be a file&quot;</span> <span class="o">%</span> <span class="n">playbook</span><span class="p">)</span>
+
+        <span class="c"># create the variable manager, which will be shared throughout</span>
+        <span class="c"># the code, ensuring a consistent view of global variables</span>
+        <span class="n">variable_manager</span> <span class="o">=</span> <span class="n">VariableManager</span><span class="p">()</span>
+        <span class="n">variable_manager</span><span class="o">.</span><span class="n">extra_vars</span> <span class="o">=</span> <span class="n">load_extra_vars</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
+
+        <span class="n">variable_manager</span><span class="o">.</span><span class="n">options_vars</span> <span class="o">=</span> <span class="n">load_options_vars</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
+
+        <span class="c"># create the inventory, and filter it based on the subset specified (if any)</span>
+        <span class="n">inventory</span> <span class="o">=</span> <span class="n">Inventory</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="n">variable_manager</span><span class="p">,</span> <span class="n">host_list</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">inventory</span><span class="p">)</span>
+        <span class="n">variable_manager</span><span class="o">.</span><span class="n">set_inventory</span><span class="p">(</span><span class="n">inventory</span><span class="p">)</span>
+
+        <span class="c"># (which is not returned in list_hosts()) is taken into account for</span>
+        <span class="c"># warning if inventory is empty.  But it can&#39;t be taken into account for</span>
+        <span class="c"># checking if limit doesn&#39;t match any hosts.  Instead we don&#39;t worry about</span>
+        <span class="c"># limit if only implicit localhost was in inventory to start with.</span>
+        <span class="c">#</span>
+        <span class="c"># Fix this when we rewrite inventory by making localhost a real host (and thus show up in list_hosts())</span>
+        <span class="n">no_hosts</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inventory</span><span class="o">.</span><span class="n">list_hosts</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c"># Empty inventory</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;provided hosts list is empty, only localhost is available&quot;</span><span class="p">)</span>
+            <span class="n">no_hosts</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">inventory</span><span class="o">.</span><span class="n">subset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">subset</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inventory</span><span class="o">.</span><span class="n">list_hosts</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">no_hosts</span> <span class="ow">is</span> <span class="bp">False</span><span class="p">:</span>
+            <span class="c"># Invalid limit</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Specified --limit does not match any hosts&quot;</span><span class="p">)</span>
+
+        <span class="c"># create the playbook executor, which manages running the plays via a task queue manager</span>
+        <span class="n">pbex</span> <span class="o">=</span> <span class="n">PlaybookExecutor</span><span class="p">(</span><span class="n">playbooks</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">inventory</span><span class="o">=</span><span class="n">inventory</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="n">variable_manager</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">,</span> <span class="n">passwords</span><span class="o">=</span><span class="n">passwords</span><span class="p">)</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="n">pbex</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+
+                <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">playbook: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">p</span><span class="p">[</span><span class="s">&#39;playbook&#39;</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">play</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s">&#39;plays&#39;</span><span class="p">]):</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">  play #</span><span class="si">%d</span><span class="s"> (</span><span class="si">%s</span><span class="s">): </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">play</span><span class="o">.</span><span class="n">hosts</span><span class="p">),</span> <span class="n">play</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                    <span class="n">mytags</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">play</span><span class="o">.</span><span class="n">tags</span><span class="p">)</span>
+                    <span class="n">msg</span> <span class="o">+=</span> <span class="s">&#39;</span><span class="se">\t</span><span class="s">TAGS: [</span><span class="si">%s</span><span class="s">]&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">mytags</span><span class="p">))</span>
+
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">listhosts</span><span class="p">:</span>
+                        <span class="n">playhosts</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">inventory</span><span class="o">.</span><span class="n">get_hosts</span><span class="p">(</span><span class="n">play</span><span class="o">.</span><span class="n">hosts</span><span class="p">))</span>
+                        <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">    pattern: </span><span class="si">%s</span><span class="se">\n</span><span class="s">    hosts (</span><span class="si">%d</span><span class="s">):&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">play</span><span class="o">.</span><span class="n">hosts</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">playhosts</span><span class="p">))</span>
+                        <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">playhosts</span><span class="p">:</span>
+                            <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">      </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">host</span>
+
+                    <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+                    <span class="n">all_tags</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">listtags</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">listtasks</span><span class="p">:</span>
+                        <span class="n">taskmsg</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">listtasks</span><span class="p">:</span>
+                            <span class="n">taskmsg</span> <span class="o">=</span> <span class="s">&#39;    tasks:</span><span class="se">\n</span><span class="s">&#39;</span>
+
+                        <span class="k">def</span> <span class="nf">_process_block</span><span class="p">(</span><span class="n">b</span><span class="p">):</span>
+                            <span class="n">taskmsg</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+                            <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">b</span><span class="o">.</span><span class="n">block</span><span class="p">:</span>
+                                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">Block</span><span class="p">):</span>
+                                    <span class="n">taskmsg</span> <span class="o">+=</span> <span class="n">_process_block</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+                                <span class="k">else</span><span class="p">:</span>
+                                    <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="s">&#39;meta&#39;</span><span class="p">:</span>
+                                        <span class="k">continue</span>
+
+                                    <span class="n">all_tags</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">tags</span><span class="p">)</span>
+                                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">listtasks</span><span class="p">:</span>
+                                        <span class="n">cur_tags</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mytags</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">tags</span><span class="p">)))</span>
+                                        <span class="n">cur_tags</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+                                        <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                                            <span class="n">taskmsg</span> <span class="o">+=</span> <span class="s">&quot;      </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">task</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span>
+                                        <span class="k">else</span><span class="p">:</span>
+                                            <span class="n">taskmsg</span> <span class="o">+=</span> <span class="s">&quot;      </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">task</span><span class="o">.</span><span class="n">action</span>
+                                        <span class="n">taskmsg</span> <span class="o">+=</span> <span class="s">&quot;</span><span class="se">\t</span><span class="s">TAGS: [</span><span class="si">%s</span><span class="s">]</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cur_tags</span><span class="p">)</span>
+
+                            <span class="k">return</span> <span class="n">taskmsg</span>
+
+                        <span class="n">all_vars</span> <span class="o">=</span> <span class="n">variable_manager</span><span class="o">.</span><span class="n">get_vars</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span> <span class="n">play</span><span class="o">=</span><span class="n">play</span><span class="p">)</span>
+                        <span class="n">play_context</span> <span class="o">=</span> <span class="n">PlayContext</span><span class="p">(</span><span class="n">play</span><span class="o">=</span><span class="n">play</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">play</span><span class="o">.</span><span class="n">compile</span><span class="p">():</span>
+                            <span class="n">block</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">filter_tagged_tasks</span><span class="p">(</span><span class="n">play_context</span><span class="p">,</span> <span class="n">all_vars</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="ow">not</span> <span class="n">block</span><span class="o">.</span><span class="n">has_tasks</span><span class="p">():</span>
+                                <span class="k">continue</span>
+                            <span class="n">taskmsg</span> <span class="o">+=</span> <span class="n">_process_block</span><span class="p">(</span><span class="n">block</span><span class="p">)</span>
+
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">listtags</span><span class="p">:</span>
+                            <span class="n">cur_tags</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mytags</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">all_tags</span><span class="p">))</span>
+                            <span class="n">cur_tags</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+                            <span class="n">taskmsg</span> <span class="o">+=</span> <span class="s">&quot;      TASK TAGS: [</span><span class="si">%s</span><span class="s">]</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cur_tags</span><span class="p">)</span>
+
+                        <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">taskmsg</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">results</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

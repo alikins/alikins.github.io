@@ -1,0 +1,891 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.executor.task_executor &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>ansible.executor.task_executor</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.executor.task_executor</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">base64</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">iteritems</span><span class="p">,</span> <span class="n">string_types</span><span class="p">,</span> <span class="n">binary_type</span>
+
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span><span class="p">,</span> <span class="n">AnsibleParserError</span><span class="p">,</span> <span class="n">AnsibleUndefinedVariable</span><span class="p">,</span> <span class="n">AnsibleConnectionFailure</span>
+<span class="kn">from</span> <span class="nn">ansible.executor.task_result</span> <span class="kn">import</span> <span class="n">TaskResult</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.conditional</span> <span class="kn">import</span> <span class="n">Conditional</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.task</span> <span class="kn">import</span> <span class="n">Task</span>
+<span class="kn">from</span> <span class="nn">ansible.template</span> <span class="kn">import</span> <span class="n">Templar</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.encrypt</span> <span class="kn">import</span> <span class="n">key_for_hostname</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.listify</span> <span class="kn">import</span> <span class="n">listify_lookup_plugin_terms</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.unicode</span> <span class="kn">import</span> <span class="n">to_unicode</span><span class="p">,</span> <span class="n">to_bytes</span>
+<span class="kn">from</span> <span class="nn">ansible.vars.unsafe_proxy</span> <span class="kn">import</span> <span class="n">UnsafeProxy</span><span class="p">,</span> <span class="n">wrap_var</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;TaskExecutor&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="TaskExecutor"><a class="viewcode-back" href="../../../rst/ansible.executor.html#ansible.executor.task_executor.TaskExecutor">[docs]</a><span class="k">class</span> <span class="nc">TaskExecutor</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39;Base worker class for the executor pipeline for loading an action plugin to dispatch the task to a given host.</span>
+
+<span class="sd">    This class roughly corresponds to the old Runner() class.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c"># Modules that we optimize by squashing loop items into a single call to</span>
+    <span class="c"># the module</span>
+    <span class="n">SQUASH_ACTIONS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_SQUASH_ACTIONS</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">job_vars</span><span class="p">,</span> <span class="n">play_context</span><span class="p">,</span> <span class="n">new_stdin</span><span class="p">,</span> <span class="n">loader</span><span class="p">,</span> <span class="n">shared_loader_obj</span><span class="p">,</span> <span class="n">rslt_q</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_host</span>              <span class="o">=</span> <span class="n">host</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_task</span>              <span class="o">=</span> <span class="n">task</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_job_vars</span>          <span class="o">=</span> <span class="n">job_vars</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span>      <span class="o">=</span> <span class="n">play_context</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_new_stdin</span>         <span class="o">=</span> <span class="n">new_stdin</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_loader</span>            <span class="o">=</span> <span class="n">loader</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_shared_loader_obj</span> <span class="o">=</span> <span class="n">shared_loader_obj</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span>        <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rslt_q</span>            <span class="o">=</span> <span class="n">rslt_q</span>
+
+<div class="viewcode-block" id="TaskExecutor.run"><a class="viewcode-back" href="../../../rst/ansible.executor.html#ansible.executor.task_executor.TaskExecutor.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Executor entrypoint for a task responsible for a single execute or a loop of executes.</span>
+
+<span class="sd">        Determine if the task requires looping.</span>
+
+<span class="sd">        If so, :TaskExecutor: runs the task with self._run_loop().</span>
+
+<span class="sd">        For the case of a single task, :self._execute:() is called.</span>
+
+<span class="sd">        The collected task results are parsed andreturned as a dict.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;in run()&quot;</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># lookup plugins need to know if this task is executing from</span>
+            <span class="c"># a role, so that it can properly find files/templates/etc.</span>
+            <span class="n">roledir</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">_role</span><span class="p">:</span>
+                <span class="n">roledir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">_role</span><span class="o">.</span><span class="n">_role_path</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_job_vars</span><span class="p">[</span><span class="s">&#39;roledir&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">roledir</span>
+
+            <span class="n">items</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_loop_items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">items</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">items</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">item_results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_loop</span><span class="p">(</span><span class="n">items</span><span class="p">)</span>
+
+                    <span class="c"># loop through the item results, and remember the changed/failed</span>
+                    <span class="c"># result flags based on any item there.</span>
+                    <span class="n">changed</span> <span class="o">=</span> <span class="bp">False</span>
+                    <span class="n">failed</span>  <span class="o">=</span> <span class="bp">False</span>
+                    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">item_results</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="s">&#39;changed&#39;</span> <span class="ow">in</span> <span class="n">item</span> <span class="ow">and</span> <span class="n">item</span><span class="p">[</span><span class="s">&#39;changed&#39;</span><span class="p">]:</span>
+                            <span class="n">changed</span> <span class="o">=</span> <span class="bp">True</span>
+                        <span class="k">if</span> <span class="s">&#39;failed&#39;</span> <span class="ow">in</span> <span class="n">item</span> <span class="ow">and</span> <span class="n">item</span><span class="p">[</span><span class="s">&#39;failed&#39;</span><span class="p">]:</span>
+                            <span class="n">failed</span> <span class="o">=</span> <span class="bp">True</span>
+
+                    <span class="c"># create the overall result item, and set the changed/failed</span>
+                    <span class="c"># flags there to reflect the overall result of the loop</span>
+                    <span class="n">res</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">results</span><span class="o">=</span><span class="n">item_results</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">changed</span><span class="p">:</span>
+                        <span class="n">res</span><span class="p">[</span><span class="s">&#39;changed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+
+                    <span class="k">if</span> <span class="n">failed</span><span class="p">:</span>
+                        <span class="n">res</span><span class="p">[</span><span class="s">&#39;failed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+                        <span class="n">res</span><span class="p">[</span><span class="s">&#39;msg&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;One or more items failed&#39;</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">res</span><span class="p">[</span><span class="s">&#39;msg&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;All items completed&#39;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">res</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">changed</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">skipped</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">skipped_reason</span><span class="o">=</span><span class="s">&#39;No items in the list&#39;</span><span class="p">,</span> <span class="n">results</span><span class="o">=</span><span class="p">[])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;calling self._execute()&quot;</span><span class="p">)</span>
+                <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_execute</span><span class="p">()</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;_execute() done&quot;</span><span class="p">)</span>
+
+            <span class="c"># make sure changed is set in the result, if it&#39;s not present</span>
+            <span class="k">if</span> <span class="s">&#39;changed&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">res</span><span class="p">:</span>
+                <span class="n">res</span><span class="p">[</span><span class="s">&#39;changed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
+
+            <span class="k">def</span> <span class="nf">_clean_res</span><span class="p">(</span><span class="n">res</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">res</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="n">res</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">_clean_res</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span><span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">res</span><span class="p">):</span>
+                        <span class="n">res</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">_clean_res</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">UnsafeProxy</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">res</span><span class="o">.</span><span class="n">_obj</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">binary_type</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">res</span>
+
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;dumping result to json&quot;</span><span class="p">)</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">_clean_res</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;done dumping result, returning&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">res</span>
+        <span class="k">except</span> <span class="n">AnsibleError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">failed</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="n">to_unicode</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">nonstring</span><span class="o">=</span><span class="s">&#39;simplerepr&#39;</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">failed</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="s">&#39;Unexpected failure during module execution.&#39;</span><span class="p">,</span> <span class="n">exception</span><span class="o">=</span><span class="n">to_unicode</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()),</span> <span class="n">stdout</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="k">pass</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">u&quot;error closing connection: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">e</span><span class="p">))</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_loop_items</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Find and query a lookup plugin to handle the with_* (the item) portion of a task and return the items result.&#39;&#39;&#39;</span>
+
+        <span class="c"># save the play context variables to a temporary dictionary,</span>
+        <span class="c"># so that we can modify the job vars without doing a full copy</span>
+        <span class="c"># and later restore them to avoid modifying things too early</span>
+        <span class="n">play_context_vars</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">update_vars</span><span class="p">(</span><span class="n">play_context_vars</span><span class="p">)</span>
+
+        <span class="n">old_vars</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">play_context_vars</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_job_vars</span><span class="p">:</span>
+                <span class="n">old_vars</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_job_vars</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_job_vars</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">play_context_vars</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+        <span class="n">templar</span> <span class="o">=</span> <span class="n">Templar</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span> <span class="n">shared_loader_obj</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_shared_loader_obj</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_job_vars</span><span class="p">)</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">loop</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">loop</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shared_loader_obj</span><span class="o">.</span><span class="n">lookup_loader</span><span class="p">:</span>
+                <span class="c"># TODO: remove convert_bare true and deprecate this in with_</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">loop</span> <span class="o">==</span> <span class="s">&#39;first_found&#39;</span><span class="p">:</span>
+                    <span class="c"># first_found loops are special.  If the item is undefined</span>
+                    <span class="c"># then we want to fall through to the next value rather</span>
+                    <span class="c"># than failing.</span>
+                    <span class="n">loop_terms</span> <span class="o">=</span> <span class="n">listify_lookup_plugin_terms</span><span class="p">(</span><span class="n">terms</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">loop_args</span><span class="p">,</span> <span class="n">templar</span><span class="o">=</span><span class="n">templar</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span> <span class="n">fail_on_undefined</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">convert_bare</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                    <span class="n">loop_terms</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">loop_terms</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">templar</span><span class="o">.</span><span class="n">_contains_vars</span><span class="p">(</span><span class="n">t</span><span class="p">)]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">loop_terms</span> <span class="o">=</span> <span class="n">listify_lookup_plugin_terms</span><span class="p">(</span><span class="n">terms</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">loop_args</span><span class="p">,</span> <span class="n">templar</span><span class="o">=</span><span class="n">templar</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span> <span class="n">fail_on_undefined</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">convert_bare</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="n">AnsibleUndefinedVariable</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="n">display</span><span class="o">.</span><span class="n">deprecated</span><span class="p">(</span><span class="s">&quot;Skipping task due to undefined Error, in the future this will be a fatal error.: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+                        <span class="k">return</span> <span class="bp">None</span>
+                <span class="n">items</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shared_loader_obj</span><span class="o">.</span><span class="n">lookup_loader</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">loop</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span> <span class="n">templar</span><span class="o">=</span><span class="n">templar</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">terms</span><span class="o">=</span><span class="n">loop_terms</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_job_vars</span><span class="p">,</span> <span class="n">wantlist</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Unexpected failure in finding the lookup named &#39;</span><span class="si">%s</span><span class="s">&#39; in the available lookup plugins&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
+
+        <span class="c"># now we restore any old job variables that may have been modified,</span>
+        <span class="c"># and delete them if they were in the play context vars but not in</span>
+        <span class="c"># the old variables dictionary</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">play_context_vars</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">old_vars</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_job_vars</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">old_vars</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_job_vars</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">items</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">ansible.vars.unsafe_proxy</span> <span class="kn">import</span> <span class="n">UnsafeProxy</span>
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">items</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">UnsafeProxy</span><span class="p">):</span>
+                    <span class="n">items</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">UnsafeProxy</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">items</span>
+
+    <span class="k">def</span> <span class="nf">_run_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">items</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Runs the task with :items: and collect the results.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            An &#39;results&#39; array. The results from each result collected is inserted into the final result</span>
+<span class="sd">            along with the item for which the loop ran.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c"># make copies of the job vars and task so we can add the item to</span>
+        <span class="c"># the variables and re-validate the task with the item variable</span>
+        <span class="c"># task_vars = self._job_vars.copy()</span>
+        <span class="n">task_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_job_vars</span>
+
+        <span class="n">loop_var</span> <span class="o">=</span> <span class="s">&#39;item&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">loop_control</span><span class="p">:</span>
+            <span class="c"># the value may be &#39;None&#39;, so we still need to default it back to &#39;item&#39;</span>
+            <span class="n">loop_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">loop_control</span><span class="o">.</span><span class="n">loop_var</span> <span class="ow">or</span> <span class="s">&#39;item&#39;</span>
+
+        <span class="k">if</span> <span class="n">loop_var</span> <span class="ow">in</span> <span class="n">task_vars</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;The loop variable &#39;</span><span class="si">%s</span><span class="s">&#39; is already in use. You should set the `loop_var` value in the `loop_control` option for the task to something else to avoid variable collisions and unexpected behavior.&quot;</span> <span class="o">%</span> <span class="n">loop_var</span><span class="p">)</span>
+
+        <span class="n">items</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_squash_items</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">loop_var</span><span class="p">,</span> <span class="n">task_vars</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+            <span class="n">task_vars</span><span class="p">[</span><span class="n">loop_var</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">tmp_task</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">tmp_play_context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">except</span> <span class="n">AnsibleParserError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">failed</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="n">to_unicode</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+                <span class="k">continue</span>
+
+            <span class="c"># now we swap the internal task and play context with their copies,</span>
+            <span class="c"># execute, and swap them back so we can do the next iteration cleanly</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span> <span class="n">tmp_task</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">tmp_task</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="p">)</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="p">,</span> <span class="n">tmp_play_context</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">tmp_play_context</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="p">)</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_execute</span><span class="p">(</span><span class="n">variables</span><span class="o">=</span><span class="n">task_vars</span><span class="p">)</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span> <span class="n">tmp_task</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">tmp_task</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="p">)</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="p">,</span> <span class="n">tmp_play_context</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">tmp_play_context</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="p">)</span>
+
+            <span class="c"># now update the result with the item info, and append the result</span>
+            <span class="c"># to the list of results</span>
+            <span class="n">res</span><span class="p">[</span><span class="n">loop_var</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+            <span class="n">res</span><span class="p">[</span><span class="s">&#39;_ansible_item_result&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_rslt_q</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">TaskResult</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span> <span class="n">res</span><span class="p">),</span> <span class="n">block</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+            <span class="k">del</span> <span class="n">task_vars</span><span class="p">[</span><span class="n">loop_var</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">results</span>
+
+    <span class="c"># FIXME: Does this actual return comma seperated strings? The returns seem to be either a [final_items]</span>
+    <span class="c">#        Or the original passed in &#39;items&#39;</span>
+    <span class="k">def</span> <span class="nf">_squash_items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">items</span><span class="p">,</span> <span class="n">loop_var</span><span class="p">,</span> <span class="n">variables</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Squash items down to a comma-separated list for certain modules which support it</span>
+<span class="sd">        (typically package management modules).</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># _task.action could contain templatable strings (via action: and</span>
+            <span class="c"># local_action:)  Template it before comparing.  If we don&#39;t end up</span>
+            <span class="c"># optimizing it here, the templatable string might use template vars</span>
+            <span class="c"># that aren&#39;t available until later (it could even use vars from the</span>
+            <span class="c"># with_items loop) so don&#39;t make the templated string permanent yet.</span>
+            <span class="n">templar</span> <span class="o">=</span> <span class="n">Templar</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span> <span class="n">shared_loader_obj</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_shared_loader_obj</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="n">variables</span><span class="p">)</span>
+            <span class="n">task_action</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">action</span>
+            <span class="k">if</span> <span class="n">templar</span><span class="o">.</span><span class="n">_contains_vars</span><span class="p">(</span><span class="n">task_action</span><span class="p">):</span>
+                <span class="n">task_action</span> <span class="o">=</span> <span class="n">templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">task_action</span><span class="p">,</span> <span class="n">fail_on_undefined</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">items</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">task_action</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">SQUASH_ACTIONS</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">string_types</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">items</span><span class="p">):</span>
+                    <span class="n">final_items</span> <span class="o">=</span> <span class="p">[]</span>
+
+                    <span class="k">for</span> <span class="n">allowed</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">,</span> <span class="s">&#39;pkg&#39;</span><span class="p">,</span> <span class="s">&#39;package&#39;</span><span class="p">]:</span>
+                        <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">allowed</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                            <span class="k">break</span>
+
+                    <span class="c"># This gets the information to check whether the name field</span>
+                    <span class="c"># contains a template that we can squash for</span>
+                    <span class="n">template_no_item</span> <span class="o">=</span> <span class="n">template_with_item</span> <span class="o">=</span> <span class="bp">None</span>
+                    <span class="k">if</span> <span class="n">name</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">templar</span><span class="o">.</span><span class="n">_contains_vars</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+                            <span class="n">variables</span><span class="p">[</span><span class="n">loop_var</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;</span><span class="se">\0</span><span class="s">$&#39;</span>
+                            <span class="n">template_no_item</span> <span class="o">=</span> <span class="n">templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">variables</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+                            <span class="n">variables</span><span class="p">[</span><span class="n">loop_var</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;</span><span class="se">\0</span><span class="s">@&#39;</span>
+                            <span class="n">template_with_item</span> <span class="o">=</span> <span class="n">templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">variables</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+                            <span class="k">del</span> <span class="n">variables</span><span class="p">[</span><span class="n">loop_var</span><span class="p">]</span>
+
+                        <span class="c"># Check if the user is doing some operation that doesn&#39;t take</span>
+                        <span class="c"># name/pkg or the name/pkg field doesn&#39;t have any variables</span>
+                        <span class="c"># and thus the items can&#39;t be squashed</span>
+                        <span class="k">if</span> <span class="n">template_no_item</span> <span class="o">!=</span> <span class="n">template_with_item</span><span class="p">:</span>
+                            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+                                <span class="n">variables</span><span class="p">[</span><span class="n">loop_var</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+                                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">evaluate_conditional</span><span class="p">(</span><span class="n">templar</span><span class="p">,</span> <span class="n">variables</span><span class="p">):</span>
+                                    <span class="n">new_item</span> <span class="o">=</span> <span class="n">templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+                                    <span class="n">final_items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_item</span><span class="p">)</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">final_items</span>
+                            <span class="c"># Wrap this in a list so that the calling function loop</span>
+                            <span class="c"># executes exactly once</span>
+                            <span class="k">return</span> <span class="p">[</span><span class="n">final_items</span><span class="p">]</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="c"># Restore the name parameter</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+                <span class="c">#elif:</span>
+                    <span class="c"># Right now we only optimize single entries.  In the future we</span>
+                    <span class="c"># could optimize more types:</span>
+                    <span class="c"># * lists can be squashed together</span>
+                    <span class="c"># * dicts could squash entries that match in all cases except the</span>
+                    <span class="c">#   name or pkg field.</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="c"># Squashing is an optimization.  If it fails for any reason,</span>
+            <span class="c"># simply use the unoptimized list of items.</span>
+
+            <span class="c"># Restore the name parameter</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="k">return</span> <span class="n">items</span>
+
+    <span class="k">def</span> <span class="nf">_execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Core of the task executor: Run the task on a host and handles &#39;retry&#39;,&#39;until&#39;, and block &#39;rescue&#39;/&#39;always&#39;.</span>
+
+<span class="sd">        The host may be the delegated_to host.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="n">variables</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">variables</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_job_vars</span>
+
+        <span class="n">templar</span> <span class="o">=</span> <span class="n">Templar</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span> <span class="n">shared_loader_obj</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_shared_loader_obj</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="n">variables</span><span class="p">)</span>
+
+        <span class="n">context_validation_error</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># apply the given task&#39;s information to the connection info,</span>
+            <span class="c"># which may override some fields already set by the play or</span>
+            <span class="c"># the options specified on the command line</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">set_task_and_variable_override</span><span class="p">(</span><span class="n">task</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="n">variables</span><span class="p">,</span> <span class="n">templar</span><span class="o">=</span><span class="n">templar</span><span class="p">)</span>
+
+            <span class="c"># fields set from the play/task may be based on variables, so we have to</span>
+            <span class="c"># do the same kind of post validation step on it here before we use it.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">post_validate</span><span class="p">(</span><span class="n">templar</span><span class="o">=</span><span class="n">templar</span><span class="p">)</span>
+
+            <span class="c"># now that the play context is finalized, if the remote_addr is not set</span>
+            <span class="c"># default to using the host&#39;s address field as the remote address</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_addr</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_addr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="o">.</span><span class="n">address</span>
+
+            <span class="c"># We also add &quot;magic&quot; variables back into the variables dict to make sure</span>
+            <span class="c"># a certain subset of variables exist.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">update_vars</span><span class="p">(</span><span class="n">variables</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">AnsibleError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c"># save the error, which we&#39;ll raise later if we don&#39;t end up</span>
+            <span class="c"># skipping this task during the conditional evaluation step</span>
+            <span class="n">context_validation_error</span> <span class="o">=</span> <span class="n">e</span>
+
+        <span class="c"># Evaluate the conditional (if any) for this task, which we do before running</span>
+        <span class="c"># the final task post-validation. We do this before the post validation due to</span>
+        <span class="c"># the fact that the conditional may specify that the task be skipped due to a</span>
+        <span class="c"># variable not being present which would otherwise cause validation to fail</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">evaluate_conditional</span><span class="p">(</span><span class="n">templar</span><span class="p">,</span> <span class="n">variables</span><span class="p">):</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;when evaluation failed, skipping this task&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">changed</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">skipped</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">skip_reason</span><span class="o">=</span><span class="s">&#39;Conditional check failed&#39;</span><span class="p">,</span> <span class="n">_ansible_no_log</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">no_log</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">AnsibleError</span><span class="p">:</span>
+            <span class="c"># skip conditional exception in the case of includes as the vars needed might not be avaiable except in the included tasks or due to tags</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">action</span> <span class="o">!=</span> <span class="s">&#39;include&#39;</span><span class="p">:</span>
+                <span class="k">raise</span>
+
+        <span class="c"># if we ran into an error while setting up the PlayContext, raise it now</span>
+        <span class="k">if</span> <span class="n">context_validation_error</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">context_validation_error</span>
+
+        <span class="c"># if this task is a TaskInclude, we just return now with a success code so the</span>
+        <span class="c"># main thread can expand the task list for the given host</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="s">&#39;include&#39;</span><span class="p">:</span>
+            <span class="n">include_variables</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">include_file</span> <span class="o">=</span> <span class="n">include_variables</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;_raw_params&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">include_file</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">failed</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="s">&quot;No include file was specified to the include&quot;</span><span class="p">)</span>
+
+            <span class="n">include_file</span> <span class="o">=</span> <span class="n">templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">include_file</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="n">include_file</span><span class="p">,</span> <span class="n">include_variables</span><span class="o">=</span><span class="n">include_variables</span><span class="p">)</span>
+
+        <span class="c"># Now we do final validation on the task, which sets all fields to their final values.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">post_validate</span><span class="p">(</span><span class="n">templar</span><span class="o">=</span><span class="n">templar</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s">&#39;_variable_params&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
+            <span class="n">variable_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;_variable_params&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">variable_params</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">deprecated</span><span class="p">(</span><span class="s">&quot;Using variables for task params is unsafe, especially if the variables come from an external source like facts&quot;</span><span class="p">)</span>
+                <span class="n">variable_params</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">variable_params</span>
+
+        <span class="c"># get the connection and the handler for this execution</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="p">,</span> <span class="s">&#39;connected&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_addr</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_addr</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_connection</span><span class="p">(</span><span class="n">variables</span><span class="o">=</span><span class="n">variables</span><span class="p">,</span> <span class="n">templar</span><span class="o">=</span><span class="n">templar</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">set_host_overrides</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="p">,</span> <span class="n">hostvars</span><span class="o">=</span><span class="n">variables</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;hostvars&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="p">{}))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># if connection is reused, its _play_context is no longer valid and needs</span>
+            <span class="c"># to be replaced with the one templated above, in case other data changed</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">_play_context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_handler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_action_handler</span><span class="p">(</span><span class="n">connection</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="p">,</span> <span class="n">templar</span><span class="o">=</span><span class="n">templar</span><span class="p">)</span>
+
+        <span class="c"># And filter out any fields which were set to default(omit), and got the omit token value</span>
+        <span class="n">omit_token</span> <span class="o">=</span> <span class="n">variables</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;omit&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">omit_token</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">((</span><span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">omit_token</span><span class="p">)</span>
+
+        <span class="c"># Read some values from the task, so that we can modify them if need be</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">until</span><span class="p">:</span>
+            <span class="n">retries</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">retries</span>
+            <span class="k">if</span> <span class="n">retries</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">retries</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">retries</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="n">delay</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">delay</span>
+        <span class="k">if</span> <span class="n">delay</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">delay</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="c"># make a copy of the job vars here, in case we need to update them</span>
+        <span class="c"># with the registered variable value later on when testing conditions</span>
+        <span class="n">vars_copy</span> <span class="o">=</span> <span class="n">variables</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;starting attempt loop&quot;</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">retries</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;running the handler&quot;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handler</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">task_vars</span><span class="o">=</span><span class="n">variables</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">AnsibleConnectionFailure</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">unreachable</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="n">to_unicode</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;handler run complete&quot;</span><span class="p">)</span>
+
+            <span class="c"># preserve no log</span>
+            <span class="n">result</span><span class="p">[</span><span class="s">&quot;_ansible_no_log&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">no_log</span>
+
+            <span class="c"># update the local copy of vars with the registered value, if specified,</span>
+            <span class="c"># or any facts which may have been generated by the module execution</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">register</span><span class="p">:</span>
+                <span class="n">vars_copy</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">register</span><span class="p">]</span> <span class="o">=</span> <span class="n">wrap_var</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">async</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c"># the async_wrapper module returns dumped JSON via its stdout</span>
+                <span class="c"># response, so we parse it here and replace the result</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="s">&#39;skipped&#39;</span> <span class="ow">in</span> <span class="n">result</span> <span class="ow">and</span> <span class="n">result</span><span class="p">[</span><span class="s">&#39;skipped&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="s">&#39;failed&#39;</span> <span class="ow">in</span> <span class="n">result</span> <span class="ow">and</span> <span class="n">result</span><span class="p">[</span><span class="s">&#39;failed&#39;</span><span class="p">]:</span>
+                        <span class="k">return</span> <span class="n">result</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;stdout&#39;</span><span class="p">))</span>
+                <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">failed</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="s">u&quot;The async task did not return valid JSON: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">poll</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_poll_async_result</span><span class="p">(</span><span class="n">result</span><span class="o">=</span><span class="n">result</span><span class="p">,</span> <span class="n">templar</span><span class="o">=</span><span class="n">templar</span><span class="p">)</span>
+
+                <span class="c"># ensure no log is preserved</span>
+                <span class="n">result</span><span class="p">[</span><span class="s">&quot;_ansible_no_log&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">no_log</span>
+
+            <span class="c"># helper methods for use below in evaluating changed/failed_when</span>
+            <span class="k">def</span> <span class="nf">_evaluate_changed_when_result</span><span class="p">(</span><span class="n">result</span><span class="p">):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">changed_when</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">changed_when</span><span class="p">:</span>
+                    <span class="n">cond</span> <span class="o">=</span> <span class="n">Conditional</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">)</span>
+                    <span class="n">cond</span><span class="o">.</span><span class="n">when</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">changed_when</span>
+                    <span class="n">result</span><span class="p">[</span><span class="s">&#39;changed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cond</span><span class="o">.</span><span class="n">evaluate_conditional</span><span class="p">(</span><span class="n">templar</span><span class="p">,</span> <span class="n">vars_copy</span><span class="p">)</span>
+
+            <span class="k">def</span> <span class="nf">_evaluate_failed_when_result</span><span class="p">(</span><span class="n">result</span><span class="p">):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">failed_when</span><span class="p">:</span>
+                    <span class="n">cond</span> <span class="o">=</span> <span class="n">Conditional</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">)</span>
+                    <span class="n">cond</span><span class="o">.</span><span class="n">when</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">failed_when</span>
+                    <span class="n">failed_when_result</span> <span class="o">=</span> <span class="n">cond</span><span class="o">.</span><span class="n">evaluate_conditional</span><span class="p">(</span><span class="n">templar</span><span class="p">,</span> <span class="n">vars_copy</span><span class="p">)</span>
+                    <span class="n">result</span><span class="p">[</span><span class="s">&#39;failed_when_result&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s">&#39;failed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">failed_when_result</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">failed_when_result</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="k">return</span> <span class="n">failed_when_result</span>
+
+            <span class="k">if</span> <span class="s">&#39;ansible_facts&#39;</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+                <span class="n">vars_copy</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s">&#39;ansible_facts&#39;</span><span class="p">])</span>
+
+            <span class="c"># set the failed property if the result has a non-zero rc. This will be</span>
+            <span class="c"># overridden below if the failed_when property is set</span>
+            <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;rc&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">result</span><span class="p">[</span><span class="s">&#39;failed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+
+            <span class="c"># if we didn&#39;t skip this task, use the helpers to evaluate the changed/</span>
+            <span class="c"># failed_when properties</span>
+            <span class="k">if</span> <span class="s">&#39;skipped&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+                <span class="n">_evaluate_changed_when_result</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+                <span class="n">_evaluate_failed_when_result</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">retries</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">cond</span> <span class="o">=</span> <span class="n">Conditional</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">)</span>
+                <span class="n">cond</span><span class="o">.</span><span class="n">when</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">until</span>
+                <span class="k">if</span> <span class="n">cond</span><span class="o">.</span><span class="n">evaluate_conditional</span><span class="p">(</span><span class="n">templar</span><span class="p">,</span> <span class="n">vars_copy</span><span class="p">):</span>
+                    <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c"># no conditional check, or it failed, so sleep for the specified time</span>
+                    <span class="k">if</span> <span class="n">attempt</span> <span class="o">&lt;</span> <span class="n">retries</span><span class="p">:</span>
+                        <span class="n">result</span><span class="p">[</span><span class="s">&#39;attempts&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">attempt</span>
+                        <span class="n">result</span><span class="p">[</span><span class="s">&#39;_ansible_retry&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+                        <span class="n">result</span><span class="p">[</span><span class="s">&#39;retries&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">retries</span>
+                        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Retrying task, attempt </span><span class="si">%d</span><span class="s"> of </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">attempt</span><span class="p">,</span> <span class="n">retries</span><span class="p">))</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_rslt_q</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">TaskResult</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span> <span class="n">result</span><span class="p">),</span> <span class="n">block</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+                        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">retries</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="c"># we ran out of attempts, so mark the result as failed</span>
+                <span class="n">result</span><span class="p">[</span><span class="s">&#39;failed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="c"># do the final update of the local variables here, for both registered</span>
+        <span class="c"># values and any facts which may have been created</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">register</span><span class="p">:</span>
+            <span class="n">variables</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">register</span><span class="p">]</span> <span class="o">=</span> <span class="n">wrap_var</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s">&#39;ansible_facts&#39;</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+            <span class="n">variables</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s">&#39;ansible_facts&#39;</span><span class="p">])</span>
+
+        <span class="c"># save the notification target in the result, if it was specified, as</span>
+        <span class="c"># this task may be running in a loop in which case the notification</span>
+        <span class="c"># may be item-specific, ie. &quot;notify: service {{item}}&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">notify</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">result</span><span class="p">[</span><span class="s">&#39;_ansible_notify&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">notify</span>
+
+        <span class="c"># add the delegated vars to the result, so we can reference them</span>
+        <span class="c"># on the results side without having to do any further templating</span>
+        <span class="c"># FIXME: we only want a limited set of variables here, so this is currently</span>
+        <span class="c">#        hardcoded but should be possibly fixed if we want more or if</span>
+        <span class="c">#        there is another source of truth we can use</span>
+        <span class="n">delegated_vars</span> <span class="o">=</span> <span class="n">variables</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ansible_delegated_vars&#39;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">())</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">delegate_to</span><span class="p">,</span> <span class="nb">dict</span><span class="p">())</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">delegated_vars</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">result</span><span class="p">[</span><span class="s">&quot;_ansible_delegated_vars&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;ansible_host&#39;</span><span class="p">,</span> <span class="p">):</span>
+                <span class="n">result</span><span class="p">[</span><span class="s">&quot;_ansible_delegated_vars&quot;</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">delegated_vars</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+
+        <span class="c"># and return</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;attempt loop complete, returning result&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span> <span class="nf">_poll_async_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">templar</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Poll for the specified job id to be complete.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">async_jid</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ansible_job_id&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">async_jid</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">failed</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="s">&quot;No job id was returned by the async task&quot;</span><span class="p">)</span>
+
+        <span class="c"># Create a new psuedo-task to run the async_status module, and run</span>
+        <span class="c"># that (with a sleep for &quot;poll&quot; seconds between each retry) until the</span>
+        <span class="c"># async time limit is exceeded.</span>
+
+        <span class="n">async_task</span> <span class="o">=</span> <span class="n">Task</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s">&#39;async_status jid=</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">async_jid</span><span class="p">))</span>
+
+        <span class="c"># Because this is an async task, the action handler is async. However,</span>
+        <span class="c"># we need the &#39;normal&#39; action handler for the status check, so get it</span>
+        <span class="c"># now via the action_loader</span>
+        <span class="n">normal_handler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shared_loader_obj</span><span class="o">.</span><span class="n">action_loader</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s">&#39;normal&#39;</span><span class="p">,</span>
+            <span class="n">task</span><span class="o">=</span><span class="n">async_task</span><span class="p">,</span>
+            <span class="n">connection</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="p">,</span>
+            <span class="n">play_context</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="p">,</span>
+            <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span>
+            <span class="n">templar</span><span class="o">=</span><span class="n">templar</span><span class="p">,</span>
+            <span class="n">shared_loader_obj</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_shared_loader_obj</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">time_left</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">async</span>
+        <span class="k">while</span> <span class="n">time_left</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">poll</span><span class="p">)</span>
+
+            <span class="n">async_result</span> <span class="o">=</span> <span class="n">normal_handler</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">async_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;finished&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="s">&#39;failed&#39;</span> <span class="ow">in</span> <span class="n">async_result</span> <span class="ow">or</span> <span class="s">&#39;skipped&#39;</span> <span class="ow">in</span> <span class="n">async_result</span><span class="p">:</span>
+                <span class="k">break</span>
+
+            <span class="n">time_left</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">poll</span>
+
+        <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">async_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;finished&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">failed</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="s">&quot;async task did not complete within the requested time&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">async_result</span>
+
+    <span class="k">def</span> <span class="nf">_get_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variables</span><span class="p">,</span> <span class="n">templar</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Reads the connection property for the host, and returns the</span>
+<span class="sd">        correct connection object from the list of connection plugins</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">delegate_to</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c"># since we&#39;re delegating, we don&#39;t want to use interpreter values</span>
+            <span class="c"># which would have been set for the original target host</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">variables</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">string_types</span><span class="p">)</span> <span class="ow">and</span> <span class="n">i</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;ansible_&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">i</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;_interpreter&#39;</span><span class="p">):</span>
+                    <span class="k">del</span> <span class="n">variables</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="c"># now replace the interpreter values with those that may have come</span>
+            <span class="c"># from the delegated-to host</span>
+            <span class="n">delegated_vars</span> <span class="o">=</span> <span class="n">variables</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ansible_delegated_vars&#39;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">())</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">delegate_to</span><span class="p">,</span> <span class="nb">dict</span><span class="p">())</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">delegated_vars</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">delegated_vars</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">string_types</span><span class="p">)</span> <span class="ow">and</span> <span class="n">i</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&quot;ansible_&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">i</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&quot;_interpreter&quot;</span><span class="p">):</span>
+                        <span class="n">variables</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">delegated_vars</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="n">conn_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">connection</span>
+        <span class="k">if</span> <span class="n">conn_type</span> <span class="o">==</span> <span class="s">&#39;smart&#39;</span><span class="p">:</span>
+            <span class="n">conn_type</span> <span class="o">=</span> <span class="s">&#39;ssh&#39;</span>
+            <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;darwin&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">password</span><span class="p">:</span>
+                <span class="c"># due to a current bug in sshpass on OSX, which can trigger</span>
+                <span class="c"># a kernel panic even for non-privileged users, we revert to</span>
+                <span class="c"># paramiko on that OS when a SSH password is specified</span>
+                <span class="n">conn_type</span> <span class="o">=</span> <span class="s">&quot;paramiko&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># see if SSH can support ControlPersist if not use paramiko</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">cmd</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">([</span><span class="s">&#39;ssh&#39;</span><span class="p">,</span><span class="s">&#39;-o&#39;</span><span class="p">,</span><span class="s">&#39;ControlPersist&#39;</span><span class="p">],</span> <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">)</span>
+                    <span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span> <span class="o">=</span> <span class="n">cmd</span><span class="o">.</span><span class="n">communicate</span><span class="p">()</span>
+                    <span class="n">err</span> <span class="o">=</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="s">u&quot;Bad configuration option&quot;</span> <span class="ow">in</span> <span class="n">err</span> <span class="ow">or</span> <span class="s">u&quot;Usage:&quot;</span> <span class="ow">in</span> <span class="n">err</span><span class="p">:</span>
+                        <span class="n">conn_type</span> <span class="o">=</span> <span class="s">&quot;paramiko&quot;</span>
+                <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+                    <span class="n">conn_type</span> <span class="o">=</span> <span class="s">&quot;paramiko&quot;</span>
+
+        <span class="n">connection</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shared_loader_obj</span><span class="o">.</span><span class="n">connection_loader</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">conn_type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_new_stdin</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">connection</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;the connection plugin &#39;</span><span class="si">%s</span><span class="s">&#39; was not found&quot;</span> <span class="o">%</span> <span class="n">conn_type</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">accelerate</span><span class="p">:</span>
+            <span class="c"># accelerate is deprecated as of 2.1...</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">deprecated</span><span class="p">(</span><span class="s">&#39;Accelerated mode is deprecated. Consider using SSH with ControlPersist and pipelining enabled instead&#39;</span><span class="p">)</span>
+            <span class="c"># launch the accelerated daemon here</span>
+            <span class="n">ssh_connection</span> <span class="o">=</span> <span class="n">connection</span>
+            <span class="n">handler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shared_loader_obj</span><span class="o">.</span><span class="n">action_loader</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="s">&#39;normal&#39;</span><span class="p">,</span>
+                <span class="n">task</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span>
+                <span class="n">connection</span><span class="o">=</span><span class="n">ssh_connection</span><span class="p">,</span>
+                <span class="n">play_context</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="p">,</span>
+                <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span>
+                <span class="n">templar</span><span class="o">=</span><span class="n">templar</span><span class="p">,</span>
+                <span class="n">shared_loader_obj</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_shared_loader_obj</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">key</span> <span class="o">=</span> <span class="n">key_for_hostname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_addr</span><span class="p">)</span>
+            <span class="n">accelerate_args</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                <span class="n">password</span><span class="o">=</span><span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">__str__</span><span class="p">()),</span>
+                <span class="n">port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">accelerate_port</span><span class="p">,</span>
+                <span class="n">minutes</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">ACCELERATE_DAEMON_TIMEOUT</span><span class="p">,</span>
+                <span class="n">ipv6</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">accelerate_ipv6</span><span class="p">,</span>
+                <span class="n">debug</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">verbosity</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">connection</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shared_loader_obj</span><span class="o">.</span><span class="n">connection_loader</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;accelerate&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_new_stdin</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">connection</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;the connection plugin &#39;</span><span class="si">%s</span><span class="s">&#39; was not found&quot;</span> <span class="o">%</span> <span class="n">conn_type</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">connection</span><span class="o">.</span><span class="n">_connect</span><span class="p">()</span>
+            <span class="k">except</span> <span class="n">AnsibleConnectionFailure</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;connection failed, fallback to accelerate&#39;</span><span class="p">)</span>
+                <span class="n">res</span> <span class="o">=</span> <span class="n">handler</span><span class="o">.</span><span class="n">_execute_module</span><span class="p">(</span><span class="n">module_name</span><span class="o">=</span><span class="s">&#39;accelerate&#39;</span><span class="p">,</span> <span class="n">module_args</span><span class="o">=</span><span class="n">accelerate_args</span><span class="p">,</span> <span class="n">task_vars</span><span class="o">=</span><span class="n">variables</span><span class="p">,</span> <span class="n">delete_remote_tmp</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+                <span class="n">connection</span><span class="o">.</span><span class="n">_connect</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">connection</span>
+
+    <span class="k">def</span> <span class="nf">_get_action_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connection</span><span class="p">,</span> <span class="n">templar</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Find and return the correct action plugin to handle the requested task action.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">action</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shared_loader_obj</span><span class="o">.</span><span class="n">action_loader</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">async</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;async mode is not supported with the </span><span class="si">%s</span><span class="s"> module&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">action</span><span class="p">)</span>
+            <span class="n">handler_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">action</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">async</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">handler_name</span> <span class="o">=</span> <span class="s">&#39;normal&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">handler_name</span> <span class="o">=</span> <span class="s">&#39;async&#39;</span>
+
+        <span class="n">handler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shared_loader_obj</span><span class="o">.</span><span class="n">action_loader</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="n">handler_name</span><span class="p">,</span>
+            <span class="n">task</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span>
+            <span class="n">connection</span><span class="o">=</span><span class="n">connection</span><span class="p">,</span>
+            <span class="n">play_context</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="p">,</span>
+            <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span>
+            <span class="n">templar</span><span class="o">=</span><span class="n">templar</span><span class="p">,</span>
+            <span class="n">shared_loader_obj</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_shared_loader_obj</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">handler</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;the handler &#39;</span><span class="si">%s</span><span class="s">&#39; was not found&quot;</span> <span class="o">%</span> <span class="n">handler_name</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">handler</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

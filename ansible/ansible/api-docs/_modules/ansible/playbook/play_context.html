@@ -1,0 +1,759 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.playbook.play_context &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="ansible.playbook" href="../playbook.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../playbook.html">ansible.playbook</a> &raquo;</li>
+      
+    <li>ansible.playbook.play_context</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.playbook.play_context</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: utf-8 -*-</span>
+
+<span class="c"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">pipes</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">string</span>
+
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">iteritems</span><span class="p">,</span> <span class="n">string_types</span>
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.attribute</span> <span class="kn">import</span> <span class="n">FieldAttribute</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.base</span> <span class="kn">import</span> <span class="n">Base</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.boolean</span> <span class="kn">import</span> <span class="n">boolean</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;PlayContext&#39;</span><span class="p">]</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+<span class="c"># the magic variable mapping dictionary below is used to translate</span>
+<span class="c"># host/inventory variables to fields in the PlayContext</span>
+<span class="c"># object. The dictionary values are tuples, to account for aliases</span>
+<span class="c"># in variable names.</span>
+
+<span class="n">MAGIC_VARIABLE_MAPPING</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+   <span class="n">connection</span>       <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_connection&#39;</span><span class="p">,),</span>
+   <span class="n">remote_addr</span>      <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_ssh_host&#39;</span><span class="p">,</span> <span class="s">&#39;ansible_host&#39;</span><span class="p">),</span>
+   <span class="n">remote_user</span>      <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_ssh_user&#39;</span><span class="p">,</span> <span class="s">&#39;ansible_user&#39;</span><span class="p">),</span>
+   <span class="n">port</span>             <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_ssh_port&#39;</span><span class="p">,</span> <span class="s">&#39;ansible_port&#39;</span><span class="p">),</span>
+   <span class="n">accelerate_port</span>  <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_accelerate_port&#39;</span><span class="p">,),</span>
+   <span class="n">password</span>         <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_ssh_pass&#39;</span><span class="p">,</span> <span class="s">&#39;ansible_password&#39;</span><span class="p">),</span>
+   <span class="n">private_key_file</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_ssh_private_key_file&#39;</span><span class="p">,</span> <span class="s">&#39;ansible_private_key_file&#39;</span><span class="p">),</span>
+   <span class="n">pipelining</span>       <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_ssh_pipelining&#39;</span><span class="p">,</span> <span class="s">&#39;ansible_pipelining&#39;</span><span class="p">),</span>
+   <span class="n">shell</span>            <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_shell_type&#39;</span><span class="p">,),</span>
+   <span class="n">become</span>           <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_become&#39;</span><span class="p">,),</span>
+   <span class="n">become_method</span>    <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_become_method&#39;</span><span class="p">,),</span>
+   <span class="n">become_user</span>      <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_become_user&#39;</span><span class="p">,),</span>
+   <span class="n">become_pass</span>      <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_become_password&#39;</span><span class="p">,</span><span class="s">&#39;ansible_become_pass&#39;</span><span class="p">),</span>
+   <span class="n">become_exe</span>       <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_become_exe&#39;</span><span class="p">,),</span>
+   <span class="n">become_flags</span>     <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_become_flags&#39;</span><span class="p">,),</span>
+   <span class="n">ssh_common_args</span>  <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_ssh_common_args&#39;</span><span class="p">,),</span>
+   <span class="n">docker_extra_args</span><span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_docker_extra_args&#39;</span><span class="p">,),</span>
+   <span class="n">sftp_extra_args</span>  <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_sftp_extra_args&#39;</span><span class="p">,),</span>
+   <span class="n">scp_extra_args</span>   <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_scp_extra_args&#39;</span><span class="p">,),</span>
+   <span class="n">ssh_extra_args</span>   <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_ssh_extra_args&#39;</span><span class="p">,),</span>
+   <span class="n">sudo</span>             <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_sudo&#39;</span><span class="p">,),</span>
+   <span class="n">sudo_user</span>        <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_sudo_user&#39;</span><span class="p">,),</span>
+   <span class="n">sudo_pass</span>        <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_sudo_password&#39;</span><span class="p">,</span> <span class="s">&#39;ansible_sudo_pass&#39;</span><span class="p">),</span>
+   <span class="n">sudo_exe</span>         <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_sudo_exe&#39;</span><span class="p">,),</span>
+   <span class="n">sudo_flags</span>       <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_sudo_flags&#39;</span><span class="p">,),</span>
+   <span class="n">su</span>               <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_su&#39;</span><span class="p">,),</span>
+   <span class="n">su_user</span>          <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_su_user&#39;</span><span class="p">,),</span>
+   <span class="n">su_pass</span>          <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_su_password&#39;</span><span class="p">,</span> <span class="s">&#39;ansible_su_pass&#39;</span><span class="p">),</span>
+   <span class="n">su_exe</span>           <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_su_exe&#39;</span><span class="p">,),</span>
+   <span class="n">su_flags</span>         <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_su_flags&#39;</span><span class="p">,),</span>
+   <span class="n">executable</span>       <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_shell_executable&#39;</span><span class="p">,),</span>
+   <span class="n">module_compression</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ansible_module_compression&#39;</span><span class="p">,),</span>
+<span class="p">)</span>
+
+<span class="n">SU_PROMPT_LOCALIZATIONS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s">&#39;Password&#39;</span><span class="p">,</span>
+    <span class="s">&#39;암호&#39;</span><span class="p">,</span>
+    <span class="s">&#39;パスワード&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Adgangskode&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Contraseña&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Contrasenya&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Hasło&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Heslo&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Jelszó&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Lösenord&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Mật khẩu&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Mot de passe&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Parola&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Parool&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Pasahitza&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Passord&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Passwort&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Salasana&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Sandi&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Senha&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Wachtwoord&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ססמה&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Лозинка&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Парола&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Пароль&#39;</span><span class="p">,</span>
+    <span class="s">&#39;गुप्तशब्द&#39;</span><span class="p">,</span>
+    <span class="s">&#39;शब्दकूट&#39;</span><span class="p">,</span>
+    <span class="s">&#39;సంకేతపదము&#39;</span><span class="p">,</span>
+    <span class="s">&#39;හස්පදය&#39;</span><span class="p">,</span>
+    <span class="s">&#39;密码&#39;</span><span class="p">,</span>
+    <span class="s">&#39;密碼&#39;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">TASK_ATTRIBUTE_OVERRIDES</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s">&#39;become&#39;</span><span class="p">,</span>
+    <span class="s">&#39;become_user&#39;</span><span class="p">,</span>
+    <span class="s">&#39;become_pass&#39;</span><span class="p">,</span>
+    <span class="s">&#39;become_method&#39;</span><span class="p">,</span>
+    <span class="s">&#39;connection&#39;</span><span class="p">,</span>
+    <span class="s">&#39;docker_extra_args&#39;</span><span class="p">,</span>
+    <span class="s">&#39;delegate_to&#39;</span><span class="p">,</span>
+    <span class="s">&#39;no_log&#39;</span><span class="p">,</span>
+    <span class="s">&#39;remote_user&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">RESET_VARS</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s">&#39;ansible_connection&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ansible_docker_extra_args&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ansible_ssh_host&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ansible_ssh_pass&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ansible_ssh_port&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ansible_ssh_user&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ansible_ssh_private_key_file&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ansible_ssh_pipelining&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ansible_user&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ansible_host&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ansible_port&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<div class="viewcode-block" id="PlayContext"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.play_context.PlayContext">[docs]</a><span class="k">class</span> <span class="nc">PlayContext</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This class is used to consolidate the connection information for</span>
+<span class="sd">    hosts in a play and child tasks, where the task may override some</span>
+<span class="sd">    connection/authentication information.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c"># connection fields, some are inherited from Base:</span>
+    <span class="c"># (connection, port, remote_user, environment, no_log)</span>
+    <span class="n">_docker_extra_args</span>  <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+    <span class="n">_remote_addr</span>      <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+    <span class="n">_password</span>         <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+    <span class="n">_private_key_file</span> <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_PRIVATE_KEY_FILE</span><span class="p">)</span>
+    <span class="n">_timeout</span>          <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_TIMEOUT</span><span class="p">)</span>
+    <span class="n">_shell</span>            <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+    <span class="n">_ssh_args</span>         <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">ANSIBLE_SSH_ARGS</span><span class="p">)</span>
+    <span class="n">_ssh_common_args</span>  <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+    <span class="n">_sftp_extra_args</span>  <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+    <span class="n">_scp_extra_args</span>   <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+    <span class="n">_ssh_extra_args</span>   <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+    <span class="n">_connection_lockfd</span><span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">)</span>
+    <span class="n">_pipelining</span>       <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">ANSIBLE_SSH_PIPELINING</span><span class="p">)</span>
+    <span class="n">_accelerate</span>       <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="n">_accelerate_ipv6</span>  <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">always_post_validate</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">_accelerate_port</span>  <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">ACCELERATE_PORT</span><span class="p">,</span> <span class="n">always_post_validate</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">_executable</span>       <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_EXECUTABLE</span><span class="p">)</span>
+    <span class="n">_module_compression</span> <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_MODULE_COMPRESSION</span><span class="p">)</span>
+
+    <span class="c"># privilege escalation fields</span>
+    <span class="n">_become</span>           <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">)</span>
+    <span class="n">_become_method</span>    <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+    <span class="n">_become_user</span>      <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+    <span class="n">_become_pass</span>      <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+    <span class="n">_become_exe</span>       <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+    <span class="n">_become_flags</span>     <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+    <span class="n">_prompt</span>           <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+
+    <span class="c"># backwards compatibility fields for sudo/su</span>
+    <span class="n">_sudo_exe</span>         <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+    <span class="n">_sudo_flags</span>       <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+    <span class="n">_sudo_pass</span>        <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+    <span class="n">_su_exe</span>           <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+    <span class="n">_su_flags</span>         <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+    <span class="n">_su_pass</span>          <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+
+    <span class="c"># general flags</span>
+    <span class="n">_verbosity</span>        <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">_only_tags</span>        <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;set&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">set</span><span class="p">())</span>
+    <span class="n">_skip_tags</span>        <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;set&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">set</span><span class="p">())</span>
+    <span class="n">_check_mode</span>       <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="n">_force_handlers</span>   <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="n">_start_at_task</span>    <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+    <span class="n">_step</span>             <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="n">_diff</span>             <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">play</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">passwords</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">connection_lockfd</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">PlayContext</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">passwords</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">passwords</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">password</span>    <span class="o">=</span> <span class="n">passwords</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;conn_pass&#39;</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">become_pass</span> <span class="o">=</span> <span class="n">passwords</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;become_pass&#39;</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">prompt</span>      <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">success_key</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+
+        <span class="c"># a file descriptor to be used during locking operations</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection_lockfd</span> <span class="o">=</span> <span class="n">connection_lockfd</span>
+
+        <span class="c"># set options before play to allow play to override them</span>
+        <span class="k">if</span> <span class="n">options</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_options</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">play</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_play</span><span class="p">(</span><span class="n">play</span><span class="p">)</span>
+
+<div class="viewcode-block" id="PlayContext.set_play"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.play_context.PlayContext.set_play">[docs]</a>    <span class="k">def</span> <span class="nf">set_play</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">play</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Configures this connection information instance with data from</span>
+<span class="sd">        the play class.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c"># special handling for accelerated mode, as it is set in a separate</span>
+        <span class="c"># play option from the connection parameter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">accelerate</span> <span class="o">=</span> <span class="n">play</span><span class="o">.</span><span class="n">accelerate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">accelerate_ipv6</span> <span class="o">=</span> <span class="n">play</span><span class="o">.</span><span class="n">accelerate_ipv6</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">accelerate_port</span> <span class="o">=</span> <span class="n">play</span><span class="o">.</span><span class="n">accelerate_port</span>
+
+        <span class="k">if</span> <span class="n">play</span><span class="o">.</span><span class="n">connection</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="o">=</span> <span class="n">play</span><span class="o">.</span><span class="n">connection</span>
+
+        <span class="k">if</span> <span class="n">play</span><span class="o">.</span><span class="n">remote_user</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">remote_user</span> <span class="o">=</span> <span class="n">play</span><span class="o">.</span><span class="n">remote_user</span>
+
+        <span class="k">if</span> <span class="n">play</span><span class="o">.</span><span class="n">port</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">play</span><span class="o">.</span><span class="n">port</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">play</span><span class="o">.</span><span class="n">become</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">become</span> <span class="o">=</span> <span class="n">play</span><span class="o">.</span><span class="n">become</span>
+        <span class="k">if</span> <span class="n">play</span><span class="o">.</span><span class="n">become_method</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">become_method</span> <span class="o">=</span> <span class="n">play</span><span class="o">.</span><span class="n">become_method</span>
+        <span class="k">if</span> <span class="n">play</span><span class="o">.</span><span class="n">become_user</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">become_user</span> <span class="o">=</span> <span class="n">play</span><span class="o">.</span><span class="n">become_user</span>
+
+        <span class="k">if</span> <span class="n">play</span><span class="o">.</span><span class="n">force_handlers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">force_handlers</span> <span class="o">=</span> <span class="n">play</span><span class="o">.</span><span class="n">force_handlers</span></div>
+
+<div class="viewcode-block" id="PlayContext.set_options"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.play_context.PlayContext.set_options">[docs]</a>    <span class="k">def</span> <span class="nf">set_options</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Configures this connection information instance with data from</span>
+<span class="sd">        options specified by the user on the command line. These have a</span>
+<span class="sd">        lower precedence than those set on the play or host.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c"># privilege escalation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">become</span>        <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">become</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">become_method</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">become_method</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">become_user</span>   <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">become_user</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_mode</span> <span class="o">=</span> <span class="n">boolean</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">check</span><span class="p">)</span>
+
+        <span class="c"># get ssh options FIXME: make these common to all connections</span>
+        <span class="k">for</span> <span class="n">flag</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;ssh_common_args&#39;</span><span class="p">,</span> <span class="s">&#39;docker_extra_args&#39;</span><span class="p">,</span> <span class="s">&#39;sftp_extra_args&#39;</span><span class="p">,</span> <span class="s">&#39;scp_extra_args&#39;</span><span class="p">,</span> <span class="s">&#39;ssh_extra_args&#39;</span><span class="p">]:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flag</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">options</span><span class="p">,</span><span class="n">flag</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">))</span>
+
+        <span class="c"># general flags (should we move out?)</span>
+        <span class="k">for</span> <span class="n">flag</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;connection&#39;</span><span class="p">,</span><span class="s">&#39;remote_user&#39;</span><span class="p">,</span> <span class="s">&#39;private_key_file&#39;</span><span class="p">,</span> <span class="s">&#39;verbosity&#39;</span><span class="p">,</span> <span class="s">&#39;force_handlers&#39;</span><span class="p">,</span> <span class="s">&#39;step&#39;</span><span class="p">,</span> <span class="s">&#39;start_at_task&#39;</span><span class="p">,</span> <span class="s">&#39;diff&#39;</span><span class="p">]:</span>
+            <span class="n">attribute</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">flag</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">attribute</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flag</span><span class="p">,</span> <span class="n">attribute</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="s">&#39;timeout&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">options</span><span class="o">.</span><span class="n">timeout</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">timeout</span><span class="p">)</span>
+
+        <span class="c"># get the tag info from options, converting a comma-separated list</span>
+        <span class="c"># of values into a proper list if need be. We check to see if the</span>
+        <span class="c"># options have the attribute, as it is not always added via the CLI</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="s">&#39;tags&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">tags</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">only_tags</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">tags</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">tags</span><span class="p">,</span> <span class="n">string_types</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">only_tags</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">only_tags</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">only_tags</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="s">&#39;all&#39;</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="s">&#39;skip_tags&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">skip_tags</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">skip_tags</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">skip_tags</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">skip_tags</span><span class="p">,</span> <span class="n">string_types</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">skip_tags</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">skip_tags</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="PlayContext.set_task_and_variable_override"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.play_context.PlayContext.set_task_and_variable_override">[docs]</a>    <span class="k">def</span> <span class="nf">set_task_and_variable_override</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">variables</span><span class="p">,</span> <span class="n">templar</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Sets attributes from the task if they are set, which will override</span>
+<span class="sd">        those from the play.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">new_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c"># loop through a subset of attributes on the task object and set</span>
+        <span class="c"># connection fields based on their values</span>
+        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">TASK_ATTRIBUTE_OVERRIDES</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
+                <span class="n">attr_val</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">attr_val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="n">new_info</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">attr_val</span><span class="p">)</span>
+
+        <span class="c"># next, use the MAGIC_VARIABLE_MAPPING dictionary to update this</span>
+        <span class="c"># connection info object with &#39;magic&#39; variables from the variable list.</span>
+        <span class="c"># If the value &#39;ansible_delegated_vars&#39; is in the variables, it means</span>
+        <span class="c"># we have a delegated-to host, so we check there first before looking</span>
+        <span class="c"># at the variables in general</span>
+        <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">delegate_to</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c"># In the case of a loop, the delegated_to host may have been</span>
+            <span class="c"># templated based on the loop variable, so we try and locate</span>
+            <span class="c"># the host name in the delegated variable dictionary here</span>
+            <span class="n">delegated_host_name</span> <span class="o">=</span> <span class="n">templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">delegate_to</span><span class="p">)</span>
+            <span class="n">delegated_vars</span> <span class="o">=</span> <span class="n">variables</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ansible_delegated_vars&#39;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">())</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">delegated_host_name</span><span class="p">,</span> <span class="nb">dict</span><span class="p">())</span>
+
+            <span class="n">delegated_transport</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_TRANSPORT</span>
+            <span class="k">for</span> <span class="n">transport_var</span> <span class="ow">in</span> <span class="n">MAGIC_VARIABLE_MAPPING</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;connection&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">transport_var</span> <span class="ow">in</span> <span class="n">delegated_vars</span><span class="p">:</span>
+                    <span class="n">delegated_transport</span> <span class="o">=</span> <span class="n">delegated_vars</span><span class="p">[</span><span class="n">transport_var</span><span class="p">]</span>
+                    <span class="k">break</span>
+
+            <span class="c"># make sure this delegated_to host has something set for its remote</span>
+            <span class="c"># address, otherwise we default to connecting to it by name. This</span>
+            <span class="c"># may happen when users put an IP entry into their inventory, or if</span>
+            <span class="c"># they rely on DNS for a non-inventory hostname</span>
+            <span class="k">for</span> <span class="n">address_var</span> <span class="ow">in</span> <span class="n">MAGIC_VARIABLE_MAPPING</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;remote_addr&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">address_var</span> <span class="ow">in</span> <span class="n">delegated_vars</span><span class="p">:</span>
+                    <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;no remote address found for delegated host </span><span class="si">%s</span><span class="se">\n</span><span class="s">using its name, so success depends on DNS resolution&quot;</span> <span class="o">%</span> <span class="n">delegated_host_name</span><span class="p">)</span>
+                <span class="n">delegated_vars</span><span class="p">[</span><span class="s">&#39;ansible_host&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delegated_host_name</span>
+
+            <span class="c"># reset the port back to the default if none was specified, to prevent</span>
+            <span class="c"># the delegated host from inheriting the original host&#39;s setting</span>
+            <span class="k">for</span> <span class="n">port_var</span> <span class="ow">in</span> <span class="n">MAGIC_VARIABLE_MAPPING</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;port&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">port_var</span> <span class="ow">in</span> <span class="n">delegated_vars</span><span class="p">:</span>
+                    <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">delegated_transport</span> <span class="o">==</span> <span class="s">&#39;winrm&#39;</span><span class="p">:</span>
+                    <span class="n">delegated_vars</span><span class="p">[</span><span class="s">&#39;ansible_port&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5986</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">delegated_vars</span><span class="p">[</span><span class="s">&#39;ansible_port&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_REMOTE_PORT</span>
+
+            <span class="c"># and likewise for the remote user</span>
+            <span class="k">for</span> <span class="n">user_var</span> <span class="ow">in</span> <span class="n">MAGIC_VARIABLE_MAPPING</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;remote_user&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">user_var</span> <span class="ow">in</span> <span class="n">delegated_vars</span> <span class="ow">and</span> <span class="n">delegated_vars</span><span class="p">[</span><span class="n">user_var</span><span class="p">]:</span>
+                    <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">delegated_vars</span><span class="p">[</span><span class="s">&#39;ansible_user&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">remote_user</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">remote_user</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">delegated_vars</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+            <span class="c"># setup shell</span>
+            <span class="k">for</span> <span class="n">exe_var</span> <span class="ow">in</span> <span class="n">MAGIC_VARIABLE_MAPPING</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;executable&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">exe_var</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">:</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="n">new_info</span><span class="p">,</span> <span class="s">&#39;executable&#39;</span><span class="p">,</span> <span class="n">variables</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">exe_var</span><span class="p">))</span>
+
+        <span class="n">attrs_considered</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">variable_names</span><span class="p">)</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="n">MAGIC_VARIABLE_MAPPING</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">variable_name</span> <span class="ow">in</span> <span class="n">variable_names</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">attrs_considered</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="c"># if delegation task ONLY use delegated host vars, avoid delegated FOR host vars</span>
+                <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">delegate_to</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">delegated_vars</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="n">variable_name</span> <span class="ow">in</span> <span class="n">delegated_vars</span><span class="p">:</span>
+                        <span class="nb">setattr</span><span class="p">(</span><span class="n">new_info</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">delegated_vars</span><span class="p">[</span><span class="n">variable_name</span><span class="p">])</span>
+                        <span class="n">attrs_considered</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">variable_name</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">:</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="n">new_info</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">variables</span><span class="p">[</span><span class="n">variable_name</span><span class="p">])</span>
+                    <span class="n">attrs_considered</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span>
+                <span class="c"># no else, as no other vars should be considered</span>
+
+        <span class="c"># become legacy updates -- from commandline</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">new_info</span><span class="o">.</span><span class="n">become_pass</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">new_info</span><span class="o">.</span><span class="n">become_method</span> <span class="o">==</span> <span class="s">&#39;sudo&#39;</span> <span class="ow">and</span> <span class="n">new_info</span><span class="o">.</span><span class="n">sudo_pass</span><span class="p">:</span>
+               <span class="nb">setattr</span><span class="p">(</span><span class="n">new_info</span><span class="p">,</span> <span class="s">&#39;become_pass&#39;</span><span class="p">,</span> <span class="n">new_info</span><span class="o">.</span><span class="n">sudo_pass</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">new_info</span><span class="o">.</span><span class="n">become_method</span> <span class="o">==</span> <span class="s">&#39;su&#39;</span> <span class="ow">and</span> <span class="n">new_info</span><span class="o">.</span><span class="n">su_pass</span><span class="p">:</span>
+               <span class="nb">setattr</span><span class="p">(</span><span class="n">new_info</span><span class="p">,</span> <span class="s">&#39;become_pass&#39;</span><span class="p">,</span> <span class="n">new_info</span><span class="o">.</span><span class="n">su_pass</span><span class="p">)</span>
+
+        <span class="c"># become legacy updates -- from inventory file (inventory overrides</span>
+        <span class="c"># commandline)</span>
+        <span class="k">for</span> <span class="n">become_pass_name</span> <span class="ow">in</span> <span class="n">MAGIC_VARIABLE_MAPPING</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;become_pass&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">become_pass_name</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">:</span>
+                <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c"># This is a for-else</span>
+            <span class="k">if</span> <span class="n">new_info</span><span class="o">.</span><span class="n">become_method</span> <span class="o">==</span> <span class="s">&#39;sudo&#39;</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">sudo_pass_name</span> <span class="ow">in</span> <span class="n">MAGIC_VARIABLE_MAPPING</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;sudo_pass&#39;</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">sudo_pass_name</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">:</span>
+                        <span class="nb">setattr</span><span class="p">(</span><span class="n">new_info</span><span class="p">,</span> <span class="s">&#39;become_pass&#39;</span><span class="p">,</span> <span class="n">variables</span><span class="p">[</span><span class="n">sudo_pass_name</span><span class="p">])</span>
+                        <span class="k">break</span>
+            <span class="k">if</span> <span class="n">new_info</span><span class="o">.</span><span class="n">become_method</span> <span class="o">==</span> <span class="s">&#39;sudo&#39;</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">su_pass_name</span> <span class="ow">in</span> <span class="n">MAGIC_VARIABLE_MAPPING</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;su_pass&#39;</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">su_pass_name</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">:</span>
+                        <span class="nb">setattr</span><span class="p">(</span><span class="n">new_info</span><span class="p">,</span> <span class="s">&#39;become_pass&#39;</span><span class="p">,</span> <span class="n">variables</span><span class="p">[</span><span class="n">su_pass_name</span><span class="p">])</span>
+                        <span class="k">break</span>
+
+        <span class="c"># make sure we get port defaults if needed</span>
+        <span class="k">if</span> <span class="n">new_info</span><span class="o">.</span><span class="n">port</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_REMOTE_PORT</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">new_info</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_REMOTE_PORT</span><span class="p">)</span>
+
+        <span class="c"># special overrides for the connection setting</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">delegated_vars</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c"># in the event that we were using local before make sure to reset the</span>
+            <span class="c"># connection type to the default transport for the delegated-to host,</span>
+            <span class="c"># if not otherwise specified</span>
+            <span class="k">for</span> <span class="n">connection_type</span> <span class="ow">in</span> <span class="n">MAGIC_VARIABLE_MAPPING</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;connection&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">connection_type</span> <span class="ow">in</span> <span class="n">delegated_vars</span><span class="p">:</span>
+                    <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">remote_addr_local</span>  <span class="o">=</span> <span class="n">new_info</span><span class="o">.</span><span class="n">remote_addr</span> <span class="ow">in</span> <span class="n">C</span><span class="o">.</span><span class="n">LOCALHOST</span>
+                <span class="n">inv_hostname_local</span> <span class="o">=</span> <span class="n">delegated_vars</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;inventory_hostname&#39;</span><span class="p">)</span> <span class="ow">in</span> <span class="n">C</span><span class="o">.</span><span class="n">LOCALHOST</span>
+                <span class="k">if</span> <span class="n">remote_addr_local</span> <span class="ow">and</span> <span class="n">inv_hostname_local</span><span class="p">:</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="n">new_info</span><span class="p">,</span> <span class="s">&#39;connection&#39;</span><span class="p">,</span> <span class="s">&#39;local&#39;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">new_info</span><span class="p">,</span> <span class="s">&#39;connection&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span> <span class="o">==</span> <span class="s">&#39;local&#39;</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">remote_addr_local</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">inv_hostname_local</span><span class="p">):</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="n">new_info</span><span class="p">,</span> <span class="s">&#39;connection&#39;</span><span class="p">,</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_TRANSPORT</span><span class="p">)</span>
+
+        <span class="c"># set no_log to default if it was not previouslly set</span>
+        <span class="k">if</span> <span class="n">new_info</span><span class="o">.</span><span class="n">no_log</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">new_info</span><span class="o">.</span><span class="n">no_log</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_NO_LOG</span>
+
+        <span class="c"># set become defaults if not previouslly set</span>
+        <span class="n">task</span><span class="o">.</span><span class="n">set_become_defaults</span><span class="p">(</span><span class="n">new_info</span><span class="o">.</span><span class="n">become</span><span class="p">,</span> <span class="n">new_info</span><span class="o">.</span><span class="n">become_method</span><span class="p">,</span> <span class="n">new_info</span><span class="o">.</span><span class="n">become_user</span><span class="p">)</span>
+
+        <span class="c"># have always_run override check mode</span>
+        <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">always_run</span><span class="p">:</span>
+            <span class="n">new_info</span><span class="o">.</span><span class="n">check_mode</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="k">return</span> <span class="n">new_info</span></div>
+
+<div class="viewcode-block" id="PlayContext.make_become_cmd"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.play_context.PlayContext.make_become_cmd">[docs]</a>    <span class="k">def</span> <span class="nf">make_become_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">,</span> <span class="n">executable</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; helper function to create privilege escalation commands &quot;&quot;&quot;</span>
+
+        <span class="n">prompt</span>      <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">success_key</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prompt</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">become</span><span class="p">:</span>
+
+            <span class="k">if</span> <span class="n">executable</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">executable</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">executable</span>
+
+            <span class="n">becomecmd</span>   <span class="o">=</span> <span class="bp">None</span>
+            <span class="n">randbits</span>    <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">ascii_lowercase</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">32</span><span class="p">))</span>
+            <span class="n">success_key</span> <span class="o">=</span> <span class="s">&#39;BECOME-SUCCESS-</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">randbits</span>
+            <span class="n">success_cmd</span> <span class="o">=</span> <span class="n">pipes</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="s">&#39;echo </span><span class="si">%s</span><span class="s">; </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">success_key</span><span class="p">,</span> <span class="n">cmd</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="n">executable</span><span class="p">:</span>
+                <span class="n">command</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s"> -c </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">executable</span><span class="p">,</span> <span class="n">success_cmd</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">command</span> <span class="o">=</span> <span class="n">success_cmd</span>
+
+            <span class="c"># set executable to use for the privilege escalation method, with various overrides</span>
+            <span class="n">exe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_exe</span> <span class="ow">or</span> \
+                  <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">_exe&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_method</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">or</span> \
+                  <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_BECOME_EXE</span> <span class="ow">or</span> \
+                  <span class="nb">getattr</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="s">&#39;DEFAULT_</span><span class="si">%s</span><span class="s">_EXE&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_method</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">or</span> \
+                  <span class="bp">self</span><span class="o">.</span><span class="n">become_method</span>
+
+            <span class="c"># set flags to use for the privilege escalation method, with various overrides</span>
+            <span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_flags</span> <span class="ow">or</span> \
+                    <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">_flags&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_method</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">or</span> \
+                    <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_BECOME_FLAGS</span> <span class="ow">or</span> \
+                    <span class="nb">getattr</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="s">&#39;DEFAULT_</span><span class="si">%s</span><span class="s">_FLAGS&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_method</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">or</span> \
+                    <span class="s">&#39;&#39;</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_method</span> <span class="o">==</span> <span class="s">&#39;sudo&#39;</span><span class="p">:</span>
+                <span class="c"># If we have a password, we run sudo with a randomly-generated</span>
+                <span class="c"># prompt set using -p. Otherwise we run it with default -n, which makes</span>
+                <span class="c"># it fail if it would have prompted for a password.</span>
+                <span class="c"># Cannot rely on -n as it can be removed from defaults, which should be</span>
+                <span class="c"># done for older versions of sudo that do not support the option.</span>
+                <span class="c">#</span>
+                <span class="c"># Passing a quoted compound command to sudo (or sudo -s)</span>
+                <span class="c"># directly doesn&#39;t work, so we shellquote it with pipes.quote()</span>
+                <span class="c"># and pass the quoted string to the user&#39;s shell.</span>
+
+                <span class="c"># force quick error if password is required but not supplied, should prevent sudo hangs.</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_pass</span><span class="p">:</span>
+                    <span class="n">prompt</span> <span class="o">=</span> <span class="s">&#39;[sudo via ansible, key=</span><span class="si">%s</span><span class="s">] password: &#39;</span> <span class="o">%</span> <span class="n">randbits</span>
+                    <span class="n">becomecmd</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s"> -p &quot;</span><span class="si">%s</span><span class="s">&quot; -u </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">exe</span><span class="p">,</span>  <span class="n">flags</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;-n&#39;</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">),</span> <span class="n">prompt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_user</span><span class="p">,</span> <span class="n">command</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">becomecmd</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s"> -u </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">exe</span><span class="p">,</span> <span class="n">flags</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_user</span><span class="p">,</span> <span class="n">command</span><span class="p">)</span>
+
+
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_method</span> <span class="o">==</span> <span class="s">&#39;su&#39;</span><span class="p">:</span>
+
+                <span class="c"># passing code ref to examine prompt as simple string comparisson isn&#39;t good enough with su</span>
+                <span class="k">def</span> <span class="nf">detect_su_prompt</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+                    <span class="n">SU_PROMPT_LOCALIZATIONS_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;(\w+</span><span class="se">\&#39;</span><span class="s">s )?&#39;</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="s">&#39; ?: ?&#39;</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">SU_PROMPT_LOCALIZATIONS</span><span class="p">]),</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">SU_PROMPT_LOCALIZATIONS_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+                <span class="n">prompt</span> <span class="o">=</span> <span class="n">detect_su_prompt</span>
+
+                <span class="n">becomecmd</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s"> -c </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">exe</span><span class="p">,</span> <span class="n">flags</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_user</span><span class="p">,</span> <span class="n">pipes</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">command</span><span class="p">))</span>
+
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_method</span> <span class="o">==</span> <span class="s">&#39;pbrun&#39;</span><span class="p">:</span>
+
+                <span class="n">prompt</span><span class="o">=</span><span class="s">&#39;assword:&#39;</span>
+                <span class="n">becomecmd</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s"> -b </span><span class="si">%s</span><span class="s"> -u </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">exe</span><span class="p">,</span> <span class="n">flags</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_user</span><span class="p">,</span> <span class="n">success_cmd</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_method</span> <span class="o">==</span> <span class="s">&#39;pfexec&#39;</span><span class="p">:</span>
+
+                <span class="c"># No user as it uses it&#39;s own exec_attr to figure it out</span>
+                <span class="n">becomecmd</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s"> &quot;</span><span class="si">%s</span><span class="s">&quot;&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">exe</span><span class="p">,</span> <span class="n">flags</span><span class="p">,</span> <span class="n">success_cmd</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_method</span> <span class="o">==</span> <span class="s">&#39;runas&#39;</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;&#39;runas&#39; is not yet implemented&quot;</span><span class="p">)</span>
+                <span class="c">#FIXME: figure out prompt</span>
+                <span class="c"># this is not for use with winrm plugin but if they ever get ssh native on windoez</span>
+                <span class="n">becomecmd</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s"> /user:</span><span class="si">%s</span><span class="s"> &quot;</span><span class="si">%s</span><span class="s">&quot;&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">exe</span><span class="p">,</span> <span class="n">flags</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_user</span><span class="p">,</span> <span class="n">success_cmd</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_method</span> <span class="o">==</span> <span class="s">&#39;doas&#39;</span><span class="p">:</span>
+
+                <span class="n">prompt</span> <span class="o">=</span> <span class="s">&#39;Password:&#39;</span>
+                <span class="n">exe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_exe</span> <span class="ow">or</span> <span class="s">&#39;doas&#39;</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_pass</span><span class="p">:</span>
+                    <span class="n">flags</span> <span class="o">+=</span> <span class="s">&#39; -n &#39;</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_user</span><span class="p">:</span>
+                    <span class="n">flags</span> <span class="o">+=</span> <span class="s">&#39; -u </span><span class="si">%s</span><span class="s"> &#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_user</span>
+
+                <span class="c">#FIXME: make shell independant</span>
+                <span class="n">becomecmd</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s"> echo </span><span class="si">%s</span><span class="s"> &amp;&amp; </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s"> env ANSIBLE=true </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">exe</span><span class="p">,</span> <span class="n">flags</span><span class="p">,</span> <span class="n">success_key</span><span class="p">,</span> <span class="n">exe</span><span class="p">,</span> <span class="n">flags</span><span class="p">,</span> <span class="n">cmd</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_method</span> <span class="o">==</span> <span class="s">&#39;dzdo&#39;</span><span class="p">:</span>
+
+                <span class="n">exe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_exe</span> <span class="ow">or</span> <span class="s">&#39;dzdo&#39;</span>
+
+                <span class="n">becomecmd</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s"> -u </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">exe</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_user</span><span class="p">,</span> <span class="n">command</span><span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Privilege escalation method not found: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_method</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">become_pass</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">prompt</span> <span class="o">=</span> <span class="n">prompt</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">success_key</span> <span class="o">=</span> <span class="n">success_key</span>
+            <span class="k">return</span> <span class="n">becomecmd</span>
+
+        <span class="k">return</span> <span class="n">cmd</span></div>
+
+<div class="viewcode-block" id="PlayContext.update_vars"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.play_context.PlayContext.update_vars">[docs]</a>    <span class="k">def</span> <span class="nf">update_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variables</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Adds &#39;magic&#39; variables relating to connections to the variable dictionary provided.</span>
+<span class="sd">        In case users need to access from the play, this is a legacy from runner.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">for</span> <span class="n">prop</span><span class="p">,</span> <span class="n">var_list</span> <span class="ow">in</span> <span class="n">MAGIC_VARIABLE_MAPPING</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s">&#39;become&#39;</span> <span class="ow">in</span> <span class="n">prop</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+                <span class="n">var_val</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prop</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">var_opt</span> <span class="ow">in</span> <span class="n">var_list</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">var_opt</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">variables</span> <span class="ow">and</span> <span class="n">var_val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                        <span class="n">variables</span><span class="p">[</span><span class="n">var_opt</span><span class="p">]</span> <span class="o">=</span> <span class="n">var_val</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="k">continue</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,259 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.plugins.callback.syslog_json &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="ansible.plugins.callback" href="../callback.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../../plugins.html">ansible.plugins</a> &raquo;</li>
+      
+          <li><a href="../callback.html">ansible.plugins.callback</a> &raquo;</li>
+      
+    <li>ansible.plugins.callback.syslog_json</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.plugins.callback.syslog_json</h1><div class="highlight"><pre>
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">logging.handlers</span>
+
+<span class="kn">import</span> <span class="nn">socket</span>
+
+<span class="kn">from</span> <span class="nn">ansible.plugins.callback</span> <span class="kn">import</span> <span class="n">CallbackBase</span>
+
+<div class="viewcode-block" id="CallbackModule"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.syslog_json.CallbackModule">[docs]</a><span class="k">class</span> <span class="nc">CallbackModule</span><span class="p">(</span><span class="n">CallbackBase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    logs ansible-playbook and ansible runs to a syslog server in json format</span>
+<span class="sd">    make sure you have in ansible.cfg:</span>
+<span class="sd">        callback_plugins   = &lt;path_to_callback_plugins_folder&gt;</span>
+<span class="sd">    and put the plugin in &lt;path_to_callback_plugins_folder&gt;</span>
+<span class="sd">    </span>
+<span class="sd">    This plugin makes use of the following environment variables:</span>
+<span class="sd">        SYSLOG_SERVER   (optional): defaults to localhost</span>
+<span class="sd">        SYSLOG_PORT     (optional): defaults to 514</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">CALLBACK_VERSION</span> <span class="o">=</span> <span class="mf">2.0</span>
+    <span class="n">CALLBACK_TYPE</span> <span class="o">=</span> <span class="s">&#39;aggregate&#39;</span>
+    <span class="n">CALLBACK_NAME</span> <span class="o">=</span> <span class="s">&#39;syslog_json&#39;</span>
+    <span class="n">CALLBACK_NEEDS_WHITELIST</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">CallbackModule</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span>  <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;ansible logger&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">handlers</span><span class="o">.</span><span class="n">SysLogHandler</span><span class="p">(</span>
+            <span class="n">address</span> <span class="o">=</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s">&#39;SYSLOG_SERVER&#39;</span><span class="p">,</span><span class="s">&#39;localhost&#39;</span><span class="p">),</span>
+                       <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s">&#39;SYSLOG_PORT&#39;</span><span class="p">,</span><span class="mi">514</span><span class="p">)),</span> 
+            <span class="n">facility</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">handlers</span><span class="o">.</span><span class="n">SysLogHandler</span><span class="o">.</span><span class="n">LOG_USER</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">handler</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hostname</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">gethostname</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="CallbackModule.runner_on_failed"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.syslog_json.CallbackModule.runner_on_failed">[docs]</a>    <span class="k">def</span> <span class="nf">runner_on_failed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">res</span><span class="p">,</span> <span class="n">ignore_errors</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> ansible-command: task execution FAILED; host: </span><span class="si">%s</span><span class="s">; message: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span><span class="n">host</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">_dump_results</span><span class="p">(</span><span class="n">res</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="CallbackModule.runner_on_ok"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.syslog_json.CallbackModule.runner_on_ok">[docs]</a>    <span class="k">def</span> <span class="nf">runner_on_ok</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">res</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> ansible-command: task execution OK; host: </span><span class="si">%s</span><span class="s">; message: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span><span class="n">host</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">_dump_results</span><span class="p">(</span><span class="n">res</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="CallbackModule.runner_on_skipped"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.syslog_json.CallbackModule.runner_on_skipped">[docs]</a>    <span class="k">def</span> <span class="nf">runner_on_skipped</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">item</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> ansible-command: task execution SKIPPED; host: </span><span class="si">%s</span><span class="s">; message: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span><span class="n">host</span><span class="p">,</span> <span class="s">&#39;skipped&#39;</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="CallbackModule.runner_on_unreachable"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.syslog_json.CallbackModule.runner_on_unreachable">[docs]</a>    <span class="k">def</span> <span class="nf">runner_on_unreachable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">res</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> ansible-command: task execution UNREACHABLE; host: </span><span class="si">%s</span><span class="s">; message: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span><span class="n">host</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">_dump_results</span><span class="p">(</span><span class="n">res</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="CallbackModule.runner_on_async_failed"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.syslog_json.CallbackModule.runner_on_async_failed">[docs]</a>    <span class="k">def</span> <span class="nf">runner_on_async_failed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">res</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> ansible-command: task execution FAILED; host: </span><span class="si">%s</span><span class="s">; message: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span><span class="n">host</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">_dump_results</span><span class="p">(</span><span class="n">res</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="CallbackModule.playbook_on_import_for_host"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.syslog_json.CallbackModule.playbook_on_import_for_host">[docs]</a>    <span class="k">def</span> <span class="nf">playbook_on_import_for_host</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">imported_file</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> ansible-command: playbook IMPORTED; host: </span><span class="si">%s</span><span class="s">; message: imported file </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span><span class="n">host</span><span class="p">,</span><span class="n">imported_file</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="CallbackModule.playbook_on_not_import_for_host"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.syslog_json.CallbackModule.playbook_on_not_import_for_host">[docs]</a>    <span class="k">def</span> <span class="nf">playbook_on_not_import_for_host</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">missing_file</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> ansible-command: playbook NOT IMPORTED; host: </span><span class="si">%s</span><span class="s">; message: missing file </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span><span class="n">host</span><span class="p">,</span><span class="n">missing_file</span><span class="p">))</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

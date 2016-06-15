@@ -1,0 +1,674 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.module_utils.cloudstack &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>ansible.module_utils.cloudstack</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.module_utils.cloudstack</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="c">#</span>
+<span class="c"># (c) 2015, René Moser &lt;mail@renemoser.net&gt;</span>
+<span class="c">#</span>
+<span class="c"># This code is part of Ansible, but is an independent component.</span>
+<span class="c"># This particular file snippet, and this file snippet only, is BSD licensed.</span>
+<span class="c"># Modules you write using this snippet, which is embedded dynamically by Ansible</span>
+<span class="c"># still belong to the author of the module, and may assign their own license</span>
+<span class="c"># to the complete work.</span>
+<span class="c">#</span>
+<span class="c"># Redistribution and use in source and binary forms, with or without modification,</span>
+<span class="c"># are permitted provided that the following conditions are met:</span>
+<span class="c">#</span>
+<span class="c">#    * Redistributions of source code must retain the above copyright</span>
+<span class="c">#      notice, this list of conditions and the following disclaimer.</span>
+<span class="c">#    * Redistributions in binary form must reproduce the above copyright notice,</span>
+<span class="c">#      this list of conditions and the following disclaimer in the documentation</span>
+<span class="c">#      and/or other materials provided with the distribution.</span>
+<span class="c">#</span>
+<span class="c"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND</span>
+<span class="c"># ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED</span>
+<span class="c"># WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.</span>
+<span class="c"># IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,</span>
+<span class="c"># INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,</span>
+<span class="c"># PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS</span>
+<span class="c"># INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT</span>
+<span class="c"># LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE</span>
+<span class="c"># USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</span>
+
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">cs</span> <span class="kn">import</span> <span class="n">CloudStack</span><span class="p">,</span> <span class="n">CloudStackException</span><span class="p">,</span> <span class="n">read_config</span>
+    <span class="n">has_lib_cs</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">has_lib_cs</span> <span class="o">=</span> <span class="bp">False</span>
+
+<span class="n">CS_HYPERVISORS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s">&quot;KVM&quot;</span><span class="p">,</span> <span class="s">&quot;kvm&quot;</span><span class="p">,</span>
+    <span class="s">&quot;VMware&quot;</span><span class="p">,</span> <span class="s">&quot;vmware&quot;</span><span class="p">,</span>
+    <span class="s">&quot;BareMetal&quot;</span><span class="p">,</span> <span class="s">&quot;baremetal&quot;</span><span class="p">,</span>
+    <span class="s">&quot;XenServer&quot;</span><span class="p">,</span> <span class="s">&quot;xenserver&quot;</span><span class="p">,</span>
+    <span class="s">&quot;LXC&quot;</span><span class="p">,</span> <span class="s">&quot;lxc&quot;</span><span class="p">,</span>
+    <span class="s">&quot;HyperV&quot;</span><span class="p">,</span> <span class="s">&quot;hyperv&quot;</span><span class="p">,</span>
+    <span class="s">&quot;UCS&quot;</span><span class="p">,</span> <span class="s">&quot;ucs&quot;</span><span class="p">,</span>
+    <span class="s">&quot;OVM&quot;</span><span class="p">,</span> <span class="s">&quot;ovm&quot;</span><span class="p">,</span>
+    <span class="s">&quot;Simulator&quot;</span><span class="p">,</span> <span class="s">&quot;simulator&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+<div class="viewcode-block" id="cs_argument_spec"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.cloudstack.cs_argument_spec">[docs]</a><span class="k">def</span> <span class="nf">cs_argument_spec</span><span class="p">():</span>
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">api_key</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">),</span>
+        <span class="n">api_secret</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">no_log</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+        <span class="n">api_url</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">),</span>
+        <span class="n">api_http_method</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;get&#39;</span><span class="p">,</span> <span class="s">&#39;post&#39;</span><span class="p">],</span> <span class="n">default</span><span class="o">=</span><span class="s">&#39;get&#39;</span><span class="p">),</span>
+        <span class="n">api_timeout</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span>
+        <span class="n">api_region</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;cloudstack&#39;</span><span class="p">),</span>
+    <span class="p">)</span></div>
+
+<div class="viewcode-block" id="cs_required_together"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.cloudstack.cs_required_together">[docs]</a><span class="k">def</span> <span class="nf">cs_required_together</span><span class="p">():</span>
+    <span class="k">return</span> <span class="p">[[</span><span class="s">&#39;api_key&#39;</span><span class="p">,</span> <span class="s">&#39;api_secret&#39;</span><span class="p">,</span> <span class="s">&#39;api_url&#39;</span><span class="p">]]</span></div>
+
+<div class="viewcode-block" id="AnsibleCloudStack"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.cloudstack.AnsibleCloudStack">[docs]</a><span class="k">class</span> <span class="nc">AnsibleCloudStack</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">has_lib_cs</span><span class="p">:</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;python library cs required: pip install cs&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;changed&#39;</span><span class="p">:</span> <span class="bp">False</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="c"># Common returns, will be merged with self.returns</span>
+        <span class="c"># search_for_key: replace_with_key</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">common_returns</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;id&#39;</span><span class="p">:</span>           <span class="s">&#39;id&#39;</span><span class="p">,</span>
+            <span class="s">&#39;name&#39;</span><span class="p">:</span>         <span class="s">&#39;name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;created&#39;</span><span class="p">:</span>      <span class="s">&#39;created&#39;</span><span class="p">,</span>
+            <span class="s">&#39;zonename&#39;</span><span class="p">:</span>     <span class="s">&#39;zone&#39;</span><span class="p">,</span>
+            <span class="s">&#39;state&#39;</span><span class="p">:</span>        <span class="s">&#39;state&#39;</span><span class="p">,</span>
+            <span class="s">&#39;project&#39;</span><span class="p">:</span>      <span class="s">&#39;project&#39;</span><span class="p">,</span>
+            <span class="s">&#39;account&#39;</span><span class="p">:</span>      <span class="s">&#39;account&#39;</span><span class="p">,</span>
+            <span class="s">&#39;domain&#39;</span><span class="p">:</span>       <span class="s">&#39;domain&#39;</span><span class="p">,</span>
+            <span class="s">&#39;displaytext&#39;</span><span class="p">:</span>  <span class="s">&#39;display_text&#39;</span><span class="p">,</span>
+            <span class="s">&#39;displayname&#39;</span><span class="p">:</span>  <span class="s">&#39;display_name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;description&#39;</span><span class="p">:</span>  <span class="s">&#39;description&#39;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="c"># Init returns dict for use in subclasses</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">returns</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c"># these values will be casted to int</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">returns_to_int</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c"># these keys will be compared case sensitive in self.has_changed()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">case_sensitive_keys</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s">&#39;id&#39;</span><span class="p">,</span>
+        <span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">module</span> <span class="o">=</span> <span class="n">module</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connect</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">domain</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">account</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">project</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ip_address</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">network</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vpc</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zone</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vm</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">os_type</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hypervisor</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">capabilities</span> <span class="o">=</span> <span class="bp">None</span>
+
+
+    <span class="k">def</span> <span class="nf">_connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">api_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;api_key&#39;</span><span class="p">)</span>
+        <span class="n">api_secret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;api_secret&#39;</span><span class="p">)</span>
+        <span class="n">api_url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;api_url&#39;</span><span class="p">)</span>
+        <span class="n">api_http_method</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;api_http_method&#39;</span><span class="p">)</span>
+        <span class="n">api_timeout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;api_timeout&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">api_key</span> <span class="ow">and</span> <span class="n">api_secret</span> <span class="ow">and</span> <span class="n">api_url</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cs</span> <span class="o">=</span> <span class="n">CloudStack</span><span class="p">(</span>
+                <span class="n">endpoint</span><span class="o">=</span><span class="n">api_url</span><span class="p">,</span>
+                <span class="n">key</span><span class="o">=</span><span class="n">api_key</span><span class="p">,</span>
+                <span class="n">secret</span><span class="o">=</span><span class="n">api_secret</span><span class="p">,</span>
+                <span class="n">timeout</span><span class="o">=</span><span class="n">api_timeout</span><span class="p">,</span>
+                <span class="n">method</span><span class="o">=</span><span class="n">api_http_method</span>
+                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">api_region</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;api_region&#39;</span><span class="p">,</span> <span class="s">&#39;cloudstack&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cs</span> <span class="o">=</span> <span class="n">CloudStack</span><span class="p">(</span><span class="o">**</span><span class="n">read_config</span><span class="p">(</span><span class="n">api_region</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="AnsibleCloudStack.get_or_fallback"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.cloudstack.AnsibleCloudStack.get_or_fallback">[docs]</a>    <span class="k">def</span> <span class="nf">get_or_fallback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">fallback_key</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">value</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">fallback_key</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span></div>
+
+
+    <span class="c"># TODO: for backward compatibility only, remove if not used anymore</span>
+    <span class="k">def</span> <span class="nf">_has_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">want_dict</span><span class="p">,</span> <span class="n">current_dict</span><span class="p">,</span> <span class="n">only_keys</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_changed</span><span class="p">(</span><span class="n">want_dict</span><span class="o">=</span><span class="n">want_dict</span><span class="p">,</span> <span class="n">current_dict</span><span class="o">=</span><span class="n">current_dict</span><span class="p">,</span> <span class="n">only_keys</span><span class="o">=</span><span class="n">only_keys</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="AnsibleCloudStack.has_changed"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.cloudstack.AnsibleCloudStack.has_changed">[docs]</a>    <span class="k">def</span> <span class="nf">has_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">want_dict</span><span class="p">,</span> <span class="n">current_dict</span><span class="p">,</span> <span class="n">only_keys</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">want_dict</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+
+            <span class="c"># Optionally limit by a list of keys</span>
+            <span class="k">if</span> <span class="n">only_keys</span> <span class="ow">and</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">only_keys</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="c"># Skip None values</span>
+            <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">current_dict</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">case_sensitive_keys</span> <span class="ow">and</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">case_sensitive_keys</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">(</span><span class="n">current_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]):</span>
+                        <span class="k">return</span> <span class="bp">True</span>
+                <span class="c"># Test for diff in case insensitive way</span>
+                <span class="k">elif</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">(</span><span class="n">current_dict</span><span class="p">[</span><span class="n">key</span><span class="p">])</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                    <span class="k">return</span> <span class="bp">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="bp">False</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_get_by_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">my_dict</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">my_dict</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">my_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">key</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">my_dict</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">my_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;Something went wrong: </span><span class="si">%s</span><span class="s"> not found&quot;</span> <span class="o">%</span> <span class="n">key</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">my_dict</span>
+
+
+<div class="viewcode-block" id="AnsibleCloudStack.get_vpc"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.cloudstack.AnsibleCloudStack.get_vpc">[docs]</a>    <span class="k">def</span> <span class="nf">get_vpc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a VPC dictionary or the value of given key of.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">vpc</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_by_key</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vpc</span><span class="p">)</span>
+
+        <span class="n">vpc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;vpc&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">vpc</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+
+        <span class="n">args</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;account&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_account</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s">&#39;name&#39;</span><span class="p">),</span>
+            <span class="s">&#39;domainid&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_domain</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s">&#39;id&#39;</span><span class="p">),</span>
+            <span class="s">&#39;projectid&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_project</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s">&#39;id&#39;</span><span class="p">),</span>
+            <span class="s">&#39;zoneid&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_zone</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s">&#39;id&#39;</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="n">vpcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cs</span><span class="o">.</span><span class="n">listVPCs</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">vpcs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;No VPCs available.&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">vpcs</span><span class="p">[</span><span class="s">&#39;vpc&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">vpc</span> <span class="ow">in</span> <span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="s">&#39;displaytext&#39;</span><span class="p">],</span> <span class="n">v</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">],</span> <span class="n">v</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">vpc</span> <span class="o">=</span> <span class="n">v</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_by_key</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vpc</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;VPC &#39;</span><span class="si">%s</span><span class="s">&#39; not found&quot;</span> <span class="o">%</span> <span class="n">vpc</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AnsibleCloudStack.get_network"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.cloudstack.AnsibleCloudStack.get_network">[docs]</a>    <span class="k">def</span> <span class="nf">get_network</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a network dictionary or the value of given key of.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_by_key</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="p">)</span>
+
+        <span class="n">network</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;network&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">network</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+
+        <span class="n">args</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;account&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_account</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">),</span>
+            <span class="s">&#39;domainid&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_domain</span><span class="p">(</span><span class="s">&#39;id&#39;</span><span class="p">),</span>
+            <span class="s">&#39;projectid&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_project</span><span class="p">(</span><span class="s">&#39;id&#39;</span><span class="p">),</span>
+            <span class="s">&#39;zoneid&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_zone</span><span class="p">(</span><span class="s">&#39;id&#39;</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="n">networks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cs</span><span class="o">.</span><span class="n">listNetworks</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">networks</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;No networks available.&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">networks</span><span class="p">[</span><span class="s">&#39;network&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">network</span> <span class="ow">in</span> <span class="p">[</span><span class="n">n</span><span class="p">[</span><span class="s">&#39;displaytext&#39;</span><span class="p">],</span> <span class="n">n</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">],</span> <span class="n">n</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">network</span> <span class="o">=</span> <span class="n">n</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_by_key</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;Network &#39;</span><span class="si">%s</span><span class="s">&#39; not found&quot;</span> <span class="o">%</span> <span class="n">network</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AnsibleCloudStack.get_project"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.cloudstack.AnsibleCloudStack.get_project">[docs]</a>    <span class="k">def</span> <span class="nf">get_project</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">project</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_by_key</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">project</span><span class="p">)</span>
+
+        <span class="n">project</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;project&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">project</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">args</span><span class="p">[</span><span class="s">&#39;account&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_account</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s">&#39;name&#39;</span><span class="p">)</span>
+        <span class="n">args</span><span class="p">[</span><span class="s">&#39;domainid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_domain</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s">&#39;id&#39;</span><span class="p">)</span>
+        <span class="n">projects</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cs</span><span class="o">.</span><span class="n">listProjects</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">projects</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">projects</span><span class="p">[</span><span class="s">&#39;project&#39;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">project</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span> <span class="n">p</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">p</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span> <span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">project</span> <span class="o">=</span> <span class="n">p</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_by_key</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">project</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;project &#39;</span><span class="si">%s</span><span class="s">&#39; not found&quot;</span> <span class="o">%</span> <span class="n">project</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AnsibleCloudStack.get_ip_address"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.cloudstack.AnsibleCloudStack.get_ip_address">[docs]</a>    <span class="k">def</span> <span class="nf">get_ip_address</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ip_address</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_by_key</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ip_address</span><span class="p">)</span>
+
+        <span class="n">ip_address</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ip_address&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ip_address</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;IP address param &#39;ip_address&#39; is required&quot;</span><span class="p">)</span>
+
+        <span class="n">args</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">args</span><span class="p">[</span><span class="s">&#39;ipaddress&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ip_address</span>
+        <span class="n">args</span><span class="p">[</span><span class="s">&#39;account&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_account</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s">&#39;name&#39;</span><span class="p">)</span>
+        <span class="n">args</span><span class="p">[</span><span class="s">&#39;domainid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_domain</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s">&#39;id&#39;</span><span class="p">)</span>
+        <span class="n">args</span><span class="p">[</span><span class="s">&#39;projectid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_project</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s">&#39;id&#39;</span><span class="p">)</span>
+        <span class="n">ip_addresses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cs</span><span class="o">.</span><span class="n">listPublicIpAddresses</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ip_addresses</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;IP address &#39;</span><span class="si">%s</span><span class="s">&#39; not found&quot;</span> <span class="o">%</span> <span class="n">args</span><span class="p">[</span><span class="s">&#39;ipaddress&#39;</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ip_address</span> <span class="o">=</span> <span class="n">ip_addresses</span><span class="p">[</span><span class="s">&#39;publicipaddress&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_by_key</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ip_address</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AnsibleCloudStack.get_vm"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.cloudstack.AnsibleCloudStack.get_vm">[docs]</a>    <span class="k">def</span> <span class="nf">get_vm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">vm</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_by_key</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vm</span><span class="p">)</span>
+
+        <span class="n">vm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;vm&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">vm</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;Virtual machine param &#39;vm&#39; is required&quot;</span><span class="p">)</span>
+
+        <span class="n">args</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">args</span><span class="p">[</span><span class="s">&#39;account&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_account</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s">&#39;name&#39;</span><span class="p">)</span>
+        <span class="n">args</span><span class="p">[</span><span class="s">&#39;domainid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_domain</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s">&#39;id&#39;</span><span class="p">)</span>
+        <span class="n">args</span><span class="p">[</span><span class="s">&#39;projectid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_project</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s">&#39;id&#39;</span><span class="p">)</span>
+        <span class="n">args</span><span class="p">[</span><span class="s">&#39;zoneid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_zone</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s">&#39;id&#39;</span><span class="p">)</span>
+        <span class="n">vms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cs</span><span class="o">.</span><span class="n">listVirtualMachines</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">vms</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">vms</span><span class="p">[</span><span class="s">&#39;virtualmachine&#39;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">vm</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span> <span class="n">v</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">v</span><span class="p">[</span><span class="s">&#39;displayname&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">v</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span> <span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">vm</span> <span class="o">=</span> <span class="n">v</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_by_key</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vm</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;Virtual machine &#39;</span><span class="si">%s</span><span class="s">&#39; not found&quot;</span> <span class="o">%</span> <span class="n">vm</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AnsibleCloudStack.get_zone"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.cloudstack.AnsibleCloudStack.get_zone">[docs]</a>    <span class="k">def</span> <span class="nf">get_zone</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">zone</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_by_key</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zone</span><span class="p">)</span>
+
+        <span class="n">zone</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;zone&#39;</span><span class="p">)</span>
+        <span class="n">zones</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cs</span><span class="o">.</span><span class="n">listZones</span><span class="p">()</span>
+
+        <span class="c"># use the first zone if no zone param given</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">zone</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">zone</span> <span class="o">=</span> <span class="n">zones</span><span class="p">[</span><span class="s">&#39;zone&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_by_key</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zone</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">zones</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">zones</span><span class="p">[</span><span class="s">&#39;zone&#39;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">zone</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span> <span class="n">z</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">z</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span> <span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">zone</span> <span class="o">=</span> <span class="n">z</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_by_key</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zone</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;zone &#39;</span><span class="si">%s</span><span class="s">&#39; not found&quot;</span> <span class="o">%</span> <span class="n">zone</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AnsibleCloudStack.get_os_type"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.cloudstack.AnsibleCloudStack.get_os_type">[docs]</a>    <span class="k">def</span> <span class="nf">get_os_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">os_type</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_by_key</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zone</span><span class="p">)</span>
+
+        <span class="n">os_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;os_type&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os_type</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+
+        <span class="n">os_types</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cs</span><span class="o">.</span><span class="n">listOsTypes</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">os_types</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">os_types</span><span class="p">[</span><span class="s">&#39;ostype&#39;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">os_type</span> <span class="ow">in</span> <span class="p">[</span> <span class="n">o</span><span class="p">[</span><span class="s">&#39;description&#39;</span><span class="p">],</span> <span class="n">o</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span> <span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">os_type</span> <span class="o">=</span> <span class="n">o</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_by_key</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">os_type</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;OS type &#39;</span><span class="si">%s</span><span class="s">&#39; not found&quot;</span> <span class="o">%</span> <span class="n">os_type</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AnsibleCloudStack.get_hypervisor"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.cloudstack.AnsibleCloudStack.get_hypervisor">[docs]</a>    <span class="k">def</span> <span class="nf">get_hypervisor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hypervisor</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">hypervisor</span>
+
+        <span class="n">hypervisor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;hypervisor&#39;</span><span class="p">)</span>
+        <span class="n">hypervisors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cs</span><span class="o">.</span><span class="n">listHypervisors</span><span class="p">()</span>
+
+        <span class="c"># use the first hypervisor if no hypervisor param given</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">hypervisor</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hypervisor</span> <span class="o">=</span> <span class="n">hypervisors</span><span class="p">[</span><span class="s">&#39;hypervisor&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s">&#39;name&#39;</span><span class="p">]</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">hypervisor</span>
+
+        <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hypervisors</span><span class="p">[</span><span class="s">&#39;hypervisor&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">hypervisor</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">h</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">hypervisor</span> <span class="o">=</span> <span class="n">h</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">hypervisor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;Hypervisor &#39;</span><span class="si">%s</span><span class="s">&#39; not found&quot;</span> <span class="o">%</span> <span class="n">hypervisor</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AnsibleCloudStack.get_account"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.cloudstack.AnsibleCloudStack.get_account">[docs]</a>    <span class="k">def</span> <span class="nf">get_account</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">account</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_by_key</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">account</span><span class="p">)</span>
+
+        <span class="n">account</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;account&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">account</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+
+        <span class="n">domain</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;domain&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">domain</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;Account must be specified with Domain&quot;</span><span class="p">)</span>
+
+        <span class="n">args</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">args</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">account</span>
+        <span class="n">args</span><span class="p">[</span><span class="s">&#39;domainid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_domain</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s">&#39;id&#39;</span><span class="p">)</span>
+        <span class="n">args</span><span class="p">[</span><span class="s">&#39;listall&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">accounts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cs</span><span class="o">.</span><span class="n">listAccounts</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">accounts</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">account</span> <span class="o">=</span> <span class="n">accounts</span><span class="p">[</span><span class="s">&#39;account&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_by_key</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">account</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;Account &#39;</span><span class="si">%s</span><span class="s">&#39; not found&quot;</span> <span class="o">%</span> <span class="n">account</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AnsibleCloudStack.get_domain"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.cloudstack.AnsibleCloudStack.get_domain">[docs]</a>    <span class="k">def</span> <span class="nf">get_domain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_by_key</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">)</span>
+
+        <span class="n">domain</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;domain&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">domain</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+
+        <span class="n">args</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">args</span><span class="p">[</span><span class="s">&#39;listall&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">domains</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cs</span><span class="o">.</span><span class="n">listDomains</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">domains</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">domains</span><span class="p">[</span><span class="s">&#39;domain&#39;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">d</span><span class="p">[</span><span class="s">&#39;path&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span> <span class="n">domain</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="s">&quot;root/&quot;</span> <span class="o">+</span> <span class="n">domain</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="s">&quot;root&quot;</span> <span class="o">+</span> <span class="n">domain</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">domain</span> <span class="o">=</span> <span class="n">d</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_by_key</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;Domain &#39;</span><span class="si">%s</span><span class="s">&#39; not found&quot;</span> <span class="o">%</span> <span class="n">domain</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AnsibleCloudStack.get_tags"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.cloudstack.AnsibleCloudStack.get_tags">[docs]</a>    <span class="k">def</span> <span class="nf">get_tags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">existing_tags</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">resource</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;tags&#39;</span><span class="p">,[]):</span>
+            <span class="n">existing_tags</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s">&#39;key&#39;</span><span class="p">:</span> <span class="n">tag</span><span class="p">[</span><span class="s">&#39;key&#39;</span><span class="p">],</span> <span class="s">&#39;value&#39;</span><span class="p">:</span> <span class="n">tag</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">]})</span>
+        <span class="k">return</span> <span class="n">existing_tags</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_process_tags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource</span><span class="p">,</span> <span class="n">resource_type</span><span class="p">,</span> <span class="n">tags</span><span class="p">,</span> <span class="n">operation</span><span class="o">=</span><span class="s">&quot;create&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">tags</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s">&#39;changed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">check_mode</span><span class="p">:</span>
+                <span class="n">args</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">args</span><span class="p">[</span><span class="s">&#39;resourceids&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="n">resource</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span>
+                <span class="n">args</span><span class="p">[</span><span class="s">&#39;resourcetype&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">resource_type</span>
+                <span class="n">args</span><span class="p">[</span><span class="s">&#39;tags&#39;</span><span class="p">]</span>         <span class="o">=</span> <span class="n">tags</span>
+                <span class="k">if</span> <span class="n">operation</span> <span class="o">==</span> <span class="s">&quot;create&quot;</span><span class="p">:</span>
+                    <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cs</span><span class="o">.</span><span class="n">createTags</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cs</span><span class="o">.</span><span class="n">deleteTags</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">poll_job</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">_tags_that_should_exist_or_be_updated</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource</span><span class="p">,</span> <span class="n">tags</span><span class="p">):</span>
+        <span class="n">existing_tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_tags</span><span class="p">(</span><span class="n">resource</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">tag</span> <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">tags</span> <span class="k">if</span> <span class="n">tag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">existing_tags</span><span class="p">]</span>
+
+
+    <span class="k">def</span> <span class="nf">_tags_that_should_not_exist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource</span><span class="p">,</span> <span class="n">tags</span><span class="p">):</span>
+        <span class="n">existing_tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_tags</span><span class="p">(</span><span class="n">resource</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">tag</span> <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">existing_tags</span> <span class="k">if</span> <span class="n">tag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="AnsibleCloudStack.ensure_tags"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.cloudstack.AnsibleCloudStack.ensure_tags">[docs]</a>    <span class="k">def</span> <span class="nf">ensure_tags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource</span><span class="p">,</span> <span class="n">resource_type</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">resource_type</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">resource</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;Error: Missing resource or resource_type for tags.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s">&#39;tags&#39;</span> <span class="ow">in</span> <span class="n">resource</span><span class="p">:</span>
+            <span class="n">tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;tags&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">tags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_process_tags</span><span class="p">(</span><span class="n">resource</span><span class="p">,</span> <span class="n">resource_type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tags_that_should_not_exist</span><span class="p">(</span><span class="n">resource</span><span class="p">,</span> <span class="n">tags</span><span class="p">),</span> <span class="n">operation</span><span class="o">=</span><span class="s">&quot;delete&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_process_tags</span><span class="p">(</span><span class="n">resource</span><span class="p">,</span> <span class="n">resource_type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tags_that_should_exist_or_be_updated</span><span class="p">(</span><span class="n">resource</span><span class="p">,</span> <span class="n">tags</span><span class="p">))</span>
+                <span class="n">resource</span><span class="p">[</span><span class="s">&#39;tags&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tags</span>
+        <span class="k">return</span> <span class="n">resource</span></div>
+
+
+<div class="viewcode-block" id="AnsibleCloudStack.get_capabilities"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.cloudstack.AnsibleCloudStack.get_capabilities">[docs]</a>    <span class="k">def</span> <span class="nf">get_capabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">capabilities</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_by_key</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">capabilities</span><span class="p">)</span>
+        <span class="n">capabilities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cs</span><span class="o">.</span><span class="n">listCapabilities</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">capabilities</span> <span class="o">=</span> <span class="n">capabilities</span><span class="p">[</span><span class="s">&#39;capability&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_by_key</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">capabilities</span><span class="p">)</span></div>
+
+
+    <span class="c"># TODO: for backward compatibility only, remove if not used anymore</span>
+    <span class="k">def</span> <span class="nf">_poll_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">poll_job</span><span class="p">(</span><span class="n">job</span><span class="o">=</span><span class="n">job</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="AnsibleCloudStack.poll_job"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.cloudstack.AnsibleCloudStack.poll_job">[docs]</a>    <span class="k">def</span> <span class="nf">poll_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s">&#39;jobid&#39;</span> <span class="ow">in</span> <span class="n">job</span><span class="p">:</span>
+            <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cs</span><span class="o">.</span><span class="n">queryAsyncJobResult</span><span class="p">(</span><span class="n">jobid</span><span class="o">=</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;jobid&#39;</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">res</span><span class="p">[</span><span class="s">&#39;jobstatus&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="s">&#39;jobresult&#39;</span> <span class="ow">in</span> <span class="n">res</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="s">&#39;errortext&#39;</span> <span class="ow">in</span> <span class="n">res</span><span class="p">[</span><span class="s">&#39;jobresult&#39;</span><span class="p">]:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;Failed: &#39;</span><span class="si">%s</span><span class="s">&#39;&quot;</span> <span class="o">%</span> <span class="n">res</span><span class="p">[</span><span class="s">&#39;jobresult&#39;</span><span class="p">][</span><span class="s">&#39;errortext&#39;</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="n">key</span> <span class="ow">and</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">res</span><span class="p">[</span><span class="s">&#39;jobresult&#39;</span><span class="p">]:</span>
+                        <span class="n">job</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="s">&#39;jobresult&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span>
+                    <span class="k">break</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">job</span></div>
+
+
+<div class="viewcode-block" id="AnsibleCloudStack.get_result"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.cloudstack.AnsibleCloudStack.get_result">[docs]</a>    <span class="k">def</span> <span class="nf">get_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">resource</span><span class="p">:</span>
+            <span class="n">returns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">common_returns</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">returns</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">returns</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">search_key</span><span class="p">,</span> <span class="n">return_key</span> <span class="ow">in</span> <span class="n">returns</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">search_key</span> <span class="ow">in</span> <span class="n">resource</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="n">return_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">resource</span><span class="p">[</span><span class="n">search_key</span><span class="p">]</span>
+
+            <span class="c"># Bad bad API does not always return int when it should.</span>
+            <span class="k">for</span> <span class="n">search_key</span><span class="p">,</span> <span class="n">return_key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">returns_to_int</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">search_key</span> <span class="ow">in</span> <span class="n">resource</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="n">return_key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">resource</span><span class="p">[</span><span class="n">search_key</span><span class="p">])</span>
+
+            <span class="c"># Special handling for tags</span>
+            <span class="k">if</span> <span class="s">&#39;tags&#39;</span> <span class="ow">in</span> <span class="n">resource</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s">&#39;tags&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">resource</span><span class="p">[</span><span class="s">&#39;tags&#39;</span><span class="p">]:</span>
+                    <span class="n">result_tag</span>          <span class="o">=</span> <span class="p">{}</span>
+                    <span class="n">result_tag</span><span class="p">[</span><span class="s">&#39;key&#39;</span><span class="p">]</span>   <span class="o">=</span> <span class="n">tag</span><span class="p">[</span><span class="s">&#39;key&#39;</span><span class="p">]</span>
+                    <span class="n">result_tag</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tag</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">]</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s">&#39;tags&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result_tag</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">result</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

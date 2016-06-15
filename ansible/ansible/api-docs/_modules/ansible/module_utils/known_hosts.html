@@ -1,0 +1,382 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.module_utils.known_hosts &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>ansible.module_utils.known_hosts</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.module_utils.known_hosts</h1><div class="highlight"><pre>
+<span class="c"># This code is part of Ansible, but is an independent component.</span>
+<span class="c"># This particular file snippet, and this file snippet only, is BSD licensed.</span>
+<span class="c"># Modules you write using this snippet, which is embedded dynamically by Ansible</span>
+<span class="c"># still belong to the author of the module, and may assign their own license</span>
+<span class="c"># to the complete work.</span>
+<span class="c">#</span>
+<span class="c"># Copyright (c), Michael DeHaan &lt;michael.dehaan@gmail.com&gt;, 2012-2013</span>
+<span class="c"># All rights reserved.</span>
+<span class="c">#</span>
+<span class="c"># Redistribution and use in source and binary forms, with or without modification,</span>
+<span class="c"># are permitted provided that the following conditions are met:</span>
+<span class="c">#</span>
+<span class="c">#    * Redistributions of source code must retain the above copyright</span>
+<span class="c">#      notice, this list of conditions and the following disclaimer.</span>
+<span class="c">#    * Redistributions in binary form must reproduce the above copyright notice,</span>
+<span class="c">#      this list of conditions and the following disclaimer in the documentation</span>
+<span class="c">#      and/or other materials provided with the distribution.</span>
+<span class="c">#</span>
+<span class="c"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND</span>
+<span class="c"># ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED</span>
+<span class="c"># WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.</span>
+<span class="c"># IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,</span>
+<span class="c"># INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,</span>
+<span class="c"># PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS</span>
+<span class="c"># INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT</span>
+<span class="c"># LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE</span>
+<span class="c"># USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">hmac</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">urlparse</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">urllib.parse</span> <span class="kn">as</span> <span class="nn">urlparse</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">hashlib</span> <span class="kn">import</span> <span class="n">sha1</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">sha</span> <span class="kn">as</span> <span class="nn">sha1</span>
+
+<span class="n">HASHED_KEY_MAGIC</span> <span class="o">=</span> <span class="s">&quot;|1|&quot;</span>
+
+<div class="viewcode-block" id="add_git_host_key"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.known_hosts.add_git_host_key">[docs]</a><span class="k">def</span> <span class="nf">add_git_host_key</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">accept_hostkey</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">create_dir</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot; idempotently add a git url hostkey &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">is_ssh_url</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
+
+        <span class="n">fqdn</span> <span class="o">=</span> <span class="n">get_fqdn</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">fqdn</span><span class="p">:</span>
+            <span class="n">known_host</span> <span class="o">=</span> <span class="n">check_hostkey</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">fqdn</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">known_host</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">accept_hostkey</span><span class="p">:</span>
+                    <span class="n">rc</span><span class="p">,</span> <span class="n">out</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">add_host_key</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">fqdn</span><span class="p">,</span> <span class="n">create_dir</span><span class="o">=</span><span class="n">create_dir</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">rc</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;failed to add </span><span class="si">%s</span><span class="s"> hostkey: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">fqdn</span><span class="p">,</span> <span class="n">out</span> <span class="o">+</span> <span class="n">err</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> has an unknown hostkey. Set accept_hostkey to True or manually add the hostkey prior to running the git module&quot;</span> <span class="o">%</span> <span class="n">fqdn</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="is_ssh_url"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.known_hosts.is_ssh_url">[docs]</a><span class="k">def</span> <span class="nf">is_ssh_url</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot; check if url is ssh &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="s">&quot;@&quot;</span> <span class="ow">in</span> <span class="n">url</span> <span class="ow">and</span> <span class="s">&quot;://&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">url</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">True</span>
+    <span class="k">for</span> <span class="n">scheme</span> <span class="ow">in</span> <span class="s">&quot;ssh://&quot;</span><span class="p">,</span> <span class="s">&quot;git+ssh://&quot;</span><span class="p">,</span> <span class="s">&quot;ssh+git://&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">scheme</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">True</span>
+    <span class="k">return</span> <span class="bp">False</span></div>
+
+<div class="viewcode-block" id="get_fqdn"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.known_hosts.get_fqdn">[docs]</a><span class="k">def</span> <span class="nf">get_fqdn</span><span class="p">(</span><span class="n">repo_url</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot; chop the hostname out of a url &quot;&quot;&quot;</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">if</span> <span class="s">&quot;@&quot;</span> <span class="ow">in</span> <span class="n">repo_url</span> <span class="ow">and</span> <span class="s">&quot;://&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">repo_url</span><span class="p">:</span>
+        <span class="c"># most likely an user@host:path or user@host/path type URL</span>
+        <span class="n">repo_url</span> <span class="o">=</span> <span class="n">repo_url</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;@&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">repo_url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;[&#39;</span><span class="p">):</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">repo_url</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;]&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s">&#39;]&#39;</span>
+        <span class="k">elif</span> <span class="s">&quot;:&quot;</span> <span class="ow">in</span> <span class="n">repo_url</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">repo_url</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;:&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="s">&quot;/&quot;</span> <span class="ow">in</span> <span class="n">repo_url</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">repo_url</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="s">&quot;://&quot;</span> <span class="ow">in</span> <span class="n">repo_url</span><span class="p">:</span>
+        <span class="c"># this should be something we can parse with urlparse</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="n">urlparse</span><span class="o">.</span><span class="n">urlparse</span><span class="p">(</span><span class="n">repo_url</span><span class="p">)</span>
+        <span class="c"># parts[1] will be empty on python2.4 on ssh:// or git:// urls, so</span>
+        <span class="c"># ensure we actually have a parts[1] before continuing.</span>
+        <span class="k">if</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s">&quot;@&quot;</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;@&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;[&#39;</span><span class="p">):</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;]&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s">&#39;]&#39;</span>
+            <span class="k">elif</span> <span class="s">&quot;:&quot;</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;:&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="check_hostkey"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.known_hosts.check_hostkey">[docs]</a><span class="k">def</span> <span class="nf">check_hostkey</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">fqdn</span><span class="p">):</span>
+   <span class="k">return</span> <span class="ow">not</span> <span class="n">not_in_host_file</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">fqdn</span><span class="p">)</span></div>
+
+<span class="c"># this is a variant of code found in connection_plugins/paramiko.py and we should modify</span>
+<span class="c"># the paramiko code to import and use this.</span>
+
+<div class="viewcode-block" id="not_in_host_file"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.known_hosts.not_in_host_file">[docs]</a><span class="k">def</span> <span class="nf">not_in_host_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">):</span>
+
+
+    <span class="k">if</span> <span class="s">&#39;USER&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+        <span class="n">user_host_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="s">&quot;~${USER}/.ssh/known_hosts&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">user_host_file</span> <span class="o">=</span> <span class="s">&quot;~/.ssh/known_hosts&quot;</span>
+    <span class="n">user_host_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">user_host_file</span><span class="p">)</span>
+
+    <span class="n">host_file_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">host_file_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">user_host_file</span><span class="p">)</span>
+    <span class="n">host_file_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;/etc/ssh/ssh_known_hosts&quot;</span><span class="p">)</span>
+    <span class="n">host_file_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;/etc/ssh/ssh_known_hosts2&quot;</span><span class="p">)</span>
+    <span class="n">host_file_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;/etc/openssh/ssh_known_hosts&quot;</span><span class="p">)</span>
+
+    <span class="n">hfiles_not_found</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">hf</span> <span class="ow">in</span> <span class="n">host_file_list</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">hf</span><span class="p">):</span>
+            <span class="n">hfiles_not_found</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">continue</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">host_fh</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">hf</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+            <span class="n">hfiles_not_found</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">continue</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">host_fh</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="n">host_fh</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">line</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="s">&quot; &quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">tokens</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">HASHED_KEY_MAGIC</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c"># this is a hashed known host entry</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="p">(</span><span class="n">kn_salt</span><span class="p">,</span><span class="n">kn_host</span><span class="p">)</span> <span class="o">=</span> <span class="n">tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="nb">len</span><span class="p">(</span><span class="n">HASHED_KEY_MAGIC</span><span class="p">):]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;|&quot;</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="nb">hash</span> <span class="o">=</span> <span class="n">hmac</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">kn_salt</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s">&#39;base64&#39;</span><span class="p">),</span> <span class="n">digestmod</span><span class="o">=</span><span class="n">sha1</span><span class="p">)</span>
+                    <span class="nb">hash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">host</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">hash</span><span class="o">.</span><span class="n">digest</span><span class="p">()</span> <span class="o">==</span> <span class="n">kn_host</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s">&#39;base64&#39;</span><span class="p">):</span>
+                        <span class="k">return</span> <span class="bp">False</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="c"># invalid hashed host key, skip it</span>
+                    <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># standard host file entry</span>
+                <span class="k">if</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">return</span> <span class="bp">True</span></div>
+
+
+<div class="viewcode-block" id="add_host_key"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.known_hosts.add_host_key">[docs]</a><span class="k">def</span> <span class="nf">add_host_key</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">fqdn</span><span class="p">,</span> <span class="n">key_type</span><span class="o">=</span><span class="s">&quot;rsa&quot;</span><span class="p">,</span> <span class="n">create_dir</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot; use ssh-keyscan to add the hostkey &quot;&quot;&quot;</span>
+
+    <span class="n">keyscan_cmd</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">get_bin_path</span><span class="p">(</span><span class="s">&#39;ssh-keyscan&#39;</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="s">&#39;USER&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+        <span class="n">user_ssh_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="s">&quot;~${USER}/.ssh/&quot;</span><span class="p">)</span>
+        <span class="n">user_host_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="s">&quot;~${USER}/.ssh/known_hosts&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">user_ssh_dir</span> <span class="o">=</span> <span class="s">&quot;~/.ssh/&quot;</span>
+        <span class="n">user_host_file</span> <span class="o">=</span> <span class="s">&quot;~/.ssh/known_hosts&quot;</span>
+    <span class="n">user_ssh_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">user_ssh_dir</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">user_ssh_dir</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">create_dir</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">user_ssh_dir</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="s">&#39;700&#39;</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;failed to create host key directory: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">user_ssh_dir</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> does not exist&quot;</span> <span class="o">%</span> <span class="n">user_ssh_dir</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">user_ssh_dir</span><span class="p">):</span>
+        <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> is not a directory&quot;</span> <span class="o">%</span> <span class="n">user_ssh_dir</span><span class="p">)</span>
+
+    <span class="n">this_cmd</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s"> -t </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">keyscan_cmd</span><span class="p">,</span> <span class="n">key_type</span><span class="p">,</span> <span class="n">fqdn</span><span class="p">)</span>
+
+    <span class="n">rc</span><span class="p">,</span> <span class="n">out</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">run_command</span><span class="p">(</span><span class="n">this_cmd</span><span class="p">)</span>
+    <span class="n">module</span><span class="o">.</span><span class="n">append_to_file</span><span class="p">(</span><span class="n">user_host_file</span><span class="p">,</span> <span class="n">out</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">rc</span><span class="p">,</span> <span class="n">out</span><span class="p">,</span> <span class="n">err</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,817 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.module_utils.azure_rm_common &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>ansible.module_utils.azure_rm_common</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.module_utils.azure_rm_common</h1><div class="highlight"><pre>
+<span class="c">#</span>
+<span class="c"># Copyright (c) 2016 Matt Davis, &lt;mdavis@ansible.com&gt;</span>
+<span class="c">#                    Chris Houseknecht, &lt;house@redhat.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+<span class="c">#</span>
+
+<span class="kn">import</span> <span class="nn">ConfigParser</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+
+<span class="kn">from</span> <span class="nn">os.path</span> <span class="kn">import</span> <span class="n">expanduser</span>
+<span class="kn">from</span> <span class="nn">ansible.module_utils.basic</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">AZURE_COMMON_ARGS</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+    <span class="n">profile</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;str&#39;</span><span class="p">),</span>
+    <span class="n">subscription_id</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;str&#39;</span><span class="p">,</span> <span class="n">no_log</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+    <span class="n">client_id</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;str&#39;</span><span class="p">,</span> <span class="n">no_log</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+    <span class="n">secret</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;str&#39;</span><span class="p">,</span> <span class="n">no_log</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+    <span class="n">tenant</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;str&#39;</span><span class="p">,</span> <span class="n">no_log</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+    <span class="n">ad_user</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;str&#39;</span><span class="p">,</span> <span class="n">no_log</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+    <span class="n">password</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;str&#39;</span><span class="p">,</span> <span class="n">no_log</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+    <span class="c"># debug=dict(type=&#39;bool&#39;, default=False),</span>
+<span class="p">)</span>
+
+<span class="n">AZURE_CREDENTIAL_ENV_MAPPING</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+    <span class="n">profile</span><span class="o">=</span><span class="s">&#39;AZURE_PROFILE&#39;</span><span class="p">,</span>
+    <span class="n">subscription_id</span><span class="o">=</span><span class="s">&#39;AZURE_SUBSCRIPTION_ID&#39;</span><span class="p">,</span>
+    <span class="n">client_id</span><span class="o">=</span><span class="s">&#39;AZURE_CLIENT_ID&#39;</span><span class="p">,</span>
+    <span class="n">secret</span><span class="o">=</span><span class="s">&#39;AZURE_SECRET&#39;</span><span class="p">,</span>
+    <span class="n">tenant</span><span class="o">=</span><span class="s">&#39;AZURE_TENANT&#39;</span><span class="p">,</span>
+    <span class="n">ad_user</span><span class="o">=</span><span class="s">&#39;AZURE_AD_USER&#39;</span><span class="p">,</span>
+    <span class="n">password</span><span class="o">=</span><span class="s">&#39;AZURE_PASSWORD&#39;</span>
+<span class="p">)</span>
+
+<span class="n">AZURE_TAG_ARGS</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+    <span class="n">tags</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;dict&#39;</span><span class="p">),</span>
+    <span class="n">append_tags</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="n">AZURE_COMMON_REQUIRED_IF</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s">&#39;log_mode&#39;</span><span class="p">,</span> <span class="s">&#39;file&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;log_path&#39;</span><span class="p">])</span>
+<span class="p">]</span>
+
+<span class="n">ANSIBLE_USER_AGENT</span> <span class="o">=</span> <span class="s">&#39;Ansible-Deploy&#39;</span>
+
+<span class="n">CIDR_PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">&quot;(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1&quot;</span>
+                          <span class="s">&quot;[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))&quot;</span><span class="p">)</span>
+
+<span class="n">AZURE_SUCCESS_STATE</span> <span class="o">=</span> <span class="s">&quot;Succeeded&quot;</span>
+<span class="n">AZURE_FAILED_STATE</span> <span class="o">=</span> <span class="s">&quot;Failed&quot;</span>
+
+<span class="n">HAS_AZURE</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="n">HAS_AZURE_EXC</span> <span class="o">=</span> <span class="bp">None</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+    <span class="kn">from</span> <span class="nn">msrest.serialization</span> <span class="kn">import</span> <span class="n">Serializer</span>
+    <span class="kn">from</span> <span class="nn">msrestazure.azure_exceptions</span> <span class="kn">import</span> <span class="n">CloudError</span>
+<span class="c">#    from azure.mgmt.compute import __version__ as azure_compute_version</span>
+    <span class="kn">from</span> <span class="nn">azure.mgmt.network.models</span> <span class="kn">import</span> <span class="n">PublicIPAddress</span><span class="p">,</span> <span class="n">NetworkSecurityGroup</span><span class="p">,</span> <span class="n">SecurityRule</span><span class="p">,</span> <span class="n">NetworkInterface</span><span class="p">,</span> \
+        <span class="n">NetworkInterfaceIPConfiguration</span><span class="p">,</span> <span class="n">Subnet</span>
+    <span class="kn">from</span> <span class="nn">azure.common.credentials</span> <span class="kn">import</span> <span class="n">ServicePrincipalCredentials</span><span class="p">,</span> <span class="n">UserPassCredentials</span>
+    <span class="kn">from</span> <span class="nn">azure.mgmt.network.network_management_client</span> <span class="kn">import</span> <span class="n">NetworkManagementClient</span>
+    <span class="kn">from</span> <span class="nn">azure.mgmt.resource.resources.resource_management_client</span> <span class="kn">import</span> <span class="n">ResourceManagementClient</span>
+    <span class="kn">from</span> <span class="nn">azure.mgmt.storage.storage_management_client</span> <span class="kn">import</span> <span class="n">StorageManagementClient</span>
+    <span class="kn">from</span> <span class="nn">azure.mgmt.compute.compute_management_client</span> <span class="kn">import</span> <span class="n">ComputeManagementClient</span>
+    <span class="kn">from</span> <span class="nn">azure.storage.cloudstorageaccount</span> <span class="kn">import</span> <span class="n">CloudStorageAccount</span>
+<span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+    <span class="n">HAS_AZURE_EXC</span> <span class="o">=</span> <span class="n">exc</span>
+    <span class="n">HAS_AZURE</span> <span class="o">=</span> <span class="bp">False</span>
+
+
+<div class="viewcode-block" id="azure_id_to_dict"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.azure_rm_common.azure_id_to_dict">[docs]</a><span class="k">def</span> <span class="nf">azure_id_to_dict</span><span class="p">(</span><span class="nb">id</span><span class="p">):</span>
+    <span class="n">pieces</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">r&#39;^\/&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">pieces</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">result</span><span class="p">[</span><span class="n">pieces</span><span class="p">[</span><span class="n">index</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pieces</span><span class="p">[</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="AzureRMModuleBase"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.azure_rm_common.AzureRMModuleBase">[docs]</a><span class="k">class</span> <span class="nc">AzureRMModuleBase</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">derived_arg_spec</span><span class="p">,</span> <span class="n">bypass_checks</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">no_log</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                 <span class="n">check_invalid_arguments</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">mutually_exclusive</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">required_together</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">required_one_of</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">add_file_common_args</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">supports_check_mode</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                 <span class="n">required_if</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">supports_tags</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">facts_module</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+
+        <span class="n">merged_arg_spec</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">merged_arg_spec</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">AZURE_COMMON_ARGS</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">supports_tags</span><span class="p">:</span>
+            <span class="n">merged_arg_spec</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">AZURE_TAG_ARGS</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">derived_arg_spec</span><span class="p">:</span>
+            <span class="n">merged_arg_spec</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">derived_arg_spec</span><span class="p">)</span>
+
+        <span class="n">merged_required_if</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">AZURE_COMMON_REQUIRED_IF</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">required_if</span><span class="p">:</span>
+            <span class="n">merged_required_if</span> <span class="o">+=</span> <span class="n">required_if</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">module</span> <span class="o">=</span> <span class="n">AnsibleModule</span><span class="p">(</span><span class="n">argument_spec</span><span class="o">=</span><span class="n">merged_arg_spec</span><span class="p">,</span>
+                                    <span class="n">bypass_checks</span><span class="o">=</span><span class="n">bypass_checks</span><span class="p">,</span>
+                                    <span class="n">no_log</span><span class="o">=</span><span class="n">no_log</span><span class="p">,</span>
+                                    <span class="n">check_invalid_arguments</span><span class="o">=</span><span class="n">check_invalid_arguments</span><span class="p">,</span>
+                                    <span class="n">mutually_exclusive</span><span class="o">=</span><span class="n">mutually_exclusive</span><span class="p">,</span>
+                                    <span class="n">required_together</span><span class="o">=</span><span class="n">required_together</span><span class="p">,</span>
+                                    <span class="n">required_one_of</span><span class="o">=</span><span class="n">required_one_of</span><span class="p">,</span>
+                                    <span class="n">add_file_common_args</span><span class="o">=</span><span class="n">add_file_common_args</span><span class="p">,</span>
+                                    <span class="n">supports_check_mode</span><span class="o">=</span><span class="n">supports_check_mode</span><span class="p">,</span>
+                                    <span class="n">required_if</span><span class="o">=</span><span class="n">merged_required_if</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">HAS_AZURE</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="s">&quot;The Azure Python SDK is not installed (try &#39;pip install azure&#39;) - {0}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">HAS_AZURE_EXC</span><span class="p">))</span>
+
+        <span class="c"># re-enable after SDK hits release</span>
+        <span class="c"># if azure_compute_version &lt; AZURE_MIN_VERSION:</span>
+        <span class="c">#     self.fail(&quot;Expecting azure.mgmt.compute.__version__ to be &gt;= {0}. Found version {1} &quot;</span>
+        <span class="c">#               &quot;Do you have Azure &gt;= 2.0.0rc2 installed?&quot;.format(AZURE_MIN_VERSION, azure_compute_version))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_network_client</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_storage_client</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_resource_client</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_compute_client</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_mode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">check_mode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">facts_module</span> <span class="o">=</span> <span class="n">facts_module</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debug</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;debug&#39;</span><span class="p">)</span>
+
+        <span class="c"># authenticate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_credentials</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="s">&quot;Failed to get credentials. Either pass as parameters, set environment variables, &quot;</span>
+                      <span class="s">&quot;or define a profile in ~/.azure/credentials.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;subscription_id&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="s">&quot;Credentials did not include a subscription_id value.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&quot;setting subscription_id&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subscription_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="p">[</span><span class="s">&#39;subscription_id&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;client_id&#39;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> \
+           <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;secret&#39;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> \
+           <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;tenant&#39;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">azure_credentials</span> <span class="o">=</span> <span class="n">ServicePrincipalCredentials</span><span class="p">(</span><span class="n">client_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="p">[</span><span class="s">&#39;client_id&#39;</span><span class="p">],</span>
+                                                                 <span class="n">secret</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="p">[</span><span class="s">&#39;secret&#39;</span><span class="p">],</span>
+                                                                 <span class="n">tenant</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="p">[</span><span class="s">&#39;tenant&#39;</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ad_user&#39;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;password&#39;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">azure_credentials</span> <span class="o">=</span> <span class="n">UserPassCredentials</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="p">[</span><span class="s">&#39;ad_user&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="p">[</span><span class="s">&#39;password&#39;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="s">&quot;Failed to authenticate with provided credentials. Some attributes were missing. &quot;</span>
+                      <span class="s">&quot;Credentials must include client_id, secret and tenant or ad_user and password.&quot;</span><span class="p">)</span>
+
+        <span class="c"># common parameter validation</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;tags&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">validate_tags</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s">&#39;tags&#39;</span><span class="p">])</span>
+
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exec_module</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">exit_json</span><span class="p">(</span><span class="o">**</span><span class="n">res</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AzureRMModuleBase.exec_module"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.azure_rm_common.AzureRMModuleBase.exec_module">[docs]</a>    <span class="k">def</span> <span class="nf">exec_module</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="s">&quot;Error: {0} failed to implement exec_module method.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="AzureRMModuleBase.fail"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.azure_rm_common.AzureRMModuleBase.fail">[docs]</a>    <span class="k">def</span> <span class="nf">fail</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Shortcut for calling module.fail()</span>
+
+<span class="sd">        :param msg: Error message text.</span>
+<span class="sd">        :param kwargs: Any key=value pairs</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AzureRMModuleBase.log"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.azure_rm_common.AzureRMModuleBase.log">[docs]</a>    <span class="k">def</span> <span class="nf">log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">pretty_print</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+        <span class="c"># Use only during module development</span>
+        <span class="c"># if self.debug:</span>
+        <span class="c">#     log_file = open(&#39;azure_rm.log&#39;, &#39;a&#39;)</span>
+        <span class="c">#     if pretty_print:</span>
+        <span class="c">#          log_file.write(json.dumps(msg, indent=4, sort_keys=True))</span>
+        <span class="c">#     else:</span>
+        <span class="c">#          log_file.write(msg + u&#39;\n&#39;)</span>
+
+<div class="viewcode-block" id="AzureRMModuleBase.validate_tags"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.azure_rm_common.AzureRMModuleBase.validate_tags">[docs]</a>    <span class="k">def</span> <span class="nf">validate_tags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tags</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Check if tags dictionary contains string:string pairs.</span>
+
+<span class="sd">        :param tags: dictionary of string:string pairs</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">facts_module</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="s">&quot;Tags must be a dictionary of string:string values.&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">tags</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="s">&quot;Tags values must be strings. Found {0}:{1}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)))</span></div>
+
+    <span class="k">def</span> <span class="nf">_tag_purge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tags</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Remove metadata tags not found in user provided tags parameter. Returns tuple</span>
+<span class="sd">        with bool indicating something changed and dict of new tags to be assigned to</span>
+<span class="sd">        the object.</span>
+
+<span class="sd">        :param tags: object metadata tags</span>
+<span class="sd">        :return: bool, dict of tags</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;tags&#39;</span><span class="p">):</span>
+            <span class="c"># purge all tags</span>
+            <span class="k">return</span> <span class="bp">True</span><span class="p">,</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">new_tags</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span>
+        <span class="n">changed</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s">&#39;tags&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+                <span class="c"># key not found in user provided parameters</span>
+                <span class="n">new_tags</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="n">changed</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">if</span> <span class="n">changed</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&#39;CHANGED: purged tags&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">changed</span><span class="p">,</span> <span class="n">new_tags</span>
+
+    <span class="k">def</span> <span class="nf">_tag_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tags</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Update metadata tags with values in user provided tags parameter. Returns</span>
+<span class="sd">        tuple with bool indicating something changed and dict of new tags to be</span>
+<span class="sd">        assigned to the object.</span>
+
+<span class="sd">        :param tags: object metadata tags</span>
+<span class="sd">        :return: bool, dict of tags</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">new_tags</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_tags</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">changed</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;tags&#39;</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s">&#39;tags&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">new_tags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="ow">and</span> <span class="n">new_tags</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">==</span> <span class="n">value</span><span class="p">):</span>
+                    <span class="n">changed</span> <span class="o">=</span> <span class="bp">True</span>
+                    <span class="n">new_tags</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">if</span> <span class="n">changed</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&#39;CHANGED: updated tags&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">changed</span><span class="p">,</span> <span class="n">new_tags</span>
+
+<div class="viewcode-block" id="AzureRMModuleBase.update_tags"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.azure_rm_common.AzureRMModuleBase.update_tags">[docs]</a>    <span class="k">def</span> <span class="nf">update_tags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tags</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Call from the module to update metadata tags. Returns tuple</span>
+<span class="sd">        with bool indicating if there was a change and dict of new</span>
+<span class="sd">        tags to assign to the object.</span>
+
+<span class="sd">        :param tags: metadata tags from the object</span>
+<span class="sd">        :return: bool, dict</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">changed</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="n">updated</span><span class="p">,</span> <span class="n">new_tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tag_update</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">updated</span><span class="p">:</span>
+            <span class="n">changed</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s">&#39;append_tags&#39;</span><span class="p">]:</span>
+            <span class="n">purged</span><span class="p">,</span> <span class="n">new_tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tag_purge</span><span class="p">(</span><span class="n">new_tags</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">purged</span><span class="p">:</span>
+                <span class="n">changed</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="n">changed</span><span class="p">,</span> <span class="n">new_tags</span></div>
+
+<div class="viewcode-block" id="AzureRMModuleBase.has_tags"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.azure_rm_common.AzureRMModuleBase.has_tags">[docs]</a>    <span class="k">def</span> <span class="nf">has_tags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_tags</span><span class="p">,</span> <span class="n">tag_list</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Used in fact modules to compare object tags to list of parameter tags. Return true if list of parameter tags</span>
+<span class="sd">        exists in object tags.</span>
+
+<span class="sd">        :param obj_tags: dictionary of tags from an Azure object.</span>
+<span class="sd">        :param tag_list: list of tag keys or tag key:value pairs</span>
+<span class="sd">        :return: bool</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">obj_tags</span> <span class="ow">and</span> <span class="n">tag_list</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">tag_list</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+        <span class="n">matches</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">tag_list</span><span class="p">:</span>
+            <span class="n">tag_key</span> <span class="o">=</span> <span class="n">tag</span>
+            <span class="n">tag_value</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">if</span> <span class="s">&#39;:&#39;</span> <span class="ow">in</span> <span class="n">tag</span><span class="p">:</span>
+                <span class="n">tag_key</span><span class="p">,</span> <span class="n">tag_value</span> <span class="o">=</span> <span class="n">tag</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">tag_value</span> <span class="ow">and</span> <span class="n">obj_tags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">tag_key</span><span class="p">)</span> <span class="o">==</span> <span class="n">tag_value</span><span class="p">:</span>
+                <span class="n">matches</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="n">tag_value</span> <span class="ow">and</span> <span class="n">obj_tags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">tag_key</span><span class="p">):</span>
+                <span class="n">matches</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">matches</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">tag_list</span><span class="p">):</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="AzureRMModuleBase.get_resource_group"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.azure_rm_common.AzureRMModuleBase.get_resource_group">[docs]</a>    <span class="k">def</span> <span class="nf">get_resource_group</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource_group</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Fetch a resource group.</span>
+
+<span class="sd">        :param resource_group: name of a resource group</span>
+<span class="sd">        :return: resource group object</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rm_client</span><span class="o">.</span><span class="n">resource_groups</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">resource_group</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">CloudError</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="s">&quot;Parameter error: resource group {0} not found&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">resource_group</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="s">&quot;Error retrieving resource group {0} - {1}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">resource_group</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)))</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_profile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">profile</span><span class="o">=</span><span class="s">&quot;default&quot;</span><span class="p">):</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">expanduser</span><span class="p">(</span><span class="s">&quot;~/.azure/credentials&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="n">ConfigParser</span><span class="o">.</span><span class="n">ConfigParser</span><span class="p">()</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="s">&quot;Failed to access {0}. Check that the file exists and you have read &quot;</span>
+                      <span class="s">&quot;access. {1}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)))</span>
+        <span class="n">credentials</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">AZURE_CREDENTIAL_ENV_MAPPING</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">credentials</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">profile</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+        <span class="k">if</span> <span class="n">credentials</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;client_id&#39;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">credentials</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ad_user&#39;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">credentials</span>
+
+        <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">_get_env_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">env_credentials</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">attribute</span><span class="p">,</span> <span class="n">env_variable</span> <span class="ow">in</span> <span class="n">AZURE_CREDENTIAL_ENV_MAPPING</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">env_credentials</span><span class="p">[</span><span class="n">attribute</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">env_variable</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">env_credentials</span><span class="p">[</span><span class="s">&#39;profile&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">credentials</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_profile</span><span class="p">(</span><span class="n">env_credentials</span><span class="p">[</span><span class="s">&#39;profile&#39;</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">credentials</span>
+
+        <span class="k">if</span> <span class="n">env_credentials</span><span class="p">[</span><span class="s">&#39;client_id&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">env_credentials</span>
+
+        <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">_get_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+        <span class="c"># Get authentication credentials.</span>
+        <span class="c"># Precedence: module parameters-&gt; environment variables-&gt; default profile in ~/.azure/credentials.</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&#39;Getting credentials&#39;</span><span class="p">)</span>
+
+        <span class="n">arg_credentials</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">attribute</span><span class="p">,</span> <span class="n">env_variable</span> <span class="ow">in</span> <span class="n">AZURE_CREDENTIAL_ENV_MAPPING</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">arg_credentials</span><span class="p">[</span><span class="n">attribute</span><span class="p">]</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">attribute</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+        <span class="c"># try module params</span>
+        <span class="k">if</span> <span class="n">arg_credentials</span><span class="p">[</span><span class="s">&#39;profile&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&#39;Retrieving credentials with profile parameter.&#39;</span><span class="p">)</span>
+            <span class="n">credentials</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_profile</span><span class="p">(</span><span class="n">arg_credentials</span><span class="p">[</span><span class="s">&#39;profile&#39;</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">credentials</span>
+        
+        <span class="k">if</span> <span class="n">arg_credentials</span><span class="p">[</span><span class="s">&#39;client_id&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&#39;Received credentials from parameters.&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">arg_credentials</span>
+        
+        <span class="c"># try environment</span>
+        <span class="n">env_credentials</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_env_credentials</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">env_credentials</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&#39;Received credentials from env.&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">env_credentials</span>
+
+        <span class="c"># try default profile from ~./azure/credentials</span>
+        <span class="n">default_credentials</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_profile</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">default_credentials</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&#39;Retrieved default profile credentials from ~/.azure/credentials.&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">default_credentials</span>
+
+        <span class="k">return</span> <span class="bp">None</span>
+
+<div class="viewcode-block" id="AzureRMModuleBase.serialize_obj"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.azure_rm_common.AzureRMModuleBase.serialize_obj">[docs]</a>    <span class="k">def</span> <span class="nf">serialize_obj</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">class_name</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Return a JSON representation of an Azure object.</span>
+
+<span class="sd">        :param obj: Azure object</span>
+<span class="sd">        :param class_name: Name of the object&#39;s class</span>
+<span class="sd">        :return: serialized result</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">serializer</span> <span class="o">=</span> <span class="n">Serializer</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">serializer</span><span class="o">.</span><span class="n">body</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">class_name</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AzureRMModuleBase.get_poller_result"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.azure_rm_common.AzureRMModuleBase.get_poller_result">[docs]</a>    <span class="k">def</span> <span class="nf">get_poller_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">poller</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Consistent method of waiting on and retrieving results from Azure&#39;s long poller.</span>
+
+<span class="sd">        :param poller: Azure poller object</span>
+<span class="sd">        :param wait: How long to wait.</span>
+<span class="sd">        :type wait: integer</span>
+<span class="sd">        :return: object resulting from the original request</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">delay</span> <span class="o">=</span> <span class="n">wait</span>
+            <span class="k">while</span> <span class="ow">not</span> <span class="n">poller</span><span class="o">.</span><span class="n">done</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&quot;Waiting for {0} sec&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">delay</span><span class="p">))</span>
+                <span class="n">poller</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">delay</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">poller</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">))</span>
+            <span class="k">raise</span></div>
+
+<div class="viewcode-block" id="AzureRMModuleBase.check_provisioning_state"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.azure_rm_common.AzureRMModuleBase.check_provisioning_state">[docs]</a>    <span class="k">def</span> <span class="nf">check_provisioning_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">azure_object</span><span class="p">,</span> <span class="n">requested_state</span><span class="o">=</span><span class="s">&#39;present&#39;</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Check an Azure object&#39;s provisioning state.</span>
+
+<span class="sd">        If something did not complete the provisioning</span>
+<span class="sd">        process, then we cannot operate on it.</span>
+
+<span class="sd">        :param azure_object: An object such as a subnet, storageaccount, etc. Must have provisioning_state</span>
+<span class="sd">                             and name attributes.</span>
+<span class="sd">        :return None</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">azure_object</span><span class="p">,</span> <span class="s">&#39;properties&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">azure_object</span><span class="o">.</span><span class="n">properties</span><span class="p">,</span> <span class="s">&#39;provisioning_state&#39;</span><span class="p">)</span> <span class="ow">and</span> \
+           <span class="nb">hasattr</span><span class="p">(</span><span class="n">azure_object</span><span class="p">,</span> <span class="s">&#39;name&#39;</span><span class="p">):</span>
+            <span class="c"># resource group object fits this model</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">azure_object</span><span class="o">.</span><span class="n">properties</span><span class="o">.</span><span class="n">provisioning_state</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">azure_object</span><span class="o">.</span><span class="n">properties</span><span class="o">.</span><span class="n">provisioning_state</span><span class="o">.</span><span class="n">value</span> <span class="o">!=</span> <span class="n">AZURE_SUCCESS_STATE</span> <span class="ow">and</span> \
+                   <span class="n">requested_state</span> <span class="o">!=</span> <span class="s">&#39;absent&#39;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="s">&quot;Error {0} has a provisioning state of {1}. Expecting state to be {2}.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                              <span class="n">azure_object</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">azure_object</span><span class="o">.</span><span class="n">properties</span><span class="o">.</span><span class="n">provisioning_state</span><span class="p">,</span> <span class="n">AZURE_SUCCESS_STATE</span><span class="p">))</span>
+                <span class="k">return</span>
+            <span class="k">if</span> <span class="n">azure_object</span><span class="o">.</span><span class="n">properties</span><span class="o">.</span><span class="n">provisioning_state</span> <span class="o">!=</span> <span class="n">AZURE_SUCCESS_STATE</span> <span class="ow">and</span> \
+               <span class="n">requested_state</span> <span class="o">!=</span> <span class="s">&#39;absent&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="s">&quot;Error {0} has a provisioning state of {1}. Expecting state to be {2}.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">azure_object</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">azure_object</span><span class="o">.</span><span class="n">properties</span><span class="o">.</span><span class="n">provisioning_state</span><span class="p">,</span> <span class="n">AZURE_SUCCESS_STATE</span><span class="p">))</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">azure_object</span><span class="p">,</span> <span class="s">&#39;provisioning_state&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">azure_object</span><span class="p">,</span> <span class="s">&#39;name&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">azure_object</span><span class="o">.</span><span class="n">provisioning_state</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">azure_object</span><span class="o">.</span><span class="n">provisioning_state</span><span class="o">.</span><span class="n">value</span> <span class="o">!=</span> <span class="n">AZURE_SUCCESS_STATE</span> <span class="ow">and</span> <span class="n">requested_state</span> <span class="o">!=</span> <span class="s">&#39;absent&#39;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="s">&quot;Error {0} has a provisioning state of {1}. Expecting state to be {2}.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">azure_object</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">azure_object</span><span class="o">.</span><span class="n">provisioning_state</span><span class="p">,</span> <span class="n">AZURE_SUCCESS_STATE</span><span class="p">))</span>
+                <span class="k">return</span>
+            <span class="k">if</span> <span class="n">azure_object</span><span class="o">.</span><span class="n">provisioning_state</span> <span class="o">!=</span> <span class="n">AZURE_SUCCESS_STATE</span> <span class="ow">and</span> <span class="n">requested_state</span> <span class="o">!=</span> <span class="s">&#39;absent&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="s">&quot;Error {0} has a provisioning state of {1}. Expecting state to be {2}.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">azure_object</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">azure_object</span><span class="o">.</span><span class="n">provisioning_state</span><span class="p">,</span> <span class="n">AZURE_SUCCESS_STATE</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="AzureRMModuleBase.get_blob_client"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.azure_rm_common.AzureRMModuleBase.get_blob_client">[docs]</a>    <span class="k">def</span> <span class="nf">get_blob_client</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource_group_name</span><span class="p">,</span> <span class="n">storage_account_name</span><span class="p">):</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># Get keys from the storage account</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&#39;Getting keys&#39;</span><span class="p">)</span>
+            <span class="n">account_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage_client</span><span class="o">.</span><span class="n">storage_accounts</span><span class="o">.</span><span class="n">list_keys</span><span class="p">(</span><span class="n">resource_group_name</span><span class="p">,</span> <span class="n">storage_account_name</span><span class="p">)</span>
+            <span class="n">keys</span><span class="p">[</span><span class="s">&#39;key1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">account_keys</span><span class="o">.</span><span class="n">key1</span>
+            <span class="n">keys</span><span class="p">[</span><span class="s">&#39;key2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">account_keys</span><span class="o">.</span><span class="n">key2</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="s">&quot;Error getting keys for account {0} - {1}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">storage_account_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)))</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&#39;Create blob service&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">CloudStorageAccount</span><span class="p">(</span><span class="n">storage_account_name</span><span class="p">,</span> <span class="n">keys</span><span class="p">[</span><span class="s">&#39;key1&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">create_block_blob_service</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="s">&quot;Error creating blob service client for storage account {0} - {1}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">storage_account_name</span><span class="p">,</span>
+                                                                                                <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="AzureRMModuleBase.create_default_pip"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.azure_rm_common.AzureRMModuleBase.create_default_pip">[docs]</a>    <span class="k">def</span> <span class="nf">create_default_pip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource_group</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">allocation_method</span><span class="o">=</span><span class="s">&#39;Dynamic&#39;</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Create a default public IP address &lt;name&gt;01 to associate with a network interface.</span>
+<span class="sd">        If a PIP address matching &lt;vm name&gt;01 exists, return it. Otherwise, create one.</span>
+
+<span class="sd">        :param resource_group: name of an existing resource group</span>
+<span class="sd">        :param location: a valid azure location</span>
+<span class="sd">        :param name: base name to assign the public IP address</span>
+<span class="sd">        :param allocation_method: one of &#39;Static&#39; or &#39;Dynamic&#39;</span>
+<span class="sd">        :return: PIP object</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">public_ip_name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s">&#39;01&#39;</span>
+        <span class="n">pip</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&quot;Starting create_default_pip {0}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">public_ip_name</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&quot;Check to see if public IP {0} exists&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">public_ip_name</span><span class="p">))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">pip</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">network_client</span><span class="o">.</span><span class="n">public_ip_addresses</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">resource_group</span><span class="p">,</span> <span class="n">public_ip_name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">CloudError</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">if</span> <span class="n">pip</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&quot;Public ip {0} found.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">public_ip_name</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">check_provisioning_state</span><span class="p">(</span><span class="n">pip</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">pip</span>
+
+        <span class="n">params</span> <span class="o">=</span> <span class="n">PublicIPAddress</span><span class="p">(</span>
+            <span class="n">location</span><span class="o">=</span><span class="n">location</span><span class="p">,</span>
+            <span class="n">public_ip_allocation_method</span><span class="o">=</span><span class="n">allocation_method</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&#39;Creating default public IP {0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">public_ip_name</span><span class="p">))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">poller</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">network_client</span><span class="o">.</span><span class="n">public_ip_addresses</span><span class="o">.</span><span class="n">create_or_update</span><span class="p">(</span><span class="n">resource_group</span><span class="p">,</span> <span class="n">public_ip_name</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="s">&quot;Error creating {0} - {1}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">public_ip_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_poller_result</span><span class="p">(</span><span class="n">poller</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AzureRMModuleBase.create_default_securitygroup"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.azure_rm_common.AzureRMModuleBase.create_default_securitygroup">[docs]</a>    <span class="k">def</span> <span class="nf">create_default_securitygroup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource_group</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">os_type</span><span class="p">,</span> <span class="n">open_ports</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Create a default security group :name: to associate with a network interface.</span>
+
+<span class="sd">        If a security group matching :name: exists, return it. Otherwise, create one.</span>
+
+<span class="sd">        :param resource_group: Resource group name</span>
+<span class="sd">        :param location: azure location name</span>
+<span class="sd">        :param name: base name to use for the security group</span>
+<span class="sd">        :param os_type: one of &#39;Windows&#39; or &#39;Linux&#39;. Determins any default rules added to the security group.</span>
+<span class="sd">        :param open_ports: list of network ports to open</span>
+<span class="sd">        :type open_ports: list of integers</span>
+<span class="sd">        :return: security_group object</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c"># FIXME: previous doc strings, still valid?</span>
+        <span class="c"># FIXME: :param ssh_port: for os_type &#39;Linux&#39; port used in rule allowing SSH access.</span>
+        <span class="c"># FIXME: :param rdp_port: for os_type &#39;Windows&#39; port used in rule allowing RDP access.</span>
+
+        <span class="n">security_group_name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s">&#39;01&#39;</span>
+        <span class="n">group</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&quot;Create security group {0}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">security_group_name</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&quot;Check to see if security group {0} exists&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">security_group_name</span><span class="p">))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">group</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">network_client</span><span class="o">.</span><span class="n">network_security_groups</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">resource_group</span><span class="p">,</span> <span class="n">security_group_name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">CloudError</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">if</span> <span class="n">group</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&quot;Security group {0} found.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">security_group_name</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">check_provisioning_state</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">group</span>
+
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">NetworkSecurityGroup</span><span class="p">()</span>
+        <span class="n">parameters</span><span class="o">.</span><span class="n">location</span> <span class="o">=</span> <span class="n">location</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">open_ports</span><span class="p">:</span>
+            <span class="c"># Open default ports based on OS type</span>
+            <span class="k">if</span> <span class="n">os_type</span> <span class="o">==</span> <span class="s">&#39;Linux&#39;</span><span class="p">:</span>
+                <span class="c"># add an inbound SSH rule</span>
+                <span class="n">parameters</span><span class="o">.</span><span class="n">security_rules</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">SecurityRule</span><span class="p">(</span><span class="s">&#39;Tcp&#39;</span><span class="p">,</span> <span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="s">&#39;Allow&#39;</span><span class="p">,</span> <span class="s">&#39;Inbound&#39;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s">&#39;Allow SSH Access&#39;</span><span class="p">,</span>
+                                 <span class="n">source_port_range</span><span class="o">=</span><span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="n">destination_port_range</span><span class="o">=</span><span class="s">&#39;22&#39;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;SSH&#39;</span><span class="p">)</span>
+                <span class="p">]</span>
+                <span class="n">parameters</span><span class="o">.</span><span class="n">location</span> <span class="o">=</span> <span class="n">location</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># for windows add inbound RDP rules</span>
+                <span class="n">parameters</span><span class="o">.</span><span class="n">security_rules</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">SecurityRule</span><span class="p">(</span><span class="s">&#39;Tcp&#39;</span><span class="p">,</span> <span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="s">&#39;Allow&#39;</span><span class="p">,</span> <span class="s">&#39;Inbound&#39;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s">&#39;Allow RDP port 3389&#39;</span><span class="p">,</span>
+                                 <span class="n">source_port_range</span><span class="o">=</span><span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="n">destination_port_range</span><span class="o">=</span><span class="s">&#39;3389&#39;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;RDP01&#39;</span><span class="p">),</span>
+                    <span class="n">SecurityRule</span><span class="p">(</span><span class="s">&#39;Tcp&#39;</span><span class="p">,</span> <span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="s">&#39;Allow&#39;</span><span class="p">,</span> <span class="s">&#39;Inbound&#39;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s">&#39;Allow RDP port 5986&#39;</span><span class="p">,</span>
+                                 <span class="n">source_port_range</span><span class="o">=</span><span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="n">destination_port_range</span><span class="o">=</span><span class="s">&#39;5986&#39;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">101</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;RDP01&#39;</span><span class="p">),</span>
+                <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># Open custom ports</span>
+            <span class="n">parameters</span><span class="o">.</span><span class="n">security_rules</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">priority</span> <span class="o">=</span> <span class="mi">100</span>
+            <span class="k">for</span> <span class="n">port</span> <span class="ow">in</span> <span class="n">open_ports</span><span class="p">:</span>
+                <span class="n">priority</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">rule_name</span> <span class="o">=</span> <span class="s">&quot;Rule_{0}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">priority</span><span class="p">)</span>
+                <span class="n">parameters</span><span class="o">.</span><span class="n">security_rules</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">SecurityRule</span><span class="p">(</span><span class="s">&#39;Tcp&#39;</span><span class="p">,</span> <span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="s">&#39;Allow&#39;</span><span class="p">,</span> <span class="s">&#39;Inbound&#39;</span><span class="p">,</span> <span class="n">source_port_range</span><span class="o">=</span><span class="s">&#39;*&#39;</span><span class="p">,</span>
+                                 <span class="n">destination_port_range</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">port</span><span class="p">),</span> <span class="n">priority</span><span class="o">=</span><span class="n">priority</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">rule_name</span><span class="p">)</span>
+                <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&#39;Creating default security group {0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">security_group_name</span><span class="p">))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">poller</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">network_client</span><span class="o">.</span><span class="n">network_security_groups</span><span class="o">.</span><span class="n">create_or_update</span><span class="p">(</span><span class="n">resource_group</span><span class="p">,</span>
+                                                                                  <span class="n">security_group_name</span><span class="p">,</span>
+                                                                                  <span class="n">parameters</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="s">&quot;Error creating default security rule {0} - {1}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">security_group_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_poller_result</span><span class="p">(</span><span class="n">poller</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_register</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># We have to perform the one-time registration here. Otherwise, we receive an error the first</span>
+            <span class="c"># time we attempt to use the requested client.</span>
+            <span class="n">resource_client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rm_client</span>
+            <span class="n">resource_client</span><span class="o">.</span><span class="n">providers</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span><span class="s">&quot;One-time registration of {0} failed - {1}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">storage_client</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&#39;Getting storage client...&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_storage_client</span><span class="p">:</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="n">StorageManagementClientConfiguration</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_storage_client</span> <span class="o">=</span> <span class="n">StorageManagementClient</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">azure_credentials</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscription_id</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_register</span><span class="p">(</span><span class="s">&#39;Microsoft.Storage&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_storage_client</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">network_client</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&#39;Getting network client&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_network_client</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_network_client</span> <span class="o">=</span> <span class="n">NetworkManagementClient</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">azure_credentials</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscription_id</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_register</span><span class="p">(</span><span class="s">&#39;Microsoft.Network&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_network_client</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">rm_client</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&#39;Getting resource manager client&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resource_client</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_resource_client</span> <span class="o">=</span> <span class="n">ResourceManagementClient</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">azure_credentials</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscription_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resource_client</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">compute_client</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&#39;Getting compute client&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_client</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_compute_client</span> <span class="o">=</span> <span class="n">ComputeManagementClient</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">azure_credentials</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscription_id</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_register</span><span class="p">(</span><span class="s">&#39;Microsoft.Compute&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_client</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

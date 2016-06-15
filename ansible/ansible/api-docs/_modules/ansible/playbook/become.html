@@ -1,0 +1,320 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.playbook.become &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="ansible.playbook" href="../playbook.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../playbook.html">ansible.playbook</a> &raquo;</li>
+      
+    <li>ansible.playbook.become</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.playbook.become</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span><span class="p">,</span> <span class="n">AnsibleParserError</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.attribute</span> <span class="kn">import</span> <span class="n">Attribute</span><span class="p">,</span> <span class="n">FieldAttribute</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Become"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.become.Become">[docs]</a><span class="k">class</span> <span class="nc">Become</span><span class="p">:</span>
+
+    <span class="c"># Privilege escalation</span>
+    <span class="n">_become</span>              <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">)</span>
+    <span class="n">_become_method</span>       <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+    <span class="n">_become_user</span>         <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">Become</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_detect_privilege_escalation_conflict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ds</span><span class="p">):</span>
+
+        <span class="c"># Fail out if user specifies conflicting privilege escalations</span>
+        <span class="n">has_become</span> <span class="o">=</span> <span class="s">&#39;become&#39;</span> <span class="ow">in</span> <span class="n">ds</span> <span class="ow">or</span> <span class="s">&#39;become_user&#39;</span><span class="ow">in</span> <span class="n">ds</span>
+        <span class="n">has_sudo</span>   <span class="o">=</span> <span class="s">&#39;sudo&#39;</span> <span class="ow">in</span> <span class="n">ds</span> <span class="ow">or</span> <span class="s">&#39;sudo_user&#39;</span> <span class="ow">in</span> <span class="n">ds</span>
+        <span class="n">has_su</span>     <span class="o">=</span> <span class="s">&#39;su&#39;</span> <span class="ow">in</span> <span class="n">ds</span> <span class="ow">or</span> <span class="s">&#39;su_user&#39;</span> <span class="ow">in</span> <span class="n">ds</span>
+
+        <span class="k">if</span> <span class="n">has_become</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;The become params (&quot;become&quot;, &quot;become_user&quot;) and&#39;</span>
+            <span class="k">if</span> <span class="n">has_sudo</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> sudo params (&quot;sudo&quot;, &quot;sudo_user&quot;) cannot be used together&#39;</span> <span class="o">%</span> <span class="n">msg</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">has_su</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> su params (&quot;su&quot;, &quot;su_user&quot;) cannot be used together&#39;</span> <span class="o">%</span> <span class="n">msg</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">has_sudo</span> <span class="ow">and</span> <span class="n">has_su</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&#39;sudo params (&quot;sudo&quot;, &quot;sudo_user&quot;) and su params (&quot;su&quot;, &quot;su_user&quot;) cannot be used together&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_preprocess_data_become</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ds</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Preprocess the playbook data for become attributes</span>
+
+<span class="sd">        This is called from the Base object&#39;s preprocess_data() method which</span>
+<span class="sd">        in turn is called pretty much anytime any sort of playbook object</span>
+<span class="sd">        (plays, tasks, blocks, etc) is created.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_detect_privilege_escalation_conflict</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+
+        <span class="c"># Privilege escalation, backwards compatibility for sudo/su</span>
+        <span class="k">if</span> <span class="s">&#39;sudo&#39;</span> <span class="ow">in</span> <span class="n">ds</span> <span class="ow">or</span> <span class="s">&#39;sudo_user&#39;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+            <span class="n">ds</span><span class="p">[</span><span class="s">&#39;become_method&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;sudo&#39;</span>
+            <span class="k">if</span> <span class="s">&#39;sudo&#39;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+                <span class="n">ds</span><span class="p">[</span><span class="s">&#39;become&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s">&#39;sudo&#39;</span><span class="p">]</span>
+                <span class="k">del</span> <span class="n">ds</span><span class="p">[</span><span class="s">&#39;sudo&#39;</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="s">&#39;sudo_user&#39;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+                <span class="n">ds</span><span class="p">[</span><span class="s">&#39;become_user&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s">&#39;sudo_user&#39;</span><span class="p">]</span>
+                <span class="k">del</span> <span class="n">ds</span><span class="p">[</span><span class="s">&#39;sudo_user&#39;</span><span class="p">]</span>
+
+            <span class="n">display</span><span class="o">.</span><span class="n">deprecated</span><span class="p">(</span><span class="s">&quot;Instead of sudo/sudo_user, use become/become_user and make sure become_method is &#39;sudo&#39; (default)&quot;</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="s">&#39;su&#39;</span> <span class="ow">in</span> <span class="n">ds</span> <span class="ow">or</span> <span class="s">&#39;su_user&#39;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+            <span class="n">ds</span><span class="p">[</span><span class="s">&#39;become_method&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;su&#39;</span>
+            <span class="k">if</span> <span class="s">&#39;su&#39;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+                <span class="n">ds</span><span class="p">[</span><span class="s">&#39;become&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s">&#39;su&#39;</span><span class="p">]</span>
+                <span class="k">del</span> <span class="n">ds</span><span class="p">[</span><span class="s">&#39;su&#39;</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="s">&#39;su_user&#39;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+                <span class="n">ds</span><span class="p">[</span><span class="s">&#39;become_user&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s">&#39;su_user&#39;</span><span class="p">]</span>
+                <span class="k">del</span> <span class="n">ds</span><span class="p">[</span><span class="s">&#39;su_user&#39;</span><span class="p">]</span>
+
+            <span class="n">display</span><span class="o">.</span><span class="n">deprecated</span><span class="p">(</span><span class="s">&quot;Instead of su/su_user, use become/become_user and set become_method to &#39;su&#39; (default is sudo)&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ds</span>
+
+<div class="viewcode-block" id="Become.set_become_defaults"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.become.Become.set_become_defaults">[docs]</a>    <span class="k">def</span> <span class="nf">set_become_defaults</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">become</span><span class="p">,</span> <span class="n">become_method</span><span class="p">,</span> <span class="n">become_user</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; if we are becoming someone else, but some fields are unset,</span>
+<span class="sd">            make sure they&#39;re initialized to the default config values  &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">become</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">become_method</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">become_method</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_BECOME_METHOD</span>
+            <span class="k">if</span> <span class="n">become_user</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">become_user</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_BECOME_USER</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_attr_become</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Override for the &#39;become&#39; getattr fetcher, used from Base.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_get_parent_attribute&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_parent_attribute</span><span class="p">(</span><span class="s">&#39;become&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s">&#39;become&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_get_attr_become_method</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Override for the &#39;become_method&#39; getattr fetcher, used from Base.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_get_parent_attribute&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_parent_attribute</span><span class="p">(</span><span class="s">&#39;become_method&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s">&#39;become_method&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_get_attr_become_user</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Override for the &#39;become_user&#39; getattr fetcher, used from Base.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_get_parent_attribute&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_parent_attribute</span><span class="p">(</span><span class="s">&#39;become_user&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s">&#39;become_user&#39;</span><span class="p">]</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

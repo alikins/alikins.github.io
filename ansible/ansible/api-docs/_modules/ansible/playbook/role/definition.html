@@ -1,0 +1,401 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.playbook.role.definition &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="ansible.playbook.role" href="../role.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../../playbook.html">ansible.playbook</a> &raquo;</li>
+      
+          <li><a href="../role.html">ansible.playbook.role</a> &raquo;</li>
+      
+    <li>ansible.playbook.role.definition</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.playbook.role.definition</h1><div class="highlight"><pre>
+<span class="c"># (c) 2014 Michael DeHaan, &lt;michael@ansible.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">iteritems</span><span class="p">,</span> <span class="n">string_types</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span>
+<span class="kn">from</span> <span class="nn">ansible.parsing.yaml.objects</span> <span class="kn">import</span> <span class="n">AnsibleBaseYAMLObject</span><span class="p">,</span> <span class="n">AnsibleMapping</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.attribute</span> <span class="kn">import</span> <span class="n">Attribute</span><span class="p">,</span> <span class="n">FieldAttribute</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.base</span> <span class="kn">import</span> <span class="n">Base</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.become</span> <span class="kn">import</span> <span class="n">Become</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.conditional</span> <span class="kn">import</span> <span class="n">Conditional</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.taggable</span> <span class="kn">import</span> <span class="n">Taggable</span>
+<span class="kn">from</span> <span class="nn">ansible.template</span> <span class="kn">import</span> <span class="n">Templar</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.path</span> <span class="kn">import</span> <span class="n">unfrackpath</span>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;RoleDefinition&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="RoleDefinition"><a class="viewcode-back" href="../../../../rst/ansible.playbook.role.html#ansible.playbook.role.definition.RoleDefinition">[docs]</a><span class="k">class</span> <span class="nc">RoleDefinition</span><span class="p">(</span><span class="n">Base</span><span class="p">,</span> <span class="n">Become</span><span class="p">,</span> <span class="n">Conditional</span><span class="p">,</span> <span class="n">Taggable</span><span class="p">):</span>
+
+    <span class="n">_role</span> <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">play</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">role_basedir</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_play</span>             <span class="o">=</span> <span class="n">play</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span> <span class="o">=</span> <span class="n">variable_manager</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_loader</span>           <span class="o">=</span> <span class="n">loader</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_role_path</span>    <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_role_basedir</span> <span class="o">=</span> <span class="n">role_basedir</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_role_params</span>  <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">RoleDefinition</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+    <span class="c">#def __repr__(self):</span>
+    <span class="c">#    return &#39;ROLEDEF: &#39; + self._attributes.get(&#39;role&#39;, &#39;&lt;no name set&gt;&#39;)</span>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="RoleDefinition.load"><a class="viewcode-back" href="../../../../rst/ansible.playbook.role.html#ansible.playbook.role.definition.RoleDefinition.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;not implemented&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RoleDefinition.preprocess_data"><a class="viewcode-back" href="../../../../rst/ansible.playbook.role.html#ansible.playbook.role.definition.RoleDefinition.preprocess_data">[docs]</a>    <span class="k">def</span> <span class="nf">preprocess_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ds</span><span class="p">):</span>
+        <span class="c"># role names that are simply numbers can be parsed by PyYAML</span>
+        <span class="c"># as integers even when quoted, so turn it into a string type</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">ds</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">string_types</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">AnsibleBaseYAMLObject</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">RoleDefinition</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">preprocess_data</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+
+        <span class="c"># save the original ds for use later</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ds</span> <span class="o">=</span> <span class="n">ds</span>
+
+        <span class="c"># we create a new data structure here, using the same</span>
+        <span class="c"># object used internally by the YAML parsing code so we</span>
+        <span class="c"># can preserve file:line:column information if it exists</span>
+        <span class="n">new_ds</span> <span class="o">=</span> <span class="n">AnsibleMapping</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">AnsibleBaseYAMLObject</span><span class="p">):</span>
+            <span class="n">new_ds</span><span class="o">.</span><span class="n">ansible_pos</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">ansible_pos</span>
+
+        <span class="c"># first we pull the role name out of the data structure,</span>
+        <span class="c"># and then use that to determine the role path (which may</span>
+        <span class="c"># result in a new role name, if it was a file path)</span>
+        <span class="n">role_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_role_name</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">role_name</span><span class="p">,</span> <span class="n">role_path</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_role_path</span><span class="p">(</span><span class="n">role_name</span><span class="p">)</span>
+
+        <span class="c"># next, we split the role params out from the valid role</span>
+        <span class="c"># attributes and update the new datastructure with that</span>
+        <span class="c"># result and the role name</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="p">(</span><span class="n">new_role_def</span><span class="p">,</span> <span class="n">role_params</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_split_role_params</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+            <span class="n">new_ds</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">new_role_def</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_role_params</span> <span class="o">=</span> <span class="n">role_params</span>
+
+        <span class="c"># set the role name in the new ds</span>
+        <span class="n">new_ds</span><span class="p">[</span><span class="s">&#39;role&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">role_name</span>
+
+        <span class="c"># we store the role path internally</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_role_path</span> <span class="o">=</span> <span class="n">role_path</span>
+
+        <span class="c"># and return the cleaned-up data structure</span>
+        <span class="k">return</span> <span class="n">new_ds</span></div>
+
+    <span class="k">def</span> <span class="nf">_load_role_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ds</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Returns the role name (either the role: or name: field) from</span>
+<span class="sd">        the role definition, or (when the role definition is a simple</span>
+<span class="sd">        string), just that string</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">string_types</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">ds</span>
+
+        <span class="n">role_name</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;role&#39;</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">role_name</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">role_name</span><span class="p">,</span> <span class="n">string_types</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&#39;role definitions must contain a role name&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">ds</span><span class="p">)</span>
+
+        <span class="c"># if we have the required datastructures, and if the role_name</span>
+        <span class="c"># contains a variable, try and template it now</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="p">:</span>
+            <span class="n">all_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="o">.</span><span class="n">get_vars</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span> <span class="n">play</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play</span><span class="p">)</span>
+            <span class="n">templar</span> <span class="o">=</span> <span class="n">Templar</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="n">all_vars</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">templar</span><span class="o">.</span><span class="n">_contains_vars</span><span class="p">(</span><span class="n">role_name</span><span class="p">):</span>
+                <span class="n">role_name</span> <span class="o">=</span> <span class="n">templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">role_name</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">role_name</span>
+
+    <span class="k">def</span> <span class="nf">_load_role_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">role_name</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        the &#39;role&#39;, as specified in the ds (or as a bare string), can either</span>
+<span class="sd">        be a simple name or a full path. If it is a full path, we use the</span>
+<span class="sd">        basename as the role name, otherwise we take the name as-given and</span>
+<span class="sd">        append it to the default role path</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c"># we always start the search for roles in the base directory of the playbook</span>
+        <span class="n">role_search_paths</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="o">.</span><span class="n">get_basedir</span><span class="p">(),</span> <span class="s">u&#39;roles&#39;</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="o">.</span><span class="n">get_basedir</span><span class="p">(),</span>
+        <span class="p">]</span>
+
+        <span class="c"># also search in the configured roles path</span>
+        <span class="k">if</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_ROLES_PATH</span><span class="p">:</span>
+            <span class="n">role_search_paths</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_ROLES_PATH</span><span class="p">)</span>
+
+        <span class="c"># finally, append the roles basedir, if it was set, so we can</span>
+        <span class="c"># search relative to that directory for dependent roles</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_role_basedir</span><span class="p">:</span>
+            <span class="n">role_search_paths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_role_basedir</span><span class="p">)</span>
+
+        <span class="c"># create a templar class to template the dependency names, in</span>
+        <span class="c"># case they contain variables</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">all_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="o">.</span><span class="n">get_vars</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span> <span class="n">play</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">all_vars</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+        <span class="n">templar</span> <span class="o">=</span> <span class="n">Templar</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="n">all_vars</span><span class="p">)</span>
+        <span class="n">role_name</span> <span class="o">=</span> <span class="n">templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">role_name</span><span class="p">)</span>
+
+        <span class="c"># now iterate through the possible paths and return the first one we find</span>
+        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">role_search_paths</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="n">role_path</span> <span class="o">=</span> <span class="n">unfrackpath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">role_name</span><span class="p">))</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="o">.</span><span class="n">path_exists</span><span class="p">(</span><span class="n">role_path</span><span class="p">):</span>
+                <span class="k">return</span> <span class="p">(</span><span class="n">role_name</span><span class="p">,</span> <span class="n">role_path</span><span class="p">)</span>
+
+        <span class="c"># if not found elsewhere try to extract path from name</span>
+        <span class="n">role_path</span> <span class="o">=</span> <span class="n">unfrackpath</span><span class="p">(</span><span class="n">role_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="o">.</span><span class="n">path_exists</span><span class="p">(</span><span class="n">role_path</span><span class="p">):</span>
+            <span class="n">role_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">role_name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">role_name</span><span class="p">,</span> <span class="n">role_path</span><span class="p">)</span>
+
+        <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;the role &#39;</span><span class="si">%s</span><span class="s">&#39; was not found in </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">role_name</span><span class="p">,</span> <span class="s">&quot;:&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">role_search_paths</span><span class="p">)),</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ds</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_split_role_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ds</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Splits any random role params off from the role spec and store</span>
+<span class="sd">        them in a dictionary of params for parsing later</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">role_def</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">role_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">base_attribute_names</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_base_attributes</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="n">ds</span><span class="p">):</span>
+            <span class="c"># use the list of FieldAttribute values to determine what is and is not</span>
+            <span class="c"># an extra parameter for this role (or sub-class of this role)</span>
+            <span class="c"># FIXME: hard-coded list of exception key names here corresponds to the</span>
+            <span class="c">#        connection fields in the Base class. There may need to be some</span>
+            <span class="c">#        other mechanism where we exclude certain kinds of field attributes,</span>
+            <span class="c">#        or make this list more automatic in some way so we don&#39;t have to</span>
+            <span class="c">#        remember to update it manually.</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">base_attribute_names</span> <span class="ow">or</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;connection&#39;</span><span class="p">,</span> <span class="s">&#39;port&#39;</span><span class="p">,</span> <span class="s">&#39;remote_user&#39;</span><span class="p">):</span>
+                <span class="c"># this key does not match a field attribute, so it must be a role param</span>
+                <span class="n">role_params</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># this is a field attribute, so copy it over directly</span>
+                <span class="n">role_def</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">role_def</span><span class="p">,</span> <span class="n">role_params</span><span class="p">)</span>
+
+<div class="viewcode-block" id="RoleDefinition.get_role_params"><a class="viewcode-back" href="../../../../rst/ansible.playbook.role.html#ansible.playbook.role.definition.RoleDefinition.get_role_params">[docs]</a>    <span class="k">def</span> <span class="nf">get_role_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_role_params</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="RoleDefinition.get_role_path"><a class="viewcode-back" href="../../../../rst/ansible.playbook.role.html#ansible.playbook.role.definition.RoleDefinition.get_role_path">[docs]</a>    <span class="k">def</span> <span class="nf">get_role_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_role_path</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

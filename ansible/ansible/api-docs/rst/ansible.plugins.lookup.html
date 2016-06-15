@@ -1,0 +1,880 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.plugins.lookup package &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../index.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+    <li>ansible.plugins.lookup package</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/rst/ansible.plugins.lookup.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-ansible.plugins.lookup">
+<span id="ansible-plugins-lookup-package"></span><h1>ansible.plugins.lookup package<a class="headerlink" href="#module-ansible.plugins.lookup" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="ansible.plugins.lookup.LookupBase">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.</code><code class="descname">LookupBase</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup.html#LookupBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.LookupBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.LookupBase.get_basedir">
+<code class="descname">get_basedir</code><span class="sig-paren">(</span><em>variables</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup.html#LookupBase.get_basedir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.LookupBase.get_basedir" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="ansible.plugins.lookup.LookupBase.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup.html#LookupBase.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.LookupBase.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>When the playbook specifies a lookup, this method is run.  The
+arguments to the lookup become the arguments to this method.  One
+additional keyword argument named <code class="docutils literal"><span class="pre">variables</span></code> is added to the method
+call.  It contains the variables available to ansible at the time the
+lookup is templated.  For instance:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="s">&quot;{{ lookup(&#39;url&#39;, &#39;https://toshio.fedorapeople.org/one.txt&#39;, validate_certs=True) }}&quot;</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>would end up calling the lookup plugin named url&#8217;s run method like this::</dt>
+<dd>run([&#8216;<a class="reference external" href="https://toshio.fedorapeople.org/one.txt">https://toshio.fedorapeople.org/one.txt</a>&#8216;], variables=available_variables, validate_certs=True)</dd>
+</dl>
+<p>Lookup plugins can be used within playbooks for looping.  When this
+happens, the first argument is a list containing the terms.  Lookup
+plugins can also be called from within playbooks to return their
+values into a variable or parameter.  If the user passes a string in
+this case, it is converted into a list.</p>
+<p>Errors encountered during execution should be returned by raising
+AnsibleError() with a message describing the error.</p>
+<p>Any strings returned by this method that could ever contain non-ascii
+must be converted into python&#8217;s unicode type as the strings will be run
+through jinja2 which has this requirement.  You can use:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">ansible.module_utils.unicode</span> <span class="kn">import</span> <span class="n">to_unicode</span>
+<span class="n">result_string</span> <span class="o">=</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">result_string</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-ansible.plugins.lookup.cartesian">
+<span id="ansible-plugins-lookup-cartesian-module"></span><h2>ansible.plugins.lookup.cartesian module<a class="headerlink" href="#module-ansible.plugins.lookup.cartesian" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.cartesian.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.cartesian.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/cartesian.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.cartesian.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<p>Create the cartesian product of lists
+[1, 2, 3], [a, b] -&gt; [1, a], [1, b], [2, a], [2, b], [3, a], [3, b]</p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.cartesian.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/cartesian.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.cartesian.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.consul_kv">
+<span id="ansible-plugins-lookup-consul-kv-module"></span><h2>ansible.plugins.lookup.consul_kv module<a class="headerlink" href="#module-ansible.plugins.lookup.consul_kv" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.consul_kv.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.consul_kv.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/consul_kv.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.consul_kv.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.consul_kv.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/consul_kv.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.consul_kv.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="ansible.plugins.lookup.consul_kv.LookupModule.parse_params">
+<code class="descname">parse_params</code><span class="sig-paren">(</span><em>term</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/consul_kv.html#LookupModule.parse_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.consul_kv.LookupModule.parse_params" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.credstash">
+<span id="ansible-plugins-lookup-credstash-module"></span><h2>ansible.plugins.lookup.credstash module<a class="headerlink" href="#module-ansible.plugins.lookup.credstash" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.credstash.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.credstash.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/credstash.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.credstash.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.credstash.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/credstash.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.credstash.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.csvfile">
+<span id="ansible-plugins-lookup-csvfile-module"></span><h2>ansible.plugins.lookup.csvfile module<a class="headerlink" href="#module-ansible.plugins.lookup.csvfile" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.csvfile.CSVRecoder">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.csvfile.</code><code class="descname">CSVRecoder</code><span class="sig-paren">(</span><em>f</em>, <em>encoding='utf-8'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/csvfile.html#CSVRecoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.csvfile.CSVRecoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Iterator that reads an encoded stream and reencodes the input to UTF-8</p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.csvfile.CSVRecoder.next">
+<code class="descname">next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/csvfile.html#CSVRecoder.next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.csvfile.CSVRecoder.next" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="ansible.plugins.lookup.csvfile.CSVReader">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.csvfile.</code><code class="descname">CSVReader</code><span class="sig-paren">(</span><em>f</em>, <em>dialect=&lt;class csv.excel&gt;</em>, <em>encoding='utf-8'</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/csvfile.html#CSVReader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.csvfile.CSVReader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>A CSV reader which will iterate over lines in the CSV file &#8220;f&#8221;,
+which is encoded in the given encoding.</p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.csvfile.CSVReader.next">
+<code class="descname">next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/csvfile.html#CSVReader.next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.csvfile.CSVReader.next" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="ansible.plugins.lookup.csvfile.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.csvfile.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/csvfile.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.csvfile.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.csvfile.LookupModule.read_csv">
+<code class="descname">read_csv</code><span class="sig-paren">(</span><em>filename</em>, <em>key</em>, <em>delimiter</em>, <em>encoding='utf-8'</em>, <em>dflt=None</em>, <em>col=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/csvfile.html#LookupModule.read_csv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.csvfile.LookupModule.read_csv" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="ansible.plugins.lookup.csvfile.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/csvfile.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.csvfile.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.dict">
+<span id="ansible-plugins-lookup-dict-module"></span><h2>ansible.plugins.lookup.dict module<a class="headerlink" href="#module-ansible.plugins.lookup.dict" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.dict.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.dict.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/dict.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.dict.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.dict.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>varibles=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/dict.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.dict.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.dig">
+<span id="ansible-plugins-lookup-dig-module"></span><h2>ansible.plugins.lookup.dig module<a class="headerlink" href="#module-ansible.plugins.lookup.dig" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="ansible.plugins.lookup.dig.make_rdata_dict">
+<code class="descclassname">ansible.plugins.lookup.dig.</code><code class="descname">make_rdata_dict</code><span class="sig-paren">(</span><em>rdata</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/dig.html#make_rdata_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.dig.make_rdata_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>While the &#8216;dig&#8217; lookup plugin supports anything which dnspython supports
+out of the box, the following supported_types list describes which
+DNS query types we can convert to a dict.</p>
+<p>Note: adding support for RRSIG is hard work. :)</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="ansible.plugins.lookup.dig.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.dig.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/dig.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.dig.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.dig.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/dig.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.dig.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Terms contains a string with things to <strong class="command">dig</strong> for.</p>
+<p>The following formats are supported:</p>
+<blockquote>
+<div><table border="1" class="docutils">
+<colgroup>
+<col width="52%" />
+<col width="48%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Example</th>
+<th class="head">Note</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>example.com</td>
+<td># A record</td>
+</tr>
+<tr class="row-odd"><td>example.com qtype=A</td>
+<td># same</td>
+</tr>
+<tr class="row-even"><td>example.com/TXT</td>
+<td># specific qtype</td>
+</tr>
+<tr class="row-odd"><td>example.com qtype=txt</td>
+<td># same</td>
+</tr>
+<tr class="row-even"><td>192.168.1.2/PTR</td>
+<td><dl class="first last docutils">
+<dt># reverse PTR</dt>
+<dd>shortcut for 2.1.168.192.in-addr.arpa/PTR</dd>
+</dl>
+</td>
+</tr>
+<tr class="row-odd"><td>example.net/AAAA &#64;nameserver</td>
+<td><dl class="first last docutils">
+<dt># query specified server</dt>
+<dd>can be comma-sep list of names/addresses</dd>
+</dl>
+</td>
+</tr>
+<tr class="row-even"><td>... flat=0</td>
+<td># returns a dict; default is 1 == string</td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.dnstxt">
+<span id="ansible-plugins-lookup-dnstxt-module"></span><h2>ansible.plugins.lookup.dnstxt module<a class="headerlink" href="#module-ansible.plugins.lookup.dnstxt" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.dnstxt.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.dnstxt.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/dnstxt.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.dnstxt.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.dnstxt.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/dnstxt.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.dnstxt.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.env">
+<span id="ansible-plugins-lookup-env-module"></span><h2>ansible.plugins.lookup.env module<a class="headerlink" href="#module-ansible.plugins.lookup.env" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.env.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.env.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/env.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.env.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.env.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/env.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.env.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.etcd">
+<span id="ansible-plugins-lookup-etcd-module"></span><h2>ansible.plugins.lookup.etcd module<a class="headerlink" href="#module-ansible.plugins.lookup.etcd" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.etcd.Etcd">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.etcd.</code><code class="descname">Etcd</code><span class="sig-paren">(</span><em>url='http://127.0.0.1:4001'</em>, <em>version='v1'</em>, <em>validate_certs=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/etcd.html#Etcd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.etcd.Etcd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.etcd.Etcd.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/etcd.html#Etcd.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.etcd.Etcd.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="ansible.plugins.lookup.etcd.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.etcd.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/etcd.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.etcd.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.etcd.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/etcd.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.etcd.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.file">
+<span id="ansible-plugins-lookup-file-module"></span><h2>ansible.plugins.lookup.file module<a class="headerlink" href="#module-ansible.plugins.lookup.file" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.file.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.file.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/file.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.file.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.file.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/file.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.file.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.fileglob">
+<span id="ansible-plugins-lookup-fileglob-module"></span><h2>ansible.plugins.lookup.fileglob module<a class="headerlink" href="#module-ansible.plugins.lookup.fileglob" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.fileglob.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.fileglob.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/fileglob.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.fileglob.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.fileglob.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/fileglob.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.fileglob.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.first_found">
+<span id="ansible-plugins-lookup-first-found-module"></span><h2>ansible.plugins.lookup.first_found module<a class="headerlink" href="#module-ansible.plugins.lookup.first_found" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.first_found.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.first_found.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/first_found.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.first_found.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.first_found.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/first_found.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.first_found.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.flattened">
+<span id="ansible-plugins-lookup-flattened-module"></span><h2>ansible.plugins.lookup.flattened module<a class="headerlink" href="#module-ansible.plugins.lookup.flattened" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.flattened.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.flattened.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/flattened.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.flattened.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.flattened.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/flattened.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.flattened.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.hashi_vault">
+<span id="ansible-plugins-lookup-hashi-vault-module"></span><h2>ansible.plugins.lookup.hashi_vault module<a class="headerlink" href="#module-ansible.plugins.lookup.hashi_vault" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.hashi_vault.HashiVault">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.hashi_vault.</code><code class="descname">HashiVault</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/hashi_vault.html#HashiVault"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.hashi_vault.HashiVault" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.hashi_vault.HashiVault.get">
+<code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/hashi_vault.html#HashiVault.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.hashi_vault.HashiVault.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="ansible.plugins.lookup.hashi_vault.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.hashi_vault.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/hashi_vault.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.hashi_vault.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.hashi_vault.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/hashi_vault.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.hashi_vault.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.indexed_items">
+<span id="ansible-plugins-lookup-indexed-items-module"></span><h2>ansible.plugins.lookup.indexed_items module<a class="headerlink" href="#module-ansible.plugins.lookup.indexed_items" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.indexed_items.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.indexed_items.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>basedir=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/indexed_items.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.indexed_items.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.indexed_items.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/indexed_items.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.indexed_items.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.ini">
+<span id="ansible-plugins-lookup-ini-module"></span><h2>ansible.plugins.lookup.ini module<a class="headerlink" href="#module-ansible.plugins.lookup.ini" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.ini.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.ini.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/ini.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.ini.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.ini.LookupModule.read_properties">
+<code class="descname">read_properties</code><span class="sig-paren">(</span><em>filename</em>, <em>key</em>, <em>dflt</em>, <em>is_regexp</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/ini.html#LookupModule.read_properties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.ini.LookupModule.read_properties" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="ansible.plugins.lookup.ini.LookupModule.read_ini">
+<code class="descname">read_ini</code><span class="sig-paren">(</span><em>filename</em>, <em>key</em>, <em>section</em>, <em>dflt</em>, <em>is_regexp</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/ini.html#LookupModule.read_ini"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.ini.LookupModule.read_ini" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="ansible.plugins.lookup.ini.LookupModule.get_value">
+<code class="descname">get_value</code><span class="sig-paren">(</span><em>key</em>, <em>section</em>, <em>dflt</em>, <em>is_regexp</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/ini.html#LookupModule.get_value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.ini.LookupModule.get_value" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="ansible.plugins.lookup.ini.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/ini.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.ini.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.inventory_hostnames">
+<span id="ansible-plugins-lookup-inventory-hostnames-module"></span><h2>ansible.plugins.lookup.inventory_hostnames module<a class="headerlink" href="#module-ansible.plugins.lookup.inventory_hostnames" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.inventory_hostnames.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.inventory_hostnames.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/inventory_hostnames.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.inventory_hostnames.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.inventory_hostnames.LookupModule.get_hosts">
+<code class="descname">get_hosts</code><span class="sig-paren">(</span><em>variables</em>, <em>pattern</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/inventory_hostnames.html#LookupModule.get_hosts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.inventory_hostnames.LookupModule.get_hosts" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="ansible.plugins.lookup.inventory_hostnames.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/inventory_hostnames.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.inventory_hostnames.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.items">
+<span id="ansible-plugins-lookup-items-module"></span><h2>ansible.plugins.lookup.items module<a class="headerlink" href="#module-ansible.plugins.lookup.items" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.items.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.items.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/items.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.items.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.items.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/items.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.items.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.lines">
+<span id="ansible-plugins-lookup-lines-module"></span><h2>ansible.plugins.lookup.lines module<a class="headerlink" href="#module-ansible.plugins.lookup.lines" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.lines.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.lines.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/lines.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.lines.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.lines.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/lines.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.lines.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.list">
+<span id="ansible-plugins-lookup-list-module"></span><h2>ansible.plugins.lookup.list module<a class="headerlink" href="#module-ansible.plugins.lookup.list" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.list.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.list.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/list.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.list.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.list.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/list.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.list.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.nested">
+<span id="ansible-plugins-lookup-nested-module"></span><h2>ansible.plugins.lookup.nested module<a class="headerlink" href="#module-ansible.plugins.lookup.nested" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.nested.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.nested.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/nested.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.nested.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.nested.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/nested.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.nested.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.password">
+<span id="ansible-plugins-lookup-password-module"></span><h2>ansible.plugins.lookup.password module<a class="headerlink" href="#module-ansible.plugins.lookup.password" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.password.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.password.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/password.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.password.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.password.LookupModule.random_password">
+<code class="descname">random_password</code><span class="sig-paren">(</span><em>length=20</em>, <em>chars='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.</em>, <em>:-_'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/password.html#LookupModule.random_password"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.password.LookupModule.random_password" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a random password string of length containing only chars.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ansible.plugins.lookup.password.LookupModule.random_salt">
+<code class="descname">random_salt</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/password.html#LookupModule.random_salt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.password.LookupModule.random_salt" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="ansible.plugins.lookup.password.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/password.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.password.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.pipe">
+<span id="ansible-plugins-lookup-pipe-module"></span><h2>ansible.plugins.lookup.pipe module<a class="headerlink" href="#module-ansible.plugins.lookup.pipe" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.pipe.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.pipe.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/pipe.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.pipe.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.pipe.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/pipe.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.pipe.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.random_choice">
+<span id="ansible-plugins-lookup-random-choice-module"></span><h2>ansible.plugins.lookup.random_choice module<a class="headerlink" href="#module-ansible.plugins.lookup.random_choice" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.random_choice.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.random_choice.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/random_choice.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.random_choice.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.random_choice.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>inject=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/random_choice.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.random_choice.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.redis_kv">
+<span id="ansible-plugins-lookup-redis-kv-module"></span><h2>ansible.plugins.lookup.redis_kv module<a class="headerlink" href="#module-ansible.plugins.lookup.redis_kv" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.redis_kv.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.redis_kv.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/redis_kv.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.redis_kv.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.redis_kv.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/redis_kv.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.redis_kv.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.sequence">
+<span id="ansible-plugins-lookup-sequence-module"></span><h2>ansible.plugins.lookup.sequence module<a class="headerlink" href="#module-ansible.plugins.lookup.sequence" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.sequence.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.sequence.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/sequence.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.sequence.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<p>sequence lookup module</p>
+<p>Used to generate some sequence of items. Takes arguments in two forms.</p>
+<p>The simple / shortcut form is:</p>
+<blockquote>
+<div>[start-]end[/stride][:format]</div></blockquote>
+<p>As indicated by the brackets: start, stride, and format string are all
+optional.  The format string is in the style of printf.  This can be used
+to pad with zeros, format in hexadecimal, etc.  All of the numerical values
+can be specified in octal (i.e. 0664) or hexadecimal (i.e. 0x3f8).
+Negative numbers are not supported.</p>
+<p>Some examples:</p>
+<blockquote>
+<div>5 -&gt; [&#8220;1&#8221;,&#8221;2&#8221;,&#8221;3&#8221;,&#8221;4&#8221;,&#8221;5&#8221;]
+5-8 -&gt; [&#8220;5&#8221;, &#8220;6&#8221;, &#8220;7&#8221;, &#8220;8&#8221;]
+2-10/2 -&gt; [&#8220;2&#8221;, &#8220;4&#8221;, &#8220;6&#8221;, &#8220;8&#8221;, &#8220;10&#8221;]
+4:host%02d -&gt; [&#8220;host01&#8221;,&#8221;host02&#8221;,&#8221;host03&#8221;,&#8221;host04&#8221;]</div></blockquote>
+<p>The standard Ansible key-value form is accepted as well.  For example:</p>
+<blockquote>
+<div>start=5 end=11 stride=2 format=0x%02x -&gt; [&#8220;0x05&#8221;,&#8221;0x07&#8221;,&#8221;0x09&#8221;,&#8221;0x0a&#8221;]</div></blockquote>
+<p>This format takes an alternate form of &#8220;end&#8221; called &#8220;count&#8221;, which counts
+some number from the starting value.  For example:</p>
+<blockquote>
+<div>count=5 -&gt; [&#8220;1&#8221;, &#8220;2&#8221;, &#8220;3&#8221;, &#8220;4&#8221;, &#8220;5&#8221;]
+start=0x0f00 count=4 format=%04x -&gt; [&#8220;0f00&#8221;, &#8220;0f01&#8221;, &#8220;0f02&#8221;, &#8220;0f03&#8221;]
+start=0 count=5 stride=2 -&gt; [&#8220;0&#8221;, &#8220;2&#8221;, &#8220;4&#8221;, &#8220;6&#8221;, &#8220;8&#8221;]
+start=1 count=5 stride=2 -&gt; [&#8220;1&#8221;, &#8220;3&#8221;, &#8220;5&#8221;, &#8220;7&#8221;, &#8220;9&#8221;]</div></blockquote>
+<p>The count option is mostly useful for avoiding off-by-one errors and errors
+calculating the number of entries in a sequence when a stride is specified.</p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.sequence.LookupModule.reset">
+<code class="descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/sequence.html#LookupModule.reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.sequence.LookupModule.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>set sensible defaults</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ansible.plugins.lookup.sequence.LookupModule.parse_kv_args">
+<code class="descname">parse_kv_args</code><span class="sig-paren">(</span><em>args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/sequence.html#LookupModule.parse_kv_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.sequence.LookupModule.parse_kv_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse key-value style arguments</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ansible.plugins.lookup.sequence.LookupModule.parse_simple_args">
+<code class="descname">parse_simple_args</code><span class="sig-paren">(</span><em>term</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/sequence.html#LookupModule.parse_simple_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.sequence.LookupModule.parse_simple_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the shortcut forms, return True/False</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ansible.plugins.lookup.sequence.LookupModule.sanity_check">
+<code class="descname">sanity_check</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/sequence.html#LookupModule.sanity_check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.sequence.LookupModule.sanity_check" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="ansible.plugins.lookup.sequence.LookupModule.generate_sequence">
+<code class="descname">generate_sequence</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/sequence.html#LookupModule.generate_sequence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.sequence.LookupModule.generate_sequence" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="ansible.plugins.lookup.sequence.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/sequence.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.sequence.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.shelvefile">
+<span id="ansible-plugins-lookup-shelvefile-module"></span><h2>ansible.plugins.lookup.shelvefile module<a class="headerlink" href="#module-ansible.plugins.lookup.shelvefile" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.shelvefile.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.shelvefile.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/shelvefile.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.shelvefile.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.shelvefile.LookupModule.read_shelve">
+<code class="descname">read_shelve</code><span class="sig-paren">(</span><em>shelve_filename</em>, <em>key</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/shelvefile.html#LookupModule.read_shelve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.shelvefile.LookupModule.read_shelve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the value of &#8220;key&#8221; from a shelve file</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ansible.plugins.lookup.shelvefile.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/shelvefile.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.shelvefile.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.subelements">
+<span id="ansible-plugins-lookup-subelements-module"></span><h2>ansible.plugins.lookup.subelements module<a class="headerlink" href="#module-ansible.plugins.lookup.subelements" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.subelements.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.subelements.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/subelements.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.subelements.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.subelements.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/subelements.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.subelements.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.template">
+<span id="ansible-plugins-lookup-template-module"></span><h2>ansible.plugins.lookup.template module<a class="headerlink" href="#module-ansible.plugins.lookup.template" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.template.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.template.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/template.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.template.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.template.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/template.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.template.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.together">
+<span id="ansible-plugins-lookup-together-module"></span><h2>ansible.plugins.lookup.together module<a class="headerlink" href="#module-ansible.plugins.lookup.together" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.together.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.together.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/together.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.together.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<p>Transpose a list of arrays:
+[1, 2, 3], [4, 5, 6] -&gt; [1, 4], [2, 5], [3, 6]
+Replace any empty spots in 2nd array with None:
+[1, 2], [3] -&gt; [1, 3], [2, None]</p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.together.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/together.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.together.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ansible.plugins.lookup.url">
+<span id="ansible-plugins-lookup-url-module"></span><h2>ansible.plugins.lookup.url module<a class="headerlink" href="#module-ansible.plugins.lookup.url" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ansible.plugins.lookup.url.LookupModule">
+<em class="property">class </em><code class="descclassname">ansible.plugins.lookup.url.</code><code class="descname">LookupModule</code><span class="sig-paren">(</span><em>loader=None</em>, <em>templar=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/url.html#LookupModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.url.LookupModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ansible.plugins.lookup.LookupBase" title="ansible.plugins.lookup.LookupBase"><code class="xref py py-class docutils literal"><span class="pre">ansible.plugins.lookup.LookupBase</span></code></a></p>
+<dl class="method">
+<dt id="ansible.plugins.lookup.url.LookupModule.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>terms</em>, <em>variables=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ansible/plugins/lookup/url.html#LookupModule.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ansible.plugins.lookup.url.LookupModule.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

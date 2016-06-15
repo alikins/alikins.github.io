@@ -1,0 +1,351 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.plugins.strategy.debug &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="ansible.plugins.strategy" href="../strategy.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../../plugins.html">ansible.plugins</a> &raquo;</li>
+      
+          <li><a href="../strategy.html">ansible.plugins.strategy</a> &raquo;</li>
+      
+    <li>ansible.plugins.strategy.debug</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.plugins.strategy.debug</h1><div class="highlight"><pre>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">cmd</span>
+<span class="kn">import</span> <span class="nn">pprint</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">from</span> <span class="nn">ansible.plugins.strategy</span> <span class="kn">import</span> <span class="n">linear</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="NextAction"><a class="viewcode-back" href="../../../../rst/ansible.plugins.strategy.html#ansible.plugins.strategy.debug.NextAction">[docs]</a><span class="k">class</span> <span class="nc">NextAction</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; The next action after an interpreter&#39;s exit. &quot;&quot;&quot;</span>
+    <span class="n">REDO</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">CONTINUE</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">EXIT</span> <span class="o">=</span> <span class="mi">3</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="o">=</span><span class="n">EXIT</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="StrategyModule"><a class="viewcode-back" href="../../../../rst/ansible.plugins.strategy.html#ansible.plugins.strategy.debug.StrategyModule">[docs]</a><span class="k">class</span> <span class="nc">StrategyModule</span><span class="p">(</span><span class="n">linear</span><span class="o">.</span><span class="n">StrategyModule</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tqm</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">curr_tqm</span> <span class="o">=</span> <span class="n">tqm</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">StrategyModule</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">tqm</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_queue_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">task_vars</span><span class="p">,</span> <span class="n">play_context</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">curr_host</span> <span class="o">=</span> <span class="n">host</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">curr_task</span> <span class="o">=</span> <span class="n">task</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">curr_task_vars</span> <span class="o">=</span> <span class="n">task_vars</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">curr_play_context</span> <span class="o">=</span> <span class="n">play_context</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">StrategyModule</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_queue_task</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">task_vars</span><span class="p">,</span> <span class="n">play_context</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_process_pending_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iterator</span><span class="p">,</span> <span class="n">one_pass</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&quot;curr_host&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">StrategyModule</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_process_pending_results</span><span class="p">(</span><span class="n">iterator</span><span class="p">,</span> <span class="n">one_pass</span><span class="p">)</span>
+
+        <span class="n">prev_host_state</span> <span class="o">=</span> <span class="n">iterator</span><span class="o">.</span><span class="n">get_host_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">curr_host</span><span class="p">)</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">StrategyModule</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_process_pending_results</span><span class="p">(</span><span class="n">iterator</span><span class="p">,</span> <span class="n">one_pass</span><span class="p">)</span>
+
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_need_debug</span><span class="p">(</span><span class="n">results</span><span class="p">):</span>
+            <span class="n">next_action</span> <span class="o">=</span> <span class="n">NextAction</span><span class="p">()</span>
+            <span class="n">dbg</span> <span class="o">=</span> <span class="n">Debugger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">next_action</span><span class="p">)</span>
+            <span class="n">dbg</span><span class="o">.</span><span class="n">cmdloop</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">next_action</span><span class="o">.</span><span class="n">result</span> <span class="o">==</span> <span class="n">NextAction</span><span class="o">.</span><span class="n">REDO</span><span class="p">:</span>
+                <span class="c"># rollback host state</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">curr_tqm</span><span class="o">.</span><span class="n">clear_failed_hosts</span><span class="p">()</span>
+                <span class="n">iterator</span><span class="o">.</span><span class="n">_host_states</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">curr_host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">prev_host_state</span>
+                <span class="k">if</span> <span class="nb">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">total</span><span class="p">,</span> <span class="n">res</span> <span class="p">:</span> <span class="n">res</span><span class="o">.</span><span class="n">is_failed</span><span class="p">()</span> <span class="ow">or</span> <span class="n">total</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="bp">False</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_stats</span><span class="o">.</span><span class="n">failures</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">curr_host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
+                <span class="k">elif</span> <span class="nb">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">total</span><span class="p">,</span> <span class="n">res</span> <span class="p">:</span> <span class="n">res</span><span class="o">.</span><span class="n">is_unreachable</span><span class="p">()</span> <span class="ow">or</span> <span class="n">total</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="bp">False</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_stats</span><span class="o">.</span><span class="n">dark</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">curr_host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
+
+                <span class="c"># redo</span>
+                <span class="nb">super</span><span class="p">(</span><span class="n">StrategyModule</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_queue_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">curr_host</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">curr_task</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">curr_task_vars</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">curr_play_context</span><span class="p">)</span>
+                <span class="n">results</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">StrategyModule</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_process_pending_results</span><span class="p">(</span><span class="n">iterator</span><span class="p">,</span> <span class="n">one_pass</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">next_action</span><span class="o">.</span><span class="n">result</span> <span class="o">==</span> <span class="n">NextAction</span><span class="o">.</span><span class="n">CONTINUE</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">elif</span> <span class="n">next_action</span><span class="o">.</span><span class="n">result</span> <span class="o">==</span> <span class="n">NextAction</span><span class="o">.</span><span class="n">EXIT</span><span class="p">:</span>
+                <span class="nb">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">results</span>
+
+    <span class="k">def</span> <span class="nf">_need_debug</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">results</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">total</span><span class="p">,</span> <span class="n">res</span> <span class="p">:</span> <span class="n">res</span><span class="o">.</span><span class="n">is_failed</span><span class="p">()</span> <span class="ow">or</span> <span class="n">res</span><span class="o">.</span><span class="n">is_unreachable</span><span class="p">()</span> <span class="ow">or</span> <span class="n">total</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Debugger"><a class="viewcode-back" href="../../../../rst/ansible.plugins.strategy.html#ansible.plugins.strategy.debug.Debugger">[docs]</a><span class="k">class</span> <span class="nc">Debugger</span><span class="p">(</span><span class="n">cmd</span><span class="o">.</span><span class="n">Cmd</span><span class="p">):</span>
+    <span class="n">prompt</span> <span class="o">=</span> <span class="s">&#39;(debug) &#39;</span>  <span class="c"># debugger</span>
+    <span class="n">prompt_continuous</span> <span class="o">=</span> <span class="s">&#39;&gt; &#39;</span>  <span class="c"># multiple lines</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">strategy_module</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">next_action</span><span class="p">):</span>
+        <span class="c"># cmd.Cmd is old-style class</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">Cmd</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">intro</span> <span class="o">=</span> <span class="s">&quot;Debugger invoked&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scope</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scope</span><span class="p">[</span><span class="s">&#39;task&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">strategy_module</span><span class="o">.</span><span class="n">curr_task</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scope</span><span class="p">[</span><span class="s">&#39;vars&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">strategy_module</span><span class="o">.</span><span class="n">curr_task_vars</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scope</span><span class="p">[</span><span class="s">&#39;host&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">strategy_module</span><span class="o">.</span><span class="n">curr_host</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scope</span><span class="p">[</span><span class="s">&#39;result&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">_result</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scope</span><span class="p">[</span><span class="s">&#39;results&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">results</span>  <span class="c"># for debug of this debugger</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">next_action</span> <span class="o">=</span> <span class="n">next_action</span>
+
+<div class="viewcode-block" id="Debugger.cmdloop"><a class="viewcode-back" href="../../../../rst/ansible.plugins.strategy.html#ansible.plugins.strategy.debug.Debugger.cmdloop">[docs]</a>    <span class="k">def</span> <span class="nf">cmdloop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">cmd</span><span class="o">.</span><span class="n">Cmd</span><span class="o">.</span><span class="n">cmdloop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Debugger.do_EOF"><a class="viewcode-back" href="../../../../rst/ansible.plugins.strategy.html#ansible.plugins.strategy.debug.Debugger.do_EOF">[docs]</a>    <span class="k">def</span> <span class="nf">do_EOF</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_quit</span><span class="p">(</span><span class="n">args</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Debugger.do_quit"><a class="viewcode-back" href="../../../../rst/ansible.plugins.strategy.html#ansible.plugins.strategy.debug.Debugger.do_quit">[docs]</a>    <span class="k">def</span> <span class="nf">do_quit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&#39;aborted&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">next_action</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="n">NextAction</span><span class="o">.</span><span class="n">EXIT</span>
+        <span class="k">return</span> <span class="bp">True</span></div>
+
+    <span class="n">do_q</span> <span class="o">=</span> <span class="n">do_quit</span>
+
+<div class="viewcode-block" id="Debugger.do_continue"><a class="viewcode-back" href="../../../../rst/ansible.plugins.strategy.html#ansible.plugins.strategy.debug.Debugger.do_continue">[docs]</a>    <span class="k">def</span> <span class="nf">do_continue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">next_action</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="n">NextAction</span><span class="o">.</span><span class="n">CONTINUE</span>
+        <span class="k">return</span> <span class="bp">True</span></div>
+
+    <span class="n">do_c</span> <span class="o">=</span> <span class="n">do_continue</span>
+
+<div class="viewcode-block" id="Debugger.do_redo"><a class="viewcode-back" href="../../../../rst/ansible.plugins.strategy.html#ansible.plugins.strategy.debug.Debugger.do_redo">[docs]</a>    <span class="k">def</span> <span class="nf">do_redo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">next_action</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="n">NextAction</span><span class="o">.</span><span class="n">REDO</span>
+        <span class="k">return</span> <span class="bp">True</span></div>
+
+    <span class="n">do_r</span> <span class="o">=</span> <span class="n">do_redo</span>
+
+<div class="viewcode-block" id="Debugger.evaluate"><a class="viewcode-back" href="../../../../rst/ansible.plugins.strategy.html#ansible.plugins.strategy.debug.Debugger.evaluate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">eval</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="nb">globals</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">scope</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">t</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[:</span><span class="mi">2</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">exc_type_name</span> <span class="o">=</span> <span class="n">t</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">exc_type_name</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">__name__</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&#39;***</span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">exc_type_name</span><span class="p">,</span> <span class="nb">repr</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span>
+            <span class="k">raise</span></div>
+
+<div class="viewcode-block" id="Debugger.do_p"><a class="viewcode-back" href="../../../../rst/ansible.plugins.strategy.html#ansible.plugins.strategy.debug.Debugger.do_p">[docs]</a>    <span class="k">def</span> <span class="nf">do_p</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">pprint</span><span class="o">.</span><span class="n">pformat</span><span class="p">(</span><span class="n">result</span><span class="p">))</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Debugger.execute"><a class="viewcode-back" href="../../../../rst/ansible.plugins.strategy.html#ansible.plugins.strategy.debug.Debugger.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">code</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="n">args</span> <span class="o">+</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="s">&#39;&lt;stdin&gt;&#39;</span><span class="p">,</span> <span class="s">&#39;single&#39;</span><span class="p">)</span>
+            <span class="k">exec</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="nb">globals</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">scope</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">t</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[:</span><span class="mi">2</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">==</span> <span class="nb">type</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+                <span class="n">exc_type_name</span> <span class="o">=</span> <span class="n">t</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">exc_type_name</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">__name__</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&#39;***</span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">exc_type_name</span><span class="p">,</span> <span class="nb">repr</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span>
+            <span class="k">raise</span></div>
+
+<div class="viewcode-block" id="Debugger.default"><a class="viewcode-back" href="../../../../rst/ansible.plugins.strategy.html#ansible.plugins.strategy.debug.Debugger.default">[docs]</a>    <span class="k">def</span> <span class="nf">default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">pprint</span><span class="o">.</span><span class="n">pformat</span><span class="p">(</span><span class="n">result</span><span class="p">))</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,924 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.parsing.vault &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>ansible.parsing.vault</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.parsing.vault</h1><div class="highlight"><pre>
+<span class="c"># (c) 2014, James Tanner &lt;tanner.jc@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">shlex</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">BytesIO</span>
+<span class="kn">from</span> <span class="nn">subprocess</span> <span class="kn">import</span> <span class="n">call</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span>
+<span class="kn">from</span> <span class="nn">hashlib</span> <span class="kn">import</span> <span class="n">sha256</span>
+<span class="kn">from</span> <span class="nn">binascii</span> <span class="kn">import</span> <span class="n">hexlify</span>
+<span class="kn">from</span> <span class="nn">binascii</span> <span class="kn">import</span> <span class="n">unhexlify</span>
+
+<span class="c"># Note: Only used for loading obsolete VaultAES files.  All files are written</span>
+<span class="c"># using the newer VaultAES256 which does not require md5</span>
+<span class="kn">from</span> <span class="nn">hashlib</span> <span class="kn">import</span> <span class="n">md5</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">Crypto.Hash</span> <span class="kn">import</span> <span class="n">SHA256</span><span class="p">,</span> <span class="n">HMAC</span>
+    <span class="n">HAS_HASH</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">HAS_HASH</span> <span class="o">=</span> <span class="bp">False</span>
+
+<span class="c"># Counter import fails for 2.0.1, requires &gt;= 2.6.1 from pip</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">Crypto.Util</span> <span class="kn">import</span> <span class="n">Counter</span>
+    <span class="n">HAS_COUNTER</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">HAS_COUNTER</span> <span class="o">=</span> <span class="bp">False</span>
+
+<span class="c"># KDF import fails for 2.0.1, requires &gt;= 2.6.1 from pip</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">Crypto.Protocol.KDF</span> <span class="kn">import</span> <span class="n">PBKDF2</span>
+    <span class="n">HAS_PBKDF2</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">HAS_PBKDF2</span> <span class="o">=</span> <span class="bp">False</span>
+
+<span class="c"># AES IMPORTS</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">Crypto.Cipher</span> <span class="kn">import</span> <span class="n">AES</span> <span class="k">as</span> <span class="n">AES</span>
+    <span class="n">HAS_AES</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">HAS_AES</span> <span class="o">=</span> <span class="bp">False</span>
+
+<span class="c"># OpenSSL pbkdf2_hmac</span>
+<span class="n">HAS_PBKDF2HMAC</span> <span class="o">=</span> <span class="bp">False</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">cryptography.hazmat.primitives.hashes</span> <span class="kn">import</span> <span class="n">SHA256</span> <span class="k">as</span> <span class="n">c_SHA256</span>
+    <span class="kn">from</span> <span class="nn">cryptography.hazmat.primitives.kdf.pbkdf2</span> <span class="kn">import</span> <span class="n">PBKDF2HMAC</span>
+    <span class="kn">from</span> <span class="nn">cryptography.hazmat.backends</span> <span class="kn">import</span> <span class="n">default_backend</span>
+    <span class="n">HAS_PBKDF2HMAC</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">pass</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">__module__</span> <span class="o">==</span> <span class="s">&#39;pkg_resources&#39;</span> <span class="ow">and</span> <span class="n">e</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;DistributionNotFound&#39;</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span>
+
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">PY3</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.unicode</span> <span class="kn">import</span> <span class="n">to_unicode</span><span class="p">,</span> <span class="n">to_bytes</span>
+
+<span class="n">HAS_ANY_PBKDF2HMAC</span> <span class="o">=</span> <span class="n">HAS_PBKDF2</span> <span class="ow">or</span> <span class="n">HAS_PBKDF2HMAC</span>
+
+<span class="n">CRYPTO_UPGRADE</span> <span class="o">=</span> <span class="s">&quot;ansible-vault requires a newer version of pycrypto than the one installed on your platform. You may fix this with OS-specific commands such as: yum install python-devel; rpm -e --nodeps python-crypto; pip install pycrypto&quot;</span>
+
+<span class="n">b_HEADER</span> <span class="o">=</span> <span class="n">b</span><span class="s">&#39;$ANSIBLE_VAULT&#39;</span>
+<span class="n">CIPHER_WHITELIST</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">((</span><span class="s">u&#39;AES&#39;</span><span class="p">,</span> <span class="s">u&#39;AES256&#39;</span><span class="p">))</span>
+<span class="n">CIPHER_WRITE_WHITELIST</span><span class="o">=</span><span class="nb">frozenset</span><span class="p">((</span><span class="s">u&#39;AES256&#39;</span><span class="p">,))</span>
+<span class="c"># See also CIPHER_MAPPING at the bottom of the file which maps cipher strings</span>
+<span class="c"># (used in VaultFile header) to a cipher class</span>
+
+
+<div class="viewcode-block" id="check_prereqs"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.check_prereqs">[docs]</a><span class="k">def</span> <span class="nf">check_prereqs</span><span class="p">():</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">HAS_AES</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">HAS_COUNTER</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">HAS_ANY_PBKDF2HMAC</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">HAS_HASH</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="n">CRYPTO_UPGRADE</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="VaultLib"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultLib">[docs]</a><span class="k">class</span> <span class="nc">VaultLib</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">password</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">b_password</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">password</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s">&#39;utf-8&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cipher_name</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">b_version</span> <span class="o">=</span> <span class="n">b</span><span class="s">&#39;1.1&#39;</span>
+
+<div class="viewcode-block" id="VaultLib.is_encrypted"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultLib.is_encrypted">[docs]</a>    <span class="k">def</span> <span class="nf">is_encrypted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Test if this is vault encrypted data</span>
+
+<span class="sd">        :arg data: a byte str or unicode string to test whether it is</span>
+<span class="sd">            recognized as vault encrypted data</span>
+<span class="sd">        :returns: True if it is recognized.  Otherwise, False.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">b_HEADER</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="bp">False</span></div>
+
+<div class="viewcode-block" id="VaultLib.encrypt"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultLib.encrypt">[docs]</a>    <span class="k">def</span> <span class="nf">encrypt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Vault encrypt a piece of data.</span>
+
+<span class="sd">        :arg data: a utf-8 byte str or unicode string to encrypt.</span>
+<span class="sd">        :returns: a utf-8 encoded byte str of encrypted data.  The string</span>
+<span class="sd">            contains a header identifying this as vault encrypted data and</span>
+<span class="sd">            formatted to newline terminated lines of 80 characters.  This is</span>
+<span class="sd">            suitable for dumping as is to a vault file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">b_data</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s">&#39;utf-8&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_encrypted</span><span class="p">(</span><span class="n">b_data</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;input is already encrypted&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">cipher_name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">cipher_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">CIPHER_WRITE_WHITELIST</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cipher_name</span> <span class="o">=</span> <span class="s">u&quot;AES256&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">Cipher</span> <span class="o">=</span> <span class="n">CIPHER_MAPPING</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">cipher_name</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">u&quot;{0} cipher could not be found&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cipher_name</span><span class="p">))</span>
+        <span class="n">this_cipher</span> <span class="o">=</span> <span class="n">Cipher</span><span class="p">()</span>
+
+        <span class="c"># encrypt data</span>
+        <span class="n">b_enc_data</span> <span class="o">=</span> <span class="n">this_cipher</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">b_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_password</span><span class="p">)</span>
+
+        <span class="c"># format the data for output to the file</span>
+        <span class="n">b_tmp_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_output</span><span class="p">(</span><span class="n">b_enc_data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">b_tmp_data</span></div>
+
+<div class="viewcode-block" id="VaultLib.decrypt"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultLib.decrypt">[docs]</a>    <span class="k">def</span> <span class="nf">decrypt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Decrypt a piece of vault encrypted data.</span>
+
+<span class="sd">        :arg data: a string to decrypt.  Since vault encrypted data is an</span>
+<span class="sd">            ascii text format this can be either a byte str or unicode string.</span>
+<span class="sd">        :returns: a byte string containing the decrypted data</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">b_data</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s">&#39;utf-8&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_password</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;A vault password must be specified to decrypt data&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_encrypted</span><span class="p">(</span><span class="n">b_data</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;input is not encrypted&quot;</span><span class="p">)</span>
+
+        <span class="c"># clean out header</span>
+        <span class="n">b_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_split_header</span><span class="p">(</span><span class="n">b_data</span><span class="p">)</span>
+
+        <span class="c"># create the cipher object</span>
+        <span class="n">cipher_class_name</span> <span class="o">=</span> <span class="s">u&#39;Vault{0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cipher_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cipher_class_name</span> <span class="ow">in</span> <span class="nb">globals</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cipher_name</span> <span class="ow">in</span> <span class="n">CIPHER_WHITELIST</span><span class="p">:</span>
+            <span class="n">Cipher</span> <span class="o">=</span> <span class="nb">globals</span><span class="p">()[</span><span class="n">cipher_class_name</span><span class="p">]</span>
+            <span class="n">this_cipher</span> <span class="o">=</span> <span class="n">Cipher</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;{0} cipher could not be found&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cipher_name</span><span class="p">))</span>
+
+        <span class="c"># try to unencrypt data</span>
+        <span class="n">b_data</span> <span class="o">=</span> <span class="n">this_cipher</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">b_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_password</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">b_data</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Decryption failed&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">b_data</span></div>
+
+    <span class="k">def</span> <span class="nf">_format_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">b_data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Add header and format to 80 columns</span>
+
+<span class="sd">            :arg b_data: the encrypted and hexlified data as a byte string</span>
+<span class="sd">            :returns: a byte str that should be dumped into a file.  It&#39;s</span>
+<span class="sd">                formatted to 80 char columns and has the header prepended</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">cipher_name</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;the cipher must be set before adding a header&quot;</span><span class="p">)</span>
+
+        <span class="n">header</span> <span class="o">=</span> <span class="n">b</span><span class="s">&#39;;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">b_HEADER</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_version</span><span class="p">,</span>
+            <span class="n">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cipher_name</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s">&#39;utf-8&#39;</span><span class="p">)])</span>
+        <span class="n">tmpdata</span> <span class="o">=</span> <span class="p">[</span><span class="n">header</span><span class="p">]</span>
+        <span class="n">tmpdata</span> <span class="o">+=</span> <span class="p">[</span><span class="n">b_data</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="mi">80</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">b_data</span><span class="p">),</span> <span class="mi">80</span><span class="p">)]</span>
+        <span class="n">tmpdata</span> <span class="o">+=</span> <span class="p">[</span><span class="n">b</span><span class="s">&#39;&#39;</span><span class="p">]</span>
+        <span class="n">tmpdata</span> <span class="o">=</span> <span class="n">b</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmpdata</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">tmpdata</span>
+
+    <span class="k">def</span> <span class="nf">_split_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">b_data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Retrieve information about the Vault and  clean the data</span>
+
+<span class="sd">        When data is saved, it has a header prepended and is formatted into 80</span>
+<span class="sd">        character lines.  This method extracts the information from the header</span>
+<span class="sd">        and then removes the header and the inserted newlines.  The string returned</span>
+<span class="sd">        is suitable for processing by the Cipher classes.</span>
+
+<span class="sd">        :arg b_data: byte str containing the data from a save file</span>
+<span class="sd">        :returns: a byte str suitable for passing to a Cipher class&#39;s</span>
+<span class="sd">            decrypt() function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># used by decrypt</span>
+
+        <span class="n">tmpdata</span> <span class="o">=</span> <span class="n">b_data</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">b</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="n">tmpheader</span> <span class="o">=</span> <span class="n">tmpdata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">b</span><span class="s">&#39;;&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">b_version</span> <span class="o">=</span> <span class="n">tmpheader</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cipher_name</span> <span class="o">=</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">tmpheader</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+        <span class="n">clean_data</span> <span class="o">=</span> <span class="n">b</span><span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmpdata</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+
+        <span class="k">return</span> <span class="n">clean_data</span></div>
+
+
+<div class="viewcode-block" id="VaultEditor"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultEditor">[docs]</a><span class="k">class</span> <span class="nc">VaultEditor</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">password</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vault</span> <span class="o">=</span> <span class="n">VaultLib</span><span class="p">(</span><span class="n">password</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_shred_file_custom</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;&quot;Destroy a file, when shred (core-utils) is not available.</span>
+<span class="sd">        ::</span>
+
+<span class="sd">            Unix &#39;shred&#39; destroys files &quot;so that they can be recovered only with great difficulty with</span>
+<span class="sd">            specialised hardware, if at all&quot;. It is based on the method from the paper</span>
+<span class="sd">            &quot;Secure Deletion of Data from Magnetic and Solid-State Memory&quot;,</span>
+<span class="sd">            Proceedings of the Sixth USENIX Security Symposium (San Jose, California, July 22-25, 1996).</span>
+
+<span class="sd">            We do not go to that length to re-implement shred in Python; instead, overwriting with a block</span>
+<span class="sd">            of random data should suffice.</span>
+
+<span class="sd">        See https://github.com/ansible/ansible/pull/13700</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">file_len</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">file_len</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span> <span class="c"># avoid work when file was empty</span>
+            <span class="n">max_chunk_len</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mi">1024</span><span class="o">*</span><span class="mi">1024</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="n">file_len</span><span class="p">)</span>
+
+            <span class="n">passes</span> <span class="o">=</span> <span class="mi">3</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">,</span>  <span class="s">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">passes</span><span class="p">):</span>
+                    <span class="n">fh</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span>  <span class="mi">0</span><span class="p">)</span>
+                    <span class="c"># get a random chunk of data, each pass with other length</span>
+                    <span class="n">chunk_len</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">max_chunk_len</span><span class="o">//</span><span class="mi">2</span><span class="p">,</span> <span class="n">max_chunk_len</span><span class="p">)</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">urandom</span><span class="p">(</span><span class="n">chunk_len</span><span class="p">)</span>
+
+                    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">file_len</span> <span class="o">//</span> <span class="n">chunk_len</span><span class="p">):</span>
+                        <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                    <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">[:</span><span class="n">file_len</span> <span class="o">%</span> <span class="n">chunk_len</span><span class="p">])</span>
+
+                    <span class="k">assert</span><span class="p">(</span><span class="n">fh</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span> <span class="o">==</span> <span class="n">file_len</span><span class="p">)</span> <span class="c"># FIXME remove this assert once we have unittests to check its accuracy</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">fsync</span><span class="p">(</span><span class="n">fh</span><span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">_shred_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Securely destroy a decrypted file</span>
+
+<span class="sd">        Note standard limitations of GNU shred apply (For flash, overwriting would have no effect</span>
+<span class="sd">        due to wear leveling; for other storage systems, the async kernel-&gt;filesystem-&gt;disk calls never</span>
+<span class="sd">        guarantee data hits the disk; etc). Furthermore, if your tmp dirs is on tmpfs (ramdisks),</span>
+<span class="sd">        it is a non-issue.</span>
+
+<span class="sd">        Nevertheless, some form of overwriting the data (instead of just removing the fs index entry) is</span>
+<span class="sd">        a good idea. If shred is not available (e.g. on windows, or no core-utils installed), fall back on</span>
+<span class="sd">        a custom shredding method.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">):</span>
+            <span class="c"># file is already gone</span>
+            <span class="k">return</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">call</span><span class="p">([</span><span class="s">&#39;shred&#39;</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">])</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+            <span class="c"># shred is not available on this system, or some other error occured.</span>
+            <span class="c"># ValueError caught because OS X El Capitan is raising an</span>
+            <span class="c"># exception big enough to hit a limit in python2-2.7.11 and below.</span>
+            <span class="c"># Symptom is ValueError: insecure pickle when shred is not</span>
+            <span class="c"># installed there.</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">r</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c"># we could not successfully execute unix shred; therefore, do custom shred.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_shred_file_custom</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">)</span>
+
+        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_edit_file_helper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">existing_data</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">force_save</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+
+        <span class="c"># Create a tempfile</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">tmp_path</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">existing_data</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write_data</span><span class="p">(</span><span class="n">existing_data</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">,</span> <span class="n">shred</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+        <span class="c"># drop the user into an editor on the tmp file</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">call</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_editor_shell_command</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">))</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="c"># whatever happens, destroy the decrypted file</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_shred_file</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+        <span class="n">tmpdata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_data</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">)</span>
+
+        <span class="c"># Do nothing if the content has not changed</span>
+        <span class="k">if</span> <span class="n">existing_data</span> <span class="o">==</span> <span class="n">tmpdata</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">force_save</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_shred_file</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c"># encrypt new data and write out to tmp</span>
+        <span class="n">enc_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">tmpdata</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_data</span><span class="p">(</span><span class="n">enc_data</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">)</span>
+
+        <span class="c"># shuffle tmp file into place</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shuffle_files</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+
+<div class="viewcode-block" id="VaultEditor.encrypt_file"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultEditor.encrypt_file">[docs]</a>    <span class="k">def</span> <span class="nf">encrypt_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+        <span class="n">check_prereqs</span><span class="p">()</span>
+
+        <span class="n">plaintext</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_data</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">ciphertext</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">plaintext</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_data</span><span class="p">(</span><span class="n">ciphertext</span><span class="p">,</span> <span class="n">output_file</span> <span class="ow">or</span> <span class="n">filename</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="VaultEditor.decrypt_file"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultEditor.decrypt_file">[docs]</a>    <span class="k">def</span> <span class="nf">decrypt_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+        <span class="n">check_prereqs</span><span class="p">()</span>
+
+        <span class="n">ciphertext</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_data</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">plaintext</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">ciphertext</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">AnsibleError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> for </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">e</span><span class="p">),</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">filename</span><span class="p">)))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_data</span><span class="p">(</span><span class="n">plaintext</span><span class="p">,</span> <span class="n">output_file</span> <span class="ow">or</span> <span class="n">filename</span><span class="p">,</span> <span class="n">shred</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="VaultEditor.create_file"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultEditor.create_file">[docs]</a>    <span class="k">def</span> <span class="nf">create_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; create a new encrypted file &quot;&quot;&quot;</span>
+
+        <span class="n">check_prereqs</span><span class="p">()</span>
+
+        <span class="c"># FIXME: If we can raise an error here, we can probably just make it</span>
+        <span class="c"># behave like edit instead.</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> exists, please use &#39;edit&#39; instead&quot;</span> <span class="o">%</span> <span class="n">filename</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_edit_file_helper</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="VaultEditor.edit_file"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultEditor.edit_file">[docs]</a>    <span class="k">def</span> <span class="nf">edit_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+
+        <span class="n">check_prereqs</span><span class="p">()</span>
+
+        <span class="n">ciphertext</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_data</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">plaintext</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">ciphertext</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">AnsibleError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> for </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">e</span><span class="p">),</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">filename</span><span class="p">)))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="o">.</span><span class="n">cipher_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">CIPHER_WRITE_WHITELIST</span><span class="p">:</span>
+            <span class="c"># we want to get rid of files encrypted with the AES cipher</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_edit_file_helper</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">existing_data</span><span class="o">=</span><span class="n">plaintext</span><span class="p">,</span> <span class="n">force_save</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_edit_file_helper</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">existing_data</span><span class="o">=</span><span class="n">plaintext</span><span class="p">,</span> <span class="n">force_save</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="VaultEditor.plaintext"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultEditor.plaintext">[docs]</a>    <span class="k">def</span> <span class="nf">plaintext</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+
+        <span class="n">check_prereqs</span><span class="p">()</span>
+        <span class="n">ciphertext</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_data</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">plaintext</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">ciphertext</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">AnsibleError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> for </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">e</span><span class="p">),</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">filename</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="n">plaintext</span></div>
+
+<div class="viewcode-block" id="VaultEditor.rekey_file"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultEditor.rekey_file">[docs]</a>    <span class="k">def</span> <span class="nf">rekey_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">new_password</span><span class="p">):</span>
+
+        <span class="n">check_prereqs</span><span class="p">()</span>
+
+        <span class="n">prev</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">ciphertext</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_data</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">plaintext</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">ciphertext</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">AnsibleError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> for </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">e</span><span class="p">),</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">filename</span><span class="p">)))</span>
+
+        <span class="n">new_vault</span> <span class="o">=</span> <span class="n">VaultLib</span><span class="p">(</span><span class="n">new_password</span><span class="p">)</span>
+        <span class="n">new_ciphertext</span> <span class="o">=</span> <span class="n">new_vault</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">plaintext</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_data</span><span class="p">(</span><span class="n">new_ciphertext</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+
+        <span class="c"># preserve permissions</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">prev</span><span class="o">.</span><span class="n">st_mode</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">chown</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">prev</span><span class="o">.</span><span class="n">st_uid</span><span class="p">,</span> <span class="n">prev</span><span class="o">.</span><span class="n">st_gid</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="VaultEditor.read_data"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultEditor.read_data">[docs]</a>    <span class="k">def</span> <span class="nf">read_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">filename</span> <span class="o">==</span> <span class="s">&#39;-&#39;</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">fh</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">data</span></div>
+
+<div class="viewcode-block" id="VaultEditor.write_data"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultEditor.write_data">[docs]</a>    <span class="k">def</span> <span class="nf">write_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">shred</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;write data to given path</span>
+<span class="sd">        </span>
+<span class="sd">        if shred==True, make sure that the original data is first shredded so </span>
+<span class="sd">        that is cannot be recovered</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">bytes</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">filename</span> <span class="o">==</span> <span class="s">&#39;-&#39;</span><span class="p">:</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">bytes</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">shred</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_shred_file</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+                <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">bytes</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="VaultEditor.shuffle_files"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultEditor.shuffle_files">[docs]</a>    <span class="k">def</span> <span class="nf">shuffle_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">dest</span><span class="p">):</span>
+        <span class="n">prev</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="c"># overwrite dest with src</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">dest</span><span class="p">):</span>
+            <span class="n">prev</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">dest</span><span class="p">)</span>
+            <span class="c"># old file &#39;dest&#39; was encrypted, no need to _shred_file</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">dest</span><span class="p">)</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dest</span><span class="p">)</span>
+
+        <span class="c"># reset permissions if needed</span>
+        <span class="k">if</span> <span class="n">prev</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c">#TODO: selinux, ACLs, xattr?</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="n">dest</span><span class="p">,</span> <span class="n">prev</span><span class="o">.</span><span class="n">st_mode</span><span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">chown</span><span class="p">(</span><span class="n">dest</span><span class="p">,</span> <span class="n">prev</span><span class="o">.</span><span class="n">st_uid</span><span class="p">,</span> <span class="n">prev</span><span class="o">.</span><span class="n">st_gid</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_editor_shell_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="n">EDITOR</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;EDITOR&#39;</span><span class="p">,</span><span class="s">&#39;vi&#39;</span><span class="p">)</span>
+        <span class="n">editor</span> <span class="o">=</span> <span class="n">shlex</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">EDITOR</span><span class="p">)</span>
+        <span class="n">editor</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">editor</span></div>
+
+<div class="viewcode-block" id="VaultFile"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultFile">[docs]</a><span class="k">class</span> <span class="nc">VaultFile</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">password</span> <span class="o">=</span> <span class="n">password</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> does not exist&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">filehandle</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&quot;rb&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Could not open </span><span class="si">%s</span><span class="s">: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+
+        <span class="n">_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tmpfile</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">()</span>
+
+    <span class="c">### TODO:</span>
+    <span class="c"># __del__ can be problematic in python... For this use case, make</span>
+    <span class="c"># VaultFile a context manager instead (implement __enter__ and __exit__)</span>
+    <span class="k">def</span> <span class="nf">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filehandle</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">unlink</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tmplfile</span><span class="p">)</span>
+
+<div class="viewcode-block" id="VaultFile.is_encrypted"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultFile.is_encrypted">[docs]</a>    <span class="k">def</span> <span class="nf">is_encrypted</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">peak</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filehandle</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">peak</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">b_HEADER</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span></div>
+
+<div class="viewcode-block" id="VaultFile.get_decrypted"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultFile.get_decrypted">[docs]</a>    <span class="k">def</span> <span class="nf">get_decrypted</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">check_prereqs</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_encrypted</span><span class="p">():</span>
+            <span class="n">tmpdata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filehandle</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="n">this_vault</span> <span class="o">=</span> <span class="n">VaultLib</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">password</span><span class="p">)</span>
+            <span class="n">dec_data</span> <span class="o">=</span> <span class="n">this_vault</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">tmpdata</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">dec_data</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Failed to decrypt: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tmpfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">dec_data</span><span class="p">)</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tmpfile</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">filename</span></div></div>
+
+<span class="c">########################################</span>
+<span class="c">#               CIPHERS                #</span>
+<span class="c">########################################</span>
+
+<div class="viewcode-block" id="VaultAES"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultAES">[docs]</a><span class="k">class</span> <span class="nc">VaultAES</span><span class="p">:</span>
+
+    <span class="c"># this version has been obsoleted by the VaultAES256 class</span>
+    <span class="c"># which uses encrypt-then-mac (fixing order) and also improving the KDF used</span>
+    <span class="c"># code remains for upgrade purposes only</span>
+    <span class="c"># http://stackoverflow.com/a/16761459</span>
+
+    <span class="c"># Note: strings in this class should be byte strings by default.</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">HAS_AES</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="n">CRYPTO_UPGRADE</span><span class="p">)</span>
+
+<div class="viewcode-block" id="VaultAES.aes_derive_key_and_iv"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultAES.aes_derive_key_and_iv">[docs]</a>    <span class="k">def</span> <span class="nf">aes_derive_key_and_iv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">salt</span><span class="p">,</span> <span class="n">key_length</span><span class="p">,</span> <span class="n">iv_length</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot; Create a key and an initialization vector &quot;&quot;&quot;</span>
+
+        <span class="n">d</span> <span class="o">=</span> <span class="n">d_i</span> <span class="o">=</span> <span class="n">b</span><span class="s">&#39;&#39;</span>
+        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">key_length</span> <span class="o">+</span> <span class="n">iv_length</span><span class="p">:</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="n">b</span><span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">d_i</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">salt</span><span class="p">])</span>
+            <span class="n">d_i</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">md5</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">digest</span><span class="p">(),</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+            <span class="n">d</span> <span class="o">+=</span> <span class="n">d_i</span>
+
+        <span class="n">key</span> <span class="o">=</span> <span class="n">d</span><span class="p">[:</span><span class="n">key_length</span><span class="p">]</span>
+        <span class="n">iv</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="n">key_length</span><span class="p">:</span><span class="n">key_length</span><span class="o">+</span><span class="n">iv_length</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">key</span><span class="p">,</span> <span class="n">iv</span></div>
+
+<div class="viewcode-block" id="VaultAES.encrypt"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultAES.encrypt">[docs]</a>    <span class="k">def</span> <span class="nf">encrypt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">key_length</span><span class="o">=</span><span class="mi">32</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot; Read plaintext data from in_file and write encrypted to out_file &quot;&quot;&quot;</span>
+
+        <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Encryption disabled for deprecated VaultAES class&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="VaultAES.decrypt"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultAES.decrypt">[docs]</a>    <span class="k">def</span> <span class="nf">decrypt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">key_length</span><span class="o">=</span><span class="mi">32</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot; Read encrypted data from in_file and write decrypted to out_file &quot;&quot;&quot;</span>
+
+        <span class="c"># http://stackoverflow.com/a/14989032</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">unhexlify</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="n">in_file</span> <span class="o">=</span> <span class="n">BytesIO</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">in_file</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">out_file</span> <span class="o">=</span> <span class="n">BytesIO</span><span class="p">()</span>
+
+        <span class="n">bs</span> <span class="o">=</span> <span class="n">AES</span><span class="o">.</span><span class="n">block_size</span>
+        <span class="n">tmpsalt</span> <span class="o">=</span> <span class="n">in_file</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">bs</span><span class="p">)</span>
+        <span class="n">salt</span> <span class="o">=</span> <span class="n">tmpsalt</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">b</span><span class="s">&#39;Salted__&#39;</span><span class="p">):]</span>
+        <span class="n">key</span><span class="p">,</span> <span class="n">iv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aes_derive_key_and_iv</span><span class="p">(</span><span class="n">password</span><span class="p">,</span> <span class="n">salt</span><span class="p">,</span> <span class="n">key_length</span><span class="p">,</span> <span class="n">bs</span><span class="p">)</span>
+        <span class="n">cipher</span> <span class="o">=</span> <span class="n">AES</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">AES</span><span class="o">.</span><span class="n">MODE_CBC</span><span class="p">,</span> <span class="n">iv</span><span class="p">)</span>
+        <span class="n">next_chunk</span> <span class="o">=</span> <span class="n">b</span><span class="s">&#39;&#39;</span>
+        <span class="n">finished</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="k">while</span> <span class="ow">not</span> <span class="n">finished</span><span class="p">:</span>
+            <span class="n">chunk</span><span class="p">,</span> <span class="n">next_chunk</span> <span class="o">=</span> <span class="n">next_chunk</span><span class="p">,</span> <span class="n">cipher</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">in_file</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="n">bs</span><span class="p">))</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">next_chunk</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">PY3</span><span class="p">:</span>
+                    <span class="n">padding_length</span> <span class="o">=</span> <span class="n">chunk</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">padding_length</span> <span class="o">=</span> <span class="nb">ord</span><span class="p">(</span><span class="n">chunk</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+                <span class="n">chunk</span> <span class="o">=</span> <span class="n">chunk</span><span class="p">[:</span><span class="o">-</span><span class="n">padding_length</span><span class="p">]</span>
+                <span class="n">finished</span> <span class="o">=</span> <span class="bp">True</span>
+
+            <span class="n">out_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+            <span class="n">out_file</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+        <span class="c"># reset the stream pointer to the beginning</span>
+        <span class="n">out_file</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">out_data</span> <span class="o">=</span> <span class="n">out_file</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="n">out_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="c"># split out sha and verify decryption</span>
+        <span class="n">split_data</span> <span class="o">=</span> <span class="n">out_data</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">b</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">this_sha</span> <span class="o">=</span> <span class="n">split_data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">this_data</span> <span class="o">=</span> <span class="n">split_data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">test_sha</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">sha256</span><span class="p">(</span><span class="n">this_data</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="n">this_sha</span> <span class="o">!=</span> <span class="n">test_sha</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Decryption failed&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">this_data</span></div></div>
+
+
+<div class="viewcode-block" id="VaultAES256"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultAES256">[docs]</a><span class="k">class</span> <span class="nc">VaultAES256</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Vault implementation using AES-CTR with an HMAC-SHA256 authentication code.</span>
+<span class="sd">    Keys are derived using PBKDF2</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c"># http://www.daemonology.net/blog/2009-06-11-cryptographic-right-answers.html</span>
+
+    <span class="c"># Note: strings in this class should be byte strings by default.</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">check_prereqs</span><span class="p">()</span>
+
+<div class="viewcode-block" id="VaultAES256.create_key"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultAES256.create_key">[docs]</a>    <span class="k">def</span> <span class="nf">create_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">salt</span><span class="p">,</span> <span class="n">keylength</span><span class="p">,</span> <span class="n">ivlength</span><span class="p">):</span>
+        <span class="n">hash_function</span> <span class="o">=</span> <span class="n">SHA256</span>
+
+        <span class="c"># make two keys and one iv</span>
+        <span class="n">pbkdf2_prf</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">,</span> <span class="n">s</span><span class="p">:</span> <span class="n">HMAC</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">hash_function</span><span class="p">)</span><span class="o">.</span><span class="n">digest</span><span class="p">()</span>
+
+
+        <span class="n">derivedkey</span> <span class="o">=</span> <span class="n">PBKDF2</span><span class="p">(</span><span class="n">password</span><span class="p">,</span> <span class="n">salt</span><span class="p">,</span> <span class="n">dkLen</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">keylength</span><span class="p">)</span> <span class="o">+</span> <span class="n">ivlength</span><span class="p">,</span>
+                            <span class="n">count</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span> <span class="n">prf</span><span class="o">=</span><span class="n">pbkdf2_prf</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">derivedkey</span></div>
+
+<div class="viewcode-block" id="VaultAES256.gen_key_initctr"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultAES256.gen_key_initctr">[docs]</a>    <span class="k">def</span> <span class="nf">gen_key_initctr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">salt</span><span class="p">):</span>
+        <span class="c"># 16 for AES 128, 32 for AES256</span>
+        <span class="n">keylength</span> <span class="o">=</span> <span class="mi">32</span>
+
+        <span class="c"># match the size used for counter.new to avoid extra work</span>
+        <span class="n">ivlength</span> <span class="o">=</span> <span class="mi">16</span>
+
+        <span class="k">if</span> <span class="n">HAS_PBKDF2HMAC</span><span class="p">:</span>
+            <span class="n">backend</span> <span class="o">=</span> <span class="n">default_backend</span><span class="p">()</span>
+            <span class="n">kdf</span> <span class="o">=</span> <span class="n">PBKDF2HMAC</span><span class="p">(</span>
+                <span class="n">algorithm</span><span class="o">=</span><span class="n">c_SHA256</span><span class="p">(),</span>
+                <span class="n">length</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="n">keylength</span> <span class="o">+</span> <span class="n">ivlength</span><span class="p">,</span>
+                <span class="n">salt</span><span class="o">=</span><span class="n">salt</span><span class="p">,</span>
+                <span class="n">iterations</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>
+                <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">)</span>
+            <span class="n">derivedkey</span> <span class="o">=</span> <span class="n">kdf</span><span class="o">.</span><span class="n">derive</span><span class="p">(</span><span class="n">password</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">derivedkey</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_key</span><span class="p">(</span><span class="n">password</span><span class="p">,</span> <span class="n">salt</span><span class="p">,</span> <span class="n">keylength</span><span class="p">,</span> <span class="n">ivlength</span><span class="p">)</span>
+
+        <span class="n">key1</span> <span class="o">=</span> <span class="n">derivedkey</span><span class="p">[:</span><span class="n">keylength</span><span class="p">]</span>
+        <span class="n">key2</span> <span class="o">=</span> <span class="n">derivedkey</span><span class="p">[</span><span class="n">keylength</span><span class="p">:(</span><span class="n">keylength</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)]</span>
+        <span class="n">iv</span> <span class="o">=</span> <span class="n">derivedkey</span><span class="p">[(</span><span class="n">keylength</span> <span class="o">*</span> <span class="mi">2</span><span class="p">):(</span><span class="n">keylength</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">ivlength</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">key1</span><span class="p">,</span> <span class="n">key2</span><span class="p">,</span> <span class="n">hexlify</span><span class="p">(</span><span class="n">iv</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="VaultAES256.encrypt"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultAES256.encrypt">[docs]</a>    <span class="k">def</span> <span class="nf">encrypt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">password</span><span class="p">):</span>
+
+        <span class="n">salt</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">urandom</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span>
+        <span class="n">key1</span><span class="p">,</span> <span class="n">key2</span><span class="p">,</span> <span class="n">iv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gen_key_initctr</span><span class="p">(</span><span class="n">password</span><span class="p">,</span> <span class="n">salt</span><span class="p">)</span>
+
+        <span class="c"># PKCS#7 PAD DATA http://tools.ietf.org/html/rfc5652#section-6.3</span>
+        <span class="n">bs</span> <span class="o">=</span> <span class="n">AES</span><span class="o">.</span><span class="n">block_size</span>
+        <span class="n">padding_length</span> <span class="o">=</span> <span class="p">(</span><span class="n">bs</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">%</span> <span class="n">bs</span><span class="p">)</span> <span class="ow">or</span> <span class="n">bs</span>
+        <span class="n">data</span> <span class="o">+=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">padding_length</span> <span class="o">*</span> <span class="nb">chr</span><span class="p">(</span><span class="n">padding_length</span><span class="p">),</span> <span class="n">encoding</span><span class="o">=</span><span class="s">&#39;ascii&#39;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+
+        <span class="c"># COUNTER.new PARAMETERS</span>
+        <span class="c"># 1) nbits (integer) - Length of the counter, in bits.</span>
+        <span class="c"># 2) initial_value (integer) - initial value of the counter. &quot;iv&quot; from gen_key_initctr</span>
+
+        <span class="n">ctr</span> <span class="o">=</span> <span class="n">Counter</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="n">initial_value</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">iv</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span>
+
+        <span class="c"># AES.new PARAMETERS</span>
+        <span class="c"># 1) AES key, must be either 16, 24, or 32 bytes long -- &quot;key&quot; from gen_key_initctr</span>
+        <span class="c"># 2) MODE_CTR, is the recommended mode</span>
+        <span class="c"># 3) counter=&lt;CounterObject&gt;</span>
+
+        <span class="n">cipher</span> <span class="o">=</span> <span class="n">AES</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">key1</span><span class="p">,</span> <span class="n">AES</span><span class="o">.</span><span class="n">MODE_CTR</span><span class="p">,</span> <span class="n">counter</span><span class="o">=</span><span class="n">ctr</span><span class="p">)</span>
+
+        <span class="c"># ENCRYPT PADDED DATA</span>
+        <span class="n">cryptedData</span> <span class="o">=</span> <span class="n">cipher</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="c"># COMBINE SALT, DIGEST AND DATA</span>
+        <span class="n">hmac</span> <span class="o">=</span> <span class="n">HMAC</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">key2</span><span class="p">,</span> <span class="n">cryptedData</span><span class="p">,</span> <span class="n">SHA256</span><span class="p">)</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="n">b</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">hexlify</span><span class="p">(</span><span class="n">salt</span><span class="p">),</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">hmac</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()),</span> <span class="n">hexlify</span><span class="p">(</span><span class="n">cryptedData</span><span class="p">)])</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="n">hexlify</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">message</span></div>
+
+<div class="viewcode-block" id="VaultAES256.decrypt"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultAES256.decrypt">[docs]</a>    <span class="k">def</span> <span class="nf">decrypt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">password</span><span class="p">):</span>
+
+        <span class="c"># SPLIT SALT, DIGEST, AND DATA</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">unhexlify</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">salt</span><span class="p">,</span> <span class="n">cryptedHmac</span><span class="p">,</span> <span class="n">cryptedData</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">b</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">salt</span> <span class="o">=</span> <span class="n">unhexlify</span><span class="p">(</span><span class="n">salt</span><span class="p">)</span>
+        <span class="n">cryptedData</span> <span class="o">=</span> <span class="n">unhexlify</span><span class="p">(</span><span class="n">cryptedData</span><span class="p">)</span>
+
+        <span class="n">key1</span><span class="p">,</span> <span class="n">key2</span><span class="p">,</span> <span class="n">iv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gen_key_initctr</span><span class="p">(</span><span class="n">password</span><span class="p">,</span> <span class="n">salt</span><span class="p">)</span>
+
+        <span class="c"># EXIT EARLY IF DIGEST DOESN&#39;T MATCH</span>
+        <span class="n">hmacDecrypt</span> <span class="o">=</span> <span class="n">HMAC</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">key2</span><span class="p">,</span> <span class="n">cryptedData</span><span class="p">,</span> <span class="n">SHA256</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_equal</span><span class="p">(</span><span class="n">cryptedHmac</span><span class="p">,</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">hmacDecrypt</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">())):</span>
+            <span class="k">return</span> <span class="bp">None</span>
+
+        <span class="c"># SET THE COUNTER AND THE CIPHER</span>
+        <span class="n">ctr</span> <span class="o">=</span> <span class="n">Counter</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="n">initial_value</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">iv</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span>
+        <span class="n">cipher</span> <span class="o">=</span> <span class="n">AES</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">key1</span><span class="p">,</span> <span class="n">AES</span><span class="o">.</span><span class="n">MODE_CTR</span><span class="p">,</span> <span class="n">counter</span><span class="o">=</span><span class="n">ctr</span><span class="p">)</span>
+
+        <span class="c"># DECRYPT PADDED DATA</span>
+        <span class="n">decryptedData</span> <span class="o">=</span> <span class="n">cipher</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">cryptedData</span><span class="p">)</span>
+
+        <span class="c"># UNPAD DATA</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">padding_length</span> <span class="o">=</span> <span class="nb">ord</span><span class="p">(</span><span class="n">decryptedData</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+            <span class="n">padding_length</span> <span class="o">=</span> <span class="n">decryptedData</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">decryptedData</span> <span class="o">=</span> <span class="n">decryptedData</span><span class="p">[:</span><span class="o">-</span><span class="n">padding_length</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">decryptedData</span></div>
+
+<div class="viewcode-block" id="VaultAES256.is_equal"><a class="viewcode-back" href="../../../rst/ansible.parsing.vault.html#ansible.parsing.vault.VaultAES256.is_equal">[docs]</a>    <span class="k">def</span> <span class="nf">is_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Comparing 2 byte arrrays in constant time</span>
+<span class="sd">        to avoid timing attacks.</span>
+
+<span class="sd">        It would be nice if there was a library for this but</span>
+<span class="sd">        hey.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># http://codahale.com/a-lesson-in-timing-attacks/</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">b</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">PY3</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">|=</span> <span class="n">x</span> <span class="o">^</span> <span class="n">y</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">|=</span> <span class="nb">ord</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">^</span> <span class="nb">ord</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span> <span class="o">==</span> <span class="mi">0</span></div></div>
+
+
+<span class="c"># Keys could be made bytes later if the code that gets the data is more</span>
+<span class="c"># naturally byte-oriented</span>
+<span class="n">CIPHER_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">u&#39;AES&#39;</span><span class="p">:</span> <span class="n">VaultAES</span><span class="p">,</span>
+        <span class="s">u&#39;AES256&#39;</span><span class="p">:</span> <span class="n">VaultAES256</span><span class="p">,</span>
+    <span class="p">}</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

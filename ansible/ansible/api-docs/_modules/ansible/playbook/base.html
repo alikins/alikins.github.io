@@ -1,0 +1,696 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.playbook.base &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="ansible.playbook" href="../playbook.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../playbook.html">ansible.playbook</a> &raquo;</li>
+      
+    <li>ansible.playbook.base</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.playbook.base</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">operator</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">getmembers</span>
+
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">iteritems</span><span class="p">,</span> <span class="n">string_types</span>
+
+<span class="kn">from</span> <span class="nn">jinja2.exceptions</span> <span class="kn">import</span> <span class="n">UndefinedError</span>
+
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleParserError</span>
+<span class="kn">from</span> <span class="nn">ansible.parsing.dataloader</span> <span class="kn">import</span> <span class="n">DataLoader</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.attribute</span> <span class="kn">import</span> <span class="n">Attribute</span><span class="p">,</span> <span class="n">FieldAttribute</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.boolean</span> <span class="kn">import</span> <span class="n">boolean</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.vars</span> <span class="kn">import</span> <span class="n">combine_vars</span><span class="p">,</span> <span class="n">isidentifier</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.unicode</span> <span class="kn">import</span> <span class="n">to_unicode</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+<span class="n">BASE_ATTRIBUTES</span> <span class="o">=</span> <span class="p">{}</span>
+
+
+<div class="viewcode-block" id="Base"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.base.Base">[docs]</a><span class="k">class</span> <span class="nc">Base</span><span class="p">:</span>
+
+    <span class="c"># connection/transport</span>
+    <span class="n">_connection</span>          <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+    <span class="n">_port</span>                <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">)</span>
+    <span class="n">_remote_user</span>         <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+
+    <span class="c"># variables</span>
+    <span class="n">_vars</span>                <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;dict&#39;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+
+    <span class="c"># flags and misc. settings</span>
+    <span class="n">_environment</span>         <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;list&#39;</span><span class="p">)</span>
+    <span class="n">_no_log</span>              <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">)</span>
+    <span class="n">_always_run</span>           <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">)</span>
+    <span class="n">_run_once</span>             <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">)</span>
+    <span class="n">_ignore_errors</span>        <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">)</span>
+
+    <span class="c"># param names which have been deprecated/removed</span>
+    <span class="n">DEPRECATED_ATTRIBUTES</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s">&#39;sudo&#39;</span><span class="p">,</span> <span class="s">&#39;sudo_user&#39;</span><span class="p">,</span> <span class="s">&#39;sudo_pass&#39;</span><span class="p">,</span> <span class="s">&#39;sudo_exe&#39;</span><span class="p">,</span> <span class="s">&#39;sudo_flags&#39;</span><span class="p">,</span>
+        <span class="s">&#39;su&#39;</span><span class="p">,</span> <span class="s">&#39;su_user&#39;</span><span class="p">,</span> <span class="s">&#39;su_pass&#39;</span><span class="p">,</span> <span class="s">&#39;su_exe&#39;</span><span class="p">,</span> <span class="s">&#39;su_flags&#39;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="c"># initialize the data loader and variable manager, which will be provided</span>
+        <span class="c"># later when the object is actually loaded</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_loader</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="c"># every object gets a random uuid:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_uuid</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span>
+
+        <span class="c"># and initialize the base attributes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_initialize_base_attributes</span><span class="p">()</span>
+
+        <span class="c"># and init vars, avoid using defaults in field declaration as it lives across plays</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vars</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+
+    <span class="c"># The following three functions are used to programatically define data</span>
+    <span class="c"># descriptors (aka properties) for the Attributes of all of the playbook</span>
+    <span class="c"># objects (tasks, blocks, plays, etc).</span>
+    <span class="c">#</span>
+    <span class="c"># The function signature is a little strange because of how we define</span>
+    <span class="c"># them.  We use partial to give each method the name of the Attribute that</span>
+    <span class="c"># it is for.  Since partial prefills the positional arguments at the</span>
+    <span class="c"># beginning of the function we end up with the first positional argument</span>
+    <span class="c"># being allocated to the name instead of to the class instance (self) as</span>
+    <span class="c"># normal.  To deal with that we make the property name field the first</span>
+    <span class="c"># positional argument and self the second arg.</span>
+    <span class="c">#</span>
+    <span class="c"># Because these methods are defined inside of the class, they get bound to</span>
+    <span class="c"># the instance when the object is created.  After we run partial on them</span>
+    <span class="c"># and put the result back into the class as a property, they get bound</span>
+    <span class="c"># a second time.  This leads to self being  placed in the arguments twice.</span>
+    <span class="c"># To work around that, we mark the functions as @staticmethod so that the</span>
+    <span class="c"># first binding to the instance doesn&#39;t happen.</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_generic_g</span><span class="p">(</span><span class="n">prop_name</span><span class="p">,</span> <span class="bp">self</span><span class="p">):</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="s">&quot;_get_attr_</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">prop_name</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">)()</span>
+
+        <span class="c"># value_found is here because we think that value needs to be changed</span>
+        <span class="c"># in the future.  self._attributes[prop_name] will return None</span>
+        <span class="c"># sometimes, apparently if it&#39;s not explicitly set in the playbook.</span>
+        <span class="c"># This would seem to make None a sentinel value.  However, the user</span>
+        <span class="c"># could set the attribute to None explicitly (via !!nil) which will</span>
+        <span class="c"># not be recognized because it&#39;s being used as a sentinel.  And</span>
+        <span class="c"># sometimes _attributes[prop_name] throws a KeyError so None doesn&#39;t</span>
+        <span class="c"># always mean that prop_name was not set.  To work around these</span>
+        <span class="c"># issues, value_found is here so that if value&#39;s behaviour is changed</span>
+        <span class="c"># in the future, things can still be made to work.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="n">prop_name</span><span class="p">]</span>
+            <span class="n">value_found</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="n">value_found</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">value_found</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_get_parent_attribute&#39;</span><span class="p">):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_parent_attribute</span><span class="p">(</span><span class="n">prop_name</span><span class="p">)</span>
+            <span class="n">value_found</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="k">if</span> <span class="n">value_found</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">value</span>
+        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&quot;&#39;</span><span class="si">%s</span><span class="s">&#39; object has no attribute &#39;</span><span class="si">%s</span><span class="s">&#39;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="n">prop_name</span><span class="p">))</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_generic_s</span><span class="p">(</span><span class="n">prop_name</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="n">prop_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_generic_d</span><span class="p">(</span><span class="n">prop_name</span><span class="p">,</span> <span class="bp">self</span><span class="p">):</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="n">prop_name</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_get_base_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Returns the list of attributes for this class (or any subclass thereof).</span>
+<span class="sd">        If the attribute name starts with an underscore, it is removed</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c"># check cache before retrieving attributes</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span> <span class="ow">in</span> <span class="n">BASE_ATTRIBUTES</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">BASE_ATTRIBUTES</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="p">]</span>
+
+        <span class="c"># Cache init</span>
+        <span class="n">base_attributes</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="ow">in</span> <span class="n">getmembers</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Attribute</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">):</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+                <span class="n">base_attributes</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="n">BASE_ATTRIBUTES</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="p">]</span> <span class="o">=</span> <span class="n">base_attributes</span>
+        <span class="k">return</span> <span class="n">base_attributes</span>
+
+    <span class="k">def</span> <span class="nf">_initialize_base_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># each class knows attributes set upon it, see Task.py for example</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_base_attributes</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">getter</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_generic_g</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+            <span class="n">setter</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_generic_s</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+            <span class="n">deleter</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_generic_d</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+            <span class="c"># Place the property into the class so that cls.name is the</span>
+            <span class="c"># property functions.</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">Base</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="nb">property</span><span class="p">(</span><span class="n">getter</span><span class="p">,</span> <span class="n">setter</span><span class="p">,</span> <span class="n">deleter</span><span class="p">))</span>
+
+            <span class="c"># Place the value into the instance so that the property can</span>
+            <span class="c"># process and hold that value.</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="o">.</span><span class="n">default</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Base.preprocess_data"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.base.Base.preprocess_data">[docs]</a>    <span class="k">def</span> <span class="nf">preprocess_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ds</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; infrequently used method to do some pre-processing of legacy terms &#39;&#39;&#39;</span>
+
+        <span class="k">for</span> <span class="n">base_class</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">mro</span><span class="p">():</span>
+            <span class="n">method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&quot;_preprocess_data_</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">base_class</span><span class="o">.</span><span class="n">__name__</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="bp">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">method</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">method</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ds</span></div>
+
+<div class="viewcode-block" id="Base.load_data"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.base.Base.load_data">[docs]</a>    <span class="k">def</span> <span class="nf">load_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ds</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; walk the input datastructure and assign any values &#39;&#39;&#39;</span>
+
+        <span class="k">assert</span> <span class="n">ds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span>
+
+        <span class="c"># cache the datastructure internally</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_ds&#39;</span><span class="p">,</span> <span class="n">ds</span><span class="p">)</span>
+
+        <span class="c"># the variable manager class is used to manage and merge variables</span>
+        <span class="c"># down to a single dictionary for reference in templating, etc.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span> <span class="o">=</span> <span class="n">variable_manager</span>
+
+        <span class="c"># the data loader class is used to parse data from strings and files</span>
+        <span class="k">if</span> <span class="n">loader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_loader</span> <span class="o">=</span> <span class="n">loader</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_loader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">()</span>
+
+        <span class="c"># call the preprocess_data() function to massage the data into</span>
+        <span class="c"># something we can more easily parse, and then call the validation</span>
+        <span class="c"># function on it to ensure there are no incorrect key values</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocess_data</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_attributes</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+
+        <span class="c"># Walk all attributes in the class. We sort them based on their priority</span>
+        <span class="c"># so that certain fields can be loaded before others, if they are dependent.</span>
+        <span class="n">base_attributes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_base_attributes</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">base_attributes</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">1</span><span class="p">)):</span>
+            <span class="c"># copy the value over unless a _load_field method is defined</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+                <span class="n">method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_load_</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">name</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">method</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">method</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">ds</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+
+        <span class="c"># run early, non-critical validation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+
+        <span class="c"># return the constructed object</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="Base.get_ds"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.base.Base.get_ds">[docs]</a>    <span class="k">def</span> <span class="nf">get_ds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_ds&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span></div>
+
+<div class="viewcode-block" id="Base.get_loader"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.base.Base.get_loader">[docs]</a>    <span class="k">def</span> <span class="nf">get_loader</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loader</span></div>
+
+<div class="viewcode-block" id="Base.get_variable_manager"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.base.Base.get_variable_manager">[docs]</a>    <span class="k">def</span> <span class="nf">get_variable_manager</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span></div>
+
+    <span class="k">def</span> <span class="nf">_validate_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ds</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Ensures that there are no keys in the datastructure which do</span>
+<span class="sd">        not map to attributes for this object.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">valid_attrs</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_base_attributes</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">valid_attrs</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&quot;&#39;</span><span class="si">%s</span><span class="s">&#39; is not a valid attribute for a </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">),</span> <span class="n">obj</span><span class="o">=</span><span class="n">ds</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Base.validate"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.base.Base.validate">[docs]</a>    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">all_vars</span><span class="o">=</span><span class="nb">dict</span><span class="p">()):</span>
+        <span class="sd">&#39;&#39;&#39; validation that is done at parse time, not load time &#39;&#39;&#39;</span>
+
+        <span class="c"># walk all fields in the object</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">attribute</span><span class="p">)</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_base_attributes</span><span class="p">()):</span>
+
+            <span class="c"># run validator only if present</span>
+            <span class="n">method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_validate_</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">name</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">method</span><span class="p">:</span>
+                <span class="n">method</span><span class="p">(</span><span class="n">attribute</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># and make sure the attribute is of the type it should be</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">attribute</span><span class="o">.</span><span class="n">isa</span> <span class="o">==</span> <span class="s">&#39;string&#39;</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)):</span>
+                        <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&quot;The field &#39;</span><span class="si">%s</span><span class="s">&#39; is supposed to be a string type,&quot;</span>
+                                <span class="s">&quot; however the incoming data structure is a </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)),</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_ds</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="Base.copy"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.base.Base.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Create a copy of this object and return it.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">new_me</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_base_attributes</span><span class="p">():</span>
+            <span class="n">attr_val</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attr_val</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">Sequence</span><span class="p">):</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">new_me</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">attr_val</span><span class="p">[:])</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attr_val</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">Mapping</span><span class="p">):</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">new_me</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">attr_val</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">new_me</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">attr_val</span><span class="p">)</span>
+
+        <span class="n">new_me</span><span class="o">.</span><span class="n">_loader</span>           <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loader</span>
+        <span class="n">new_me</span><span class="o">.</span><span class="n">_variable_manager</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span>
+
+        <span class="n">new_me</span><span class="o">.</span><span class="n">_uuid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_uuid</span>
+
+        <span class="c"># if the ds value was set on the object, copy it to the new copy too</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_ds&#39;</span><span class="p">):</span>
+            <span class="n">new_me</span><span class="o">.</span><span class="n">_ds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ds</span>
+
+        <span class="k">return</span> <span class="n">new_me</span></div>
+
+<div class="viewcode-block" id="Base.post_validate"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.base.Base.post_validate">[docs]</a>    <span class="k">def</span> <span class="nf">post_validate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">templar</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        we can&#39;t tell that everything is of the right type until we have</span>
+<span class="sd">        all the variables.  Run basic types (from isa) as well as</span>
+<span class="sd">        any _post_validate_&lt;foo&gt; functions.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c"># save the omit value for later checking</span>
+        <span class="n">omit_value</span> <span class="o">=</span> <span class="n">templar</span><span class="o">.</span><span class="n">_available_variables</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;omit&#39;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">attribute</span><span class="p">)</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_base_attributes</span><span class="p">()):</span>
+
+            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">attribute</span><span class="o">.</span><span class="n">required</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&quot;the field &#39;</span><span class="si">%s</span><span class="s">&#39; is required but was not set&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="n">attribute</span><span class="o">.</span><span class="n">always_post_validate</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;Task&#39;</span><span class="p">,</span> <span class="s">&#39;Handler&#39;</span><span class="p">,</span> <span class="s">&#39;PlayContext&#39;</span><span class="p">):</span>
+                <span class="c"># Intermediate objects like Play() won&#39;t have their fields validated by</span>
+                <span class="c"># default, as their values are often inherited by other objects and validated</span>
+                <span class="c"># later, so we don&#39;t want them to fail out early</span>
+                <span class="k">continue</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c"># Run the post-validator if present. These methods are responsible for</span>
+                <span class="c"># using the given templar to template the values, if required.</span>
+                <span class="n">method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_post_validate_</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">name</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">method</span><span class="p">:</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">method</span><span class="p">(</span><span class="n">attribute</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">),</span> <span class="n">templar</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">attribute</span><span class="o">.</span><span class="n">isa</span> <span class="o">==</span> <span class="s">&#39;class&#39;</span><span class="p">:</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c"># if the attribute contains a variable, template it now</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span>
+
+                <span class="c"># if this evaluated to the omit value, set the value back to</span>
+                <span class="c"># the default specified in the FieldAttribute and move on</span>
+                <span class="k">if</span> <span class="n">omit_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">==</span> <span class="n">omit_value</span><span class="p">:</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">attribute</span><span class="o">.</span><span class="n">default</span><span class="p">)</span>
+                    <span class="k">continue</span>
+
+                <span class="c"># and make sure the attribute is of the type it should be</span>
+                <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">attribute</span><span class="o">.</span><span class="n">isa</span> <span class="o">==</span> <span class="s">&#39;string&#39;</span><span class="p">:</span>
+                        <span class="n">value</span> <span class="o">=</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">attribute</span><span class="o">.</span><span class="n">isa</span> <span class="o">==</span> <span class="s">&#39;int&#39;</span><span class="p">:</span>
+                        <span class="n">value</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">attribute</span><span class="o">.</span><span class="n">isa</span> <span class="o">==</span> <span class="s">&#39;float&#39;</span><span class="p">:</span>
+                        <span class="n">value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">attribute</span><span class="o">.</span><span class="n">isa</span> <span class="o">==</span> <span class="s">&#39;bool&#39;</span><span class="p">:</span>
+                        <span class="n">value</span> <span class="o">=</span> <span class="n">boolean</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">attribute</span><span class="o">.</span><span class="n">isa</span> <span class="o">==</span> <span class="s">&#39;percent&#39;</span><span class="p">:</span>
+                        <span class="c"># special value, which may be an integer or float</span>
+                        <span class="c"># with an optional &#39;%&#39; at the end</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">string_types</span><span class="p">)</span> <span class="ow">and</span> <span class="s">&#39;%&#39;</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+                            <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;%&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+                        <span class="n">value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">attribute</span><span class="o">.</span><span class="n">isa</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;list&#39;</span><span class="p">,</span> <span class="s">&#39;barelist&#39;</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                            <span class="n">value</span> <span class="o">=</span> <span class="p">[]</span>
+                        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">string_types</span><span class="p">)</span> <span class="ow">and</span> <span class="n">attribute</span><span class="o">.</span><span class="n">isa</span> <span class="o">==</span> <span class="s">&#39;barelist&#39;</span><span class="p">:</span>
+                                <span class="n">display</span><span class="o">.</span><span class="n">deprecated</span><span class="p">(</span>
+                                    <span class="s">&quot;Using comma separated values for a list has been deprecated. &quot;</span> \
+                                    <span class="s">&quot;You should instead use the correct YAML syntax for lists. &quot;</span> \
+                                <span class="p">)</span>
+                                <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">value</span> <span class="o">=</span> <span class="p">[</span> <span class="n">value</span> <span class="p">]</span>
+                        <span class="k">if</span> <span class="n">attribute</span><span class="o">.</span><span class="n">listof</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+                                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">attribute</span><span class="o">.</span><span class="n">listof</span><span class="p">):</span>
+                                    <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&quot;the field &#39;</span><span class="si">%s</span><span class="s">&#39; should be a list of </span><span class="si">%s</span><span class="s">,&quot;</span>
+                                            <span class="s">&quot; but the item &#39;</span><span class="si">%s</span><span class="s">&#39; is a </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">attribute</span><span class="o">.</span><span class="n">listof</span><span class="p">,</span> <span class="n">item</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">item</span><span class="p">)),</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_ds</span><span class="p">())</span>
+                                <span class="k">elif</span> <span class="n">attribute</span><span class="o">.</span><span class="n">required</span> <span class="ow">and</span> <span class="n">attribute</span><span class="o">.</span><span class="n">listof</span> <span class="o">==</span> <span class="n">string_types</span><span class="p">:</span>
+                                    <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">item</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">==</span> <span class="s">&quot;&quot;</span><span class="p">:</span>
+                                        <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&quot;the field &#39;</span><span class="si">%s</span><span class="s">&#39; is required, and cannot have empty values&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,),</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_ds</span><span class="p">())</span>
+                    <span class="k">elif</span> <span class="n">attribute</span><span class="o">.</span><span class="n">isa</span> <span class="o">==</span> <span class="s">&#39;set&#39;</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                            <span class="n">value</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+                        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">set</span><span class="p">)):</span>
+                            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">string_types</span><span class="p">):</span>
+                                <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="c"># Making a list like this handles strings of</span>
+                                <span class="c"># text and bytes properly</span>
+                                <span class="n">value</span> <span class="o">=</span> <span class="p">[</span> <span class="n">value</span> <span class="p">]</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">set</span><span class="p">):</span>
+                            <span class="n">value</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">attribute</span><span class="o">.</span><span class="n">isa</span> <span class="o">==</span> <span class="s">&#39;dict&#39;</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                            <span class="n">value</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+                        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> is not a dictionary&quot;</span> <span class="o">%</span> <span class="n">value</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">attribute</span><span class="o">.</span><span class="n">isa</span> <span class="o">==</span> <span class="s">&#39;class&#39;</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">attribute</span><span class="o">.</span><span class="n">class_type</span><span class="p">):</span>
+                            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> is not a valid </span><span class="si">%s</span><span class="s"> (got a </span><span class="si">%s</span><span class="s"> instead)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">attribute</span><span class="o">.</span><span class="n">class_type</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)))</span>
+                        <span class="n">value</span><span class="o">.</span><span class="n">post_validate</span><span class="p">(</span><span class="n">templar</span><span class="o">=</span><span class="n">templar</span><span class="p">)</span>
+
+                <span class="c"># and assign the massaged value back to the attribute field</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+            <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&quot;the field &#39;</span><span class="si">%s</span><span class="s">&#39; has an invalid value (</span><span class="si">%s</span><span class="s">), and could not be converted to an </span><span class="si">%s</span><span class="s">.&quot;</span>
+                        <span class="s">&quot; Error was: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attribute</span><span class="o">.</span><span class="n">isa</span><span class="p">,</span> <span class="n">e</span><span class="p">),</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_ds</span><span class="p">())</span>
+            <span class="k">except</span> <span class="n">UndefinedError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">templar</span><span class="o">.</span><span class="n">_fail_on_undefined_errors</span> <span class="ow">and</span> <span class="n">name</span> <span class="o">!=</span> <span class="s">&#39;name&#39;</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&quot;the field &#39;</span><span class="si">%s</span><span class="s">&#39; has an invalid value, which appears to include a variable that is undefined.&quot;</span>
+                            <span class="s">&quot; The error was: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">e</span><span class="p">),</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_ds</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="Base.serialize"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.base.Base.serialize">[docs]</a>    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Serializes the object derived from the base object into</span>
+<span class="sd">        a dictionary of values. This only serializes the field</span>
+<span class="sd">        attributes for the object, so this may need to be overridden</span>
+<span class="sd">        for any classes which wish to add additional items not stored</span>
+<span class="sd">        as field attributes.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="nb">repr</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_base_attributes</span><span class="p">():</span>
+            <span class="nb">repr</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+        <span class="c"># serialize the uuid field</span>
+        <span class="nb">repr</span><span class="p">[</span><span class="s">&#39;uuid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_uuid&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">repr</span></div>
+
+<div class="viewcode-block" id="Base.deserialize"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.base.Base.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Given a dictionary of values, load up the field attributes for</span>
+<span class="sd">        this object. As with serialize(), if there are any non-field</span>
+<span class="sd">        attribute data members, this method will need to be overridden</span>
+<span class="sd">        and extended.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">attribute</span><span class="p">)</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_base_attributes</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">attribute</span><span class="o">.</span><span class="n">default</span><span class="p">)</span>
+
+        <span class="c"># restore the UUID field</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_uuid&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;uuid&#39;</span><span class="p">))</span></div>
+
+    <span class="k">def</span> <span class="nf">_load_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">ds</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Vars in a play can be specified either as a dictionary directly, or</span>
+<span class="sd">        as a list of dictionaries. If the later, this method will turn the</span>
+<span class="sd">        list into a single dictionary.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">def</span> <span class="nf">_validate_variable_keys</span><span class="p">(</span><span class="n">ds</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">isidentifier</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&quot;&#39;</span><span class="si">%s</span><span class="s">&#39; is not a valid variable name&quot;</span> <span class="o">%</span> <span class="n">key</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">_validate_variable_keys</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">ds</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">all_vars</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span>
+                    <span class="n">_validate_variable_keys</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+                    <span class="n">all_vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">all_vars</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">all_vars</span>
+            <span class="k">elif</span> <span class="n">ds</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{}</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&quot;Vars in a </span><span class="si">%s</span><span class="s"> must be specified as a dictionary, or a list of dictionaries&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">ds</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&quot;Invalid variable name in vars specified for </span><span class="si">%s</span><span class="s">: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="n">e</span><span class="p">),</span> <span class="n">obj</span><span class="o">=</span><span class="n">ds</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_extend_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">new_value</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Will extend the value given with new_value (and will turn both</span>
+<span class="sd">        into lists if they are not so already). The values are run through</span>
+<span class="sd">        a set to remove duplicate values.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="p">[</span> <span class="n">value</span> <span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_value</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">new_value</span> <span class="o">=</span> <span class="p">[</span> <span class="n">new_value</span> <span class="p">]</span>
+
+        <span class="c">#return list(set(value + new_value))</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">_</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">value</span> <span class="o">+</span> <span class="n">new_value</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialize</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

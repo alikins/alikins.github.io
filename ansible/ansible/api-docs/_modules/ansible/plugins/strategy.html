@@ -1,0 +1,916 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.plugins.strategy &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="ansible.plugins" href="../plugins.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../plugins.html">ansible.plugins</a> &raquo;</li>
+      
+    <li>ansible.plugins.strategy</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.plugins.strategy</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">zlib</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Lock</span>
+
+<span class="kn">from</span> <span class="nn">jinja2.exceptions</span> <span class="kn">import</span> <span class="n">UndefinedError</span>
+
+<span class="kn">from</span> <span class="nn">ansible.compat.six.moves</span> <span class="kn">import</span> <span class="n">queue</span> <span class="k">as</span> <span class="n">Queue</span>
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">iteritems</span><span class="p">,</span> <span class="n">text_type</span><span class="p">,</span> <span class="n">string_types</span>
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span><span class="p">,</span> <span class="n">AnsibleParserError</span><span class="p">,</span> <span class="n">AnsibleUndefinedVariable</span>
+<span class="kn">from</span> <span class="nn">ansible.executor.play_iterator</span> <span class="kn">import</span> <span class="n">PlayIterator</span>
+<span class="kn">from</span> <span class="nn">ansible.executor.process.worker</span> <span class="kn">import</span> <span class="n">WorkerProcess</span>
+<span class="kn">from</span> <span class="nn">ansible.executor.task_result</span> <span class="kn">import</span> <span class="n">TaskResult</span>
+<span class="kn">from</span> <span class="nn">ansible.inventory.host</span> <span class="kn">import</span> <span class="n">Host</span>
+<span class="kn">from</span> <span class="nn">ansible.inventory.group</span> <span class="kn">import</span> <span class="n">Group</span>
+<span class="kn">from</span> <span class="nn">ansible.module_utils.facts</span> <span class="kn">import</span> <span class="n">Facts</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.helpers</span> <span class="kn">import</span> <span class="n">load_list_of_blocks</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.included_file</span> <span class="kn">import</span> <span class="n">IncludedFile</span>
+<span class="kn">from</span> <span class="nn">ansible.plugins</span> <span class="kn">import</span> <span class="n">action_loader</span><span class="p">,</span> <span class="n">connection_loader</span><span class="p">,</span> <span class="n">filter_loader</span><span class="p">,</span> <span class="n">lookup_loader</span><span class="p">,</span> <span class="n">module_loader</span><span class="p">,</span> <span class="n">test_loader</span>
+<span class="kn">from</span> <span class="nn">ansible.template</span> <span class="kn">import</span> <span class="n">Templar</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.unicode</span> <span class="kn">import</span> <span class="n">to_unicode</span>
+<span class="kn">from</span> <span class="nn">ansible.vars.unsafe_proxy</span> <span class="kn">import</span> <span class="n">wrap_var</span>
+<span class="kn">from</span> <span class="nn">ansible.vars</span> <span class="kn">import</span> <span class="n">combine_vars</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;StrategyBase&#39;</span><span class="p">]</span>
+
+<span class="k">if</span> <span class="s">&#39;action_write_locks&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">globals</span><span class="p">():</span>
+    <span class="c"># Do not initialize this more than once because it seems to bash</span>
+    <span class="c"># the existing one.  multiprocessing must be reloading the module</span>
+    <span class="c"># when it forks?</span>
+    <span class="n">action_write_locks</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+    <span class="c"># Below is a Lock for use when we weren&#39;t expecting a named module.</span>
+    <span class="c"># It gets used when an action plugin directly invokes a module instead</span>
+    <span class="c"># of going through the strategies.  Slightly less efficient as all</span>
+    <span class="c"># processes with unexpected module names will wait on this lock</span>
+    <span class="n">action_write_locks</span><span class="p">[</span><span class="bp">None</span><span class="p">]</span> <span class="o">=</span> <span class="n">Lock</span><span class="p">()</span>
+
+    <span class="c"># These plugins are called directly by action plugins (not going through</span>
+    <span class="c"># a strategy).  We precreate them here as an optimization</span>
+    <span class="n">mods</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">Facts</span><span class="o">.</span><span class="n">PKG_MGRS</span><span class="p">)</span>
+    <span class="n">mods</span><span class="o">.</span><span class="n">update</span><span class="p">((</span><span class="s">&#39;copy&#39;</span><span class="p">,</span> <span class="s">&#39;file&#39;</span><span class="p">,</span> <span class="s">&#39;setup&#39;</span><span class="p">,</span> <span class="s">&#39;slurp&#39;</span><span class="p">,</span> <span class="s">&#39;stat&#39;</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">mod_name</span> <span class="ow">in</span> <span class="n">mods</span><span class="p">:</span>
+        <span class="n">action_write_locks</span><span class="p">[</span><span class="n">mod_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">Lock</span><span class="p">()</span>
+
+<span class="c"># TODO: this should probably be in the plugins/__init__.py, with</span>
+<span class="c">#       a smarter mechanism to set all of the attributes based on</span>
+<span class="c">#       the loaders created there</span>
+<span class="k">class</span> <span class="nc">SharedPluginLoaderObj</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    A simple object to make pass the various plugin loaders to</span>
+<span class="sd">    the forked processes over the queue easier</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">action_loader</span> <span class="o">=</span> <span class="n">action_loader</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection_loader</span> <span class="o">=</span> <span class="n">connection_loader</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filter_loader</span> <span class="o">=</span> <span class="n">filter_loader</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">test_loader</span>   <span class="o">=</span> <span class="n">test_loader</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lookup_loader</span> <span class="o">=</span> <span class="n">lookup_loader</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module_loader</span> <span class="o">=</span> <span class="n">module_loader</span>
+
+
+<div class="viewcode-block" id="StrategyBase"><a class="viewcode-back" href="../../../rst/ansible.plugins.strategy.html#ansible.plugins.strategy.StrategyBase">[docs]</a><span class="k">class</span> <span class="nc">StrategyBase</span><span class="p">:</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This is the base class for strategy plugins, which contains some common</span>
+<span class="sd">    code useful to all strategies like running handlers, cleanup actions, etc.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tqm</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span>               <span class="o">=</span> <span class="n">tqm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span>         <span class="o">=</span> <span class="n">tqm</span><span class="o">.</span><span class="n">get_inventory</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_workers</span>           <span class="o">=</span> <span class="n">tqm</span><span class="o">.</span><span class="n">get_workers</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_notified_handlers</span> <span class="o">=</span> <span class="n">tqm</span><span class="o">.</span><span class="n">get_notified_handlers</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span>  <span class="o">=</span> <span class="n">tqm</span><span class="o">.</span><span class="n">get_variable_manager</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_loader</span>            <span class="o">=</span> <span class="n">tqm</span><span class="o">.</span><span class="n">get_loader</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_final_q</span>           <span class="o">=</span> <span class="n">tqm</span><span class="o">.</span><span class="n">_final_q</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_step</span>              <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tqm</span><span class="o">.</span><span class="n">_options</span><span class="p">,</span> <span class="s">&#39;step&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_diff</span>              <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tqm</span><span class="o">.</span><span class="n">_options</span><span class="p">,</span> <span class="s">&#39;diff&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+        <span class="c"># Backwards compat: self._display isn&#39;t really needed, just import the global display and use that.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span>           <span class="o">=</span> <span class="n">display</span>
+
+        <span class="c"># internal counters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pending_results</span>   <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cur_worker</span>        <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c"># this dictionary is used to keep track of hosts that have</span>
+        <span class="c"># outstanding tasks still in queue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_blocked_hosts</span>     <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+<div class="viewcode-block" id="StrategyBase.run"><a class="viewcode-back" href="../../../rst/ansible.plugins.strategy.html#ansible.plugins.strategy.StrategyBase.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iterator</span><span class="p">,</span> <span class="n">play_context</span><span class="p">,</span> <span class="n">result</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="c"># save the failed/unreachable hosts, as the run_handlers()</span>
+        <span class="c"># method will clear that information during its execution</span>
+        <span class="n">failed_hosts</span>      <span class="o">=</span> <span class="n">iterator</span><span class="o">.</span><span class="n">get_failed_hosts</span><span class="p">()</span>
+        <span class="n">unreachable_hosts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_unreachable_hosts</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;running handlers&quot;</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">&amp;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_handlers</span><span class="p">(</span><span class="n">iterator</span><span class="p">,</span> <span class="n">play_context</span><span class="p">)</span>
+
+        <span class="c"># now update with the hosts (if any) that failed or were</span>
+        <span class="c"># unreachable during the handler execution phase</span>
+        <span class="n">failed_hosts</span>      <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">failed_hosts</span><span class="p">)</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">iterator</span><span class="o">.</span><span class="n">get_failed_hosts</span><span class="p">())</span>
+        <span class="n">unreachable_hosts</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">unreachable_hosts</span><span class="p">)</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_unreachable_hosts</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+        <span class="c"># return the appropriate code, depending on the status hosts after the run</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="ow">and</span> <span class="n">result</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">RUN_OK</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">result</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">unreachable_hosts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">RUN_UNREACHABLE_HOSTS</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">failed_hosts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">RUN_FAILED_HOSTS</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">result</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">RUN_ERROR</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">RUN_OK</span></div>
+
+<div class="viewcode-block" id="StrategyBase.get_hosts_remaining"><a class="viewcode-back" href="../../../rst/ansible.plugins.strategy.html#ansible.plugins.strategy.StrategyBase.get_hosts_remaining">[docs]</a>    <span class="k">def</span> <span class="nf">get_hosts_remaining</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">play</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">host</span> <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_hosts</span><span class="p">(</span><span class="n">play</span><span class="o">.</span><span class="n">hosts</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_failed_hosts</span> <span class="ow">and</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_unreachable_hosts</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="StrategyBase.get_failed_hosts"><a class="viewcode-back" href="../../../rst/ansible.plugins.strategy.html#ansible.plugins.strategy.StrategyBase.get_failed_hosts">[docs]</a>    <span class="k">def</span> <span class="nf">get_failed_hosts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">play</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">host</span> <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_hosts</span><span class="p">(</span><span class="n">play</span><span class="o">.</span><span class="n">hosts</span><span class="p">)</span> <span class="k">if</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_failed_hosts</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="StrategyBase.add_tqm_variables"><a class="viewcode-back" href="../../../rst/ansible.plugins.strategy.html#ansible.plugins.strategy.StrategyBase.add_tqm_variables">[docs]</a>    <span class="k">def</span> <span class="nf">add_tqm_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">vars</span><span class="p">,</span> <span class="n">play</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Base class method to add extra variables/information to the list of task</span>
+<span class="sd">        vars sent through the executor engine regarding the task queue manager state.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="nb">vars</span><span class="p">[</span><span class="s">&#39;ansible_current_hosts&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">h</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_hosts_remaining</span><span class="p">(</span><span class="n">play</span><span class="p">)]</span>
+        <span class="nb">vars</span><span class="p">[</span><span class="s">&#39;ansible_failed_hosts&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">h</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_failed_hosts</span><span class="p">(</span><span class="n">play</span><span class="p">)]</span></div>
+
+    <span class="k">def</span> <span class="nf">_queue_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">task_vars</span><span class="p">,</span> <span class="n">play_context</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; handles queueing the task up to be sent to a worker &#39;&#39;&#39;</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;entering _queue_task() for </span><span class="si">%s</span><span class="s">/</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">task</span><span class="p">))</span>
+
+        <span class="c"># Add a write lock for tasks.</span>
+        <span class="c"># Maybe this should be added somewhere further up the call stack but</span>
+        <span class="c"># this is the earliest in the code where we have task (1) extracted</span>
+        <span class="c"># into its own variable and (2) there&#39;s only a single code path</span>
+        <span class="c"># leading to the module being run.  This is called by three</span>
+        <span class="c"># functions: __init__.py::_do_handler_run(), linear.py::run(), and</span>
+        <span class="c"># free.py::run() so we&#39;d have to add to all three to do it there.</span>
+        <span class="c"># The next common higher level is __init__.py::run() and that has</span>
+        <span class="c"># tasks inside of play_iterator so we&#39;d have to extract them to do it</span>
+        <span class="c"># there.</span>
+        <span class="k">global</span> <span class="n">action_write_locks</span>
+        <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">action</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">action_write_locks</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Creating lock for </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">task</span><span class="o">.</span><span class="n">action</span><span class="p">)</span>
+            <span class="n">action_write_locks</span><span class="p">[</span><span class="n">task</span><span class="o">.</span><span class="n">action</span><span class="p">]</span> <span class="o">=</span> <span class="n">Lock</span><span class="p">()</span>
+
+        <span class="c"># and then queue the new task</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> - putting task (</span><span class="si">%s</span><span class="s">) in queue&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">task</span><span class="p">))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;worker is </span><span class="si">%d</span><span class="s"> (out of </span><span class="si">%d</span><span class="s"> available)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cur_worker</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_workers</span><span class="p">)))</span>
+
+            <span class="c"># create a dummy object with plugin loaders set as an easier</span>
+            <span class="c"># way to share them with the forked processes</span>
+            <span class="n">shared_loader_obj</span> <span class="o">=</span> <span class="n">SharedPluginLoaderObj</span><span class="p">()</span>
+
+            <span class="n">queued</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="p">(</span><span class="n">worker_prc</span><span class="p">,</span> <span class="n">rslt_q</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_workers</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_cur_worker</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">worker_prc</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">worker_prc</span><span class="o">.</span><span class="n">is_alive</span><span class="p">():</span>
+                    <span class="n">worker_prc</span> <span class="o">=</span> <span class="n">WorkerProcess</span><span class="p">(</span><span class="n">rslt_q</span><span class="p">,</span> <span class="n">task_vars</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">play_context</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="p">,</span> <span class="n">shared_loader_obj</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_workers</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_cur_worker</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">worker_prc</span>
+                    <span class="n">worker_prc</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+                    <span class="n">queued</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_cur_worker</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cur_worker</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_workers</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_cur_worker</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.005</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">queued</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+            <span class="k">del</span> <span class="n">task_vars</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pending_results</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">EOFError</span><span class="p">,</span> <span class="ne">IOError</span><span class="p">,</span> <span class="ne">AssertionError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c"># most likely an abort</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;got an error while queuing: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">e</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;exiting _queue_task() for </span><span class="si">%s</span><span class="s">/</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">task</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_process_pending_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iterator</span><span class="p">,</span> <span class="n">one_pass</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Reads results off the final queue and takes appropriate action</span>
+<span class="sd">        based on the result (executing callbacks, updating state, etc.).</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">ret_results</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_final_q</span><span class="o">.</span><span class="n">empty</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_terminated</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_final_q</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;got result from result worker: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">([</span><span class="n">text_type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">result</span><span class="p">],))</span>
+
+                <span class="c"># helper method, used to find the original host from the one</span>
+                <span class="c"># returned in the result/message, which has been serialized and</span>
+                <span class="c"># thus had some information stripped from it to speed up the</span>
+                <span class="c"># serialization process</span>
+                <span class="k">def</span> <span class="nf">get_original_host</span><span class="p">(</span><span class="n">host</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">_hosts_cache</span><span class="p">:</span>
+                       <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">_hosts_cache</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                       <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_host</span><span class="p">(</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+                <span class="c"># all host status messages contain 2 entries: (msg, task_result)</span>
+                <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;host_task_ok&#39;</span><span class="p">,</span> <span class="s">&#39;host_task_failed&#39;</span><span class="p">,</span> <span class="s">&#39;host_task_skipped&#39;</span><span class="p">,</span> <span class="s">&#39;host_unreachable&#39;</span><span class="p">):</span>
+                    <span class="n">task_result</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">host</span> <span class="o">=</span> <span class="n">get_original_host</span><span class="p">(</span><span class="n">task_result</span><span class="o">.</span><span class="n">_host</span><span class="p">)</span>
+                    <span class="n">task</span> <span class="o">=</span> <span class="n">task_result</span><span class="o">.</span><span class="n">_task</span>
+                    <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;host_task_failed&#39;</span> <span class="ow">or</span> <span class="n">task_result</span><span class="o">.</span><span class="n">is_failed</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">task</span><span class="o">.</span><span class="n">ignore_errors</span><span class="p">:</span>
+                            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;marking </span><span class="si">%s</span><span class="s"> as failed&quot;</span> <span class="o">%</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">run_once</span><span class="p">:</span>
+                                <span class="c"># if we&#39;re using run_once, we have to fail every host here</span>
+                                <span class="p">[</span><span class="n">iterator</span><span class="o">.</span><span class="n">mark_host_failed</span><span class="p">(</span><span class="n">h</span><span class="p">)</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_hosts</span><span class="p">(</span><span class="n">iterator</span><span class="o">.</span><span class="n">_play</span><span class="o">.</span><span class="n">hosts</span><span class="p">)</span> <span class="k">if</span> <span class="n">h</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_unreachable_hosts</span><span class="p">]</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">iterator</span><span class="o">.</span><span class="n">mark_host_failed</span><span class="p">(</span><span class="n">host</span><span class="p">)</span>
+
+                            <span class="c"># only add the host to the failed list officially if it has</span>
+                            <span class="c"># been failed by the iterator</span>
+                            <span class="k">if</span> <span class="n">iterator</span><span class="o">.</span><span class="n">is_failed</span><span class="p">(</span><span class="n">host</span><span class="p">):</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_failed_hosts</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_stats</span><span class="o">.</span><span class="n">increment</span><span class="p">(</span><span class="s">&#39;failures&#39;</span><span class="p">,</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="c"># otherwise, we grab the current state and if we&#39;re iterating on</span>
+                                <span class="c"># the rescue portion of a block then we save the failed task in a</span>
+                                <span class="c"># special var for use within the rescue/always</span>
+                                <span class="n">state</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">iterator</span><span class="o">.</span><span class="n">get_next_task_for_host</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">peek</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                                <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">==</span> <span class="n">iterator</span><span class="o">.</span><span class="n">ITERATING_RESCUE</span><span class="p">:</span>
+                                    <span class="n">original_task</span> <span class="o">=</span> <span class="n">iterator</span><span class="o">.</span><span class="n">get_original_task</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="o">.</span><span class="n">set_nonpersistent_facts</span><span class="p">(</span>
+                                        <span class="n">host</span><span class="p">,</span>
+                                        <span class="nb">dict</span><span class="p">(</span>
+                                            <span class="n">ansible_failed_task</span><span class="o">=</span><span class="n">original_task</span><span class="o">.</span><span class="n">serialize</span><span class="p">(),</span>
+                                            <span class="n">ansible_failed_result</span><span class="o">=</span><span class="n">task_result</span><span class="o">.</span><span class="n">_result</span><span class="p">,</span>
+                                        <span class="p">),</span>
+                                    <span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_stats</span><span class="o">.</span><span class="n">increment</span><span class="p">(</span><span class="s">&#39;ok&#39;</span><span class="p">,</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">send_callback</span><span class="p">(</span><span class="s">&#39;v2_runner_on_failed&#39;</span><span class="p">,</span> <span class="n">task_result</span><span class="p">,</span> <span class="n">ignore_errors</span><span class="o">=</span><span class="n">task</span><span class="o">.</span><span class="n">ignore_errors</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;host_unreachable&#39;</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_unreachable_hosts</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_stats</span><span class="o">.</span><span class="n">increment</span><span class="p">(</span><span class="s">&#39;dark&#39;</span><span class="p">,</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">send_callback</span><span class="p">(</span><span class="s">&#39;v2_runner_on_unreachable&#39;</span><span class="p">,</span> <span class="n">task_result</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;host_task_skipped&#39;</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_stats</span><span class="o">.</span><span class="n">increment</span><span class="p">(</span><span class="s">&#39;skipped&#39;</span><span class="p">,</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">send_callback</span><span class="p">(</span><span class="s">&#39;v2_runner_on_skipped&#39;</span><span class="p">,</span> <span class="n">task_result</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;host_task_ok&#39;</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">action</span> <span class="o">!=</span> <span class="s">&#39;include&#39;</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_stats</span><span class="o">.</span><span class="n">increment</span><span class="p">(</span><span class="s">&#39;ok&#39;</span><span class="p">,</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="s">&#39;changed&#39;</span> <span class="ow">in</span> <span class="n">task_result</span><span class="o">.</span><span class="n">_result</span> <span class="ow">and</span> <span class="n">task_result</span><span class="o">.</span><span class="n">_result</span><span class="p">[</span><span class="s">&#39;changed&#39;</span><span class="p">]:</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_stats</span><span class="o">.</span><span class="n">increment</span><span class="p">(</span><span class="s">&#39;changed&#39;</span><span class="p">,</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">send_callback</span><span class="p">(</span><span class="s">&#39;v2_runner_on_ok&#39;</span><span class="p">,</span> <span class="n">task_result</span><span class="p">)</span>
+
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_diff</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">send_callback</span><span class="p">(</span><span class="s">&#39;v2_on_file_diff&#39;</span><span class="p">,</span> <span class="n">task_result</span><span class="p">)</span>
+
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_pending_results</span> <span class="o">-=</span> <span class="mi">1</span>
+                    <span class="k">if</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_blocked_hosts</span><span class="p">:</span>
+                        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_blocked_hosts</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+
+                    <span class="c"># If this is a role task, mark the parent role as being run (if</span>
+                    <span class="c"># the task was ok or failed, but not skipped or unreachable)</span>
+                    <span class="k">if</span> <span class="n">task_result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">_role</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;host_task_ok&#39;</span><span class="p">,</span> <span class="s">&#39;host_task_failed&#39;</span><span class="p">):</span>
+                        <span class="c"># lookup the role in the ROLE_CACHE to make sure we&#39;re dealing</span>
+                        <span class="c"># with the correct object and mark it as executed</span>
+                        <span class="k">for</span> <span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">role_obj</span><span class="p">)</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="n">iterator</span><span class="o">.</span><span class="n">_play</span><span class="o">.</span><span class="n">ROLE_CACHE</span><span class="p">[</span><span class="n">task_result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">_role</span><span class="o">.</span><span class="n">_role_name</span><span class="p">]):</span>
+                            <span class="k">if</span> <span class="n">role_obj</span><span class="o">.</span><span class="n">_uuid</span> <span class="o">==</span> <span class="n">task_result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">_role</span><span class="o">.</span><span class="n">_uuid</span><span class="p">:</span>
+                                <span class="n">role_obj</span><span class="o">.</span><span class="n">_had_task_run</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+
+                    <span class="n">ret_results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task_result</span><span class="p">)</span>
+
+                <span class="k">elif</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;add_host&#39;</span><span class="p">:</span>
+                    <span class="n">result_item</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">new_host_info</span> <span class="o">=</span> <span class="n">result_item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;add_host&#39;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">())</span>
+
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_add_host</span><span class="p">(</span><span class="n">new_host_info</span><span class="p">,</span> <span class="n">iterator</span><span class="p">)</span>
+
+                <span class="k">elif</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;add_group&#39;</span><span class="p">:</span>
+                    <span class="n">host</span> <span class="o">=</span> <span class="n">get_original_host</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="n">result_item</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_add_group</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">result_item</span><span class="p">)</span>
+
+                <span class="k">elif</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;notify_handler&#39;</span><span class="p">:</span>
+                    <span class="n">task_result</span>  <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">handler_name</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+                    <span class="n">original_host</span> <span class="o">=</span> <span class="n">get_original_host</span><span class="p">(</span><span class="n">task_result</span><span class="o">.</span><span class="n">_host</span><span class="p">)</span>
+                    <span class="n">original_task</span> <span class="o">=</span> <span class="n">iterator</span><span class="o">.</span><span class="n">get_original_task</span><span class="p">(</span><span class="n">original_host</span><span class="p">,</span> <span class="n">task_result</span><span class="o">.</span><span class="n">_task</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">handler_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_notified_handlers</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_notified_handlers</span><span class="p">[</span><span class="n">handler_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+                    <span class="k">if</span> <span class="n">original_host</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_notified_handlers</span><span class="p">[</span><span class="n">handler_name</span><span class="p">]:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_notified_handlers</span><span class="p">[</span><span class="n">handler_name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">original_host</span><span class="p">)</span>
+                        <span class="n">display</span><span class="o">.</span><span class="n">vv</span><span class="p">(</span><span class="s">&quot;NOTIFIED HANDLER </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">handler_name</span><span class="p">,))</span>
+
+                <span class="k">elif</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;register_host_var&#39;</span><span class="p">:</span>
+                    <span class="c"># essentially the same as &#39;set_host_var&#39; below, however we</span>
+                    <span class="c"># never follow the delegate_to value for registered vars and</span>
+                    <span class="c"># the variable goes in the fact_cache</span>
+                    <span class="n">host</span>      <span class="o">=</span> <span class="n">get_original_host</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="n">task</span>      <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                    <span class="n">var_value</span> <span class="o">=</span> <span class="n">wrap_var</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+                    <span class="n">var_name</span>  <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">register</span>
+
+                    <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">run_once</span><span class="p">:</span>
+                        <span class="n">host_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">host</span> <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_hosts</span><span class="p">(</span><span class="n">iterator</span><span class="o">.</span><span class="n">_play</span><span class="o">.</span><span class="n">hosts</span><span class="p">)</span> <span class="k">if</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_unreachable_hosts</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">host_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">host</span><span class="p">]</span>
+
+                    <span class="k">for</span> <span class="n">target_host</span> <span class="ow">in</span> <span class="n">host_list</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="o">.</span><span class="n">set_nonpersistent_facts</span><span class="p">(</span><span class="n">target_host</span><span class="p">,</span> <span class="p">{</span><span class="n">var_name</span><span class="p">:</span> <span class="n">var_value</span><span class="p">})</span>
+
+                <span class="k">elif</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;set_host_var&#39;</span><span class="p">,</span> <span class="s">&#39;set_host_facts&#39;</span><span class="p">):</span>
+                    <span class="n">host</span> <span class="o">=</span> <span class="n">get_original_host</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="n">task</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                    <span class="n">item</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+
+                    <span class="c"># find the host we&#39;re actually refering too here, which may</span>
+                    <span class="c"># be a host that is not really in inventory at all</span>
+                    <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">delegate_to</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">task</span><span class="o">.</span><span class="n">delegate_facts</span><span class="p">:</span>
+                        <span class="n">task_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="o">.</span><span class="n">get_vars</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span> <span class="n">play</span><span class="o">=</span><span class="n">iterator</span><span class="o">.</span><span class="n">_play</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">task</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">add_tqm_variables</span><span class="p">(</span><span class="n">task_vars</span><span class="p">,</span> <span class="n">play</span><span class="o">=</span><span class="n">iterator</span><span class="o">.</span><span class="n">_play</span><span class="p">)</span>
+                        <span class="n">loop_var</span> <span class="o">=</span> <span class="s">&#39;item&#39;</span>
+                        <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">loop_control</span><span class="p">:</span>
+                            <span class="n">loop_var</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">loop_control</span><span class="o">.</span><span class="n">loop_var</span> <span class="ow">or</span> <span class="s">&#39;item&#39;</span>
+                        <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                            <span class="n">task_vars</span><span class="p">[</span><span class="n">loop_var</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+                        <span class="n">templar</span> <span class="o">=</span> <span class="n">Templar</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="n">task_vars</span><span class="p">)</span>
+                        <span class="n">host_name</span> <span class="o">=</span> <span class="n">templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">delegate_to</span><span class="p">)</span>
+                        <span class="n">actual_host</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_host</span><span class="p">(</span><span class="n">host_name</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">actual_host</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                            <span class="n">actual_host</span> <span class="o">=</span> <span class="n">Host</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">host_name</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">actual_host</span> <span class="o">=</span> <span class="n">host</span>
+
+                    <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">run_once</span><span class="p">:</span>
+                        <span class="n">host_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">host</span> <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_hosts</span><span class="p">(</span><span class="n">iterator</span><span class="o">.</span><span class="n">_play</span><span class="o">.</span><span class="n">hosts</span><span class="p">)</span> <span class="k">if</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_unreachable_hosts</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">host_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">actual_host</span><span class="p">]</span>
+
+                    <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;set_host_var&#39;</span><span class="p">:</span>
+                        <span class="n">var_name</span>  <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+                        <span class="n">var_value</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+                        <span class="k">for</span> <span class="n">target_host</span> <span class="ow">in</span> <span class="n">host_list</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="o">.</span><span class="n">set_host_variable</span><span class="p">(</span><span class="n">target_host</span><span class="p">,</span> <span class="n">var_name</span><span class="p">,</span> <span class="n">var_value</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;set_host_facts&#39;</span><span class="p">:</span>
+                        <span class="n">facts</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+                        <span class="k">for</span> <span class="n">target_host</span> <span class="ow">in</span> <span class="n">host_list</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="s">&#39;set_fact&#39;</span><span class="p">:</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="o">.</span><span class="n">set_nonpersistent_facts</span><span class="p">(</span><span class="n">target_host</span><span class="p">,</span> <span class="n">facts</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="o">.</span><span class="n">set_host_facts</span><span class="p">(</span><span class="n">target_host</span><span class="p">,</span> <span class="n">facts</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+                <span class="k">elif</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;v2_runner_item&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;v2_runner_retry&#39;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">send_callback</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="k">elif</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;v2_on_file_diff&#39;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_diff</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">send_callback</span><span class="p">(</span><span class="s">&#39;v2_on_file_diff&#39;</span><span class="p">,</span> <span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;unknown result message received: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+            <span class="k">except</span> <span class="n">Queue</span><span class="o">.</span><span class="n">Empty</span><span class="p">:</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.005</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">one_pass</span><span class="p">:</span>
+                <span class="k">break</span>
+
+        <span class="k">return</span> <span class="n">ret_results</span>
+
+    <span class="k">def</span> <span class="nf">_wait_on_pending_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iterator</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Wait for the shared counter to drop to zero, using a short sleep</span>
+<span class="sd">        between checks to ensure we don&#39;t spin lock</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">ret_results</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;waiting for pending results...&quot;</span><span class="p">)</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pending_results</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_terminated</span><span class="p">:</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_pending_results</span><span class="p">(</span><span class="n">iterator</span><span class="p">)</span>
+            <span class="n">ret_results</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.005</span><span class="p">)</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;no more pending results, returning what we have&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ret_results</span>
+
+    <span class="k">def</span> <span class="nf">_add_host</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host_info</span><span class="p">,</span> <span class="n">iterator</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Helper function to add a new host to inventory based on a task result.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">host_name</span> <span class="o">=</span> <span class="n">host_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;host_name&#39;</span><span class="p">)</span>
+
+        <span class="c"># Check if host in inventory, add if not</span>
+        <span class="n">new_host</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_host</span><span class="p">(</span><span class="n">host_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">new_host</span><span class="p">:</span>
+            <span class="n">new_host</span> <span class="o">=</span> <span class="n">Host</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">host_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">_hosts_cache</span><span class="p">[</span><span class="n">host_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_host</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_host_vars</span><span class="p">(</span><span class="n">new_host</span><span class="p">)</span>
+
+            <span class="n">allgroup</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s">&#39;all&#39;</span><span class="p">)</span>
+            <span class="n">allgroup</span><span class="o">.</span><span class="n">add_host</span><span class="p">(</span><span class="n">new_host</span><span class="p">)</span>
+
+        <span class="c"># Set/update the vars for this host</span>
+        <span class="n">new_host</span><span class="o">.</span><span class="n">vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">new_host</span><span class="o">.</span><span class="n">vars</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_host_vars</span><span class="p">(</span><span class="n">new_host</span><span class="p">))</span>
+        <span class="n">new_host</span><span class="o">.</span><span class="n">vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">new_host</span><span class="o">.</span><span class="n">vars</span><span class="p">,</span>  <span class="n">host_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;host_vars&#39;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">()))</span>
+
+        <span class="n">new_groups</span> <span class="o">=</span> <span class="n">host_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;groups&#39;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="k">for</span> <span class="n">group_name</span> <span class="ow">in</span> <span class="n">new_groups</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="n">group_name</span><span class="p">):</span>
+                <span class="n">new_group</span> <span class="o">=</span> <span class="n">Group</span><span class="p">(</span><span class="n">group_name</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">add_group</span><span class="p">(</span><span class="n">new_group</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_group_vars</span><span class="p">(</span><span class="n">new_group</span><span class="p">)</span>
+                <span class="n">new_group</span><span class="o">.</span><span class="n">vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_group_variables</span><span class="p">(</span><span class="n">group_name</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">new_group</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="n">group_name</span><span class="p">)</span>
+
+            <span class="n">new_group</span><span class="o">.</span><span class="n">add_host</span><span class="p">(</span><span class="n">new_host</span><span class="p">)</span>
+
+            <span class="c"># add this host to the group cache</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">groups</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">group_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">groups</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">new_host</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="n">group_name</span><span class="p">)</span><span class="o">.</span><span class="n">hosts</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="n">group_name</span><span class="p">)</span><span class="o">.</span><span class="n">hosts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_host</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="c"># clear pattern caching completely since it&#39;s unpredictable what</span>
+        <span class="c"># patterns may have referenced the group</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">clear_pattern_cache</span><span class="p">()</span>
+
+        <span class="c"># also clear the hostvar cache entry for the given play, so that</span>
+        <span class="c"># the new hosts are available if hostvars are referenced</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="o">.</span><span class="n">invalidate_hostvars_cache</span><span class="p">(</span><span class="n">play</span><span class="o">=</span><span class="n">iterator</span><span class="o">.</span><span class="n">_play</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_add_group</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">result_item</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Helper function to add a group (if it does not exist), and to assign the</span>
+<span class="sd">        specified host to that group.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">changed</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="c"># the host here is from the executor side, which means it was a</span>
+        <span class="c"># serialized/cloned copy and we&#39;ll need to look up the proper</span>
+        <span class="c"># host object from the master inventory</span>
+        <span class="n">real_host</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_host</span><span class="p">(</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="n">group_name</span> <span class="o">=</span> <span class="n">result_item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;add_group&#39;</span><span class="p">)</span>
+        <span class="n">new_group</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="n">group_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">new_group</span><span class="p">:</span>
+            <span class="c"># create the new group and add it to inventory</span>
+            <span class="n">new_group</span> <span class="o">=</span> <span class="n">Group</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">group_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">add_group</span><span class="p">(</span><span class="n">new_group</span><span class="p">)</span>
+            <span class="n">new_group</span><span class="o">.</span><span class="n">vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_group_vars</span><span class="p">(</span><span class="n">new_group</span><span class="p">)</span>
+
+            <span class="c"># and add the group to the proper hierarchy</span>
+            <span class="n">allgroup</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s">&#39;all&#39;</span><span class="p">)</span>
+            <span class="n">allgroup</span><span class="o">.</span><span class="n">add_child_group</span><span class="p">(</span><span class="n">new_group</span><span class="p">)</span>
+            <span class="n">changed</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="k">if</span> <span class="n">group_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">host</span><span class="o">.</span><span class="n">get_groups</span><span class="p">():</span>
+            <span class="n">new_group</span><span class="o">.</span><span class="n">add_host</span><span class="p">(</span><span class="n">real_host</span><span class="p">)</span>
+            <span class="n">changed</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="k">return</span> <span class="n">changed</span>
+
+    <span class="k">def</span> <span class="nf">_load_included_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">included_file</span><span class="p">,</span> <span class="n">iterator</span><span class="p">,</span> <span class="n">is_handler</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Loads an included YAML file of tasks, applying the optional set of variables.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;loading included file: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">included_file</span><span class="o">.</span><span class="n">_filename</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="o">.</span><span class="n">load_from_file</span><span class="p">(</span><span class="n">included_file</span><span class="o">.</span><span class="n">_filename</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">[]</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;included task files must contain a list of tasks&quot;</span><span class="p">)</span>
+
+            <span class="n">block_list</span> <span class="o">=</span> <span class="n">load_list_of_blocks</span><span class="p">(</span>
+                <span class="n">data</span><span class="p">,</span>
+                <span class="n">play</span><span class="o">=</span><span class="n">included_file</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">_block</span><span class="o">.</span><span class="n">_play</span><span class="p">,</span>
+                <span class="n">parent_block</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                <span class="n">task_include</span><span class="o">=</span><span class="n">included_file</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span>
+                <span class="n">role</span><span class="o">=</span><span class="n">included_file</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">_role</span><span class="p">,</span>
+                <span class="n">use_handlers</span><span class="o">=</span><span class="n">is_handler</span><span class="p">,</span>
+                <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span>
+                <span class="n">variable_manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c"># since we skip incrementing the stats when the task result is</span>
+            <span class="c"># first processed, we do so now for each host in the list</span>
+            <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">included_file</span><span class="o">.</span><span class="n">_hosts</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_stats</span><span class="o">.</span><span class="n">increment</span><span class="p">(</span><span class="s">&#39;ok&#39;</span><span class="p">,</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="n">AnsibleError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c"># mark all of the hosts including this file as failed, send callbacks,</span>
+            <span class="c"># and increment the stats for this host</span>
+            <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">included_file</span><span class="o">.</span><span class="n">_hosts</span><span class="p">:</span>
+                <span class="n">tr</span> <span class="o">=</span> <span class="n">TaskResult</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">included_file</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span> <span class="n">return_data</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">failed</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="n">to_unicode</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+                <span class="n">iterator</span><span class="o">.</span><span class="n">mark_host_failed</span><span class="p">(</span><span class="n">host</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_failed_hosts</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_stats</span><span class="o">.</span><span class="n">increment</span><span class="p">(</span><span class="s">&#39;failures&#39;</span><span class="p">,</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">send_callback</span><span class="p">(</span><span class="s">&#39;v2_runner_on_failed&#39;</span><span class="p">,</span> <span class="n">tr</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="c"># set the vars for this task from those specified as params to the include</span>
+        <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">block_list</span><span class="p">:</span>
+            <span class="c"># first make a copy of the including task, so that each has a unique copy to modify</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">_task_include</span> <span class="o">=</span> <span class="n">b</span><span class="o">.</span><span class="n">_task_include</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="c"># then we create a temporary set of vars to ensure the variable reference is unique</span>
+            <span class="n">temp_vars</span> <span class="o">=</span> <span class="n">b</span><span class="o">.</span><span class="n">_task_include</span><span class="o">.</span><span class="n">vars</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">temp_vars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">included_file</span><span class="o">.</span><span class="n">_args</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+            <span class="c"># pop tags out of the include args, if they were specified there, and assign</span>
+            <span class="c"># them to the include. If the include already had tags specified, we raise an</span>
+            <span class="c"># error so that users know not to specify them both ways</span>
+            <span class="n">tags</span> <span class="o">=</span> <span class="n">temp_vars</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;tags&#39;</span><span class="p">,</span> <span class="p">[])</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span> <span class="n">string_types</span><span class="p">):</span>
+                <span class="n">tags</span> <span class="o">=</span> <span class="n">tags</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">_task_include</span><span class="o">.</span><span class="n">tags</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="s">&quot;Include tasks should not specify tags in more than one way (both via args and directly on the task). Mixing tag specify styles is prohibited for whole import hierarchy, not only for single import statement&quot;</span><span class="p">,</span>
+                            <span class="n">obj</span><span class="o">=</span><span class="n">included_file</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">_ds</span><span class="p">)</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">deprecated</span><span class="p">(</span><span class="s">&quot;You should not specify tags in the include parameters. All tags should be specified using the task-level option&quot;</span><span class="p">)</span>
+                <span class="n">b</span><span class="o">.</span><span class="n">_task_include</span><span class="o">.</span><span class="n">tags</span> <span class="o">=</span> <span class="n">tags</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">_task_include</span><span class="o">.</span><span class="n">vars</span> <span class="o">=</span> <span class="n">temp_vars</span>
+
+        <span class="c"># finally, send the callback and return the list of blocks loaded</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">send_callback</span><span class="p">(</span><span class="s">&#39;v2_playbook_on_include&#39;</span><span class="p">,</span> <span class="n">included_file</span><span class="p">)</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;done processing included file&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">block_list</span>
+
+<div class="viewcode-block" id="StrategyBase.run_handlers"><a class="viewcode-back" href="../../../rst/ansible.plugins.strategy.html#ansible.plugins.strategy.StrategyBase.run_handlers">[docs]</a>    <span class="k">def</span> <span class="nf">run_handlers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iterator</span><span class="p">,</span> <span class="n">play_context</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Runs handlers on those hosts which have been notified.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="k">for</span> <span class="n">handler_block</span> <span class="ow">in</span> <span class="n">iterator</span><span class="o">.</span><span class="n">_play</span><span class="o">.</span><span class="n">handlers</span><span class="p">:</span>
+            <span class="c"># FIXME: handlers need to support the rescue/always portions of blocks too,</span>
+            <span class="c">#        but this may take some work in the iterator and gets tricky when</span>
+            <span class="c">#        we consider the ability of meta tasks to flush handlers</span>
+            <span class="k">for</span> <span class="n">handler</span> <span class="ow">in</span> <span class="n">handler_block</span><span class="o">.</span><span class="n">block</span><span class="p">:</span>
+                <span class="n">handler_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="o">.</span><span class="n">get_vars</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span> <span class="n">play</span><span class="o">=</span><span class="n">iterator</span><span class="o">.</span><span class="n">_play</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">handler</span><span class="p">)</span>
+                <span class="n">templar</span> <span class="o">=</span> <span class="n">Templar</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="n">handler_vars</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="c"># first we check with the full result of get_name(), which may</span>
+                    <span class="c"># include the role name (if the handler is from a role). If that</span>
+                    <span class="c"># is not found, we resort to the simple name field, which doesn&#39;t</span>
+                    <span class="c"># have anything extra added to it.</span>
+                    <span class="n">handler_name</span> <span class="o">=</span> <span class="n">templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">handler</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">handler_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_notified_handlers</span><span class="p">:</span>
+                        <span class="n">handler_name</span> <span class="o">=</span> <span class="n">templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">handler</span><span class="o">.</span><span class="n">get_name</span><span class="p">())</span>
+                <span class="k">except</span> <span class="p">(</span><span class="n">UndefinedError</span><span class="p">,</span> <span class="n">AnsibleUndefinedVariable</span><span class="p">):</span>
+                    <span class="c"># We skip this handler due to the fact that it may be using</span>
+                    <span class="c"># a variable in the name that was conditionally included via</span>
+                    <span class="c"># set_fact or some other method, and we don&#39;t want to error</span>
+                    <span class="c"># out unnecessarily</span>
+                    <span class="k">continue</span>
+
+                <span class="k">if</span> <span class="n">handler_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_notified_handlers</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_notified_handlers</span><span class="p">[</span><span class="n">handler_name</span><span class="p">]):</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_do_handler_run</span><span class="p">(</span><span class="n">handler</span><span class="p">,</span> <span class="n">handler_name</span><span class="p">,</span> <span class="n">iterator</span><span class="o">=</span><span class="n">iterator</span><span class="p">,</span> <span class="n">play_context</span><span class="o">=</span><span class="n">play_context</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="p">:</span>
+                        <span class="k">break</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+    <span class="k">def</span> <span class="nf">_do_handler_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">handler</span><span class="p">,</span> <span class="n">handler_name</span><span class="p">,</span> <span class="n">iterator</span><span class="p">,</span> <span class="n">play_context</span><span class="p">,</span> <span class="n">notified_hosts</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+        <span class="c"># FIXME: need to use iterator.get_failed_hosts() instead?</span>
+        <span class="c">#if not len(self.get_hosts_remaining(iterator._play)):</span>
+        <span class="c">#    self._tqm.send_callback(&#39;v2_playbook_on_no_hosts_remaining&#39;)</span>
+        <span class="c">#    result = False</span>
+        <span class="c">#    break</span>
+        <span class="n">saved_name</span> <span class="o">=</span> <span class="n">handler</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">handler</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">handler_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">send_callback</span><span class="p">(</span><span class="s">&#39;v2_playbook_on_handler_task_start&#39;</span><span class="p">,</span> <span class="n">handler</span><span class="p">)</span>
+        <span class="n">handler</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">saved_name</span>
+
+        <span class="k">if</span> <span class="n">notified_hosts</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">notified_hosts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_notified_handlers</span><span class="p">[</span><span class="n">handler_name</span><span class="p">]</span>
+
+        <span class="n">run_once</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">action</span> <span class="o">=</span> <span class="n">action_loader</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">handler</span><span class="o">.</span><span class="n">action</span><span class="p">,</span> <span class="n">class_only</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">handler</span><span class="o">.</span><span class="n">run_once</span> <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="s">&#39;BYPASS_HOST_LOOP&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">):</span>
+                <span class="n">run_once</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="c"># we don&#39;t care here, because the action may simply not have a</span>
+            <span class="c"># corresponding action plugin</span>
+            <span class="k">pass</span>
+
+        <span class="n">host_results</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">notified_hosts</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">handler</span><span class="o">.</span><span class="n">has_triggered</span><span class="p">(</span><span class="n">host</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">host</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_failed_hosts</span> <span class="ow">or</span> <span class="n">play_context</span><span class="o">.</span><span class="n">force_handlers</span><span class="p">):</span>
+                <span class="n">task_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="o">.</span><span class="n">get_vars</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span> <span class="n">play</span><span class="o">=</span><span class="n">iterator</span><span class="o">.</span><span class="n">_play</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">handler</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_tqm_variables</span><span class="p">(</span><span class="n">task_vars</span><span class="p">,</span> <span class="n">play</span><span class="o">=</span><span class="n">iterator</span><span class="o">.</span><span class="n">_play</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_queue_task</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">handler</span><span class="p">,</span> <span class="n">task_vars</span><span class="p">,</span> <span class="n">play_context</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">run_once</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+        <span class="c"># collect the results from the handler run</span>
+        <span class="n">host_results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wait_on_pending_results</span><span class="p">(</span><span class="n">iterator</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">included_files</span> <span class="o">=</span> <span class="n">IncludedFile</span><span class="o">.</span><span class="n">process_include_results</span><span class="p">(</span>
+                <span class="n">host_results</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="p">,</span>
+                <span class="n">iterator</span><span class="o">=</span><span class="n">iterator</span><span class="p">,</span>
+                <span class="n">inventory</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="p">,</span>
+                <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span>
+                <span class="n">variable_manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="n">AnsibleError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">included_files</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">included_file</span> <span class="ow">in</span> <span class="n">included_files</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">new_blocks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_included_file</span><span class="p">(</span><span class="n">included_file</span><span class="p">,</span> <span class="n">iterator</span><span class="o">=</span><span class="n">iterator</span><span class="p">,</span> <span class="n">is_handler</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                    <span class="c"># for every task in each block brought in by the include, add the list</span>
+                    <span class="c"># of hosts which included the file to the notified_handlers dict</span>
+                    <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">new_blocks</span><span class="p">:</span>
+                        <span class="n">iterator</span><span class="o">.</span><span class="n">_play</span><span class="o">.</span><span class="n">handlers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">block</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">block</span><span class="o">.</span><span class="n">block</span><span class="p">:</span>
+                            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_do_handler_run</span><span class="p">(</span>
+                                <span class="n">handler</span><span class="o">=</span><span class="n">task</span><span class="p">,</span>
+                                <span class="n">handler_name</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                                <span class="n">iterator</span><span class="o">=</span><span class="n">iterator</span><span class="p">,</span>
+                                <span class="n">play_context</span><span class="o">=</span><span class="n">play_context</span><span class="p">,</span>
+                                <span class="n">notified_hosts</span><span class="o">=</span><span class="n">included_file</span><span class="o">.</span><span class="n">_hosts</span><span class="p">[:],</span>
+                            <span class="p">)</span>
+                            <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="p">:</span>
+                                <span class="k">break</span>
+                <span class="k">except</span> <span class="n">AnsibleError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">included_file</span><span class="o">.</span><span class="n">_hosts</span><span class="p">:</span>
+                        <span class="n">iterator</span><span class="o">.</span><span class="n">mark_host_failed</span><span class="p">(</span><span class="n">host</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_failed_hosts</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+                    <span class="k">continue</span>
+
+        <span class="c"># wipe the notification list</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_notified_handlers</span><span class="p">[</span><span class="n">handler_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;done running handlers, result is: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">result</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span> <span class="nf">_take_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+        <span class="n">ret</span><span class="o">=</span><span class="bp">False</span>
+        <span class="n">msg</span><span class="o">=</span><span class="s">u&#39;Perform task: </span><span class="si">%s</span><span class="s"> &#39;</span> <span class="o">%</span> <span class="n">task</span>
+        <span class="k">if</span> <span class="n">host</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s">u&#39;on </span><span class="si">%s</span><span class="s"> &#39;</span> <span class="o">%</span> <span class="n">host</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s">u&#39;(N)o/(y)es/(c)ontinue: &#39;</span>
+        <span class="n">resp</span> <span class="o">=</span> <span class="n">display</span><span class="o">.</span><span class="n">prompt</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">resp</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;y&#39;</span><span class="p">,</span><span class="s">&#39;yes&#39;</span><span class="p">]:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;User ran task&quot;</span><span class="p">)</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">elif</span> <span class="n">resp</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;c&#39;</span><span class="p">,</span> <span class="s">&#39;continue&#39;</span><span class="p">]:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;User ran task and cancled step mode&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_step</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;User skipped task&quot;</span><span class="p">)</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">banner</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ret</span>
+
+    <span class="k">def</span> <span class="nf">_execute_meta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">play_context</span><span class="p">,</span> <span class="n">iterator</span><span class="p">):</span>
+
+        <span class="c"># meta tasks store their args in the _raw_params field of args,</span>
+        <span class="c"># since they do not use k=v pairs, so get that</span>
+        <span class="n">meta_action</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;_raw_params&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">meta_action</span> <span class="o">==</span> <span class="s">&#39;noop&#39;</span><span class="p">:</span>
+            <span class="c"># FIXME: issue a callback for the noop here?</span>
+            <span class="k">pass</span>
+        <span class="k">elif</span> <span class="n">meta_action</span> <span class="o">==</span> <span class="s">&#39;flush_handlers&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">run_handlers</span><span class="p">(</span><span class="n">iterator</span><span class="p">,</span> <span class="n">play_context</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">meta_action</span> <span class="o">==</span> <span class="s">&#39;refresh_inventory&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">refresh_inventory</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">meta_action</span> <span class="o">==</span> <span class="s">&#39;clear_facts&#39;</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">iterator</span><span class="o">.</span><span class="n">_host_states</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="o">.</span><span class="n">clear_facts</span><span class="p">(</span><span class="n">host</span><span class="p">)</span>
+        <span class="c">#elif meta_action == &#39;reset_connection&#39;:</span>
+        <span class="c">#    connection_info.connection.close()</span>
+        <span class="k">elif</span> <span class="n">meta_action</span> <span class="o">==</span> <span class="s">&#39;clear_host_errors&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_failed_hosts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_unreachable_hosts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">iterator</span><span class="o">.</span><span class="n">_host_states</span><span class="p">:</span>
+                <span class="n">iterator</span><span class="o">.</span><span class="n">_host_states</span><span class="p">[</span><span class="n">host</span><span class="p">]</span><span class="o">.</span><span class="n">fail_state</span> <span class="o">=</span> <span class="n">iterator</span><span class="o">.</span><span class="n">FAILED_NONE</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;invalid meta action requested: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">meta_action</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">task</span><span class="o">.</span><span class="n">_ds</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

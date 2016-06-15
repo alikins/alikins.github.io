@@ -1,0 +1,301 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.plugins.test.core &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="ansible.plugins" href="../../plugins.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../../plugins.html">ansible.plugins</a> &raquo;</li>
+      
+    <li>ansible.plugins.test.core</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.plugins.test.core</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012, Jeroen Hoekx &lt;jeroen@hoekx.be&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">errors</span>
+
+<div class="viewcode-block" id="failed"><a class="viewcode-back" href="../../../../rst/ansible.plugins.test.html#ansible.plugins.test.core.failed">[docs]</a><span class="k">def</span> <span class="nf">failed</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Test if task result yields failed &#39;&#39;&#39;</span>
+    <span class="n">item</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleFilterError</span><span class="p">(</span><span class="s">&quot;|failed expects a dictionary&quot;</span><span class="p">)</span>
+    <span class="n">rc</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;rc&#39;</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">failed</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;failed&#39;</span><span class="p">,</span><span class="bp">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">rc</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">failed</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span></div>
+
+<div class="viewcode-block" id="success"><a class="viewcode-back" href="../../../../rst/ansible.plugins.test.html#ansible.plugins.test.core.success">[docs]</a><span class="k">def</span> <span class="nf">success</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Test if task result yields success &#39;&#39;&#39;</span>
+    <span class="k">return</span> <span class="ow">not</span> <span class="n">failed</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="changed"><a class="viewcode-back" href="../../../../rst/ansible.plugins.test.html#ansible.plugins.test.core.changed">[docs]</a><span class="k">def</span> <span class="nf">changed</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Test if task result yields changed &#39;&#39;&#39;</span>
+    <span class="n">item</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleFilterError</span><span class="p">(</span><span class="s">&quot;|changed expects a dictionary&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;changed&#39;</span> <span class="ow">in</span> <span class="n">item</span><span class="p">:</span>
+        <span class="n">changed</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">if</span> <span class="p">(</span><span class="s">&#39;results&#39;</span> <span class="ow">in</span> <span class="n">item</span>    <span class="c"># some modules return a &#39;results&#39; key</span>
+                <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s">&#39;results&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="nb">list</span>
+                <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s">&#39;results&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">item</span><span class="p">[</span><span class="s">&#39;results&#39;</span><span class="p">]:</span>
+                <span class="n">changed</span> <span class="o">=</span> <span class="n">changed</span> <span class="ow">or</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;changed&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">changed</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;changed&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">changed</span></div>
+
+<div class="viewcode-block" id="skipped"><a class="viewcode-back" href="../../../../rst/ansible.plugins.test.html#ansible.plugins.test.core.skipped">[docs]</a><span class="k">def</span> <span class="nf">skipped</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Test if task result yields skipped &#39;&#39;&#39;</span>
+    <span class="n">item</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleFilterError</span><span class="p">(</span><span class="s">&quot;|skipped expects a dictionary&quot;</span><span class="p">)</span>
+    <span class="n">skipped</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;skipped&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">skipped</span></div>
+
+<div class="viewcode-block" id="regex"><a class="viewcode-back" href="../../../../rst/ansible.plugins.test.html#ansible.plugins.test.core.regex">[docs]</a><span class="k">def</span> <span class="nf">regex</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">ignorecase</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">multiline</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">match_type</span><span class="o">=</span><span class="s">&#39;search&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Expose `re` as a boolean filter using the `search` method by default.</span>
+<span class="sd">        This is likely only useful for `search` and `match` which already</span>
+<span class="sd">        have their own filters.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">flags</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">ignorecase</span><span class="p">:</span>
+        <span class="n">flags</span> <span class="o">|=</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span>
+    <span class="k">if</span> <span class="n">multiline</span><span class="p">:</span>
+        <span class="n">flags</span> <span class="o">|=</span> <span class="n">re</span><span class="o">.</span><span class="n">M</span>
+    <span class="n">_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">flags</span><span class="p">)</span>
+    <span class="n">_bool</span> <span class="o">=</span> <span class="n">__builtins__</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;bool&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_bool</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">_re</span><span class="p">,</span> <span class="n">match_type</span><span class="p">,</span> <span class="s">&#39;search&#39;</span><span class="p">)(</span><span class="n">value</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="match"><a class="viewcode-back" href="../../../../rst/ansible.plugins.test.html#ansible.plugins.test.core.match">[docs]</a><span class="k">def</span> <span class="nf">match</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">ignorecase</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">multiline</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Perform a `re.match` returning a boolean &#39;&#39;&#39;</span>
+    <span class="k">return</span> <span class="n">regex</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">ignorecase</span><span class="p">,</span> <span class="n">multiline</span><span class="p">,</span> <span class="s">&#39;match&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="search"><a class="viewcode-back" href="../../../../rst/ansible.plugins.test.html#ansible.plugins.test.core.search">[docs]</a><span class="k">def</span> <span class="nf">search</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">ignorecase</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">multiline</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Perform a `re.search` returning a boolean &#39;&#39;&#39;</span>
+    <span class="k">return</span> <span class="n">regex</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">ignorecase</span><span class="p">,</span> <span class="n">multiline</span><span class="p">,</span> <span class="s">&#39;search&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestModule"><a class="viewcode-back" href="../../../../rst/ansible.plugins.test.html#ansible.plugins.test.core.TestModule">[docs]</a><span class="k">class</span> <span class="nc">TestModule</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Ansible core jinja2 tests &#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="TestModule.tests"><a class="viewcode-back" href="../../../../rst/ansible.plugins.test.html#ansible.plugins.test.core.TestModule.tests">[docs]</a>    <span class="k">def</span> <span class="nf">tests</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="c"># failure testing</span>
+            <span class="s">&#39;failed&#39;</span>    <span class="p">:</span> <span class="n">failed</span><span class="p">,</span>
+            <span class="s">&#39;failure&#39;</span>   <span class="p">:</span> <span class="n">failed</span><span class="p">,</span>
+            <span class="s">&#39;success&#39;</span>   <span class="p">:</span> <span class="n">success</span><span class="p">,</span>
+            <span class="s">&#39;succeeded&#39;</span> <span class="p">:</span> <span class="n">success</span><span class="p">,</span>
+
+            <span class="c"># changed testing</span>
+            <span class="s">&#39;changed&#39;</span> <span class="p">:</span> <span class="n">changed</span><span class="p">,</span>
+            <span class="s">&#39;change&#39;</span>  <span class="p">:</span> <span class="n">changed</span><span class="p">,</span>
+
+            <span class="c"># skip testing</span>
+            <span class="s">&#39;skipped&#39;</span> <span class="p">:</span> <span class="n">skipped</span><span class="p">,</span>
+            <span class="s">&#39;skip&#39;</span>    <span class="p">:</span> <span class="n">skipped</span><span class="p">,</span>
+
+            <span class="c"># regex</span>
+            <span class="s">&#39;match&#39;</span><span class="p">:</span> <span class="n">match</span><span class="p">,</span>
+            <span class="s">&#39;search&#39;</span><span class="p">:</span> <span class="n">search</span><span class="p">,</span>
+            <span class="s">&#39;regex&#39;</span><span class="p">:</span> <span class="n">regex</span><span class="p">,</span>
+        <span class="p">}</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,1020 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.plugins.action &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="ansible.plugins" href="../plugins.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../plugins.html">ansible.plugins</a> &raquo;</li>
+      
+    <li>ansible.plugins.action</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.plugins.action</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">base64</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">pipes</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">stat</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABCMeta</span><span class="p">,</span> <span class="n">abstractmethod</span>
+
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">binary_type</span><span class="p">,</span> <span class="n">text_type</span><span class="p">,</span> <span class="n">iteritems</span><span class="p">,</span> <span class="n">with_metaclass</span>
+
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span><span class="p">,</span> <span class="n">AnsibleConnectionFailure</span>
+<span class="kn">from</span> <span class="nn">ansible.executor.module_common</span> <span class="kn">import</span> <span class="n">modify_module</span>
+<span class="kn">from</span> <span class="nn">ansible.release</span> <span class="kn">import</span> <span class="n">__version__</span>
+<span class="kn">from</span> <span class="nn">ansible.parsing.utils.jsonify</span> <span class="kn">import</span> <span class="n">jsonify</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.unicode</span> <span class="kn">import</span> <span class="n">to_bytes</span><span class="p">,</span> <span class="n">to_unicode</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="ActionBase"><a class="viewcode-back" href="../../../rst/ansible.plugins.action.html#ansible.plugins.action.ActionBase">[docs]</a><span class="k">class</span> <span class="nc">ActionBase</span><span class="p">(</span><span class="n">with_metaclass</span><span class="p">(</span><span class="n">ABCMeta</span><span class="p">,</span> <span class="nb">object</span><span class="p">)):</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This class is the base class for all action plugins, and defines</span>
+<span class="sd">    code common to all actions. The base class handles the connection</span>
+<span class="sd">    by putting/getting files and executing commands based on the current</span>
+<span class="sd">    action in use.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">connection</span><span class="p">,</span> <span class="n">play_context</span><span class="p">,</span> <span class="n">loader</span><span class="p">,</span> <span class="n">templar</span><span class="p">,</span> <span class="n">shared_loader_obj</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_task</span>              <span class="o">=</span> <span class="n">task</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span>        <span class="o">=</span> <span class="n">connection</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span>      <span class="o">=</span> <span class="n">play_context</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_loader</span>            <span class="o">=</span> <span class="n">loader</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_templar</span>           <span class="o">=</span> <span class="n">templar</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_shared_loader_obj</span> <span class="o">=</span> <span class="n">shared_loader_obj</span>
+        <span class="c"># Backwards compat: self._display isn&#39;t really needed, just import the global display and use that.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span>           <span class="o">=</span> <span class="n">display</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cleanup_remote_tmp</span>  <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_supports_check_mode</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="ActionBase.run"><a class="viewcode-back" href="../../../rst/ansible.plugins.action.html#ansible.plugins.action.ActionBase.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tmp</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">task_vars</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Action Plugins should implement this method to perform their</span>
+<span class="sd">        tasks.  Everything else in this base class is a helper method for the</span>
+<span class="sd">        action plugin to do that.</span>
+
+<span class="sd">        :kwarg tmp: Temporary directory.  Sometimes an action plugin sets up</span>
+<span class="sd">            a temporary directory and then calls another module.  This parameter</span>
+<span class="sd">            allows us to reuse the same directory for both.</span>
+<span class="sd">        :kwarg task_vars: The variables (host vars, group vars, config vars,</span>
+<span class="sd">            etc) associated with this task.</span>
+<span class="sd">        :returns: dictionary of results from the module</span>
+
+<span class="sd">        Implementors of action modules may find the following variables especially useful:</span>
+
+<span class="sd">        * Module parameters.  These are stored in self._task.args</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># store the module invocation details into the results</span>
+        <span class="n">results</span> <span class="o">=</span>  <span class="p">{}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">async</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">results</span><span class="p">[</span><span class="s">&#39;invocation&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                <span class="n">module_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">action</span><span class="p">,</span>
+                <span class="n">module_args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">args</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">results</span></div>
+
+    <span class="k">def</span> <span class="nf">_remote_file_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">_shell</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_low_level_execute_command</span><span class="p">(</span><span class="n">cmd</span><span class="o">=</span><span class="n">cmd</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="s">&#39;rc&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">_configure_module</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module_name</span><span class="p">,</span> <span class="n">module_args</span><span class="p">,</span> <span class="n">task_vars</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Handles the loading and templating of the module code through the</span>
+<span class="sd">        modify_module() function.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">task_vars</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">task_vars</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+        <span class="c"># Search module path(s) for named module.</span>
+        <span class="k">for</span> <span class="n">mod_type</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">module_implementation_preferences</span><span class="p">:</span>
+            <span class="c"># Check to determine if PowerShell modules are supported, and apply</span>
+            <span class="c"># some fixes (hacks) to module name + args.</span>
+            <span class="k">if</span> <span class="n">mod_type</span> <span class="o">==</span> <span class="s">&#39;.ps1&#39;</span><span class="p">:</span>
+                <span class="c"># win_stat, win_file, and win_copy are not just like their</span>
+                <span class="c"># python counterparts but they are compatible enough for our</span>
+                <span class="c"># internal usage</span>
+                <span class="k">if</span> <span class="n">module_name</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;stat&#39;</span><span class="p">,</span> <span class="s">&#39;file&#39;</span><span class="p">,</span> <span class="s">&#39;copy&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">action</span> <span class="o">!=</span> <span class="n">module_name</span><span class="p">:</span>
+                    <span class="n">module_name</span> <span class="o">=</span> <span class="s">&#39;win_</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">module_name</span>
+
+                <span class="c"># Remove extra quotes surrounding path parameters before sending to module.</span>
+                <span class="k">if</span> <span class="n">module_name</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;win_stat&#39;</span><span class="p">,</span> <span class="s">&#39;win_file&#39;</span><span class="p">,</span> <span class="s">&#39;win_copy&#39;</span><span class="p">,</span> <span class="s">&#39;slurp&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">module_args</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">_shell</span><span class="p">,</span> <span class="s">&#39;_unquote&#39;</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;src&#39;</span><span class="p">,</span> <span class="s">&#39;dest&#39;</span><span class="p">,</span> <span class="s">&#39;path&#39;</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">module_args</span><span class="p">:</span>
+                            <span class="n">module_args</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">_shell</span><span class="o">.</span><span class="n">_unquote</span><span class="p">(</span><span class="n">module_args</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+
+            <span class="n">module_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shared_loader_obj</span><span class="o">.</span><span class="n">module_loader</span><span class="o">.</span><span class="n">find_plugin</span><span class="p">(</span><span class="n">module_name</span><span class="p">,</span> <span class="n">mod_type</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">module_path</span><span class="p">:</span>
+                <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c"># This is a for-else: http://bit.ly/1ElPkyg</span>
+            <span class="c"># Use Windows version of ping module to check module paths when</span>
+            <span class="c"># using a connection that supports .ps1 suffixes. We check specifically</span>
+            <span class="c"># for win_ping here, otherwise the code would look for ping.ps1</span>
+            <span class="k">if</span> <span class="s">&#39;.ps1&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">module_implementation_preferences</span><span class="p">:</span>
+                <span class="n">ping_module</span> <span class="o">=</span> <span class="s">&#39;win_ping&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ping_module</span> <span class="o">=</span> <span class="s">&#39;ping&#39;</span>
+            <span class="n">module_path2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shared_loader_obj</span><span class="o">.</span><span class="n">module_loader</span><span class="o">.</span><span class="n">find_plugin</span><span class="p">(</span><span class="n">ping_module</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">module_implementation_preferences</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">module_path2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;The module </span><span class="si">%s</span><span class="s"> was not found in configured module paths&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">module_name</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;The module </span><span class="si">%s</span><span class="s"> was not found in configured module paths. &quot;</span>
+                                   <span class="s">&quot;Additionally, core modules are missing. If this is a checkout, &quot;</span>
+                                   <span class="s">&quot;run &#39;git submodule update --init --recursive&#39; to correct this problem.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">module_name</span><span class="p">))</span>
+
+        <span class="c"># insert shared code and arguments into the module</span>
+        <span class="p">(</span><span class="n">module_data</span><span class="p">,</span> <span class="n">module_style</span><span class="p">,</span> <span class="n">module_shebang</span><span class="p">)</span> <span class="o">=</span> <span class="n">modify_module</span><span class="p">(</span><span class="n">module_name</span><span class="p">,</span> <span class="n">module_path</span><span class="p">,</span> <span class="n">module_args</span><span class="p">,</span> <span class="n">task_vars</span><span class="o">=</span><span class="n">task_vars</span><span class="p">,</span> <span class="n">module_compression</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">module_compression</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">module_style</span><span class="p">,</span> <span class="n">module_shebang</span><span class="p">,</span> <span class="n">module_data</span><span class="p">,</span> <span class="n">module_path</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_compute_environment_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Builds the environment string to be used when executing the remote task.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">final_environment</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">environment</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">environments</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">environment</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">environments</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">environments</span> <span class="o">=</span> <span class="p">[</span> <span class="n">environments</span> <span class="p">]</span>
+
+            <span class="c"># the environments as inherited need to be reversed, to make</span>
+            <span class="c"># sure we merge in the parent&#39;s values first so those in the</span>
+            <span class="c"># block then task &#39;win&#39; in precedence</span>
+            <span class="n">environments</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">environment</span> <span class="ow">in</span> <span class="n">environments</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">environment</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">temp_environment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">environment</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">temp_environment</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;environment must be a dictionary, received </span><span class="si">%s</span><span class="s"> (</span><span class="si">%s</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">temp_environment</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">temp_environment</span><span class="p">)))</span>
+                <span class="c"># very deliberately using update here instead of combine_vars, as</span>
+                <span class="c"># these environment settings should not need to merge sub-dicts</span>
+                <span class="n">final_environment</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">temp_environment</span><span class="p">)</span>
+
+        <span class="n">final_environment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">final_environment</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">_shell</span><span class="o">.</span><span class="n">env_prefix</span><span class="p">(</span><span class="o">**</span><span class="n">final_environment</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_early_needs_tmp_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Determines if a temp path should be created before the action is executed.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;TRANSFERS_FILES&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_late_needs_tmp_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tmp</span><span class="p">,</span> <span class="n">module_style</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Determines if a temp path is required after some early actions have already taken place.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">tmp</span> <span class="ow">and</span> <span class="s">&quot;tmp&quot;</span> <span class="ow">in</span> <span class="n">tmp</span><span class="p">:</span>
+            <span class="c"># tmp has already been created</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">has_pipelining</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">pipelining</span> <span class="ow">or</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_KEEP_REMOTE_FILES</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become_method</span> <span class="o">==</span> <span class="s">&#39;su&#39;</span><span class="p">:</span>
+            <span class="c"># tmp is necessary to store the module source code</span>
+            <span class="c"># or we want to keep the files on the target system</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">if</span> <span class="n">module_style</span> <span class="o">!=</span> <span class="s">&quot;new&quot;</span><span class="p">:</span>
+            <span class="c"># even when conn has pipelining, old style modules need tmp to store arguments</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">_make_tmp_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">remote_user</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Create and return a temporary path on a remote box.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">basefile</span> <span class="o">=</span> <span class="s">&#39;ansible-tmp-</span><span class="si">%s</span><span class="s">-</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">**</span><span class="mi">48</span><span class="p">))</span>
+        <span class="n">use_system_tmp</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become_user</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;root&#39;</span><span class="p">,</span> <span class="n">remote_user</span><span class="p">):</span>
+            <span class="n">use_system_tmp</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="n">tmp_mode</span> <span class="o">=</span> <span class="mi">0</span><span class="n">o700</span>
+
+        <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">_shell</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">(</span><span class="n">basefile</span><span class="p">,</span> <span class="n">use_system_tmp</span><span class="p">,</span> <span class="n">tmp_mode</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_low_level_execute_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+        <span class="c"># error handling on this seems a little aggressive?</span>
+        <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="s">&#39;rc&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="s">&#39;rc&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">5</span><span class="p">:</span>
+                <span class="n">output</span> <span class="o">=</span> <span class="s">&#39;Authentication failure.&#39;</span>
+            <span class="k">elif</span> <span class="n">result</span><span class="p">[</span><span class="s">&#39;rc&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">255</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">transport</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;ssh&#39;</span><span class="p">,):</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
+                    <span class="n">output</span> <span class="o">=</span> <span class="s">u&#39;SSH encountered an unknown error. The output was:</span><span class="se">\n</span><span class="si">%s%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s">&#39;stdout&#39;</span><span class="p">],</span> <span class="n">result</span><span class="p">[</span><span class="s">&#39;stderr&#39;</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">output</span> <span class="o">=</span> <span class="p">(</span><span class="s">u&#39;SSH encountered an unknown error during the connection.&#39;</span>
+                            <span class="s">&#39; We recommend you re-run the command using -vvvv, which will enable SSH debugging output to help diagnose the issue&#39;</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="s">u&#39;No space left on device&#39;</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s">&#39;stderr&#39;</span><span class="p">]:</span>
+                <span class="n">output</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s">&#39;stderr&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">output</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;Authentication or permission failure.&#39;</span>
+                        <span class="s">&#39; In some cases, you may have been able to authenticate and did not have permissions on the remote directory.&#39;</span>
+                        <span class="s">&#39; Consider changing the remote temp path in ansible.cfg to a path rooted in &quot;/tmp&quot;.&#39;</span>
+                        <span class="s">&#39; Failed command was: </span><span class="si">%s</span><span class="s">, exited with result </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">result</span><span class="p">[</span><span class="s">&#39;rc&#39;</span><span class="p">]))</span>
+            <span class="k">if</span> <span class="s">&#39;stdout&#39;</span> <span class="ow">in</span> <span class="n">result</span> <span class="ow">and</span> <span class="n">result</span><span class="p">[</span><span class="s">&#39;stdout&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s">u&#39;&#39;</span><span class="p">:</span>
+                <span class="n">output</span> <span class="o">=</span> <span class="n">output</span> <span class="o">+</span> <span class="s">u&quot;: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">result</span><span class="p">[</span><span class="s">&#39;stdout&#39;</span><span class="p">]</span>
+            <span class="k">raise</span> <span class="n">AnsibleConnectionFailure</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">stdout_parts</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s">&#39;stdout&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">=&#39;</span> <span class="o">%</span> <span class="n">basefile</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">rc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">_shell</span><span class="o">.</span><span class="n">join_path</span><span class="p">(</span><span class="n">stdout_parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="s">u&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+            <span class="c"># stdout was empty or just space, set to / to trigger error in next if</span>
+            <span class="n">rc</span> <span class="o">=</span> <span class="s">&#39;/&#39;</span>
+
+        <span class="c"># Catch failure conditions, files should never be</span>
+        <span class="c"># written to locations in /.</span>
+        <span class="k">if</span> <span class="n">rc</span> <span class="o">==</span> <span class="s">&#39;/&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&#39;failed to resolve remote temporary directory from </span><span class="si">%s</span><span class="s">: `</span><span class="si">%s</span><span class="s">` returned empty string&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">basefile</span><span class="p">,</span> <span class="n">cmd</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">rc</span>
+
+    <span class="k">def</span> <span class="nf">_remove_tmp_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Remove a temporary path we created. &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="n">tmp_path</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cleanup_remote_tmp</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_KEEP_REMOTE_FILES</span> <span class="ow">and</span> <span class="s">&quot;-tmp-&quot;</span> <span class="ow">in</span> <span class="n">tmp_path</span><span class="p">:</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">_shell</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">,</span> <span class="n">recurse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="c"># If we have gotten here we have a working ssh configuration.</span>
+            <span class="c"># If ssh breaks we could leave tmp directories out on the remote system.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_low_level_execute_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_transfer_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">local_path</span><span class="p">,</span> <span class="n">remote_path</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">put_file</span><span class="p">(</span><span class="n">local_path</span><span class="p">,</span> <span class="n">remote_path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">remote_path</span>
+
+    <span class="k">def</span> <span class="nf">_transfer_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">remote_path</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Copies the module data out to the temporary module path.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="n">afd</span><span class="p">,</span> <span class="n">afile</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">()</span>
+        <span class="n">afo</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">fdopen</span><span class="p">(</span><span class="n">afd</span><span class="p">,</span> <span class="s">&#39;wb&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+            <span class="n">afo</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;failure writing module data to temporary file for transfer: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+
+        <span class="n">afo</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+        <span class="n">afo</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_transfer_file</span><span class="p">(</span><span class="n">afile</span><span class="p">,</span> <span class="n">remote_path</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">unlink</span><span class="p">(</span><span class="n">afile</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">remote_path</span>
+
+    <span class="k">def</span> <span class="nf">_fixup_perms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">remote_path</span><span class="p">,</span> <span class="n">remote_user</span><span class="p">,</span> <span class="n">execute</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        We need the files we upload to be readable (and sometimes executable)</span>
+<span class="sd">        by the user being sudo&#39;d to but we want to limit other people&#39;s access</span>
+<span class="sd">        (because the files could contain passwords or other private</span>
+<span class="sd">        information.  We achieve this in one of these ways:</span>
+
+<span class="sd">        * If no sudo is performed or the remote_user is sudo&#39;ing to</span>
+<span class="sd">          themselves, we don&#39;t have to change permisions.</span>
+<span class="sd">        * If the remote_user sudo&#39;s to a privileged user (for instance, root),</span>
+<span class="sd">          we don&#39;t have to change permissions</span>
+<span class="sd">        * If the remote_user is a privileged user and sudo&#39;s to an</span>
+<span class="sd">          unprivileged user then we change the owner of the file to the</span>
+<span class="sd">          unprivileged user so they can read it.</span>
+<span class="sd">        * If the remote_user is an unprivieged user and we&#39;re sudo&#39;ing to</span>
+<span class="sd">          a second unprivileged user then we attempt to grant the second</span>
+<span class="sd">          unprivileged user access via file system acls.</span>
+<span class="sd">        * If granting file system acls fails we can set the file to be world</span>
+<span class="sd">          readable so that the second unprivileged user can read the file.</span>
+<span class="sd">          Since this could allow other users to get access to private</span>
+<span class="sd">          information we only do this ansible is configured with</span>
+<span class="sd">          &quot;allow_world_readable_tmpfiles&quot; in the ansible.cfg</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">_shell</span><span class="o">.</span><span class="n">SHELL_FAMILY</span> <span class="o">==</span> <span class="s">&#39;powershell&#39;</span><span class="p">:</span>
+            <span class="c"># This won&#39;t work on Powershell as-is, so we&#39;ll just completely skip until</span>
+            <span class="c"># we have a need for it, at which point we&#39;ll have to do something different.</span>
+            <span class="k">return</span> <span class="n">remote_path</span>
+
+        <span class="k">if</span> <span class="n">remote_path</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c"># Sometimes code calls us naively -- it has a var which could</span>
+            <span class="c"># contain a path to a tmp dir but doesn&#39;t know if it needs to</span>
+            <span class="c"># exist or not.  If there&#39;s no path, then there&#39;s no need for us</span>
+            <span class="c"># to do work</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;_fixup_perms called with remote_path==None.  Sure this is correct?&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">remote_path</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become_user</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;root&#39;</span><span class="p">,</span> <span class="n">remote_user</span><span class="p">):</span>
+            <span class="c"># Unprivileged user that&#39;s different than the ssh user.  Let&#39;s get</span>
+            <span class="c"># to work!</span>
+
+            <span class="c"># Try chown&#39;ing the file. This will only work if our SSH user has</span>
+            <span class="c"># root privileges, but since we can&#39;t reliably determine that from</span>
+            <span class="c"># the username (think &quot;toor&quot; on FreeBSD), let&#39;s just try first and</span>
+            <span class="c"># apologize later:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remote_chown</span><span class="p">(</span><span class="n">remote_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become_user</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="n">recursive</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">res</span><span class="p">[</span><span class="s">&#39;rc&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c"># root can read things that don&#39;t have read bit but can&#39;t</span>
+                <span class="c"># execute them without the execute bit, so we might need to</span>
+                <span class="c"># set that even if we&#39;re root. We just ran chown successfully,</span>
+                <span class="c"># so apparently we are root.</span>
+                <span class="k">if</span> <span class="n">execute</span><span class="p">:</span>
+                    <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remote_chmod</span><span class="p">(</span><span class="s">&#39;u+x&#39;</span><span class="p">,</span> <span class="n">remote_path</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="n">recursive</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">res</span><span class="p">[</span><span class="s">&#39;rc&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&#39;Failed to set file mode on remote temporary files (rc: {0}, err: {1})&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s">&#39;rc&#39;</span><span class="p">],</span> <span class="n">res</span><span class="p">[</span><span class="s">&#39;stderr&#39;</span><span class="p">]))</span>
+
+            <span class="k">elif</span> <span class="n">remote_user</span> <span class="o">==</span> <span class="s">&#39;root&#39;</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&#39;Failed to change ownership of the temporary files Ansible needs to create despite connecting as root.  Unprivileged become user would be unable to read the file.&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># Chown&#39;ing failed. We&#39;re probably lacking root privileges; let&#39;s try something else.</span>
+                <span class="k">if</span> <span class="n">execute</span><span class="p">:</span>
+                    <span class="n">mode</span> <span class="o">=</span> <span class="s">&#39;rx&#39;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">mode</span> <span class="o">=</span> <span class="s">&#39;rX&#39;</span>
+                <span class="c"># Try to use fs acls to solve this problem</span>
+                <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remote_set_user_facl</span><span class="p">(</span><span class="n">remote_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become_user</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="n">recursive</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">res</span><span class="p">[</span><span class="s">&#39;rc&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">C</span><span class="o">.</span><span class="n">ALLOW_WORLD_READABLE_TMPFILES</span><span class="p">:</span>
+                        <span class="c"># fs acls failed -- do things this insecure way only</span>
+                        <span class="c"># if the user opted in in the config file</span>
+                        <span class="n">display</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Using world-readable permissions for temporary files Ansible needs to create when becoming an unprivileged user which may be insecure. For information on securing this, see https://docs.ansible.com/ansible/become.html#becoming-an-unprivileged-user&#39;</span><span class="p">)</span>
+                        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remote_chmod</span><span class="p">(</span><span class="s">&#39;a+</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">mode</span><span class="p">,</span> <span class="n">remote_path</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="n">recursive</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">res</span><span class="p">[</span><span class="s">&#39;rc&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&#39;Failed to set file mode on remote files (rc: {0}, err: {1})&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s">&#39;rc&#39;</span><span class="p">],</span> <span class="n">res</span><span class="p">[</span><span class="s">&#39;stderr&#39;</span><span class="p">]))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&#39;Failed to set permissions on the temporary files Ansible needs to create when becoming an unprivileged user. For information on working around this, see https://docs.ansible.com/ansible/become.html#becoming-an-unprivileged-user&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">execute</span><span class="p">:</span>
+            <span class="c"># Can&#39;t depend on the file being transferred with execute</span>
+            <span class="c"># permissions.  Only need user perms because no become was</span>
+            <span class="c"># used here</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remote_chmod</span><span class="p">(</span><span class="s">&#39;u+x&#39;</span><span class="p">,</span> <span class="n">remote_path</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="n">recursive</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">res</span><span class="p">[</span><span class="s">&#39;rc&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&#39;Failed to set file mode on remote files (rc: {0}, err: {1})&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s">&#39;rc&#39;</span><span class="p">],</span> <span class="n">res</span><span class="p">[</span><span class="s">&#39;stderr&#39;</span><span class="p">]))</span>
+
+        <span class="k">return</span> <span class="n">remote_path</span>
+
+    <span class="k">def</span> <span class="nf">_remote_chmod</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Issue a remote chmod command</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">_shell</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="n">recursive</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_low_level_execute_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="n">sudoable</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span>
+
+    <span class="k">def</span> <span class="nf">_remote_chown</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Issue a remote chown command</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">_shell</span><span class="o">.</span><span class="n">chown</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="n">recursive</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_low_level_execute_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="n">sudoable</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span>
+
+    <span class="k">def</span> <span class="nf">_remote_set_user_facl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Issue a remote call to setfacl</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">_shell</span><span class="o">.</span><span class="n">set_user_facl</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="n">recursive</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_low_level_execute_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="n">sudoable</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span>
+
+    <span class="k">def</span> <span class="nf">_execute_remote_stat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">all_vars</span><span class="p">,</span> <span class="n">follow</span><span class="p">,</span> <span class="n">tmp</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get information from remote file.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">module_args</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+           <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span>
+           <span class="n">follow</span><span class="o">=</span><span class="n">follow</span><span class="p">,</span>
+           <span class="n">get_md5</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+           <span class="n">get_checksum</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+           <span class="n">checksum_algo</span><span class="o">=</span><span class="s">&#39;sha1&#39;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">mystat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_execute_module</span><span class="p">(</span><span class="n">module_name</span><span class="o">=</span><span class="s">&#39;stat&#39;</span><span class="p">,</span> <span class="n">module_args</span><span class="o">=</span><span class="n">module_args</span><span class="p">,</span> <span class="n">task_vars</span><span class="o">=</span><span class="n">all_vars</span><span class="p">,</span> <span class="n">tmp</span><span class="o">=</span><span class="n">tmp</span><span class="p">,</span> <span class="n">delete_remote_tmp</span><span class="o">=</span><span class="p">(</span><span class="n">tmp</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="s">&#39;failed&#39;</span> <span class="ow">in</span> <span class="n">mystat</span> <span class="ow">and</span> <span class="n">mystat</span><span class="p">[</span><span class="s">&#39;failed&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&#39;Failed to get information on remote file (</span><span class="si">%s</span><span class="s">): </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mystat</span><span class="p">[</span><span class="s">&#39;msg&#39;</span><span class="p">]))</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">mystat</span><span class="p">[</span><span class="s">&#39;stat&#39;</span><span class="p">][</span><span class="s">&#39;exists&#39;</span><span class="p">]:</span>
+            <span class="c"># empty might be matched, 1 should never match, also backwards compatible</span>
+            <span class="n">mystat</span><span class="p">[</span><span class="s">&#39;stat&#39;</span><span class="p">][</span><span class="s">&#39;checksum&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;1&#39;</span>
+
+        <span class="c"># happens sometimes when it is a dir and not on bsd</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;checksum&#39;</span> <span class="ow">in</span> <span class="n">mystat</span><span class="p">[</span><span class="s">&#39;stat&#39;</span><span class="p">]:</span>
+            <span class="n">mystat</span><span class="p">[</span><span class="s">&#39;stat&#39;</span><span class="p">][</span><span class="s">&#39;checksum&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+
+        <span class="k">return</span> <span class="n">mystat</span><span class="p">[</span><span class="s">&#39;stat&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_remote_checksum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">all_vars</span><span class="p">,</span> <span class="n">follow</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Produces a remote checksum given a path,</span>
+<span class="sd">        Returns a number 0-4 for specific errors instead of checksum, also ensures it is different</span>
+<span class="sd">        0 = unknown error</span>
+<span class="sd">        1 = file does not exist, this might not be an error</span>
+<span class="sd">        2 = permissions issue</span>
+<span class="sd">        3 = its a directory, not a file</span>
+<span class="sd">        4 = stat module failed, likely due to not finding python</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="s">&quot;0&quot;</span> <span class="c"># unknown error has occured</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">remote_stat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_execute_remote_stat</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">all_vars</span><span class="p">,</span> <span class="n">follow</span><span class="o">=</span><span class="n">follow</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">remote_stat</span><span class="p">[</span><span class="s">&#39;exists&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">remote_stat</span><span class="p">[</span><span class="s">&#39;isdir&#39;</span><span class="p">]:</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="s">&quot;3&quot;</span> <span class="c"># its a directory not a file</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">remote_stat</span><span class="p">[</span><span class="s">&#39;checksum&#39;</span><span class="p">]</span> <span class="c"># if 1, file is missing</span>
+        <span class="k">except</span> <span class="n">AnsibleError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">errormsg</span> <span class="o">=</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">errormsg</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;Permission denied&#39;</span><span class="p">):</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="s">&quot;2&quot;</span> <span class="c"># cannot read file</span>
+            <span class="k">elif</span> <span class="n">errormsg</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;MODULE FAILURE&#39;</span><span class="p">):</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="s">&quot;4&quot;</span> <span class="c"># python not found or module uncaught exception</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">x</span>
+
+
+    <span class="k">def</span> <span class="nf">_remote_expand_user</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; takes a remote path and performs tilde expansion on the remote host &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;~&#39;</span><span class="p">):</span> <span class="c"># FIXME: Windows paths may start with &quot;~ instead of just ~</span>
+            <span class="k">return</span> <span class="n">path</span>
+
+        <span class="c"># FIXME: Can&#39;t use os.path.sep for Windows paths.</span>
+        <span class="n">split_path</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sep</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">expand_path</span> <span class="o">=</span> <span class="n">split_path</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">expand_path</span> <span class="o">==</span> <span class="s">&#39;~&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become_user</span><span class="p">:</span>
+                <span class="n">expand_path</span> <span class="o">=</span> <span class="s">&#39;~</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become_user</span>
+
+        <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">_shell</span><span class="o">.</span><span class="n">expand_user</span><span class="p">(</span><span class="n">expand_path</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_low_level_execute_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="c">#initial_fragment = utils.last_non_blank_line(data[&#39;stdout&#39;])</span>
+        <span class="n">initial_fragment</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;stdout&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">initial_fragment</span><span class="p">:</span>
+            <span class="c"># Something went wrong trying to expand the path remotely.  Return</span>
+            <span class="c"># the original string</span>
+            <span class="k">return</span> <span class="n">path</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">split_path</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">_shell</span><span class="o">.</span><span class="n">join_path</span><span class="p">(</span><span class="n">initial_fragment</span><span class="p">,</span> <span class="o">*</span><span class="n">split_path</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">initial_fragment</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_filter_non_json_lines</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Used to avoid random output from SSH at the top of JSON output, like messages from</span>
+<span class="sd">        tcagetattr, or where dropbear spews MOTD on every single command (which is nuts).</span>
+
+<span class="sd">        need to filter anything which does not start with &#39;{&#39;, &#39;[&#39;, or is an empty line.</span>
+<span class="sd">        Have to be careful how we filter trailing junk as multiline JSON is valid.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c"># Filter initial junk</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">u&#39;{&#39;</span><span class="p">):</span>
+                <span class="n">endchar</span> <span class="o">=</span> <span class="s">u&#39;}&#39;</span>
+                <span class="k">break</span>
+            <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">u&#39;[&#39;</span><span class="p">):</span>
+                <span class="n">endchar</span> <span class="o">=</span> <span class="s">u&#39;]&#39;</span>
+                <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;No start of json char found&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;No start of json char found&#39;</span><span class="p">)</span>
+
+        <span class="c"># Filter trailing junk</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="n">start</span><span class="p">:]</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">end</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">endchar</span><span class="p">):</span>
+                <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;No end of json char found&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;No end of json char found&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">end</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c"># Trailing junk is uncommon and can point to things the user might</span>
+            <span class="c"># want to change.  So print a warning if we find any</span>
+            <span class="n">trailing_junk</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[:</span><span class="n">end</span><span class="p">]</span>
+            <span class="n">trailing_junk</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Module invocation had junk after the JSON data: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">trailing_junk</span><span class="p">))</span>
+
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="n">end</span><span class="p">:]</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+        <span class="k">return</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_strip_success_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Removes the BECOME-SUCCESS message from the data.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;BECOME-SUCCESS-&#39;</span><span class="p">):</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">r&#39;^((\r)?\n)?BECOME-SUCCESS.*(\r)?\n&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span>
+
+    <span class="k">def</span> <span class="nf">_execute_module</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module_name</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">module_args</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">tmp</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">task_vars</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">persist_files</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">delete_remote_tmp</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Transfer and run a module along with its arguments.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">task_vars</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">task_vars</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+        <span class="c"># if a module name was not specified for this execution, use</span>
+        <span class="c"># the action from the task</span>
+        <span class="k">if</span> <span class="n">module_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">module_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">action</span>
+        <span class="k">if</span> <span class="n">module_args</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">module_args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">args</span>
+
+        <span class="c"># set check mode in the module arguments, if required</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">check_mode</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_supports_check_mode</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;check mode is not supported for this operation&quot;</span><span class="p">)</span>
+            <span class="n">module_args</span><span class="p">[</span><span class="s">&#39;_ansible_check_mode&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">module_args</span><span class="p">[</span><span class="s">&#39;_ansible_check_mode&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="c"># Get the connection user for permission checks</span>
+        <span class="n">remote_user</span> <span class="o">=</span> <span class="n">task_vars</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ansible_ssh_user&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_user</span>
+
+        <span class="c"># set no log in the module arguments, if required</span>
+        <span class="n">module_args</span><span class="p">[</span><span class="s">&#39;_ansible_no_log&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">no_log</span> <span class="ow">or</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_NO_TARGET_SYSLOG</span>
+
+        <span class="c"># set debug in the module arguments, if required</span>
+        <span class="n">module_args</span><span class="p">[</span><span class="s">&#39;_ansible_debug&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_DEBUG</span>
+
+        <span class="c"># let module know we are in diff mode</span>
+        <span class="n">module_args</span><span class="p">[</span><span class="s">&#39;_ansible_diff&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">diff</span>
+
+        <span class="c"># let module know our verbosity</span>
+        <span class="n">module_args</span><span class="p">[</span><span class="s">&#39;_ansible_verbosity&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">display</span><span class="o">.</span><span class="n">verbosity</span>
+
+        <span class="c"># give the module information about the ansible version</span>
+        <span class="n">module_args</span><span class="p">[</span><span class="s">&#39;_ansible_version&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">__version__</span>
+
+        <span class="c"># give the module information about its name</span>
+        <span class="n">module_args</span><span class="p">[</span><span class="s">&#39;_ansible_module_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">module_name</span>
+
+        <span class="c"># set the syslog facility to be used in the module</span>
+        <span class="n">module_args</span><span class="p">[</span><span class="s">&#39;_ansible_syslog_facility&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">task_vars</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ansible_syslog_facility&#39;</span><span class="p">,</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_SYSLOG_FACILITY</span><span class="p">)</span>
+
+        <span class="c"># let module know about filesystems that selinux treats specially</span>
+        <span class="n">module_args</span><span class="p">[</span><span class="s">&#39;_ansible_selinux_special_fs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_SELINUX_SPECIAL_FS</span>
+
+        <span class="p">(</span><span class="n">module_style</span><span class="p">,</span> <span class="n">shebang</span><span class="p">,</span> <span class="n">module_data</span><span class="p">,</span> <span class="n">module_path</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_configure_module</span><span class="p">(</span><span class="n">module_name</span><span class="o">=</span><span class="n">module_name</span><span class="p">,</span> <span class="n">module_args</span><span class="o">=</span><span class="n">module_args</span><span class="p">,</span> <span class="n">task_vars</span><span class="o">=</span><span class="n">task_vars</span><span class="p">)</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">vvv</span><span class="p">(</span><span class="s">&quot;Using module file </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">module_path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">shebang</span> <span class="ow">and</span> <span class="n">module_style</span> <span class="o">!=</span> <span class="s">&#39;binary&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;module (</span><span class="si">%s</span><span class="s">) is missing interpreter line&quot;</span> <span class="o">%</span> <span class="n">module_name</span><span class="p">)</span>
+
+        <span class="c"># a remote tmp path may be necessary and not already created</span>
+        <span class="n">remote_module_path</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">args_file_path</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">tmp</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_late_needs_tmp_path</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">module_style</span><span class="p">):</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_tmp_path</span><span class="p">(</span><span class="n">remote_user</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">tmp</span><span class="p">:</span>
+            <span class="n">remote_module_filename</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">_shell</span><span class="o">.</span><span class="n">get_remote_filename</span><span class="p">(</span><span class="n">module_path</span><span class="p">)</span>
+            <span class="n">remote_module_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">_shell</span><span class="o">.</span><span class="n">join_path</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">remote_module_filename</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">module_style</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;old&#39;</span><span class="p">,</span> <span class="s">&#39;non_native_want_json&#39;</span><span class="p">,</span> <span class="s">&#39;binary&#39;</span><span class="p">):</span>
+                <span class="c"># we&#39;ll also need a temp file to hold our module arguments</span>
+                <span class="n">args_file_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">_shell</span><span class="o">.</span><span class="n">join_path</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="s">&#39;args&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">remote_module_path</span> <span class="ow">or</span> <span class="n">module_style</span> <span class="o">!=</span> <span class="s">&#39;new&#39;</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;transferring module to remote </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">remote_module_path</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">module_style</span> <span class="o">==</span> <span class="s">&#39;binary&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_transfer_file</span><span class="p">(</span><span class="n">module_path</span><span class="p">,</span> <span class="n">remote_module_path</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_transfer_data</span><span class="p">(</span><span class="n">remote_module_path</span><span class="p">,</span> <span class="n">module_data</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">module_style</span> <span class="o">==</span> <span class="s">&#39;old&#39;</span><span class="p">:</span>
+                <span class="c"># we need to dump the module args to a k=v string in a file on</span>
+                <span class="c"># the remote system, which can be read and parsed by the module</span>
+                <span class="n">args_data</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="n">module_args</span><span class="p">):</span>
+                    <span class="n">args_data</span> <span class="o">+=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">=&quot;</span><span class="si">%s</span><span class="s">&quot; &#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">pipes</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">text_type</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_transfer_data</span><span class="p">(</span><span class="n">args_file_path</span><span class="p">,</span> <span class="n">args_data</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">module_style</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;non_native_want_json&#39;</span><span class="p">,</span> <span class="s">&#39;binary&#39;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_transfer_data</span><span class="p">(</span><span class="n">args_file_path</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">module_args</span><span class="p">))</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;done transferring module to remote&quot;</span><span class="p">)</span>
+
+        <span class="n">environment_string</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_environment_string</span><span class="p">()</span>
+
+        <span class="c"># Fix permissions of the tmp path and tmp files.  This should be</span>
+        <span class="c"># called after all files have been transferred.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fixup_perms</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">remote_user</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+        <span class="n">cmd</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+        <span class="n">in_data</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">has_pipelining</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">pipelining</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_KEEP_REMOTE_FILES</span> <span class="ow">and</span> <span class="n">module_style</span> <span class="o">==</span> <span class="s">&#39;new&#39;</span><span class="p">:</span>
+            <span class="n">in_data</span> <span class="o">=</span> <span class="n">module_data</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">remote_module_path</span><span class="p">:</span>
+                <span class="n">cmd</span> <span class="o">=</span> <span class="n">remote_module_path</span>
+
+        <span class="n">rm_tmp</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">tmp</span> <span class="ow">and</span> <span class="s">&quot;tmp&quot;</span> <span class="ow">in</span> <span class="n">tmp</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_KEEP_REMOTE_FILES</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">persist_files</span> <span class="ow">and</span> <span class="n">delete_remote_tmp</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become_user</span> <span class="o">==</span> <span class="s">&#39;root&#39;</span><span class="p">:</span>
+                <span class="c"># not sudoing or sudoing to root, so can cleanup files in the same step</span>
+                <span class="n">rm_tmp</span> <span class="o">=</span> <span class="n">tmp</span>
+
+        <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">_shell</span><span class="o">.</span><span class="n">build_module_command</span><span class="p">(</span><span class="n">environment_string</span><span class="p">,</span> <span class="n">shebang</span><span class="p">,</span> <span class="n">cmd</span><span class="p">,</span> <span class="n">arg_path</span><span class="o">=</span><span class="n">args_file_path</span><span class="p">,</span> <span class="n">rm_tmp</span><span class="o">=</span><span class="n">rm_tmp</span><span class="p">)</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="n">cmd</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+        <span class="n">sudoable</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">if</span> <span class="n">module_name</span> <span class="o">==</span> <span class="s">&quot;accelerate&quot;</span><span class="p">:</span>
+            <span class="c"># always run the accelerate module as the user</span>
+            <span class="c"># specified in the play, not the sudo_user</span>
+            <span class="n">sudoable</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_low_level_execute_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="n">sudoable</span><span class="p">,</span> <span class="n">in_data</span><span class="o">=</span><span class="n">in_data</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">tmp</span> <span class="ow">and</span> <span class="s">&quot;tmp&quot;</span> <span class="ow">in</span> <span class="n">tmp</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_KEEP_REMOTE_FILES</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">persist_files</span> <span class="ow">and</span> <span class="n">delete_remote_tmp</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become_user</span> <span class="o">!=</span> <span class="s">&#39;root&#39;</span><span class="p">:</span>
+                <span class="c"># not sudoing to root, so maybe can&#39;t delete files as that other user</span>
+                <span class="c"># have to clean up temp files as original user in a second step</span>
+                <span class="n">tmp_rm_cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">_shell</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">recurse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                <span class="n">tmp_rm_res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_low_level_execute_command</span><span class="p">(</span><span class="n">tmp_rm_cmd</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+                <span class="n">tmp_rm_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_returned_data</span><span class="p">(</span><span class="n">tmp_rm_res</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">tmp_rm_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;rc&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Error deleting remote temporary files (rc: {0}, stderr: {1})&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tmp_rm_res</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;rc&#39;</span><span class="p">),</span> <span class="n">tmp_rm_res</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;stderr&#39;</span><span class="p">,</span> <span class="s">&#39;No error string available.&#39;</span><span class="p">)))</span>
+
+        <span class="c"># parse the main result</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_returned_data</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+
+        <span class="c"># pre-split stdout into lines, if stdout is in the data and there</span>
+        <span class="c"># isn&#39;t already a stdout_lines value there</span>
+        <span class="k">if</span> <span class="s">&#39;stdout&#39;</span> <span class="ow">in</span> <span class="n">data</span> <span class="ow">and</span> <span class="s">&#39;stdout_lines&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s">&#39;stdout_lines&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;stdout&#39;</span><span class="p">,</span> <span class="s">u&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;done with _execute_module (</span><span class="si">%s</span><span class="s">, </span><span class="si">%s</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">module_name</span><span class="p">,</span> <span class="n">module_args</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">data</span>
+
+    <span class="k">def</span> <span class="nf">_parse_returned_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">res</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_filter_non_json_lines</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;stdout&#39;</span><span class="p">,</span> <span class="s">u&#39;&#39;</span><span class="p">)))</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="c"># not valid json, lets try to capture error</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">failed</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">parsed</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+            <span class="n">data</span><span class="p">[</span><span class="s">&#39;msg&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;MODULE FAILURE&quot;</span>
+            <span class="n">data</span><span class="p">[</span><span class="s">&#39;module_stdout&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;stdout&#39;</span><span class="p">,</span> <span class="s">u&#39;&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s">&#39;stderr&#39;</span> <span class="ow">in</span> <span class="n">res</span><span class="p">:</span>
+                <span class="n">data</span><span class="p">[</span><span class="s">&#39;module_stderr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="s">&#39;stderr&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">res</span><span class="p">[</span><span class="s">&#39;stderr&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">u&#39;Traceback&#39;</span><span class="p">):</span>
+                    <span class="n">data</span><span class="p">[</span><span class="s">&#39;exception&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="s">&#39;stderr&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">data</span>
+
+    <span class="k">def</span> <span class="nf">_low_level_execute_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">in_data</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">executable</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">encoding_errors</span><span class="o">=</span><span class="s">&#39;replace&#39;</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This is the function which executes the low level shell command, which</span>
+<span class="sd">        may be commands to create/remove directories for temporary files, or to</span>
+<span class="sd">        run the module code or python directly when pipelining.</span>
+
+<span class="sd">        :kwarg encoding_errors: If the value returned by the command isn&#39;t</span>
+<span class="sd">            utf-8 then we have to figure out how to transform it to unicode.</span>
+<span class="sd">            If the value is just going to be displayed to the user (or</span>
+<span class="sd">            discarded) then the default of &#39;replace&#39; is fine.  If the data is</span>
+<span class="sd">            used as a key or is going to be written back out to a file</span>
+<span class="sd">            verbatim, then this won&#39;t work.  May have to use some sort of</span>
+<span class="sd">            replacement strategy (python3 could use surrogateescape)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;_low_level_execute_command(): starting&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cmd</span><span class="p">:</span>
+            <span class="c"># this can happen with powershell modules when there is no analog to a Windows command (like chmod)</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;_low_level_execute_command(): no command, exiting&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">stdout</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">rc</span><span class="o">=</span><span class="mi">254</span><span class="p">)</span>
+
+        <span class="n">allow_same_user</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">BECOME_ALLOW_SAME_USER</span>
+        <span class="n">same_user</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become_user</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_user</span>
+        <span class="k">if</span> <span class="n">sudoable</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become</span> <span class="ow">and</span> <span class="p">(</span><span class="n">allow_same_user</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">same_user</span><span class="p">):</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;_low_level_execute_command(): using become for this command&quot;</span><span class="p">)</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">make_become_cmd</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">executable</span><span class="o">=</span><span class="n">executable</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">allow_executable</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">executable</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">executable</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">executable</span>
+                <span class="c"># mitigation for SSH race which can drop stdout (https://github.com/ansible/ansible/issues/13876)</span>
+                <span class="c"># only applied for the default executable to avoid interfering with the raw action</span>
+                <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">_shell</span><span class="o">.</span><span class="n">append_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="s">&#39;sleep 0&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">executable</span><span class="p">:</span>
+                <span class="n">cmd</span> <span class="o">=</span> <span class="n">executable</span> <span class="o">+</span> <span class="s">&#39; -c &#39;</span> <span class="o">+</span> <span class="n">pipes</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;_low_level_execute_command(): executing: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">cmd</span><span class="p">,))</span>
+        <span class="n">rc</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">exec_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">in_data</span><span class="o">=</span><span class="n">in_data</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="n">sudoable</span><span class="p">)</span>
+
+        <span class="c"># stdout and stderr may be either a file-like or a bytes object.</span>
+        <span class="c"># Convert either one to a text type</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span> <span class="n">binary_type</span><span class="p">):</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="n">encoding_errors</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span> <span class="n">text_type</span><span class="p">):</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">b</span><span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">stdout</span><span class="o">.</span><span class="n">readlines</span><span class="p">()),</span> <span class="n">errors</span><span class="o">=</span><span class="n">encoding_errors</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">stdout</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="n">binary_type</span><span class="p">):</span>
+            <span class="n">err</span> <span class="o">=</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="n">encoding_errors</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="n">text_type</span><span class="p">):</span>
+            <span class="n">err</span> <span class="o">=</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">b</span><span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">stderr</span><span class="o">.</span><span class="n">readlines</span><span class="p">()),</span> <span class="n">errors</span><span class="o">=</span><span class="n">encoding_errors</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">err</span> <span class="o">=</span> <span class="n">stderr</span>
+
+        <span class="k">if</span> <span class="n">rc</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">rc</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c"># be sure to remove the BECOME-SUCCESS message now</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strip_success_message</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;_low_level_execute_command() done: rc=</span><span class="si">%d</span><span class="s">, stdout=</span><span class="si">%s</span><span class="s">, stderr=</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">rc</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">rc</span><span class="o">=</span><span class="n">rc</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">out</span><span class="p">,</span> <span class="n">stdout_lines</span><span class="o">=</span><span class="n">out</span><span class="o">.</span><span class="n">splitlines</span><span class="p">(),</span> <span class="n">stderr</span><span class="o">=</span><span class="n">err</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_first_available_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">faf</span><span class="p">,</span> <span class="n">of</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">searchdir</span><span class="o">=</span><span class="s">&#39;files&#39;</span><span class="p">):</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">deprecated</span><span class="p">(</span><span class="s">&quot;first_available_file, use with_first_found or lookup(&#39;first_found&#39;,...) instead&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">fn</span> <span class="ow">in</span> <span class="n">faf</span><span class="p">:</span>
+            <span class="n">fnt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">_role</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">lead</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">_role</span><span class="o">.</span><span class="n">_role_path</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">lead</span> <span class="o">=</span> <span class="n">fnt</span>
+            <span class="n">fnd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="o">.</span><span class="n">path_dwim_relative</span><span class="p">(</span><span class="n">lead</span><span class="p">,</span> <span class="n">searchdir</span><span class="p">,</span> <span class="n">fnt</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fnd</span><span class="p">)</span> <span class="ow">and</span> <span class="n">of</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">_role</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">lead</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">_role</span><span class="o">.</span><span class="n">_role_path</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">lead</span> <span class="o">=</span> <span class="n">of</span>
+                <span class="n">fnd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="o">.</span><span class="n">path_dwim_relative</span><span class="p">(</span><span class="n">lead</span><span class="p">,</span> <span class="n">searchdir</span><span class="p">,</span> <span class="n">of</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fnd</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">fnd</span>
+
+        <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">_get_diff_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">destination</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">task_vars</span><span class="p">,</span> <span class="n">source_file</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+
+        <span class="n">diff</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;Going to peek to see if file has changed permissions&quot;</span><span class="p">)</span>
+        <span class="n">peek_result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_execute_module</span><span class="p">(</span><span class="n">module_name</span><span class="o">=</span><span class="s">&#39;file&#39;</span><span class="p">,</span> <span class="n">module_args</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">destination</span><span class="p">,</span> <span class="n">diff_peek</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span> <span class="n">task_vars</span><span class="o">=</span><span class="n">task_vars</span><span class="p">,</span> <span class="n">persist_files</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span><span class="p">(</span><span class="s">&#39;failed&#39;</span> <span class="ow">in</span> <span class="n">peek_result</span> <span class="ow">and</span> <span class="n">peek_result</span><span class="p">[</span><span class="s">&#39;failed&#39;</span><span class="p">])</span> <span class="ow">or</span> <span class="n">peek_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;rc&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+
+            <span class="k">if</span> <span class="n">peek_result</span><span class="p">[</span><span class="s">&#39;state&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;absent&#39;</span><span class="p">:</span>
+                <span class="n">diff</span><span class="p">[</span><span class="s">&#39;before&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+            <span class="k">elif</span> <span class="n">peek_result</span><span class="p">[</span><span class="s">&#39;appears_binary&#39;</span><span class="p">]:</span>
+                <span class="n">diff</span><span class="p">[</span><span class="s">&#39;dst_binary&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">elif</span> <span class="n">C</span><span class="o">.</span><span class="n">MAX_FILE_SIZE_FOR_DIFF</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">peek_result</span><span class="p">[</span><span class="s">&#39;size&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">C</span><span class="o">.</span><span class="n">MAX_FILE_SIZE_FOR_DIFF</span><span class="p">:</span>
+                <span class="n">diff</span><span class="p">[</span><span class="s">&#39;dst_larger&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">MAX_FILE_SIZE_FOR_DIFF</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;Slurping the file </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">source</span><span class="p">)</span>
+                <span class="n">dest_result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_execute_module</span><span class="p">(</span><span class="n">module_name</span><span class="o">=</span><span class="s">&#39;slurp&#39;</span><span class="p">,</span> <span class="n">module_args</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">destination</span><span class="p">),</span> <span class="n">task_vars</span><span class="o">=</span><span class="n">task_vars</span><span class="p">,</span> <span class="n">persist_files</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s">&#39;content&#39;</span> <span class="ow">in</span> <span class="n">dest_result</span><span class="p">:</span>
+                    <span class="n">dest_contents</span> <span class="o">=</span> <span class="n">dest_result</span><span class="p">[</span><span class="s">&#39;content&#39;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">dest_result</span><span class="p">[</span><span class="s">&#39;encoding&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;base64&#39;</span><span class="p">:</span>
+                        <span class="n">dest_contents</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">dest_contents</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;unknown encoding in content option, failed: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">dest_result</span><span class="p">)</span>
+                    <span class="n">diff</span><span class="p">[</span><span class="s">&#39;before_header&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">destination</span>
+                    <span class="n">diff</span><span class="p">[</span><span class="s">&#39;before&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dest_contents</span>
+
+            <span class="k">if</span> <span class="n">source_file</span><span class="p">:</span>
+                <span class="n">st</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">C</span><span class="o">.</span><span class="n">MAX_FILE_SIZE_FOR_DIFF</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">st</span><span class="p">[</span><span class="n">stat</span><span class="o">.</span><span class="n">ST_SIZE</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">C</span><span class="o">.</span><span class="n">MAX_FILE_SIZE_FOR_DIFF</span><span class="p">:</span>
+                    <span class="n">diff</span><span class="p">[</span><span class="s">&#39;src_larger&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">MAX_FILE_SIZE_FOR_DIFF</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;Reading local copy of the file </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">source</span><span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">src</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+                        <span class="n">src_contents</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Unexpected error while reading source (</span><span class="si">%s</span><span class="s">) for diff: </span><span class="si">%s</span><span class="s"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+
+                    <span class="k">if</span> <span class="s">&quot;</span><span class="se">\x00</span><span class="s">&quot;</span> <span class="ow">in</span> <span class="n">src_contents</span><span class="p">:</span>
+                        <span class="n">diff</span><span class="p">[</span><span class="s">&#39;src_binary&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">diff</span><span class="p">[</span><span class="s">&#39;after_header&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">source</span>
+                        <span class="n">diff</span><span class="p">[</span><span class="s">&#39;after&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">src_contents</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;source of file passed in&quot;</span><span class="p">)</span>
+                <span class="n">diff</span><span class="p">[</span><span class="s">&#39;after_header&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;dynamically generated&#39;</span>
+                <span class="n">diff</span><span class="p">[</span><span class="s">&#39;after&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">source</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">no_log</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s">&#39;before&#39;</span> <span class="ow">in</span> <span class="n">diff</span><span class="p">:</span>
+                <span class="n">diff</span><span class="p">[</span><span class="s">&quot;before&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+            <span class="k">if</span> <span class="s">&#39;after&#39;</span> <span class="ow">in</span> <span class="n">diff</span><span class="p">:</span>
+                <span class="n">diff</span><span class="p">[</span><span class="s">&quot;after&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot; [[ Diff output has been hidden because &#39;no_log: true&#39; was specified for this result ]]&quot;</span>
+
+        <span class="k">return</span> <span class="n">diff</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

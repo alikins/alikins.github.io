@@ -1,0 +1,408 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.plugins.connection.lxc &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="ansible.plugins.connection" href="../connection.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../../plugins.html">ansible.plugins</a> &raquo;</li>
+      
+          <li><a href="../connection.html">ansible.plugins.connection</a> &raquo;</li>
+      
+    <li>ansible.plugins.connection.lxc</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.plugins.connection.lxc</h1><div class="highlight"><pre>
+<span class="c"># (c) 2015, Joerg Thalheim &lt;joerg@higgsboson.tk&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+<span class="kn">import</span> <span class="nn">select</span>
+<span class="kn">import</span> <span class="nn">fcntl</span>
+<span class="kn">import</span> <span class="nn">errno</span>
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">errors</span>
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.plugins.connection</span> <span class="kn">import</span> <span class="n">ConnectionBase</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.unicode</span> <span class="kn">import</span> <span class="n">to_bytes</span>
+
+<span class="n">HAS_LIBLXC</span> <span class="o">=</span> <span class="bp">False</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">lxc</span> <span class="kn">as</span> <span class="nn">_lxc</span>
+    <span class="n">HAS_LIBLXC</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+<div class="viewcode-block" id="Connection"><a class="viewcode-back" href="../../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.lxc.Connection">[docs]</a><span class="k">class</span> <span class="nc">Connection</span><span class="p">(</span><span class="n">ConnectionBase</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Local lxc based connections &#39;&#39;&#39;</span>
+
+    <span class="n">transport</span> <span class="o">=</span> <span class="s">&#39;lxc&#39;</span>
+    <span class="n">has_pipelining</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="n">become_methods</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">BECOME_METHODS</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">play_context</span><span class="p">,</span> <span class="n">new_stdin</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Connection</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">play_context</span><span class="p">,</span> <span class="n">new_stdin</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">container_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_addr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">container</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">_connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; connect to the lxc; nothing to do here &#39;&#39;&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Connection</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_connect</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">HAS_LIBLXC</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;lxc bindings for python2 are not installed&quot;</span>
+            <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">vvv</span><span class="p">(</span><span class="s">&quot;THIS IS A LOCAL LXC DIR&quot;</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">container_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">container</span> <span class="o">=</span> <span class="n">_lxc</span><span class="o">.</span><span class="n">Container</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">container_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="s">&quot;STOPPED&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> is not running&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">container_name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_communicate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">in_data</span><span class="p">,</span> <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">):</span>
+        <span class="n">buf</span> <span class="o">=</span> <span class="p">{</span> <span class="n">stdout</span><span class="p">:</span> <span class="p">[],</span> <span class="n">stderr</span><span class="p">:</span> <span class="p">[]</span> <span class="p">}</span>
+        <span class="n">read_fds</span> <span class="o">=</span> <span class="p">[</span><span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">in_data</span><span class="p">:</span>
+            <span class="n">write_fds</span> <span class="o">=</span> <span class="p">[</span><span class="n">stdin</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">write_fds</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">read_fds</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">write_fds</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">ready_reads</span><span class="p">,</span> <span class="n">ready_writes</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">read_fds</span><span class="p">,</span> <span class="n">write_fds</span><span class="p">,</span> <span class="p">[])</span>
+            <span class="k">except</span> <span class="n">select</span><span class="o">.</span><span class="n">error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">errno</span><span class="o">.</span><span class="n">EINTR</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">raise</span>
+            <span class="k">for</span> <span class="n">fd</span> <span class="ow">in</span> <span class="n">ready_writes</span><span class="p">:</span>
+                <span class="n">in_data</span> <span class="o">=</span> <span class="n">in_data</span><span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">in_data</span><span class="p">):]</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">in_data</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">write_fds</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">fd</span> <span class="ow">in</span> <span class="n">ready_reads</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="mi">32768</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+                    <span class="n">read_fds</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+                <span class="n">buf</span><span class="p">[</span><span class="n">fd</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">returncode</span><span class="p">)</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">waitpid</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">returncode</span><span class="p">,</span> <span class="n">b</span><span class="s">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">buf</span><span class="p">[</span><span class="n">stdout</span><span class="p">]),</span> <span class="n">b</span><span class="s">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">buf</span><span class="p">[</span><span class="n">stderr</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">_set_nonblocking</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fd</span><span class="p">):</span>
+        <span class="n">flags</span> <span class="o">=</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">fcntl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">F_GETFL</span><span class="p">)</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">O_NONBLOCK</span>
+        <span class="n">fcntl</span><span class="o">.</span><span class="n">fcntl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">F_SETFL</span><span class="p">,</span> <span class="n">flags</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">fd</span>
+
+<div class="viewcode-block" id="Connection.exec_command"><a class="viewcode-back" href="../../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.lxc.Connection.exec_command">[docs]</a>    <span class="k">def</span> <span class="nf">exec_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">,</span> <span class="n">in_data</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; run a command on the chroot &#39;&#39;&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Connection</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">exec_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">in_data</span><span class="o">=</span><span class="n">in_data</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="n">sudoable</span><span class="p">)</span>
+
+        <span class="n">executable</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">executable</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+        <span class="n">local_cmd</span> <span class="o">=</span> <span class="p">[</span><span class="n">executable</span><span class="p">,</span> <span class="s">&#39;-c&#39;</span><span class="p">,</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)]</span>
+
+        <span class="n">read_stdout</span><span class="p">,</span> <span class="n">write_stdout</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span>
+        <span class="n">read_stderr</span><span class="p">,</span> <span class="n">write_stderr</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span>
+        <span class="n">read_stdin</span><span class="p">,</span> <span class="n">write_stdin</span>   <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">read_stdout</span><span class="p">,</span> <span class="n">write_stdout</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">pipe</span><span class="p">()</span>
+            <span class="n">read_stderr</span><span class="p">,</span> <span class="n">write_stderr</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">pipe</span><span class="p">()</span>
+
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s">&#39;stdout&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_nonblocking</span><span class="p">(</span><span class="n">write_stdout</span><span class="p">),</span>
+                <span class="s">&#39;stderr&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_nonblocking</span><span class="p">(</span><span class="n">write_stderr</span><span class="p">),</span>
+                <span class="s">&#39;env_policy&#39;</span><span class="p">:</span> <span class="n">_lxc</span><span class="o">.</span><span class="n">LXC_ATTACH_CLEAR_ENV</span>
+            <span class="p">}</span>
+
+            <span class="k">if</span> <span class="n">in_data</span><span class="p">:</span>
+                <span class="n">read_stdin</span><span class="p">,</span> <span class="n">write_stdin</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">pipe</span><span class="p">()</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;stdin&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_nonblocking</span><span class="p">(</span><span class="n">read_stdin</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">vvv</span><span class="p">(</span><span class="s">&quot;EXEC </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">local_cmd</span><span class="p">),</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">container_name</span><span class="p">)</span>
+            <span class="n">pid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="o">.</span><span class="n">attach</span><span class="p">(</span><span class="n">_lxc</span><span class="o">.</span><span class="n">attach_run_command</span><span class="p">,</span> <span class="n">local_cmd</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">pid</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;failed to attach to container </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">container_name</span>
+                <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+            <span class="n">write_stdout</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">write_stdout</span><span class="p">)</span>
+            <span class="n">write_stderr</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">write_stderr</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">read_stdin</span><span class="p">:</span>
+                <span class="n">read_stdin</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">read_stdin</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_communicate</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span>
+                                     <span class="n">in_data</span><span class="p">,</span>
+                                     <span class="n">write_stdin</span><span class="p">,</span>
+                                     <span class="n">read_stdout</span><span class="p">,</span>
+                                     <span class="n">read_stderr</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">fds</span> <span class="o">=</span> <span class="p">[</span><span class="n">read_stdout</span><span class="p">,</span>
+                   <span class="n">write_stdout</span><span class="p">,</span>
+                   <span class="n">read_stderr</span><span class="p">,</span>
+                   <span class="n">write_stderr</span><span class="p">,</span>
+                   <span class="n">read_stdin</span><span class="p">,</span>
+                   <span class="n">write_stdin</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">fd</span> <span class="ow">in</span> <span class="n">fds</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">fd</span><span class="p">:</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Connection.put_file"><a class="viewcode-back" href="../../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.lxc.Connection.put_file">[docs]</a>    <span class="k">def</span> <span class="nf">put_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_path</span><span class="p">,</span> <span class="n">out_path</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; transfer a file from local to lxc &#39;&#39;&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Connection</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">put_file</span><span class="p">(</span><span class="n">in_path</span><span class="p">,</span> <span class="n">out_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">vvv</span><span class="p">(</span><span class="s">&quot;PUT </span><span class="si">%s</span><span class="s"> TO </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">in_path</span><span class="p">,</span> <span class="n">out_path</span><span class="p">),</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">container_name</span><span class="p">)</span>
+        <span class="n">in_path</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">in_path</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+        <span class="n">out_path</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">out_path</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">in_path</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;file or module does not exist: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">in_path</span>
+            <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleFileNotFound</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">src_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">in_path</span><span class="p">,</span> <span class="s">&quot;rb&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+            <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span>
+            <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;failed to open input file to </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">in_path</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">def</span> <span class="nf">write_file</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">out_path</span><span class="p">,</span> <span class="s">&#39;wb+&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">dst_file</span><span class="p">:</span>
+                    <span class="n">shutil</span><span class="o">.</span><span class="n">copyfileobj</span><span class="p">(</span><span class="n">src_file</span><span class="p">,</span> <span class="n">dst_file</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="o">.</span><span class="n">attach_wait</span><span class="p">(</span><span class="n">write_file</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+                <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;failed to transfer file to </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">out_path</span>
+                <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">src_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Connection.fetch_file"><a class="viewcode-back" href="../../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.lxc.Connection.fetch_file">[docs]</a>    <span class="k">def</span> <span class="nf">fetch_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_path</span><span class="p">,</span> <span class="n">out_path</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; fetch a file from lxc to local &#39;&#39;&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Connection</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">fetch_file</span><span class="p">(</span><span class="n">in_path</span><span class="p">,</span> <span class="n">out_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">vvv</span><span class="p">(</span><span class="s">&quot;FETCH </span><span class="si">%s</span><span class="s"> TO </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">in_path</span><span class="p">,</span> <span class="n">out_path</span><span class="p">),</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">container_name</span><span class="p">)</span>
+        <span class="n">in_path</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">in_path</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+        <span class="n">out_path</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">out_path</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">dst_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">out_path</span><span class="p">,</span> <span class="s">&quot;wb&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+            <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;failed to open output file </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">out_path</span>
+            <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">def</span> <span class="nf">write_file</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">in_path</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">src_file</span><span class="p">:</span>
+                        <span class="n">shutil</span><span class="o">.</span><span class="n">copyfileobj</span><span class="p">(</span><span class="n">src_file</span><span class="p">,</span> <span class="n">dst_file</span><span class="p">)</span>
+                <span class="k">finally</span><span class="p">:</span>
+                    <span class="c"># this is needed in the lxc child process</span>
+                    <span class="c"># to flush internal python buffers</span>
+                    <span class="n">dst_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="o">.</span><span class="n">attach_wait</span><span class="p">(</span><span class="n">write_file</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+                <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;failed to transfer file from </span><span class="si">%s</span><span class="s"> to </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">in_path</span><span class="p">,</span> <span class="n">out_path</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">dst_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Connection.close"><a class="viewcode-back" href="../../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.lxc.Connection.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; terminate the connection; nothing to do here &#39;&#39;&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Connection</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connected</span> <span class="o">=</span> <span class="bp">False</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

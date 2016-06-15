@@ -1,0 +1,487 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.galaxy.api &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="ansible.galaxy" href="../galaxy.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../galaxy.html">ansible.galaxy</a> &raquo;</li>
+      
+    <li>ansible.galaxy.api</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.galaxy.api</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+
+<span class="c">########################################################################</span>
+<span class="c">#</span>
+<span class="c"># (C) 2013, James Cammarata &lt;jcammarata@ansible.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+<span class="c">#</span>
+<span class="c">########################################################################</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">urllib</span>
+
+<span class="kn">from</span> <span class="nn">urllib2</span> <span class="kn">import</span> <span class="n">quote</span> <span class="k">as</span> <span class="n">urlquote</span><span class="p">,</span> <span class="n">HTTPError</span>
+
+<span class="kn">import</span> <span class="nn">ansible.constants</span> <span class="kn">as</span> <span class="nn">C</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span>
+<span class="kn">from</span> <span class="nn">ansible.module_utils.urls</span> <span class="kn">import</span> <span class="n">open_url</span>
+<span class="kn">from</span> <span class="nn">ansible.galaxy.token</span> <span class="kn">import</span> <span class="n">GalaxyToken</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.unicode</span> <span class="kn">import</span> <span class="n">to_str</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+<div class="viewcode-block" id="g_connect"><a class="viewcode-back" href="../../../rst/ansible.galaxy.html#ansible.galaxy.api.g_connect">[docs]</a><span class="k">def</span> <span class="nf">g_connect</span><span class="p">(</span><span class="n">method</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; wrapper to lazily initialize connection info to galaxy &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">wrapped</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">initialized</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">vvvv</span><span class="p">(</span><span class="s">&quot;Initial connection to galaxy_server: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api_server</span><span class="p">)</span>
+            <span class="n">server_version</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_server_api_version</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">server_version</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">SUPPORTED_VERSIONS</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Unsupported Galaxy server API version: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">server_version</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">baseurl</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">/api/</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_api_server</span><span class="p">,</span> <span class="n">server_version</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="n">server_version</span> <span class="c"># for future use</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">vvvv</span><span class="p">(</span><span class="s">&quot;Base API: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">baseurl</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">initialized</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="n">method</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">wrapped</span></div>
+
+<div class="viewcode-block" id="GalaxyAPI"><a class="viewcode-back" href="../../../rst/ansible.galaxy.html#ansible.galaxy.api.GalaxyAPI">[docs]</a><span class="k">class</span> <span class="nc">GalaxyAPI</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; This class is meant to be used as a API client for an Ansible Galaxy server &#39;&#39;&#39;</span>
+
+    <span class="n">SUPPORTED_VERSIONS</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;v1&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">galaxy</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">galaxy</span> <span class="o">=</span> <span class="n">galaxy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">token</span> <span class="o">=</span> <span class="n">GalaxyToken</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_api_server</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">GALAXY_SERVER</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_certs</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">galaxy</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">ignore_certs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">baseurl</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialized</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Validate TLS certificates: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_certs</span><span class="p">)</span>
+
+        <span class="c"># set the API server</span>
+        <span class="k">if</span> <span class="n">galaxy</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">api_server</span> <span class="o">!=</span> <span class="n">C</span><span class="o">.</span><span class="n">GALAXY_SERVER</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_api_server</span> <span class="o">=</span> <span class="n">galaxy</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">api_server</span>
+
+
+    <span class="k">def</span> <span class="nf">__auth_header</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">token</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">token</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;No access token. You must first use login to authenticate and obtain an access token.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s">&#39;Authorization&#39;</span><span class="p">:</span> <span class="s">&#39;Token &#39;</span> <span class="o">+</span> <span class="n">token</span><span class="p">}</span>
+
+    <span class="nd">@g_connect</span>
+    <span class="k">def</span> <span class="nf">__call_galaxy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">args</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">headers</span><span class="p">:</span>
+            <span class="n">headers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__auth_header</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">vvv</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="n">resp</span> <span class="o">=</span> <span class="n">open_url</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">args</span><span class="p">,</span> <span class="n">validate_certs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_validate_certs</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">HTTPError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s">&#39;detail&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">data</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">api_server</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api_server</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">validate_certs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_certs</span>
+
+    <span class="k">def</span> <span class="nf">_get_server_api_version</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fetches the Galaxy API current version to ensure</span>
+<span class="sd">        the API server is up and reachable.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">/api/&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api_server</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">return_data</span> <span class="o">=</span><span class="n">open_url</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">validate_certs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_validate_certs</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Failed to get data from the API server (</span><span class="si">%s</span><span class="s">): </span><span class="si">%s</span><span class="s"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">to_str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">return_data</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Could not process data from the API server (</span><span class="si">%s</span><span class="s">): </span><span class="si">%s</span><span class="s"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">to_str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;current_version&#39;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;missing required &#39;current_version&#39; from server response (</span><span class="si">%s</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="n">url</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;current_version&#39;</span><span class="p">]</span>
+
+    <span class="nd">@g_connect</span>
+<div class="viewcode-block" id="GalaxyAPI.authenticate"><a class="viewcode-back" href="../../../rst/ansible.galaxy.html#ansible.galaxy.api.GalaxyAPI.authenticate">[docs]</a>    <span class="k">def</span> <span class="nf">authenticate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">github_token</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve an authentication token</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">/tokens/&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">baseurl</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">urlencode</span><span class="p">({</span><span class="s">&quot;github_token&quot;</span><span class="p">:</span> <span class="n">github_token</span><span class="p">})</span>
+        <span class="n">resp</span> <span class="o">=</span> <span class="n">open_url</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">args</span><span class="p">,</span> <span class="n">validate_certs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_validate_certs</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s">&quot;POST&quot;</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span></div>
+
+<div class="viewcode-block" id="GalaxyAPI.create_import_task"><a class="viewcode-back" href="../../../rst/ansible.galaxy.html#ansible.galaxy.api.GalaxyAPI.create_import_task">[docs]</a>    <span class="k">def</span> <span class="nf">create_import_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">github_user</span><span class="p">,</span> <span class="n">github_repo</span><span class="p">,</span> <span class="n">reference</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Post an import request</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">/imports/&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">baseurl</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">urlencode</span><span class="p">({</span>
+            <span class="s">&quot;github_user&quot;</span><span class="p">:</span> <span class="n">github_user</span><span class="p">,</span>
+            <span class="s">&quot;github_repo&quot;</span><span class="p">:</span> <span class="n">github_repo</span><span class="p">,</span>
+            <span class="s">&quot;github_reference&quot;</span><span class="p">:</span> <span class="n">reference</span> <span class="k">if</span> <span class="n">reference</span> <span class="k">else</span> <span class="s">&quot;&quot;</span>
+        <span class="p">})</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__call_galaxy</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;results&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;results&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">data</span></div>
+
+    <span class="nd">@g_connect</span>
+<div class="viewcode-block" id="GalaxyAPI.get_import_task"><a class="viewcode-back" href="../../../rst/ansible.galaxy.html#ansible.galaxy.api.GalaxyAPI.get_import_task">[docs]</a>    <span class="k">def</span> <span class="nf">get_import_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">github_user</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">github_repo</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check the status of an import task.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">/imports/&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">baseurl</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">task_id</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">?id=</span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="n">task_id</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">github_user</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">github_repo</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">?github_user=</span><span class="si">%s</span><span class="s">&amp;github_repo=</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="n">github_user</span><span class="p">,</span><span class="n">github_repo</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Expected task_id or github_user and github_repo&quot;</span><span class="p">)</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__call_galaxy</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;results&#39;</span><span class="p">]</span></div>
+
+    <span class="nd">@g_connect</span>
+<div class="viewcode-block" id="GalaxyAPI.lookup_role_by_name"><a class="viewcode-back" href="../../../rst/ansible.galaxy.html#ansible.galaxy.api.GalaxyAPI.lookup_role_by_name">[docs]</a>    <span class="k">def</span> <span class="nf">lookup_role_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">role_name</span><span class="p">,</span> <span class="n">notify</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find a role by name.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">role_name</span> <span class="o">=</span> <span class="n">urlquote</span><span class="p">(</span><span class="n">role_name</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">parts</span> <span class="o">=</span> <span class="n">role_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;.&quot;</span><span class="p">)</span>
+            <span class="n">user_name</span> <span class="o">=</span> <span class="s">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">role_name</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">notify</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;- downloading role &#39;</span><span class="si">%s</span><span class="s">&#39;, owned by </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">role_name</span><span class="p">,</span> <span class="n">user_name</span><span class="p">))</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Invalid role name (</span><span class="si">%s</span><span class="s">). Specify role as format: username.rolename&quot;</span> <span class="o">%</span> <span class="n">role_name</span><span class="p">)</span>
+
+        <span class="n">url</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">/roles/?owner__username=</span><span class="si">%s</span><span class="s">&amp;name=</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">baseurl</span><span class="p">,</span> <span class="n">user_name</span><span class="p">,</span> <span class="n">role_name</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__call_galaxy</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&quot;results&quot;</span><span class="p">])</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="s">&quot;results&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">None</span></div>
+
+    <span class="nd">@g_connect</span>
+<div class="viewcode-block" id="GalaxyAPI.fetch_role_related"><a class="viewcode-back" href="../../../rst/ansible.galaxy.html#ansible.galaxy.api.GalaxyAPI.fetch_role_related">[docs]</a>    <span class="k">def</span> <span class="nf">fetch_role_related</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">related</span><span class="p">,</span> <span class="n">role_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fetch the list of related items for the given role.</span>
+<span class="sd">        The url comes from the &#39;related&#39; field of the role.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">/roles/</span><span class="si">%d</span><span class="s">/</span><span class="si">%s</span><span class="s">/?page_size=50&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">baseurl</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">role_id</span><span class="p">),</span> <span class="n">related</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__call_galaxy</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;results&#39;</span><span class="p">]</span>
+            <span class="n">done</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;next_link&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)</span>
+            <span class="k">while</span> <span class="ow">not</span> <span class="n">done</span><span class="p">:</span>
+                <span class="n">url</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_api_server</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;next_link&#39;</span><span class="p">])</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__call_galaxy</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+                <span class="n">results</span> <span class="o">+=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;results&#39;</span><span class="p">]</span>
+                <span class="n">done</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;next_link&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">results</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span></div>
+
+    <span class="nd">@g_connect</span>
+<div class="viewcode-block" id="GalaxyAPI.get_list"><a class="viewcode-back" href="../../../rst/ansible.galaxy.html#ansible.galaxy.api.GalaxyAPI.get_list">[docs]</a>    <span class="k">def</span> <span class="nf">get_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">what</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fetch the list of items specified.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">/</span><span class="si">%s</span><span class="s">/?page_size&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">baseurl</span><span class="p">,</span> <span class="n">what</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__call_galaxy</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s">&quot;results&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="n">results</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;results&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">results</span> <span class="o">=</span> <span class="n">data</span>
+            <span class="n">done</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">if</span> <span class="s">&quot;next&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="n">done</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;next_link&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)</span>
+            <span class="k">while</span> <span class="ow">not</span> <span class="n">done</span><span class="p">:</span>
+                <span class="n">url</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_api_server</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;next_link&#39;</span><span class="p">])</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__call_galaxy</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+                <span class="n">results</span> <span class="o">+=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;results&#39;</span><span class="p">]</span>
+                <span class="n">done</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;next_link&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">results</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Failed to download the </span><span class="si">%s</span><span class="s"> list: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">what</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">)))</span></div>
+
+    <span class="nd">@g_connect</span>
+<div class="viewcode-block" id="GalaxyAPI.search_roles"><a class="viewcode-back" href="../../../rst/ansible.galaxy.html#ansible.galaxy.api.GalaxyAPI.search_roles">[docs]</a>    <span class="k">def</span> <span class="nf">search_roles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">search</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+        <span class="n">search_url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">baseurl</span> <span class="o">+</span> <span class="s">&#39;/search/roles/?&#39;</span>
+
+        <span class="k">if</span> <span class="n">search</span><span class="p">:</span>
+            <span class="n">search_url</span> <span class="o">+=</span> <span class="s">&#39;&amp;autocomplete=&#39;</span> <span class="o">+</span> <span class="n">urlquote</span><span class="p">(</span><span class="n">search</span><span class="p">)</span>
+
+        <span class="n">tags</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;tags&#39;</span><span class="p">,</span><span class="bp">None</span><span class="p">)</span>
+        <span class="n">platforms</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;platforms&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="n">page_size</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;page_size&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="n">author</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;author&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">tags</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+            <span class="n">tags</span> <span class="o">=</span> <span class="n">tags</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)</span>
+            <span class="n">search_url</span> <span class="o">+=</span> <span class="s">&#39;&amp;tags_autocomplete=&#39;</span> <span class="o">+</span> <span class="s">&#39;+&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">platforms</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">platforms</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+            <span class="n">platforms</span> <span class="o">=</span> <span class="n">platforms</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)</span>
+            <span class="n">search_url</span> <span class="o">+=</span> <span class="s">&#39;&amp;platforms_autocomplete=&#39;</span> <span class="o">+</span> <span class="s">&#39;+&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">platforms</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">page_size</span><span class="p">:</span>
+            <span class="n">search_url</span> <span class="o">+=</span> <span class="s">&#39;&amp;page_size=</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">page_size</span>
+
+        <span class="k">if</span> <span class="n">author</span><span class="p">:</span>
+            <span class="n">search_url</span> <span class="o">+=</span> <span class="s">&#39;&amp;username_autocomplete=</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">author</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__call_galaxy</span><span class="p">(</span><span class="n">search_url</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span></div>
+
+    <span class="nd">@g_connect</span>
+<div class="viewcode-block" id="GalaxyAPI.add_secret"><a class="viewcode-back" href="../../../rst/ansible.galaxy.html#ansible.galaxy.api.GalaxyAPI.add_secret">[docs]</a>    <span class="k">def</span> <span class="nf">add_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">github_user</span><span class="p">,</span> <span class="n">github_repo</span><span class="p">,</span> <span class="n">secret</span><span class="p">):</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">/notification_secrets/&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">baseurl</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">urlencode</span><span class="p">({</span>
+            <span class="s">&quot;source&quot;</span><span class="p">:</span> <span class="n">source</span><span class="p">,</span>
+            <span class="s">&quot;github_user&quot;</span><span class="p">:</span> <span class="n">github_user</span><span class="p">,</span>
+            <span class="s">&quot;github_repo&quot;</span><span class="p">:</span> <span class="n">github_repo</span><span class="p">,</span>
+            <span class="s">&quot;secret&quot;</span><span class="p">:</span> <span class="n">secret</span>
+        <span class="p">})</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__call_galaxy</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span></div>
+
+    <span class="nd">@g_connect</span>
+<div class="viewcode-block" id="GalaxyAPI.list_secrets"><a class="viewcode-back" href="../../../rst/ansible.galaxy.html#ansible.galaxy.api.GalaxyAPI.list_secrets">[docs]</a>    <span class="k">def</span> <span class="nf">list_secrets</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">/notification_secrets&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">baseurl</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__call_galaxy</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__auth_header</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">data</span></div>
+
+    <span class="nd">@g_connect</span>
+<div class="viewcode-block" id="GalaxyAPI.remove_secret"><a class="viewcode-back" href="../../../rst/ansible.galaxy.html#ansible.galaxy.api.GalaxyAPI.remove_secret">[docs]</a>    <span class="k">def</span> <span class="nf">remove_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret_id</span><span class="p">):</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">/notification_secrets/</span><span class="si">%s</span><span class="s">/&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">baseurl</span><span class="p">,</span> <span class="n">secret_id</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__call_galaxy</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__auth_header</span><span class="p">(),</span> <span class="n">method</span><span class="o">=</span><span class="s">&#39;DELETE&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span></div>
+
+    <span class="nd">@g_connect</span>
+<div class="viewcode-block" id="GalaxyAPI.delete_role"><a class="viewcode-back" href="../../../rst/ansible.galaxy.html#ansible.galaxy.api.GalaxyAPI.delete_role">[docs]</a>    <span class="k">def</span> <span class="nf">delete_role</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">github_user</span><span class="p">,</span> <span class="n">github_repo</span><span class="p">):</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">/removerole/?github_user=</span><span class="si">%s</span><span class="s">&amp;github_repo=</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">baseurl</span><span class="p">,</span><span class="n">github_user</span><span class="p">,</span><span class="n">github_repo</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__call_galaxy</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__auth_header</span><span class="p">(),</span> <span class="n">method</span><span class="o">=</span><span class="s">&#39;DELETE&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

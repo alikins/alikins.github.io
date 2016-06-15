@@ -1,0 +1,877 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.plugins.connection.ssh &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="ansible.plugins.connection" href="../connection.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../../plugins.html">ansible.plugins</a> &raquo;</li>
+      
+          <li><a href="../connection.html">ansible.plugins.connection</a> &raquo;</li>
+      
+    <li>ansible.plugins.connection.ssh</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.plugins.connection.ssh</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c"># Copyright 2015 Abhijit Menon-Sen &lt;ams@2ndQuadrant.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+<span class="c">#</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">fcntl</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">pipes</span>
+<span class="kn">import</span> <span class="nn">pty</span>
+<span class="kn">import</span> <span class="nn">select</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span><span class="p">,</span> <span class="n">AnsibleConnectionFailure</span><span class="p">,</span> <span class="n">AnsibleFileNotFound</span>
+<span class="kn">from</span> <span class="nn">ansible.plugins.connection</span> <span class="kn">import</span> <span class="n">ConnectionBase</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.path</span> <span class="kn">import</span> <span class="n">unfrackpath</span><span class="p">,</span> <span class="n">makedirs_safe</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.unicode</span> <span class="kn">import</span> <span class="n">to_bytes</span><span class="p">,</span> <span class="n">to_unicode</span><span class="p">,</span> <span class="n">to_str</span>
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">text_type</span><span class="p">,</span> <span class="n">binary_type</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+<span class="n">SSHPASS_AVAILABLE</span> <span class="o">=</span> <span class="bp">None</span>
+
+
+<div class="viewcode-block" id="Connection"><a class="viewcode-back" href="../../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.ssh.Connection">[docs]</a><span class="k">class</span> <span class="nc">Connection</span><span class="p">(</span><span class="n">ConnectionBase</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; ssh based connections &#39;&#39;&#39;</span>
+
+    <span class="n">transport</span> <span class="o">=</span> <span class="s">&#39;ssh&#39;</span>
+    <span class="n">has_pipelining</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="n">become_methods</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">BECOME_METHODS</span><span class="p">)</span><span class="o">.</span><span class="n">difference</span><span class="p">([</span><span class="s">&#39;runas&#39;</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Connection</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">host</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_addr</span>
+
+    <span class="c"># The connection is created by running ssh/scp/sftp from the exec_command,</span>
+    <span class="c"># put_file, and fetch_file methods, so we don&#39;t need to do any connection</span>
+    <span class="c"># management here.</span>
+
+    <span class="k">def</span> <span class="nf">_connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_sshpass_available</span><span class="p">():</span>
+        <span class="k">global</span> <span class="n">SSHPASS_AVAILABLE</span>
+
+        <span class="c"># We test once if sshpass is available, and remember the result. It</span>
+        <span class="c"># would be nice to use distutils.spawn.find_executable for this, but</span>
+        <span class="c"># distutils isn&#39;t always available; shutils.which() is Python3-only.</span>
+
+        <span class="k">if</span> <span class="n">SSHPASS_AVAILABLE</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">([</span><span class="s">&quot;sshpass&quot;</span><span class="p">],</span> <span class="n">stdin</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">)</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">communicate</span><span class="p">()</span>
+                <span class="n">SSHPASS_AVAILABLE</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+                <span class="n">SSHPASS_AVAILABLE</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="k">return</span> <span class="n">SSHPASS_AVAILABLE</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_persistence_controls</span><span class="p">(</span><span class="n">command</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Takes a command array and scans it for ControlPersist and ControlPath</span>
+<span class="sd">        settings and returns two booleans indicating whether either was found.</span>
+<span class="sd">        This could be smarter, e.g. returning false if ControlPersist is &#39;no&#39;,</span>
+<span class="sd">        but for now we do it simple way.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">controlpersist</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="n">controlpath</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">command</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s">&#39;controlpersist&#39;</span> <span class="ow">in</span> <span class="n">arg</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                <span class="n">controlpersist</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">elif</span> <span class="s">&#39;controlpath&#39;</span> <span class="ow">in</span> <span class="n">arg</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                <span class="n">controlpath</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="k">return</span> <span class="n">controlpersist</span><span class="p">,</span> <span class="n">controlpath</span>
+
+    <span class="k">def</span> <span class="nf">_add_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">explanation</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adds the given args to self._command and displays a caller-supplied</span>
+<span class="sd">        explanation of why they were added.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_command</span> <span class="o">+=</span> <span class="n">args</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">vvvvv</span><span class="p">(</span><span class="s">&#39;SSH: &#39;</span> <span class="o">+</span> <span class="n">explanation</span> <span class="o">+</span> <span class="s">&#39;: (</span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="s">&#39;)(&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">args</span><span class="p">),</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_addr</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_build_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">binary</span><span class="p">,</span> <span class="o">*</span><span class="n">other_args</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Takes a binary (ssh, scp, sftp) and optional extra arguments and returns</span>
+<span class="sd">        a command line as an array that can be passed to subprocess.Popen.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_command</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c">## First, the command name.</span>
+
+        <span class="c"># If we want to use password authentication, we have to set up a pipe to</span>
+        <span class="c"># write the password to sshpass.</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">password</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sshpass_available</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;to use the &#39;ssh&#39; connection type with passwords, you must install the sshpass program&quot;</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">sshpass_pipe</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">pipe</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_command</span> <span class="o">+=</span> <span class="p">[</span><span class="s">&#39;sshpass&#39;</span><span class="p">,</span> <span class="s">&#39;-d{0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sshpass_pipe</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_command</span> <span class="o">+=</span> <span class="p">[</span><span class="n">binary</span><span class="p">]</span>
+
+        <span class="c">## Next, additional arguments based on the configuration.</span>
+
+        <span class="c"># sftp batch mode allows us to correctly catch failed transfers, but can</span>
+        <span class="c"># be disabled if the client side doesn&#39;t support the option. However,</span>
+        <span class="c"># sftp batch mode does not prompt for passwords so it must be disabled</span>
+        <span class="c"># if not using controlpersist and using sshpass</span>
+        <span class="k">if</span> <span class="n">binary</span> <span class="o">==</span> <span class="s">&#39;sftp&#39;</span> <span class="ow">and</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_SFTP_BATCH_MODE</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">password</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_add_args</span><span class="p">(</span><span class="s">&#39;disable batch mode for sshpass&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;-o&#39;</span><span class="p">,</span> <span class="s">&#39;BatchMode=no&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_command</span> <span class="o">+=</span> <span class="p">[</span><span class="s">&#39;-b&#39;</span><span class="p">,</span> <span class="s">&#39;-&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_command</span> <span class="o">+=</span> <span class="p">[</span><span class="s">&#39;-vvv&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">binary</span> <span class="o">==</span> <span class="s">&#39;ssh&#39;</span><span class="p">:</span>
+            <span class="c"># Older versions of ssh (e.g. in RHEL 6) don&#39;t accept sftp -q.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_command</span> <span class="o">+=</span> <span class="p">[</span><span class="s">&#39;-q&#39;</span><span class="p">]</span>
+
+        <span class="c"># Next, we add [ssh_connection]ssh_args from ansible.cfg.</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">ssh_args</span><span class="p">:</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_split_ssh_args</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">ssh_args</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_args</span><span class="p">(</span><span class="s">&quot;ansible.cfg set ssh_args&quot;</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+
+        <span class="c"># Now we add various arguments controlled by configuration file settings</span>
+        <span class="c"># (e.g. host_key_checking) or inventory variables (ansible_ssh_port) or</span>
+        <span class="c"># a combination thereof.</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">C</span><span class="o">.</span><span class="n">HOST_KEY_CHECKING</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_args</span><span class="p">(</span>
+                <span class="s">&quot;ANSIBLE_HOST_KEY_CHECKING/host_key_checking disabled&quot;</span><span class="p">,</span>
+                <span class="p">(</span><span class="s">&quot;-o&quot;</span><span class="p">,</span> <span class="s">&quot;StrictHostKeyChecking=no&quot;</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">port</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_args</span><span class="p">(</span>
+                <span class="s">&quot;ANSIBLE_REMOTE_PORT/remote_port/ansible_port set&quot;</span><span class="p">,</span>
+                <span class="p">(</span><span class="s">&quot;-o&quot;</span><span class="p">,</span> <span class="s">&quot;Port={0}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">port</span><span class="p">))</span>
+            <span class="p">)</span>
+
+        <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">private_key_file</span>
+        <span class="k">if</span> <span class="n">key</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_args</span><span class="p">(</span>
+                <span class="s">&quot;ANSIBLE_PRIVATE_KEY_FILE/private_key_file/ansible_ssh_private_key_file set&quot;</span><span class="p">,</span>
+                <span class="p">(</span><span class="s">&quot;-o&quot;</span><span class="p">,</span> <span class="s">&quot;IdentityFile=</span><span class="se">\&quot;</span><span class="s">{0}</span><span class="se">\&quot;</span><span class="s">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">key</span><span class="p">)))</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">password</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_args</span><span class="p">(</span>
+                <span class="s">&quot;ansible_password/ansible_ssh_pass not set&quot;</span><span class="p">,</span> <span class="p">(</span>
+                    <span class="s">&quot;-o&quot;</span><span class="p">,</span> <span class="s">&quot;KbdInteractiveAuthentication=no&quot;</span><span class="p">,</span>
+                    <span class="s">&quot;-o&quot;</span><span class="p">,</span> <span class="s">&quot;PreferredAuthentications=gssapi-with-mic,gssapi-keyex,hostbased,publickey&quot;</span><span class="p">,</span>
+                    <span class="s">&quot;-o&quot;</span><span class="p">,</span> <span class="s">&quot;PasswordAuthentication=no&quot;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="n">user</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_user</span>
+        <span class="k">if</span> <span class="n">user</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_args</span><span class="p">(</span>
+                <span class="s">&quot;ANSIBLE_REMOTE_USER/remote_user/ansible_user/user/-u set&quot;</span><span class="p">,</span>
+                <span class="p">(</span><span class="s">&quot;-o&quot;</span><span class="p">,</span> <span class="s">&quot;User={0}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_user</span><span class="p">)))</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_args</span><span class="p">(</span>
+            <span class="s">&quot;ANSIBLE_TIMEOUT/timeout set&quot;</span><span class="p">,</span>
+            <span class="p">(</span><span class="s">&quot;-o&quot;</span><span class="p">,</span> <span class="s">&quot;ConnectTimeout={0}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">timeout</span><span class="p">))</span>
+        <span class="p">)</span>
+
+        <span class="c"># Add in any common or binary-specific arguments from the PlayContext</span>
+        <span class="c"># (i.e. inventory or task settings or overrides on the command line).</span>
+
+        <span class="k">for</span> <span class="n">opt</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;ssh_common_args&#39;</span><span class="p">,</span> <span class="n">binary</span> <span class="o">+</span> <span class="s">&#39;_extra_args&#39;</span><span class="p">]:</span>
+            <span class="n">attr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="p">,</span> <span class="n">opt</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">attr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_split_ssh_args</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_add_args</span><span class="p">(</span><span class="s">&quot;PlayContext set </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">opt</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+
+        <span class="c"># Check if ControlPersist is enabled and add a ControlPath if one hasn&#39;t</span>
+        <span class="c"># already been set.</span>
+
+        <span class="n">controlpersist</span><span class="p">,</span> <span class="n">controlpath</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_persistence_controls</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_command</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">controlpersist</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_persistent</span> <span class="o">=</span> <span class="bp">True</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">controlpath</span><span class="p">:</span>
+                <span class="n">cpdir</span> <span class="o">=</span> <span class="n">unfrackpath</span><span class="p">(</span><span class="s">&#39;$HOME/.ansible/cp&#39;</span><span class="p">)</span>
+
+                <span class="c"># The directory must exist and be writable.</span>
+                <span class="n">makedirs_safe</span><span class="p">(</span><span class="n">cpdir</span><span class="p">,</span> <span class="mi">0</span><span class="n">o700</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="n">cpdir</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">W_OK</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Cannot write to ControlPath </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">cpdir</span><span class="p">)</span>
+
+                <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;-o&quot;</span><span class="p">,</span> <span class="s">&quot;ControlPath={0}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">to_bytes</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">ANSIBLE_SSH_CONTROL_PATH</span> <span class="o">%</span> <span class="nb">dict</span><span class="p">(</span><span class="n">directory</span><span class="o">=</span><span class="n">cpdir</span><span class="p">)))</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_add_args</span><span class="p">(</span><span class="s">&quot;found only ControlPersist; added ControlPath&quot;</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+
+        <span class="c">## Finally, we add any caller-supplied extras.</span>
+
+        <span class="k">if</span> <span class="n">other_args</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_command</span> <span class="o">+=</span> <span class="n">other_args</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_command</span>
+
+    <span class="k">def</span> <span class="nf">_send_initial_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fh</span><span class="p">,</span> <span class="n">in_data</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Writes initial data to the stdin filehandle of the subprocess and closes</span>
+<span class="sd">        it. (The handle must be closed; otherwise, for example, &quot;sftp -b -&quot; will</span>
+<span class="sd">        just hang forever waiting for more commands.)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Sending initial data&#39;</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">in_data</span><span class="p">)</span>
+            <span class="n">fh</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">IOError</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">AnsibleConnectionFailure</span><span class="p">(</span><span class="s">&#39;SSH Error: data could not be sent to the remote host. Make sure this host can be reached over ssh&#39;</span><span class="p">)</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Sent initial data (</span><span class="si">%d</span><span class="s"> bytes)&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">in_data</span><span class="p">))</span>
+
+    <span class="c"># Used by _run() to kill processes on failures</span>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_terminate_process</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Terminate a process, ignoring errors &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">terminate</span><span class="p">()</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">IOError</span><span class="p">):</span>
+            <span class="k">pass</span>
+
+    <span class="c"># This is separate from _run() because we need to do the same thing for stdout</span>
+    <span class="c"># and stderr.</span>
+    <span class="k">def</span> <span class="nf">_examine_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">chunk</span><span class="p">,</span> <span class="n">sudoable</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Takes a string, extracts complete lines from it, tests to see if they</span>
+<span class="sd">        are a prompt, error message, etc., and sets appropriate flags in self.</span>
+<span class="sd">        Prompt and success lines are removed.</span>
+
+<span class="sd">        Returns the processed (i.e. possibly-edited) output and the unprocessed</span>
+<span class="sd">        remainder (to be processed with the next chunk) as strings.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">chunk</span><span class="o">.</span><span class="n">splitlines</span><span class="p">(</span><span class="bp">True</span><span class="p">):</span>
+            <span class="n">suppress_output</span> <span class="o">=</span> <span class="bp">False</span>
+
+            <span class="c">#display.debug(&quot;Examining line (source=%s, state=%s): &#39;%s&#39;&quot; % (source, state, l.rstrip(&#39;\r\n&#39;)))</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">prompt</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_password_prompt</span><span class="p">(</span><span class="n">l</span><span class="p">):</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;become_prompt: (source=</span><span class="si">%s</span><span class="s">, state=</span><span class="si">%s</span><span class="s">): &#39;</span><span class="si">%s</span><span class="s">&#39;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">l</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\r\n</span><span class="s">&#39;</span><span class="p">)))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span><span class="p">[</span><span class="s">&#39;become_prompt&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="n">suppress_output</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">success_key</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_become_success</span><span class="p">(</span><span class="n">l</span><span class="p">):</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;become_success: (source=</span><span class="si">%s</span><span class="s">, state=</span><span class="si">%s</span><span class="s">): &#39;</span><span class="si">%s</span><span class="s">&#39;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">l</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\r\n</span><span class="s">&#39;</span><span class="p">)))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span><span class="p">[</span><span class="s">&#39;become_success&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="n">suppress_output</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">elif</span> <span class="n">sudoable</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_incorrect_password</span><span class="p">(</span><span class="n">l</span><span class="p">):</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;become_error: (source=</span><span class="si">%s</span><span class="s">, state=</span><span class="si">%s</span><span class="s">): &#39;</span><span class="si">%s</span><span class="s">&#39;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">l</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\r\n</span><span class="s">&#39;</span><span class="p">)))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span><span class="p">[</span><span class="s">&#39;become_error&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">elif</span> <span class="n">sudoable</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_missing_password</span><span class="p">(</span><span class="n">l</span><span class="p">):</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;become_nopasswd_error: (source=</span><span class="si">%s</span><span class="s">, state=</span><span class="si">%s</span><span class="s">): &#39;</span><span class="si">%s</span><span class="s">&#39;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">l</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\r\n</span><span class="s">&#39;</span><span class="p">)))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span><span class="p">[</span><span class="s">&#39;become_nopasswd_error&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">suppress_output</span><span class="p">:</span>
+                <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+
+        <span class="c"># The chunk we read was most likely a series of complete lines, but just</span>
+        <span class="c"># in case the last line was incomplete (and not a prompt, which we would</span>
+        <span class="c"># have removed from the output), we retain it to be processed with the</span>
+        <span class="c"># next chunk.</span>
+
+        <span class="n">remainder</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">output</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">output</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">):</span>
+            <span class="n">remainder</span> <span class="o">=</span> <span class="n">output</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">output</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output</span><span class="p">),</span> <span class="n">remainder</span>
+
+    <span class="k">def</span> <span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">,</span> <span class="n">in_data</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Starts the command and communicates with it until it ends.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">display_cmd</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">to_unicode</span><span class="p">,</span> <span class="nb">map</span><span class="p">(</span><span class="n">pipes</span><span class="o">.</span><span class="n">quote</span><span class="p">,</span> <span class="n">cmd</span><span class="p">))</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">vvv</span><span class="p">(</span><span class="s">u&#39;SSH: EXEC {0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s">u&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">display_cmd</span><span class="p">)),</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">)</span>
+
+        <span class="c"># Start the given command. If we don&#39;t need to pipeline data, we can try</span>
+        <span class="c"># to use a pseudo-tty (ssh will have been invoked with -tt). If we are</span>
+        <span class="c"># pipelining data, or can&#39;t create a pty, we fall back to using plain</span>
+        <span class="c"># old pipes.</span>
+
+        <span class="n">p</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="p">(</span><span class="n">text_type</span><span class="p">,</span> <span class="n">binary_type</span><span class="p">)):</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">to_bytes</span><span class="p">,</span> <span class="n">cmd</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">in_data</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c"># Make sure stdin is a proper pty to avoid tcgetattr errors</span>
+                <span class="n">master</span><span class="p">,</span> <span class="n">slave</span> <span class="o">=</span> <span class="n">pty</span><span class="o">.</span><span class="n">openpty</span><span class="p">()</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">stdin</span><span class="o">=</span><span class="n">slave</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">)</span>
+                <span class="n">stdin</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">fdopen</span><span class="p">(</span><span class="n">master</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">slave</span><span class="p">)</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">IOError</span><span class="p">):</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">p</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">stdin</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">)</span>
+            <span class="n">stdin</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">stdin</span>
+
+        <span class="c"># If we are using SSH password authentication, write the password into</span>
+        <span class="c"># the pipe we opened in _build_command.</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">password</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sshpass_pipe</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sshpass_pipe</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s">&quot;{0}</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">password</span><span class="p">)))</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sshpass_pipe</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="c">## SSH state machine</span>
+        <span class="c">#</span>
+        <span class="c"># Now we read and accumulate output from the running process until it</span>
+        <span class="c"># exits. Depending on the circumstances, we may also need to write an</span>
+        <span class="c"># escalation password and/or pipelined input to the process.</span>
+
+        <span class="n">states</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s">&#39;awaiting_prompt&#39;</span><span class="p">,</span> <span class="s">&#39;awaiting_escalation&#39;</span><span class="p">,</span> <span class="s">&#39;ready_to_send&#39;</span><span class="p">,</span> <span class="s">&#39;awaiting_exit&#39;</span>
+        <span class="p">]</span>
+
+        <span class="c"># Are we requesting privilege escalation? Right now, we may be invoked</span>
+        <span class="c"># to execute sftp/scp with sudoable=True, but we can request escalation</span>
+        <span class="c"># only when using ssh. Otherwise we can send initial data straightaway.</span>
+
+        <span class="n">state</span> <span class="o">=</span> <span class="n">states</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s">&#39;ready_to_send&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">b</span><span class="s">&#39;ssh&#39;</span> <span class="ow">in</span> <span class="n">cmd</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">prompt</span><span class="p">:</span>
+                <span class="c"># We&#39;re requesting escalation with a password, so we have to</span>
+                <span class="c"># wait for a password prompt.</span>
+                <span class="n">state</span> <span class="o">=</span> <span class="n">states</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s">&#39;awaiting_prompt&#39;</span><span class="p">)</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Initial state: </span><span class="si">%s</span><span class="s">: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">states</span><span class="p">[</span><span class="n">state</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">prompt</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">success_key</span><span class="p">:</span>
+                <span class="c"># We&#39;re requesting escalation without a password, so we have to</span>
+                <span class="c"># detect success/failure before sending any initial data.</span>
+                <span class="n">state</span> <span class="o">=</span> <span class="n">states</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s">&#39;awaiting_escalation&#39;</span><span class="p">)</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Initial state: </span><span class="si">%s</span><span class="s">: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">states</span><span class="p">[</span><span class="n">state</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">success_key</span><span class="p">))</span>
+
+        <span class="c"># We store accumulated stdout and stderr output from the process here,</span>
+        <span class="c"># but strip any privilege escalation prompt/confirmation lines first.</span>
+        <span class="c"># Output is accumulated into tmp_*, complete lines are extracted into</span>
+        <span class="c"># an array, then checked and removed or copied to stdout or stderr. We</span>
+        <span class="c"># set any flags based on examining the output in self._flags.</span>
+
+        <span class="n">stdout</span> <span class="o">=</span> <span class="n">stderr</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="n">tmp_stdout</span> <span class="o">=</span> <span class="n">tmp_stderr</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">become_prompt</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">become_success</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+            <span class="n">become_error</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">become_nopasswd_error</span><span class="o">=</span><span class="bp">False</span>
+        <span class="p">)</span>
+
+        <span class="c"># select timeout should be longer than the connect timeout, otherwise</span>
+        <span class="c"># they will race each other when we can&#39;t connect, and the connect</span>
+        <span class="c"># timeout usually fails</span>
+        <span class="n">timeout</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">timeout</span>
+        <span class="n">rpipes</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">stderr</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">fd</span> <span class="ow">in</span> <span class="n">rpipes</span><span class="p">:</span>
+            <span class="n">fcntl</span><span class="o">.</span><span class="n">fcntl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">F_SETFL</span><span class="p">,</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">fcntl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">F_GETFL</span><span class="p">)</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">O_NONBLOCK</span><span class="p">)</span>
+
+        <span class="c"># If we can send initial data without waiting for anything, we do so</span>
+        <span class="c"># before we call select.</span>
+
+        <span class="k">if</span> <span class="n">states</span><span class="p">[</span><span class="n">state</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;ready_to_send&#39;</span> <span class="ow">and</span> <span class="n">in_data</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_send_initial_data</span><span class="p">(</span><span class="n">stdin</span><span class="p">,</span> <span class="n">in_data</span><span class="p">)</span>
+            <span class="n">state</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="n">rfd</span><span class="p">,</span> <span class="n">wfd</span><span class="p">,</span> <span class="n">efd</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">rpipes</span><span class="p">,</span> <span class="p">[],</span> <span class="p">[],</span> <span class="n">timeout</span><span class="p">)</span>
+
+            <span class="c"># We pay attention to timeouts only while negotiating a prompt.</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">rfd</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">state</span> <span class="o">&lt;=</span> <span class="n">states</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s">&#39;awaiting_escalation&#39;</span><span class="p">):</span>
+                    <span class="c"># If the process has already exited, then it&#39;s not really a</span>
+                    <span class="c"># timeout; we&#39;ll let the normal error handling deal with it.</span>
+                    <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">poll</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_terminate_process</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&#39;Timeout (</span><span class="si">%d</span><span class="s">s) waiting for privilege escalation prompt: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">timeout</span><span class="p">,</span> <span class="n">stdout</span><span class="p">))</span>
+
+            <span class="c"># Read whatever output is available on stdout and stderr, and stop</span>
+            <span class="c"># listening to the pipe if it&#39;s been closed.</span>
+
+            <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">in</span> <span class="n">rfd</span><span class="p">:</span>
+                <span class="n">chunk</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">chunk</span> <span class="o">==</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+                    <span class="n">rpipes</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span>
+                <span class="n">tmp_stdout</span> <span class="o">+=</span> <span class="n">chunk</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;stdout chunk (state=</span><span class="si">%s</span><span class="s">):</span><span class="se">\n</span><span class="s">&gt;&gt;&gt;</span><span class="si">%s</span><span class="s">&lt;&lt;&lt;</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">chunk</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">stderr</span> <span class="ow">in</span> <span class="n">rfd</span><span class="p">:</span>
+                <span class="n">chunk</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">chunk</span> <span class="o">==</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+                    <span class="n">rpipes</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+                <span class="n">tmp_stderr</span> <span class="o">+=</span> <span class="n">chunk</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;stderr chunk (state=</span><span class="si">%s</span><span class="s">):</span><span class="se">\n</span><span class="s">&gt;&gt;&gt;</span><span class="si">%s</span><span class="s">&lt;&lt;&lt;</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">chunk</span><span class="p">))</span>
+
+            <span class="c"># We examine the output line-by-line until we have negotiated any</span>
+            <span class="c"># privilege escalation prompt and subsequent success/error message.</span>
+            <span class="c"># Afterwards, we can accumulate output without looking at it.</span>
+
+            <span class="k">if</span> <span class="n">state</span> <span class="o">&lt;</span> <span class="n">states</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s">&#39;ready_to_send&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">tmp_stdout</span><span class="p">:</span>
+                    <span class="n">output</span><span class="p">,</span> <span class="n">unprocessed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_examine_output</span><span class="p">(</span><span class="s">&#39;stdout&#39;</span><span class="p">,</span> <span class="n">states</span><span class="p">[</span><span class="n">state</span><span class="p">],</span> <span class="n">tmp_stdout</span><span class="p">,</span> <span class="n">sudoable</span><span class="p">)</span>
+                    <span class="n">stdout</span> <span class="o">+=</span> <span class="n">output</span>
+                    <span class="n">tmp_stdout</span> <span class="o">=</span> <span class="n">unprocessed</span>
+
+                <span class="k">if</span> <span class="n">tmp_stderr</span><span class="p">:</span>
+                    <span class="n">output</span><span class="p">,</span> <span class="n">unprocessed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_examine_output</span><span class="p">(</span><span class="s">&#39;stderr&#39;</span><span class="p">,</span> <span class="n">states</span><span class="p">[</span><span class="n">state</span><span class="p">],</span> <span class="n">tmp_stderr</span><span class="p">,</span> <span class="n">sudoable</span><span class="p">)</span>
+                    <span class="n">stderr</span> <span class="o">+=</span> <span class="n">output</span>
+                    <span class="n">tmp_stderr</span> <span class="o">=</span> <span class="n">unprocessed</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">stdout</span> <span class="o">+=</span> <span class="n">tmp_stdout</span>
+                <span class="n">stderr</span> <span class="o">+=</span> <span class="n">tmp_stderr</span>
+                <span class="n">tmp_stdout</span> <span class="o">=</span> <span class="n">tmp_stderr</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+
+            <span class="c"># If we see a privilege escalation prompt, we send the password.</span>
+            <span class="c"># (If we&#39;re expecting a prompt but the escalation succeeds, we</span>
+            <span class="c"># didn&#39;t need the password and can carry on regardless.)</span>
+
+            <span class="k">if</span> <span class="n">states</span><span class="p">[</span><span class="n">state</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;awaiting_prompt&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span><span class="p">[</span><span class="s">&#39;become_prompt&#39;</span><span class="p">]:</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Sending become_pass in response to prompt&#39;</span><span class="p">)</span>
+                    <span class="n">stdin</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;{0}</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become_pass</span> <span class="p">)))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span><span class="p">[</span><span class="s">&#39;become_prompt&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
+                    <span class="n">state</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span><span class="p">[</span><span class="s">&#39;become_success&#39;</span><span class="p">]:</span>
+                    <span class="n">state</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="c"># We&#39;ve requested escalation (with or without a password), now we</span>
+            <span class="c"># wait for an error message or a successful escalation.</span>
+
+            <span class="k">if</span> <span class="n">states</span><span class="p">[</span><span class="n">state</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;awaiting_escalation&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span><span class="p">[</span><span class="s">&#39;become_success&#39;</span><span class="p">]:</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Escalation succeeded&#39;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span><span class="p">[</span><span class="s">&#39;become_success&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
+                    <span class="n">state</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span><span class="p">[</span><span class="s">&#39;become_error&#39;</span><span class="p">]:</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Escalation failed&#39;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_terminate_process</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span><span class="p">[</span><span class="s">&#39;become_error&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
+                    <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&#39;Incorrect </span><span class="si">%s</span><span class="s"> password&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become_method</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span><span class="p">[</span><span class="s">&#39;become_nopasswd_error&#39;</span><span class="p">]:</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Escalation requires password&#39;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_terminate_process</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span><span class="p">[</span><span class="s">&#39;become_nopasswd_error&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
+                    <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&#39;Missing </span><span class="si">%s</span><span class="s"> password&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become_method</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span><span class="p">[</span><span class="s">&#39;become_prompt&#39;</span><span class="p">]:</span>
+                    <span class="c"># This shouldn&#39;t happen, because we should see the &quot;Sorry,</span>
+                    <span class="c"># try again&quot; message first.</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Escalation prompt repeated&#39;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_terminate_process</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span><span class="p">[</span><span class="s">&#39;become_prompt&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
+                    <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&#39;Incorrect </span><span class="si">%s</span><span class="s"> password&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">become_method</span><span class="p">)</span>
+
+            <span class="c"># Once we&#39;re sure that the privilege escalation prompt, if any, has</span>
+            <span class="c"># been dealt with, we can send any initial data and start waiting</span>
+            <span class="c"># for output.</span>
+
+            <span class="k">if</span> <span class="n">states</span><span class="p">[</span><span class="n">state</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;ready_to_send&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">in_data</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_send_initial_data</span><span class="p">(</span><span class="n">stdin</span><span class="p">,</span> <span class="n">in_data</span><span class="p">)</span>
+                <span class="n">state</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="c"># Now we&#39;re awaiting_exit: has the child process exited? If it has,</span>
+            <span class="c"># and we&#39;ve read all available output from it, we&#39;re done.</span>
+
+            <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">poll</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">rpipes</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">rfd</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+                <span class="c"># When ssh has ControlMaster (+ControlPath/Persist) enabled, the</span>
+                <span class="c"># first connection goes into the background and we never see EOF</span>
+                <span class="c"># on stderr. If we see EOF on stdout and the process has exited,</span>
+                <span class="c"># we&#39;re probably done. We call select again with a zero timeout,</span>
+                <span class="c"># just to make certain we don&#39;t miss anything that may have been</span>
+                <span class="c"># written to stderr between the time we called select() and when</span>
+                <span class="c"># we learned that the process had finished.</span>
+
+                <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">rpipes</span><span class="p">:</span>
+                    <span class="n">timeout</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="k">continue</span>
+
+            <span class="c"># If the process has not yet exited, but we&#39;ve already read EOF from</span>
+            <span class="c"># its stdout and stderr (and thus removed both from rpipes), we can</span>
+            <span class="c"># just wait for it to exit.</span>
+
+            <span class="k">elif</span> <span class="ow">not</span> <span class="n">rpipes</span><span class="p">:</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+                <span class="k">break</span>
+
+            <span class="c"># Otherwise there may still be outstanding data to read.</span>
+
+        <span class="c"># close stdin after process is terminated and stdout/stderr are read</span>
+        <span class="c"># completely (see also issue #848)</span>
+        <span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">C</span><span class="o">.</span><span class="n">HOST_KEY_CHECKING</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">cmd</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">b</span><span class="s">&quot;sshpass&quot;</span> <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&#39;Using a SSH password instead of a key is not possible because Host Key checking is enabled and sshpass does not support this.  Please add this host</span><span class="se">\&#39;</span><span class="s">s fingerprint to your known_hosts file to manage this host.&#39;</span><span class="p">)</span>
+
+        <span class="n">controlpersisterror</span> <span class="o">=</span> <span class="s">&#39;Bad configuration option: ControlPersist&#39;</span> <span class="ow">in</span> <span class="n">stderr</span> <span class="ow">or</span> <span class="s">&#39;unknown configuration option: ControlPersist&#39;</span> <span class="ow">in</span> <span class="n">stderr</span>
+        <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">controlpersisterror</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&#39;using -c ssh on certain older ssh versions may not support ControlPersist, set ANSIBLE_SSH_ARGS=&quot;&quot; (or ssh_args in [ssh_connection] section of the config file) before running again&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="mi">255</span> <span class="ow">and</span> <span class="n">in_data</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleConnectionFailure</span><span class="p">(</span><span class="s">&#39;SSH Error: data could not be sent to the remote host. Make sure this host can be reached over ssh&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">returncode</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_exec_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">,</span> <span class="n">in_data</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; run a command on the remote host &#39;&#39;&#39;</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">Connection</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">exec_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">in_data</span><span class="o">=</span><span class="n">in_data</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="n">sudoable</span><span class="p">)</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">vvv</span><span class="p">(</span><span class="s">u&quot;ESTABLISH SSH CONNECTION FOR USER: {0}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_user</span><span class="p">),</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="o">.</span><span class="n">remote_addr</span><span class="p">)</span>
+
+        <span class="c"># we can only use tty when we are not pipelining the modules. piping</span>
+        <span class="c"># data into /usr/bin/python inside a tty automatically invokes the</span>
+        <span class="c"># python interactive-mode but the modules are not compatible with the</span>
+        <span class="c"># interactive-mode (&quot;unexpected indent&quot; mainly because of empty lines)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">in_data</span> <span class="ow">and</span> <span class="n">sudoable</span><span class="p">:</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ssh&#39;</span><span class="p">,</span> <span class="s">&#39;-tt&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="n">cmd</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;ssh&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="n">cmd</span><span class="p">)</span>
+
+        <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_command</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">returncode</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">in_data</span><span class="p">,</span> <span class="n">sudoable</span><span class="o">=</span><span class="n">sudoable</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">returncode</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">)</span>
+
+    <span class="c">#</span>
+    <span class="c"># Main public methods</span>
+    <span class="c">#</span>
+<div class="viewcode-block" id="Connection.exec_command"><a class="viewcode-back" href="../../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.ssh.Connection.exec_command">[docs]</a>    <span class="k">def</span> <span class="nf">exec_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Wrapper around _exec_command to retry in the case of an ssh failure</span>
+
+<span class="sd">        Will retry if:</span>
+<span class="sd">        * an exception is caught</span>
+<span class="sd">        * ssh returns 255</span>
+<span class="sd">        Will not retry if</span>
+<span class="sd">        * remaining_tries is &lt;2</span>
+<span class="sd">        * retries limit reached</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">remaining_tries</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">ANSIBLE_SSH_RETRIES</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">cmd_summary</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">...&quot;</span> <span class="o">%</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">remaining_tries</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">return_tuple</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exec_command</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="c"># 0 = success</span>
+                <span class="c"># 1-254 = remote command return code</span>
+                <span class="c"># 255 = failure from the ssh command itself</span>
+                <span class="k">if</span> <span class="n">return_tuple</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">255</span><span class="p">:</span>
+                    <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">AnsibleConnectionFailure</span><span class="p">(</span><span class="s">&quot;Failed to connect to the host via ssh.&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="p">(</span><span class="n">AnsibleConnectionFailure</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">attempt</span> <span class="o">==</span> <span class="n">remaining_tries</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">raise</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">pause</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">**</span> <span class="n">attempt</span> <span class="o">-</span> <span class="mi">1</span>
+                    <span class="k">if</span> <span class="n">pause</span> <span class="o">&gt;</span> <span class="mi">30</span><span class="p">:</span>
+                        <span class="n">pause</span> <span class="o">=</span> <span class="mi">30</span>
+
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">AnsibleConnectionFailure</span><span class="p">):</span>
+                        <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;ssh_retry: attempt: </span><span class="si">%d</span><span class="s">, ssh return code is 255. cmd (</span><span class="si">%s</span><span class="s">), pausing for </span><span class="si">%d</span><span class="s"> seconds&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">attempt</span><span class="p">,</span> <span class="n">cmd_summary</span><span class="p">,</span> <span class="n">pause</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;ssh_retry: attempt: </span><span class="si">%d</span><span class="s">, caught exception(</span><span class="si">%s</span><span class="s">) from cmd (</span><span class="si">%s</span><span class="s">), pausing for </span><span class="si">%d</span><span class="s"> seconds&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">attempt</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">cmd_summary</span><span class="p">,</span> <span class="n">pause</span><span class="p">)</span>
+
+                    <span class="n">display</span><span class="o">.</span><span class="n">vv</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">)</span>
+
+                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">pause</span><span class="p">)</span>
+                    <span class="k">continue</span>
+
+        <span class="k">return</span> <span class="n">return_tuple</span></div>
+
+<div class="viewcode-block" id="Connection.put_file"><a class="viewcode-back" href="../../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.ssh.Connection.put_file">[docs]</a>    <span class="k">def</span> <span class="nf">put_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_path</span><span class="p">,</span> <span class="n">out_path</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; transfer a file from local to remote &#39;&#39;&#39;</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">Connection</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">put_file</span><span class="p">(</span><span class="n">in_path</span><span class="p">,</span> <span class="n">out_path</span><span class="p">)</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">vvv</span><span class="p">(</span><span class="s">u&quot;PUT {0} TO {1}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">in_path</span><span class="p">,</span> <span class="n">out_path</span><span class="p">),</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">in_path</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="n">AnsibleFileNotFound</span><span class="p">(</span><span class="s">&quot;file or module does not exist: {0}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">to_str</span><span class="p">(</span><span class="n">in_path</span><span class="p">)))</span>
+
+        <span class="c"># scp and sftp require square brackets for IPv6 addresses, but</span>
+        <span class="c"># accept them for hostnames and IPv4 addresses too.</span>
+        <span class="n">host</span> <span class="o">=</span> <span class="s">&#39;[</span><span class="si">%s</span><span class="s">]&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">host</span>
+
+        <span class="k">if</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_SCP_IF_SSH</span><span class="p">:</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_command</span><span class="p">(</span><span class="s">&#39;scp&#39;</span><span class="p">,</span> <span class="n">in_path</span><span class="p">,</span> <span class="s">u&#39;{0}:{1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">pipes</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">out_path</span><span class="p">)))</span>
+            <span class="n">in_data</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_command</span><span class="p">(</span><span class="s">&#39;sftp&#39;</span><span class="p">,</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">host</span><span class="p">))</span>
+            <span class="n">in_data</span> <span class="o">=</span> <span class="s">u&quot;put {0} {1}</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pipes</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">in_path</span><span class="p">),</span> <span class="n">pipes</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">out_path</span><span class="p">))</span>
+
+        <span class="n">in_data</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">in_data</span><span class="p">,</span> <span class="n">nonstring</span><span class="o">=</span><span class="s">&#39;passthru&#39;</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">returncode</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">in_data</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;failed to transfer file to {0}:</span><span class="se">\n</span><span class="s">{1}</span><span class="se">\n</span><span class="s">{2}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">to_str</span><span class="p">(</span><span class="n">out_path</span><span class="p">),</span> <span class="n">to_str</span><span class="p">(</span><span class="n">stdout</span><span class="p">),</span> <span class="n">to_str</span><span class="p">(</span><span class="n">stderr</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="Connection.fetch_file"><a class="viewcode-back" href="../../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.ssh.Connection.fetch_file">[docs]</a>    <span class="k">def</span> <span class="nf">fetch_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_path</span><span class="p">,</span> <span class="n">out_path</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; fetch a file from remote to local &#39;&#39;&#39;</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">Connection</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">fetch_file</span><span class="p">(</span><span class="n">in_path</span><span class="p">,</span> <span class="n">out_path</span><span class="p">)</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">vvv</span><span class="p">(</span><span class="s">u&quot;FETCH {0} TO {1}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">in_path</span><span class="p">,</span> <span class="n">out_path</span><span class="p">),</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">)</span>
+
+        <span class="c"># scp and sftp require square brackets for IPv6 addresses, but</span>
+        <span class="c"># accept them for hostnames and IPv4 addresses too.</span>
+        <span class="n">host</span> <span class="o">=</span> <span class="s">&#39;[</span><span class="si">%s</span><span class="s">]&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">host</span>
+
+        <span class="k">if</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_SCP_IF_SSH</span><span class="p">:</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_command</span><span class="p">(</span><span class="s">&#39;scp&#39;</span><span class="p">,</span> <span class="s">u&#39;{0}:{1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">pipes</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">in_path</span><span class="p">)),</span> <span class="n">out_path</span><span class="p">)</span>
+            <span class="n">in_data</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_command</span><span class="p">(</span><span class="s">&#39;sftp&#39;</span><span class="p">,</span> <span class="n">host</span><span class="p">)</span>
+            <span class="n">in_data</span> <span class="o">=</span> <span class="s">u&quot;get {0} {1}</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pipes</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">in_path</span><span class="p">),</span> <span class="n">pipes</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">out_path</span><span class="p">))</span>
+
+        <span class="n">in_data</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">in_data</span><span class="p">,</span> <span class="n">nonstring</span><span class="o">=</span><span class="s">&#39;passthru&#39;</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">returncode</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">in_data</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;failed to transfer file from {0}:</span><span class="se">\n</span><span class="s">{1}</span><span class="se">\n</span><span class="s">{2}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">in_path</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Connection.close"><a class="viewcode-back" href="../../../../rst/ansible.plugins.connection.html#ansible.plugins.connection.ssh.Connection.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># If we have a persistent ssh connection (ControlPersist), we can ask it</span>
+        <span class="c"># to stop listening. Otherwise, there&#39;s nothing to do here.</span>
+
+        <span class="c"># TODO: reenable once winrm issues are fixed</span>
+        <span class="c"># temporarily disabled as we are forced to currently close connections after every task because of winrm</span>
+        <span class="c"># if self._connected and self._persistent:</span>
+        <span class="c">#     cmd = self._build_command(&#39;ssh&#39;, &#39;-O&#39;, &#39;stop&#39;, self.host)</span>
+        <span class="c">#</span>
+        <span class="c">#     cmd = map(to_bytes, cmd)</span>
+        <span class="c">#     p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)</span>
+        <span class="c">#     stdout, stderr = p.communicate()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connected</span> <span class="o">=</span> <span class="bp">False</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

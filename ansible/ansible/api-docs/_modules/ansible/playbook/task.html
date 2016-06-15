@@ -1,0 +1,640 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.playbook.task &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="ansible.playbook" href="../playbook.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../playbook.html">ansible.playbook</a> &raquo;</li>
+      
+    <li>ansible.playbook.task</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.playbook.task</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">iteritems</span><span class="p">,</span> <span class="n">string_types</span>
+
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span><span class="p">,</span> <span class="n">AnsibleParserError</span>
+
+<span class="kn">from</span> <span class="nn">ansible.parsing.mod_args</span> <span class="kn">import</span> <span class="n">ModuleArgsParser</span>
+<span class="kn">from</span> <span class="nn">ansible.parsing.yaml.objects</span> <span class="kn">import</span> <span class="n">AnsibleBaseYAMLObject</span><span class="p">,</span> <span class="n">AnsibleMapping</span><span class="p">,</span> <span class="n">AnsibleUnicode</span>
+
+<span class="kn">from</span> <span class="nn">ansible.plugins</span> <span class="kn">import</span> <span class="n">lookup_loader</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.attribute</span> <span class="kn">import</span> <span class="n">FieldAttribute</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.base</span> <span class="kn">import</span> <span class="n">Base</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.become</span> <span class="kn">import</span> <span class="n">Become</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.block</span> <span class="kn">import</span> <span class="n">Block</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.conditional</span> <span class="kn">import</span> <span class="n">Conditional</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.loop_control</span> <span class="kn">import</span> <span class="n">LoopControl</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.role</span> <span class="kn">import</span> <span class="n">Role</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.taggable</span> <span class="kn">import</span> <span class="n">Taggable</span>
+
+<span class="kn">from</span> <span class="nn">ansible.utils.unicode</span> <span class="kn">import</span> <span class="n">to_str</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;Task&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="Task"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.task.Task">[docs]</a><span class="k">class</span> <span class="nc">Task</span><span class="p">(</span><span class="n">Base</span><span class="p">,</span> <span class="n">Conditional</span><span class="p">,</span> <span class="n">Taggable</span><span class="p">,</span> <span class="n">Become</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A task is a language feature that represents a call to a module, with given arguments and other parameters.</span>
+<span class="sd">    A handler is a subclass of a task.</span>
+
+<span class="sd">    Usage:</span>
+
+<span class="sd">       Task.load(datastructure) -&gt; Task</span>
+<span class="sd">       Task.something(...)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c"># =================================================================================</span>
+    <span class="c"># ATTRIBUTES</span>
+    <span class="c"># load_&lt;attribute_name&gt; and</span>
+    <span class="c"># validate_&lt;attribute_name&gt;</span>
+    <span class="c"># will be used if defined</span>
+    <span class="c"># might be possible to define others</span>
+
+    <span class="n">_args</span>                 <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;dict&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">dict</span><span class="p">())</span>
+    <span class="n">_action</span>               <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+
+    <span class="n">_any_errors_fatal</span>     <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">)</span>
+    <span class="n">_async</span>                <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">_changed_when</span>         <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;list&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[])</span>
+    <span class="n">_delay</span>                <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+    <span class="n">_delegate_to</span>          <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+    <span class="n">_delegate_facts</span>       <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="n">_failed_when</span>          <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;list&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[])</span>
+    <span class="n">_first_available_file</span> <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;list&#39;</span><span class="p">)</span>
+    <span class="n">_loop</span>                 <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">,</span> <span class="n">private</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">_loop_args</span>            <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;list&#39;</span><span class="p">,</span> <span class="n">private</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">_loop_control</span>         <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;class&#39;</span><span class="p">,</span> <span class="n">class_type</span><span class="o">=</span><span class="n">LoopControl</span><span class="p">)</span>
+    <span class="n">_name</span>                 <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">_notify</span>               <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;list&#39;</span><span class="p">)</span>
+    <span class="n">_poll</span>                 <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">)</span>
+    <span class="n">_register</span>             <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">)</span>
+    <span class="n">_retries</span>              <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">)</span>
+    <span class="n">_until</span>                <span class="o">=</span> <span class="n">FieldAttribute</span><span class="p">(</span><span class="n">isa</span><span class="o">=</span><span class="s">&#39;list&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[])</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">role</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">task_include</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; constructors a task, without the Task.load classmethod, it will be pretty blank &#39;&#39;&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_block</span>        <span class="o">=</span> <span class="n">block</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_role</span>         <span class="o">=</span> <span class="n">role</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_task_include</span> <span class="o">=</span> <span class="n">task_include</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">Task</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Task.get_path"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.task.Task.get_path">[docs]</a>    <span class="k">def</span> <span class="nf">get_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; return the absolute path of the task with its line number &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_ds&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ds</span><span class="o">.</span><span class="n">_data_source</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ds</span><span class="o">.</span><span class="n">_line_number</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Task.get_name"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.task.Task.get_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; return the name of the task &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_role</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s"> : </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_role</span><span class="o">.</span><span class="n">get_name</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_role</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s"> : </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_role</span><span class="o">.</span><span class="n">get_name</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">action</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">action</span><span class="p">,)</span></div>
+
+    <span class="k">def</span> <span class="nf">_merge_kv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ds</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ds</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&quot;&quot;</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">string_types</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">ds</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">buf</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+            <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="n">ds</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="n">buf</span> <span class="o">=</span> <span class="n">buf</span> <span class="o">+</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">=</span><span class="si">%s</span><span class="s"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">)</span>
+            <span class="n">buf</span> <span class="o">=</span> <span class="n">buf</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">buf</span>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Task.load"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.task.Task.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">role</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">task_include</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">Task</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="n">block</span><span class="p">,</span> <span class="n">role</span><span class="o">=</span><span class="n">role</span><span class="p">,</span> <span class="n">task_include</span><span class="o">=</span><span class="n">task_include</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">t</span><span class="o">.</span><span class="n">load_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="n">variable_manager</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Task.__repr__"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.task.Task.__repr__">[docs]</a>    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; returns a human readable representation of the task &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;meta&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&quot;TASK: meta (</span><span class="si">%s</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s">&#39;_raw_params&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&quot;TASK: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="nf">_preprocess_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ds</span><span class="p">,</span> <span class="n">new_ds</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; take a lookup plugin name and store it correctly &#39;&#39;&#39;</span>
+
+        <span class="n">loop_name</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot;with_&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">new_ds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;loop&#39;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;duplicate loop in task: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">loop_name</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">ds</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;you must specify a value when using </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">k</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">ds</span><span class="p">)</span>
+        <span class="n">new_ds</span><span class="p">[</span><span class="s">&#39;loop&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">loop_name</span>
+        <span class="n">new_ds</span><span class="p">[</span><span class="s">&#39;loop_args&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+
+<div class="viewcode-block" id="Task.preprocess_data"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.task.Task.preprocess_data">[docs]</a>    <span class="k">def</span> <span class="nf">preprocess_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ds</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        tasks are especially complex arguments so need pre-processing.</span>
+<span class="sd">        keep it short.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+
+        <span class="c"># the new, cleaned datastructure, which will have legacy</span>
+        <span class="c"># items reduced to a standard structure suitable for the</span>
+        <span class="c"># attributes of the task class</span>
+        <span class="n">new_ds</span> <span class="o">=</span> <span class="n">AnsibleMapping</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">AnsibleBaseYAMLObject</span><span class="p">):</span>
+            <span class="n">new_ds</span><span class="o">.</span><span class="n">ansible_pos</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">ansible_pos</span>
+
+        <span class="c"># use the args parsing class to determine the action, args,</span>
+        <span class="c"># and the delegate_to value from the various possible forms</span>
+        <span class="c"># supported as legacy</span>
+        <span class="n">args_parser</span> <span class="o">=</span> <span class="n">ModuleArgsParser</span><span class="p">(</span><span class="n">task_ds</span><span class="o">=</span><span class="n">ds</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">delegate_to</span><span class="p">)</span> <span class="o">=</span> <span class="n">args_parser</span><span class="o">.</span><span class="n">parse</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">AnsibleParserError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span><span class="n">to_str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">obj</span><span class="o">=</span><span class="n">ds</span><span class="p">)</span>
+
+        <span class="c"># the command/shell/script modules used to support the `cmd` arg,</span>
+        <span class="c"># which corresponds to what we now call _raw_params, so move that</span>
+        <span class="c"># value over to _raw_params (assuming it is empty)</span>
+        <span class="k">if</span> <span class="n">action</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;command&#39;</span><span class="p">,</span> <span class="s">&#39;shell&#39;</span><span class="p">,</span> <span class="s">&#39;script&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="s">&#39;cmd&#39;</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;_raw_params&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span> <span class="o">!=</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;The &#39;cmd&#39; argument cannot be used when other raw parameters are specified.&quot;</span>
+                            <span class="s">&quot; Please put everything in one or the other place.&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">ds</span><span class="p">)</span>
+                <span class="n">args</span><span class="p">[</span><span class="s">&#39;_raw_params&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;cmd&#39;</span><span class="p">)</span>
+
+        <span class="n">new_ds</span><span class="p">[</span><span class="s">&#39;action&#39;</span><span class="p">]</span>      <span class="o">=</span> <span class="n">action</span>
+        <span class="n">new_ds</span><span class="p">[</span><span class="s">&#39;args&#39;</span><span class="p">]</span>        <span class="o">=</span> <span class="n">args</span>
+        <span class="n">new_ds</span><span class="p">[</span><span class="s">&#39;delegate_to&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delegate_to</span>
+
+        <span class="c"># we handle any &#39;vars&#39; specified in the ds here, as we may</span>
+        <span class="c"># be adding things to them below (special handling for includes).</span>
+        <span class="c"># When that deprecated feature is removed, this can be too.</span>
+        <span class="k">if</span> <span class="s">&#39;vars&#39;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+            <span class="c"># _load_vars is defined in Base, and is used to load a dictionary</span>
+            <span class="c"># or list of dictionaries in a standard way</span>
+            <span class="n">new_ds</span><span class="p">[</span><span class="s">&#39;vars&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_vars</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;vars&#39;</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_ds</span><span class="p">[</span><span class="s">&#39;vars&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="n">ds</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;action&#39;</span><span class="p">,</span> <span class="s">&#39;local_action&#39;</span><span class="p">,</span> <span class="s">&#39;args&#39;</span><span class="p">,</span> <span class="s">&#39;delegate_to&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">k</span> <span class="o">==</span> <span class="n">action</span> <span class="ow">or</span> <span class="n">k</span> <span class="o">==</span> <span class="s">&#39;shell&#39;</span><span class="p">:</span>
+                <span class="c"># we don&#39;t want to re-assign these values, which were</span>
+                <span class="c"># determined by the ModuleArgsParser() above</span>
+                <span class="k">continue</span>
+            <span class="k">elif</span> <span class="n">k</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot;with_&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">)</span> <span class="ow">in</span> <span class="n">lookup_loader</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_preprocess_loop</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">new_ds</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># pre-2.0 syntax allowed variables for include statements at the</span>
+                <span class="c"># top level of the task, so we move those into the &#39;vars&#39; dictionary</span>
+                <span class="c"># here, and show a deprecation message as we will remove this at</span>
+                <span class="c"># some point in the future.</span>
+                <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="s">&#39;include&#39;</span> <span class="ow">and</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_base_attributes</span><span class="p">()</span> <span class="ow">and</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">DEPRECATED_ATTRIBUTES</span><span class="p">:</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">deprecated</span><span class="p">(</span><span class="s">&quot;Specifying include variables at the top-level of the task is deprecated.&quot;</span>
+                            <span class="s">&quot; Please see:</span><span class="se">\n</span><span class="s">http://docs.ansible.com/ansible/playbooks_roles.html#task-include-files-and-encouraging-reuse</span><span class="se">\n\n</span><span class="s">&quot;</span>
+                            <span class="s">&quot; for currently supported syntax regarding included files and variables&quot;</span><span class="p">)</span>
+                    <span class="n">new_ds</span><span class="p">[</span><span class="s">&#39;vars&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">new_ds</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">Task</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">preprocess_data</span><span class="p">(</span><span class="n">new_ds</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_load_loop_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">ds</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+           <span class="k">raise</span> <span class="n">AnsibleParserError</span><span class="p">(</span>
+               <span class="s">&quot;the `loop_control` value must be specified as a dictionary and cannot &quot;</span> \
+               <span class="s">&quot;be a variable itself (though it can contain variables)&quot;</span><span class="p">,</span>
+               <span class="n">obj</span><span class="o">=</span><span class="n">ds</span><span class="p">,</span>
+           <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">LoopControl</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">ds</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Task.post_validate"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.task.Task.post_validate">[docs]</a>    <span class="k">def</span> <span class="nf">post_validate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">templar</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Override of base class post_validate, to also do final validation on</span>
+<span class="sd">        the block and task include (if any) to which this task belongs.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_block</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_block</span><span class="o">.</span><span class="n">post_validate</span><span class="p">(</span><span class="n">templar</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task_include</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_task_include</span><span class="o">.</span><span class="n">post_validate</span><span class="p">(</span><span class="n">templar</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">Task</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">post_validate</span><span class="p">(</span><span class="n">templar</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_post_validate_loop_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">templar</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Override post validation for the loop args field, which is templated</span>
+<span class="sd">        specially in the TaskExecutor class when evaluating loops.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">_post_validate_environment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">templar</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Override post validation of vars on the play, as we don&#39;t want to</span>
+<span class="sd">        template these too early.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">dict</span><span class="p">()</span>
+
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">if</span>  <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">convert_bare</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">env</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">env_item</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">env_item</span><span class="p">,</span> <span class="p">(</span><span class="n">string_types</span><span class="p">,</span> <span class="n">AnsibleUnicode</span><span class="p">))</span> <span class="ow">and</span> <span class="n">env_item</span> <span class="ow">in</span> <span class="n">templar</span><span class="o">.</span><span class="n">_available_variables</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="n">env</span><span class="p">[</span><span class="n">env_item</span><span class="p">]</span> <span class="o">=</span>  <span class="n">templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">env_item</span><span class="p">,</span> <span class="n">convert_bare</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">env</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">env_item</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">env_item</span><span class="p">,</span> <span class="p">(</span><span class="n">string_types</span><span class="p">,</span> <span class="n">AnsibleUnicode</span><span class="p">))</span> <span class="ow">and</span> <span class="n">env_item</span> <span class="ow">in</span> <span class="n">templar</span><span class="o">.</span><span class="n">_available_variables</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="n">env</span><span class="p">[</span><span class="n">env_item</span><span class="p">]</span> <span class="o">=</span>  <span class="n">templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="n">env_item</span><span class="p">],</span> <span class="n">convert_bare</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+        <span class="c"># at this point it should be a simple string</span>
+        <span class="k">return</span> <span class="n">templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">convert_bare</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_post_validate_changed_when</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">templar</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        changed_when is evaluated after the execution of the task is complete,</span>
+<span class="sd">        and should not be templated during the regular post_validate step.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">_post_validate_failed_when</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">templar</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        failed_when is evaluated after the execution of the task is complete,</span>
+<span class="sd">        and should not be templated during the regular post_validate step.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">_post_validate_until</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">templar</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        until is evaluated after the execution of the task is complete,</span>
+<span class="sd">        and should not be templated during the regular post_validate step.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+<div class="viewcode-block" id="Task.get_vars"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.task.Task.get_vars">[docs]</a>    <span class="k">def</span> <span class="nf">get_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">all_vars</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_block</span><span class="p">:</span>
+            <span class="n">all_vars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_block</span><span class="o">.</span><span class="n">get_vars</span><span class="p">())</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task_include</span><span class="p">:</span>
+            <span class="n">all_vars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_task_include</span><span class="o">.</span><span class="n">get_vars</span><span class="p">())</span>
+
+        <span class="n">all_vars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vars</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s">&#39;tags&#39;</span> <span class="ow">in</span> <span class="n">all_vars</span><span class="p">:</span>
+            <span class="k">del</span> <span class="n">all_vars</span><span class="p">[</span><span class="s">&#39;tags&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s">&#39;when&#39;</span> <span class="ow">in</span> <span class="n">all_vars</span><span class="p">:</span>
+            <span class="k">del</span> <span class="n">all_vars</span><span class="p">[</span><span class="s">&#39;when&#39;</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">all_vars</span></div>
+
+<div class="viewcode-block" id="Task.get_include_params"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.task.Task.get_include_params">[docs]</a>    <span class="k">def</span> <span class="nf">get_include_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">all_vars</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task_include</span><span class="p">:</span>
+            <span class="n">all_vars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_task_include</span><span class="o">.</span><span class="n">get_include_params</span><span class="p">())</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="s">&#39;include&#39;</span><span class="p">:</span>
+            <span class="n">all_vars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vars</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">all_vars</span></div>
+
+<div class="viewcode-block" id="Task.copy"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.task.Task.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exclude_block</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="n">new_me</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">Task</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="n">new_me</span><span class="o">.</span><span class="n">_block</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_block</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">exclude_block</span><span class="p">:</span>
+            <span class="n">new_me</span><span class="o">.</span><span class="n">_block</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_block</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="n">new_me</span><span class="o">.</span><span class="n">_role</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_role</span><span class="p">:</span>
+            <span class="n">new_me</span><span class="o">.</span><span class="n">_role</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_role</span>
+
+        <span class="n">new_me</span><span class="o">.</span><span class="n">_task_include</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task_include</span><span class="p">:</span>
+            <span class="n">new_me</span><span class="o">.</span><span class="n">_task_include</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task_include</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">exclude_block</span><span class="o">=</span><span class="n">exclude_block</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">new_me</span></div>
+
+<div class="viewcode-block" id="Task.serialize"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.task.Task.serialize">[docs]</a>    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">Task</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">serialize</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_block</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s">&#39;block&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_block</span><span class="o">.</span><span class="n">serialize</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_role</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s">&#39;role&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_role</span><span class="o">.</span><span class="n">serialize</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task_include</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s">&#39;task_include&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task_include</span><span class="o">.</span><span class="n">serialize</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">data</span></div>
+
+<div class="viewcode-block" id="Task.deserialize"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.task.Task.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+
+        <span class="c"># import is here to avoid import loops</span>
+        <span class="c">#from ansible.playbook.task_include import TaskInclude</span>
+
+        <span class="n">block_data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;block&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">block_data</span><span class="p">:</span>
+            <span class="n">b</span> <span class="o">=</span> <span class="n">Block</span><span class="p">()</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">block_data</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_block</span> <span class="o">=</span> <span class="n">b</span>
+            <span class="k">del</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;block&#39;</span><span class="p">]</span>
+
+        <span class="n">role_data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;role&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">role_data</span><span class="p">:</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">Role</span><span class="p">()</span>
+            <span class="n">r</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">role_data</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_role</span> <span class="o">=</span> <span class="n">r</span>
+            <span class="k">del</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;role&#39;</span><span class="p">]</span>
+
+        <span class="n">ti_data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;task_include&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ti_data</span><span class="p">:</span>
+            <span class="c">#ti = TaskInclude()</span>
+            <span class="n">ti</span> <span class="o">=</span> <span class="n">Task</span><span class="p">()</span>
+            <span class="n">ti</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">ti_data</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_task_include</span> <span class="o">=</span> <span class="n">ti</span>
+            <span class="k">del</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;task_include&#39;</span><span class="p">]</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">Task</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Task.evaluate_conditional"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.task.Task.evaluate_conditional">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate_conditional</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">templar</span><span class="p">,</span> <span class="n">all_vars</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_block</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_block</span><span class="o">.</span><span class="n">evaluate_conditional</span><span class="p">(</span><span class="n">templar</span><span class="p">,</span> <span class="n">all_vars</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task_include</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task_include</span><span class="o">.</span><span class="n">evaluate_conditional</span><span class="p">(</span><span class="n">templar</span><span class="p">,</span> <span class="n">all_vars</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">Task</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">evaluate_conditional</span><span class="p">(</span><span class="n">templar</span><span class="p">,</span> <span class="n">all_vars</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Task.set_loader"><a class="viewcode-back" href="../../../rst/ansible.playbook.html#ansible.playbook.task.Task.set_loader">[docs]</a>    <span class="k">def</span> <span class="nf">set_loader</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loader</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Sets the loader on this object and recursively on parent, child objects.</span>
+<span class="sd">        This is used primarily after the Task has been serialized/deserialized, which</span>
+<span class="sd">        does not preserve the loader.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_loader</span> <span class="o">=</span> <span class="n">loader</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_block</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_block</span><span class="o">.</span><span class="n">set_loader</span><span class="p">(</span><span class="n">loader</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task_include</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_task_include</span><span class="o">.</span><span class="n">set_loader</span><span class="p">(</span><span class="n">loader</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_parent_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">extend</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Generic logic to get the attribute or parent attribute for a task value.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_block</span> <span class="ow">and</span> <span class="p">(</span><span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">extend</span><span class="p">):</span>
+                <span class="n">parent_value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_block</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">extend</span><span class="p">:</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extend_value</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">parent_value</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">parent_value</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task_include</span> <span class="ow">and</span> <span class="p">(</span><span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">extend</span><span class="p">):</span>
+                <span class="n">parent_value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_task_include</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">extend</span><span class="p">:</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extend_value</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">parent_value</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">parent_value</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">return</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">_get_attr_environment</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Override for the &#39;tags&#39; getattr fetcher, used from Base.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">environment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s">&#39;environment&#39;</span><span class="p">]</span>
+        <span class="n">parent_environment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_parent_attribute</span><span class="p">(</span><span class="s">&#39;environment&#39;</span><span class="p">,</span> <span class="n">extend</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">parent_environment</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">environment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extend_value</span><span class="p">(</span><span class="n">environment</span><span class="p">,</span> <span class="n">parent_environment</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">environment</span>
+
+    <span class="k">def</span> <span class="nf">_get_attr_any_errors_fatal</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Override for the &#39;tags&#39; getattr fetcher, used from Base.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_parent_attribute</span><span class="p">(</span><span class="s">&#39;any_errors_fatal&#39;</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

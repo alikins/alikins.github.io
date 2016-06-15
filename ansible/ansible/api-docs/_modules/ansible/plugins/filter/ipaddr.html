@@ -1,0 +1,894 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.plugins.filter.ipaddr &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="ansible.plugins" href="../../plugins.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../../plugins.html">ansible.plugins</a> &raquo;</li>
+      
+    <li>ansible.plugins.filter.ipaddr</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.plugins.filter.ipaddr</h1><div class="highlight"><pre>
+<span class="c"># (c) 2014, Maciej Delmanowski &lt;drybjed@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">import</span> <span class="nn">types</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">netaddr</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="c"># in this case, we&#39;ll make the filters return error messages (see bottom)</span>
+    <span class="n">netaddr</span> <span class="o">=</span> <span class="bp">None</span>
+<span class="k">else</span><span class="p">:</span>
+<div class="viewcode-block" id="mac_linux"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.ipaddr.mac_linux">[docs]</a>    <span class="k">class</span> <span class="nc">mac_linux</span><span class="p">(</span><span class="n">netaddr</span><span class="o">.</span><span class="n">mac_unix</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+    <span class="n">mac_linux</span><span class="o">.</span><span class="n">word_fmt</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%.2x</span><span class="s">&#39;</span>
+
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">errors</span>
+
+
+<span class="c"># ---- IP address and network query helpers ----</span>
+
+<span class="k">def</span> <span class="nf">_empty_ipaddr_query</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">vtype</span><span class="p">):</span>
+    <span class="c"># We don&#39;t have any query to process, so just check what type the user</span>
+    <span class="c"># expects, and return the IP address in a correct format</span>
+    <span class="k">if</span> <span class="n">v</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">vtype</span> <span class="o">==</span> <span class="s">&#39;address&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">ip</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">vtype</span> <span class="o">==</span> <span class="s">&#39;network&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_6to4_query</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">vtype</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">version</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">ipconv</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">ip</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">ip</span> <span class="o">!=</span> <span class="n">v</span><span class="o">.</span><span class="n">network</span><span class="p">:</span>
+                <span class="n">ipconv</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">ip</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ipconv</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="n">ipaddr</span><span class="p">(</span><span class="n">ipconv</span><span class="p">,</span> <span class="s">&#39;public&#39;</span><span class="p">):</span>
+            <span class="n">numbers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">ipconv</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)))</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&#39;2002:{:02x}{:02x}:{:02x}{:02x}::1/48&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">numbers</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">elif</span> <span class="n">v</span><span class="o">.</span><span class="n">version</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">vtype</span> <span class="o">==</span> <span class="s">&#39;address&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ipaddr</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="s">&#39;2002::/16&#39;</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">value</span>
+        <span class="k">elif</span> <span class="n">vtype</span> <span class="o">==</span> <span class="s">&#39;network&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">ip</span> <span class="o">!=</span> <span class="n">v</span><span class="o">.</span><span class="n">network</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">ipaddr</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">ip</span><span class="p">),</span> <span class="s">&#39;2002::/16&#39;</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">False</span>
+
+<span class="k">def</span> <span class="nf">_ip_query</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">ip</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">ip</span> <span class="o">!=</span> <span class="n">v</span><span class="o">.</span><span class="n">network</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">ip</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_gateway_query</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">ip</span> <span class="o">!=</span> <span class="n">v</span><span class="o">.</span><span class="n">network</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">ip</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;/&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">prefixlen</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_bool_ipaddr_query</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">v</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">True</span>
+
+<span class="k">def</span> <span class="nf">_broadcast_query</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">broadcast</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_cidr_query</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_cidr_lookup_query</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">iplist</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">iplist</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">value</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+<span class="k">def</span> <span class="nf">_host_query</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">ip</span> <span class="o">!=</span> <span class="n">v</span><span class="o">.</span><span class="n">network</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">ip</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;/&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">prefixlen</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_hostmask_query</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">hostmask</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_int_query</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">vtype</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">vtype</span> <span class="o">==</span> <span class="s">&#39;address&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">ip</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">vtype</span> <span class="o">==</span> <span class="s">&#39;network&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">ip</span><span class="p">))</span> <span class="o">+</span> <span class="s">&#39;/&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">prefixlen</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">_ipv4_query</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">version</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">ipv4</span><span class="p">())</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+<span class="k">def</span> <span class="nf">_ipv6_query</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">version</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">ipv6</span><span class="p">())</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+<span class="k">def</span> <span class="nf">_link_local_query</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="n">v_ip</span> <span class="o">=</span> <span class="n">netaddr</span><span class="o">.</span><span class="n">IPAddress</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">ip</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">version</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">ipaddr</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v_ip</span><span class="p">),</span> <span class="s">&#39;169.254.0.0/24&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">value</span>
+
+    <span class="k">elif</span> <span class="n">v</span><span class="o">.</span><span class="n">version</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">ipaddr</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v_ip</span><span class="p">),</span> <span class="s">&#39;fe80::/10&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">value</span>
+
+<span class="k">def</span> <span class="nf">_loopback_query</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="n">v_ip</span> <span class="o">=</span> <span class="n">netaddr</span><span class="o">.</span><span class="n">IPAddress</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">ip</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">v_ip</span><span class="o">.</span><span class="n">is_loopback</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+<span class="k">def</span> <span class="nf">_multicast_query</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">is_multicast</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+<span class="k">def</span> <span class="nf">_net_query</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">ip</span> <span class="o">==</span> <span class="n">v</span><span class="o">.</span><span class="n">network</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">network</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;/&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">prefixlen</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_netmask_query</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">netmask</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_network_query</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">network</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_prefix_query</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">prefixlen</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_private_query</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">is_private</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+<span class="k">def</span> <span class="nf">_public_query</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="n">v_ip</span> <span class="o">=</span> <span class="n">netaddr</span><span class="o">.</span><span class="n">IPAddress</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">ip</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">v_ip</span><span class="o">.</span><span class="n">is_unicast</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">v_ip</span><span class="o">.</span><span class="n">is_private</span><span class="p">()</span> <span class="ow">and</span> \
+        <span class="ow">not</span> <span class="n">v_ip</span><span class="o">.</span><span class="n">is_loopback</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">v_ip</span><span class="o">.</span><span class="n">is_netmask</span><span class="p">()</span> <span class="ow">and</span> \
+        <span class="ow">not</span> <span class="n">v_ip</span><span class="o">.</span><span class="n">is_hostmask</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+<span class="k">def</span> <span class="nf">_revdns_query</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="n">v_ip</span> <span class="o">=</span> <span class="n">netaddr</span><span class="o">.</span><span class="n">IPAddress</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">ip</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">v_ip</span><span class="o">.</span><span class="n">reverse_dns</span>
+
+<span class="k">def</span> <span class="nf">_size_query</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">v</span><span class="o">.</span><span class="n">size</span>
+
+<span class="k">def</span> <span class="nf">_subnet_query</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">cidr</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_type_query</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s">&#39;address&#39;</span>
+    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">ip</span> <span class="o">!=</span> <span class="n">v</span><span class="o">.</span><span class="n">network</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&#39;address&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&#39;network&#39;</span>
+
+<span class="k">def</span> <span class="nf">_unicast_query</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">is_unicast</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+<span class="k">def</span> <span class="nf">_version_query</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">v</span><span class="o">.</span><span class="n">version</span>
+
+<span class="k">def</span> <span class="nf">_wrap_query</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">vtype</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">version</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">vtype</span> <span class="o">==</span> <span class="s">&#39;address&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&#39;[&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">ip</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;]&#39;</span>
+        <span class="k">elif</span> <span class="n">vtype</span> <span class="o">==</span> <span class="s">&#39;network&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&#39;[&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">ip</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;]/&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">prefixlen</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+
+<span class="c"># ---- HWaddr query helpers ----</span>
+<span class="k">def</span> <span class="nf">_bare_query</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="n">v</span><span class="o">.</span><span class="n">dialect</span> <span class="o">=</span> <span class="n">netaddr</span><span class="o">.</span><span class="n">mac_bare</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_bool_hwaddr_query</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">v</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">True</span>
+
+<span class="k">def</span> <span class="nf">_cisco_query</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="n">v</span><span class="o">.</span><span class="n">dialect</span> <span class="o">=</span> <span class="n">netaddr</span><span class="o">.</span><span class="n">mac_cisco</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_empty_hwaddr_query</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">v</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+<span class="k">def</span> <span class="nf">_linux_query</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="n">v</span><span class="o">.</span><span class="n">dialect</span> <span class="o">=</span> <span class="n">mac_linux</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_postgresql_query</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="n">v</span><span class="o">.</span><span class="n">dialect</span> <span class="o">=</span> <span class="n">netaddr</span><span class="o">.</span><span class="n">mac_pgsql</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_unix_query</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="n">v</span><span class="o">.</span><span class="n">dialect</span> <span class="o">=</span> <span class="n">netaddr</span><span class="o">.</span><span class="n">mac_unix</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_win_query</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="n">v</span><span class="o">.</span><span class="n">dialect</span> <span class="o">=</span> <span class="n">netaddr</span><span class="o">.</span><span class="n">mac_eui48</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+
+<span class="c"># ---- IP address and network filters ----</span>
+
+<div class="viewcode-block" id="ipaddr"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.ipaddr.ipaddr">[docs]</a><span class="k">def</span> <span class="nf">ipaddr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">query</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">version</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="n">alias</span> <span class="o">=</span> <span class="s">&#39;ipaddr&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Check if string is an IP address or network and filter it &#39;&#39;&#39;</span>
+
+    <span class="n">query_func_extra_args</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;vtype&#39;</span><span class="p">,),</span>
+            <span class="s">&#39;6to4&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;vtype&#39;</span><span class="p">,</span> <span class="s">&#39;value&#39;</span><span class="p">),</span>
+            <span class="s">&#39;cidr_lookup&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;iplist&#39;</span><span class="p">,</span> <span class="s">&#39;value&#39;</span><span class="p">),</span>
+            <span class="s">&#39;int&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;vtype&#39;</span><span class="p">,),</span>
+            <span class="s">&#39;ipv4&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;value&#39;</span><span class="p">,),</span>
+            <span class="s">&#39;ipv6&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;value&#39;</span><span class="p">,),</span>
+            <span class="s">&#39;link-local&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;value&#39;</span><span class="p">,),</span>
+            <span class="s">&#39;loopback&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;value&#39;</span><span class="p">,),</span>
+            <span class="s">&#39;lo&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;value&#39;</span><span class="p">,),</span>
+            <span class="s">&#39;multicast&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;value&#39;</span><span class="p">,),</span>
+            <span class="s">&#39;private&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;value&#39;</span><span class="p">,),</span>
+            <span class="s">&#39;public&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;value&#39;</span><span class="p">,),</span>
+            <span class="s">&#39;unicast&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;value&#39;</span><span class="p">,),</span>
+            <span class="s">&#39;wrap&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;vtype&#39;</span><span class="p">,</span> <span class="s">&#39;value&#39;</span><span class="p">),</span>
+            <span class="p">}</span>
+    <span class="n">query_func_map</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;&#39;</span><span class="p">:</span> <span class="n">_empty_ipaddr_query</span><span class="p">,</span>
+            <span class="s">&#39;6to4&#39;</span><span class="p">:</span> <span class="n">_6to4_query</span><span class="p">,</span>
+            <span class="s">&#39;address&#39;</span><span class="p">:</span> <span class="n">_ip_query</span><span class="p">,</span>
+            <span class="s">&#39;address/prefix&#39;</span><span class="p">:</span> <span class="n">_gateway_query</span><span class="p">,</span>
+            <span class="s">&#39;bool&#39;</span><span class="p">:</span> <span class="n">_bool_ipaddr_query</span><span class="p">,</span>
+            <span class="s">&#39;broadcast&#39;</span><span class="p">:</span> <span class="n">_broadcast_query</span><span class="p">,</span>
+            <span class="s">&#39;cidr&#39;</span><span class="p">:</span> <span class="n">_cidr_query</span><span class="p">,</span>
+            <span class="s">&#39;cidr_lookup&#39;</span><span class="p">:</span> <span class="n">_cidr_lookup_query</span><span class="p">,</span>
+            <span class="s">&#39;gateway&#39;</span><span class="p">:</span> <span class="n">_gateway_query</span><span class="p">,</span>
+            <span class="s">&#39;gw&#39;</span><span class="p">:</span> <span class="n">_gateway_query</span><span class="p">,</span>
+            <span class="s">&#39;host&#39;</span><span class="p">:</span> <span class="n">_host_query</span><span class="p">,</span>
+            <span class="s">&#39;host/prefix&#39;</span><span class="p">:</span> <span class="n">_gateway_query</span><span class="p">,</span>
+            <span class="s">&#39;hostmask&#39;</span><span class="p">:</span> <span class="n">_hostmask_query</span><span class="p">,</span>
+            <span class="s">&#39;hostnet&#39;</span><span class="p">:</span> <span class="n">_gateway_query</span><span class="p">,</span>
+            <span class="s">&#39;int&#39;</span><span class="p">:</span> <span class="n">_int_query</span><span class="p">,</span>
+            <span class="s">&#39;ip&#39;</span><span class="p">:</span> <span class="n">_ip_query</span><span class="p">,</span>
+            <span class="s">&#39;ipv4&#39;</span><span class="p">:</span> <span class="n">_ipv4_query</span><span class="p">,</span>
+            <span class="s">&#39;ipv6&#39;</span><span class="p">:</span> <span class="n">_ipv6_query</span><span class="p">,</span>
+            <span class="s">&#39;link-local&#39;</span><span class="p">:</span> <span class="n">_link_local_query</span><span class="p">,</span>
+            <span class="s">&#39;lo&#39;</span><span class="p">:</span> <span class="n">_loopback_query</span><span class="p">,</span>
+            <span class="s">&#39;loopback&#39;</span><span class="p">:</span> <span class="n">_loopback_query</span><span class="p">,</span>
+            <span class="s">&#39;multicast&#39;</span><span class="p">:</span> <span class="n">_multicast_query</span><span class="p">,</span>
+            <span class="s">&#39;net&#39;</span><span class="p">:</span> <span class="n">_net_query</span><span class="p">,</span>
+            <span class="s">&#39;netmask&#39;</span><span class="p">:</span> <span class="n">_netmask_query</span><span class="p">,</span>
+            <span class="s">&#39;network&#39;</span><span class="p">:</span> <span class="n">_network_query</span><span class="p">,</span>
+            <span class="s">&#39;prefix&#39;</span><span class="p">:</span> <span class="n">_prefix_query</span><span class="p">,</span>
+            <span class="s">&#39;private&#39;</span><span class="p">:</span> <span class="n">_private_query</span><span class="p">,</span>
+            <span class="s">&#39;public&#39;</span><span class="p">:</span> <span class="n">_public_query</span><span class="p">,</span>
+            <span class="s">&#39;revdns&#39;</span><span class="p">:</span> <span class="n">_revdns_query</span><span class="p">,</span>
+            <span class="s">&#39;router&#39;</span><span class="p">:</span> <span class="n">_gateway_query</span><span class="p">,</span>
+            <span class="s">&#39;size&#39;</span><span class="p">:</span> <span class="n">_size_query</span><span class="p">,</span>
+            <span class="s">&#39;subnet&#39;</span><span class="p">:</span> <span class="n">_subnet_query</span><span class="p">,</span>
+            <span class="s">&#39;type&#39;</span><span class="p">:</span> <span class="n">_type_query</span><span class="p">,</span>
+            <span class="s">&#39;unicast&#39;</span><span class="p">:</span> <span class="n">_unicast_query</span><span class="p">,</span>
+            <span class="s">&#39;v4&#39;</span><span class="p">:</span> <span class="n">_ipv4_query</span><span class="p">,</span>
+            <span class="s">&#39;v6&#39;</span><span class="p">:</span> <span class="n">_ipv6_query</span><span class="p">,</span>
+            <span class="s">&#39;version&#39;</span><span class="p">:</span> <span class="n">_version_query</span><span class="p">,</span>
+            <span class="s">&#39;wrap&#39;</span><span class="p">:</span> <span class="n">_wrap_query</span><span class="p">,</span>
+            <span class="p">}</span>
+
+    <span class="n">vtype</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">value</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">elif</span> <span class="n">value</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="c"># Check if value is a list and parse each element</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">types</span><span class="o">.</span><span class="n">GeneratorType</span><span class="p">)):</span>
+
+        <span class="n">_ret</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ipaddr</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">query</span><span class="p">),</span> <span class="n">version</span><span class="p">):</span>
+                    <span class="n">_ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ipaddr</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">query</span><span class="p">),</span> <span class="n">version</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">_ret</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_ret</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">list</span><span class="p">()</span>
+
+    <span class="c"># Check if value is a number and convert it to an IP address</span>
+    <span class="k">elif</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+
+        <span class="c"># We don&#39;t know what IP version to assume, so let&#39;s check IPv4 first,</span>
+        <span class="c"># then IPv6</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">((</span><span class="ow">not</span> <span class="n">version</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">version</span> <span class="ow">and</span> <span class="n">version</span> <span class="o">==</span> <span class="mi">4</span><span class="p">)):</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="n">netaddr</span><span class="o">.</span><span class="n">IPNetwork</span><span class="p">(</span><span class="s">&#39;0.0.0.0/0&#39;</span><span class="p">)</span>
+                <span class="n">v</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="n">v</span><span class="o">.</span><span class="n">prefixlen</span> <span class="o">=</span> <span class="mi">32</span>
+            <span class="k">elif</span> <span class="n">version</span> <span class="ow">and</span> <span class="n">version</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="n">netaddr</span><span class="o">.</span><span class="n">IPNetwork</span><span class="p">(</span><span class="s">&#39;::/0&#39;</span><span class="p">)</span>
+                <span class="n">v</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="n">v</span><span class="o">.</span><span class="n">prefixlen</span> <span class="o">=</span> <span class="mi">128</span>
+
+        <span class="c"># IPv4 didn&#39;t work the first time, so it definitely has to be IPv6</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="n">netaddr</span><span class="o">.</span><span class="n">IPNetwork</span><span class="p">(</span><span class="s">&#39;::/0&#39;</span><span class="p">)</span>
+                <span class="n">v</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="n">v</span><span class="o">.</span><span class="n">prefixlen</span> <span class="o">=</span> <span class="mi">128</span>
+
+            <span class="c"># The value is too big for IPv6. Are you a nanobot?</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="c"># We got an IP address, let&#39;s mark it as such</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="n">vtype</span> <span class="o">=</span> <span class="s">&#39;address&#39;</span>
+
+    <span class="c"># value has not been recognized, check if it&#39;s a valid IP string</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">netaddr</span><span class="o">.</span><span class="n">IPNetwork</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+            <span class="c"># value is a valid IP string, check if user specified</span>
+            <span class="c"># CIDR prefix or just an IP address, this will indicate default</span>
+            <span class="c"># output format</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">address</span><span class="p">,</span> <span class="n">prefix</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)</span>
+                <span class="n">vtype</span> <span class="o">=</span> <span class="s">&#39;network&#39;</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">vtype</span> <span class="o">=</span> <span class="s">&#39;address&#39;</span>
+
+        <span class="c"># value hasn&#39;t been recognized, maybe it&#39;s a numerical CIDR?</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">address</span><span class="p">,</span> <span class="n">prefix</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)</span>
+                <span class="n">address</span><span class="o">.</span><span class="n">isdigit</span><span class="p">()</span>
+                <span class="n">address</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">address</span><span class="p">)</span>
+                <span class="n">prefix</span><span class="o">.</span><span class="n">isdigit</span><span class="p">()</span>
+                <span class="n">prefix</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
+
+            <span class="c"># It&#39;s not numerical CIDR, give up</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">False</span>
+
+            <span class="c"># It is something, so let&#39;s try and build a CIDR from the parts</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="n">netaddr</span><span class="o">.</span><span class="n">IPNetwork</span><span class="p">(</span><span class="s">&#39;0.0.0.0/0&#39;</span><span class="p">)</span>
+                <span class="n">v</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">address</span>
+                <span class="n">v</span><span class="o">.</span><span class="n">prefixlen</span> <span class="o">=</span> <span class="n">prefix</span>
+
+            <span class="c"># It&#39;s not a valid IPv4 CIDR</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">v</span> <span class="o">=</span> <span class="n">netaddr</span><span class="o">.</span><span class="n">IPNetwork</span><span class="p">(</span><span class="s">&#39;::/0&#39;</span><span class="p">)</span>
+                    <span class="n">v</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">address</span>
+                    <span class="n">v</span><span class="o">.</span><span class="n">prefixlen</span> <span class="o">=</span> <span class="n">prefix</span>
+
+                <span class="c"># It&#39;s not a valid IPv6 CIDR. Give up.</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+
+            <span class="c"># We have a valid CIDR, so let&#39;s write it in correct format</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="n">vtype</span> <span class="o">=</span> <span class="s">&#39;network&#39;</span>
+
+    <span class="c"># We have a query string but it&#39;s not in the known query types. Check if</span>
+    <span class="c"># that string is a valid subnet, if so, we can check later if given IP</span>
+    <span class="c"># address/network is inside that specific subnet</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c">### ?? 6to4 and link-local were True here before.  Should they still?</span>
+        <span class="k">if</span> <span class="n">query</span> <span class="ow">and</span> <span class="p">(</span><span class="n">query</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">query_func_map</span> <span class="ow">or</span> <span class="n">query</span> <span class="o">==</span> <span class="s">&#39;cidr_lookup&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">ipaddr</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="s">&#39;network&#39;</span><span class="p">):</span>
+            <span class="n">iplist</span> <span class="o">=</span> <span class="n">netaddr</span><span class="o">.</span><span class="n">IPSet</span><span class="p">([</span><span class="n">netaddr</span><span class="o">.</span><span class="n">IPNetwork</span><span class="p">(</span><span class="n">query</span><span class="p">)])</span>
+            <span class="n">query</span> <span class="o">=</span> <span class="s">&#39;cidr_lookup&#39;</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="c"># This code checks if value maches the IP version the user wants, ie. if</span>
+    <span class="c"># it&#39;s any version (&quot;ipaddr()&quot;), IPv4 (&quot;ipv4()&quot;) or IPv6 (&quot;ipv6()&quot;)</span>
+    <span class="c"># If version does not match, return False</span>
+    <span class="k">if</span> <span class="n">version</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">version</span> <span class="o">!=</span> <span class="n">version</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="n">extras</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">query_func_extra_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">()):</span>
+        <span class="n">extras</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">locals</span><span class="p">()[</span><span class="n">arg</span><span class="p">])</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">query_func_map</span><span class="p">[</span><span class="n">query</span><span class="p">](</span><span class="n">v</span><span class="p">,</span> <span class="o">*</span><span class="n">extras</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="nb">float</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">vtype</span> <span class="o">==</span> <span class="s">&#39;address&#39;</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">ip</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">vtype</span> <span class="o">==</span> <span class="s">&#39;network&#39;</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">query</span><span class="p">])</span> <span class="o">+</span> <span class="s">&#39;/&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">prefixlen</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">value</span>
+
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleFilterError</span><span class="p">(</span><span class="n">alias</span> <span class="o">+</span> <span class="s">&#39;: unknown filter type: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">query</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="bp">False</span></div>
+
+
+<div class="viewcode-block" id="ipwrap"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.ipaddr.ipwrap">[docs]</a><span class="k">def</span> <span class="nf">ipwrap</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">query</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">types</span><span class="o">.</span><span class="n">GeneratorType</span><span class="p">)):</span>
+            <span class="n">_ret</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">ipaddr</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">version</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="n">alias</span> <span class="o">=</span> <span class="s">&#39;ipwrap&#39;</span><span class="p">):</span>
+                    <span class="n">_ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ipaddr</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="s">&#39;wrap&#39;</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">_ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">_ret</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">_ret</span> <span class="o">=</span> <span class="n">ipaddr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">version</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="n">alias</span> <span class="o">=</span> <span class="s">&#39;ipwrap&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">_ret</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">ipaddr</span><span class="p">(</span><span class="n">_ret</span><span class="p">,</span> <span class="s">&#39;wrap&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">value</span>
+
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">value</span></div>
+
+
+<div class="viewcode-block" id="ipv4"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.ipaddr.ipv4">[docs]</a><span class="k">def</span> <span class="nf">ipv4</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">query</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">ipaddr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">version</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">alias</span> <span class="o">=</span> <span class="s">&#39;ipv4&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ipv6"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.ipaddr.ipv6">[docs]</a><span class="k">def</span> <span class="nf">ipv6</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">query</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">ipaddr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">version</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span> <span class="n">alias</span> <span class="o">=</span> <span class="s">&#39;ipv6&#39;</span><span class="p">)</span></div>
+
+
+<span class="c"># Split given subnet into smaller subnets or find out the biggest subnet of</span>
+<span class="c"># a given IP address with given CIDR prefix</span>
+<span class="c"># Usage:</span>
+<span class="c">#</span>
+<span class="c">#  - address or address/prefix | ipsubnet</span>
+<span class="c">#      returns CIDR subnet of a given input</span>
+<span class="c">#</span>
+<span class="c">#  - address/prefix | ipsubnet(cidr)</span>
+<span class="c">#      returns number of possible subnets for given CIDR prefix</span>
+<span class="c">#</span>
+<span class="c">#  - address/prefix | ipsubnet(cidr, index)</span>
+<span class="c">#      returns new subnet with given CIDR prefix</span>
+<span class="c">#</span>
+<span class="c">#  - address | ipsubnet(cidr)</span>
+<span class="c">#      returns biggest subnet with given CIDR prefix that address belongs to</span>
+<span class="c">#</span>
+<span class="c">#  - address | ipsubnet(cidr, index)</span>
+<span class="c">#      returns next indexed subnet which contains given address</span>
+<div class="viewcode-block" id="ipsubnet"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.ipaddr.ipsubnet">[docs]</a><span class="k">def</span> <span class="nf">ipsubnet</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">query</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">index</span> <span class="o">=</span> <span class="s">&#39;x&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Manipulate IPv4/IPv6 subnets &#39;&#39;&#39;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">vtype</span> <span class="o">=</span> <span class="n">ipaddr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s">&#39;type&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">vtype</span> <span class="o">==</span> <span class="s">&#39;address&#39;</span><span class="p">:</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">ipaddr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s">&#39;cidr&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">vtype</span> <span class="o">==</span> <span class="s">&#39;network&#39;</span><span class="p">:</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">ipaddr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s">&#39;subnet&#39;</span><span class="p">)</span>
+
+        <span class="n">value</span> <span class="o">=</span> <span class="n">netaddr</span><span class="o">.</span><span class="n">IPNetwork</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">query</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="nb">str</span><span class="p">(</span><span class="n">query</span><span class="p">)</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+        <span class="n">vsize</span> <span class="o">=</span> <span class="n">ipaddr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s">&#39;size&#39;</span><span class="p">)</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="nb">float</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">vsize</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">subnet</span><span class="p">(</span><span class="n">query</span><span class="p">))[</span><span class="n">index</span><span class="p">])</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+
+            <span class="k">elif</span> <span class="n">vsize</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">supernet</span><span class="p">(</span><span class="n">query</span><span class="p">)[</span><span class="n">index</span><span class="p">])</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">vsize</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">subnet</span><span class="p">(</span><span class="n">query</span><span class="p">))))</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+
+            <span class="k">elif</span> <span class="n">vsize</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">supernet</span><span class="p">(</span><span class="n">query</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">return</span> <span class="bp">False</span></div>
+
+<span class="c"># Returns the nth host within a network described by value.</span>
+<span class="c"># Usage:</span>
+<span class="c">#</span>
+<span class="c">#  - address or address/prefix | nthhost(nth)</span>
+<span class="c">#      returns the nth host within the given network</span>
+<div class="viewcode-block" id="nthhost"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.ipaddr.nthhost">[docs]</a><span class="k">def</span> <span class="nf">nthhost</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Get the nth host within a given network &#39;&#39;&#39;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">vtype</span> <span class="o">=</span> <span class="n">ipaddr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s">&#39;type&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">vtype</span> <span class="o">==</span> <span class="s">&#39;address&#39;</span><span class="p">:</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">ipaddr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s">&#39;cidr&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">vtype</span> <span class="o">==</span> <span class="s">&#39;network&#39;</span><span class="p">:</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">ipaddr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s">&#39;subnet&#39;</span><span class="p">)</span>
+
+        <span class="n">value</span> <span class="o">=</span> <span class="n">netaddr</span><span class="o">.</span><span class="n">IPNetwork</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">query</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">vsize</span> <span class="o">=</span> <span class="n">ipaddr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s">&#39;size&#39;</span><span class="p">)</span>
+        <span class="n">nth</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="n">nth</span><span class="p">:</span>
+          <span class="k">return</span> <span class="n">value</span><span class="p">[</span><span class="n">nth</span><span class="p">]</span>
+
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">return</span> <span class="bp">False</span></div>
+
+<span class="c"># Returns the SLAAC address within a network for a given HW/MAC address.</span>
+<span class="c"># Usage:</span>
+<span class="c">#</span>
+<span class="c">#  - prefix | slaac(mac)</span>
+<div class="viewcode-block" id="slaac"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.ipaddr.slaac">[docs]</a><span class="k">def</span> <span class="nf">slaac</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">query</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Get the SLAAC address within given network &#39;&#39;&#39;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">vtype</span> <span class="o">=</span> <span class="n">ipaddr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s">&#39;type&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">vtype</span> <span class="o">==</span> <span class="s">&#39;address&#39;</span><span class="p">:</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">ipaddr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s">&#39;cidr&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">vtype</span> <span class="o">==</span> <span class="s">&#39;network&#39;</span><span class="p">:</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">ipaddr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s">&#39;subnet&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">version</span> <span class="o">!=</span> <span class="mi">6</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="n">value</span> <span class="o">=</span> <span class="n">netaddr</span><span class="o">.</span><span class="n">IPNetwork</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">query</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">mac</span> <span class="o">=</span> <span class="n">hwaddr</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">alias</span> <span class="o">=</span> <span class="s">&#39;slaac&#39;</span><span class="p">)</span>
+
+        <span class="n">eui</span> <span class="o">=</span> <span class="n">netaddr</span><span class="o">.</span><span class="n">EUI</span><span class="p">(</span><span class="n">mac</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">return</span> <span class="n">eui</span><span class="o">.</span><span class="n">ipv6</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">network</span><span class="p">)</span></div>
+
+
+<span class="c"># ---- HWaddr / MAC address filters ----</span>
+
+<div class="viewcode-block" id="hwaddr"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.ipaddr.hwaddr">[docs]</a><span class="k">def</span> <span class="nf">hwaddr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">query</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">alias</span> <span class="o">=</span> <span class="s">&#39;hwaddr&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Check if string is a HW/MAC address and filter it &#39;&#39;&#39;</span>
+
+    <span class="n">query_func_extra_args</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;value&#39;</span><span class="p">,),</span>
+            <span class="p">}</span>
+    <span class="n">query_func_map</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;&#39;</span><span class="p">:</span> <span class="n">_empty_hwaddr_query</span><span class="p">,</span>
+            <span class="s">&#39;bare&#39;</span><span class="p">:</span> <span class="n">_bare_query</span><span class="p">,</span>
+            <span class="s">&#39;bool&#39;</span><span class="p">:</span> <span class="n">_bool_hwaddr_query</span><span class="p">,</span>
+            <span class="s">&#39;cisco&#39;</span><span class="p">:</span> <span class="n">_cisco_query</span><span class="p">,</span>
+            <span class="s">&#39;eui48&#39;</span><span class="p">:</span> <span class="n">_win_query</span><span class="p">,</span>
+            <span class="s">&#39;linux&#39;</span><span class="p">:</span> <span class="n">_linux_query</span><span class="p">,</span>
+            <span class="s">&#39;pgsql&#39;</span><span class="p">:</span> <span class="n">_postgresql_query</span><span class="p">,</span>
+            <span class="s">&#39;postgresql&#39;</span><span class="p">:</span> <span class="n">_postgresql_query</span><span class="p">,</span>
+            <span class="s">&#39;psql&#39;</span><span class="p">:</span> <span class="n">_postgresql_query</span><span class="p">,</span>
+            <span class="s">&#39;unix&#39;</span><span class="p">:</span> <span class="n">_unix_query</span><span class="p">,</span>
+            <span class="s">&#39;win&#39;</span><span class="p">:</span> <span class="n">_win_query</span><span class="p">,</span>
+            <span class="p">}</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">netaddr</span><span class="o">.</span><span class="n">EUI</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">query</span> <span class="ow">and</span> <span class="n">query</span> <span class="o">!=</span> <span class="s">&#39;bool&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleFilterError</span><span class="p">(</span><span class="n">alias</span> <span class="o">+</span> <span class="s">&#39;: not a hardware address: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="n">extras</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">query_func_extra_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">()):</span>
+        <span class="n">extras</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">locals</span><span class="p">()[</span><span class="n">arg</span><span class="p">])</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">query_func_map</span><span class="p">[</span><span class="n">query</span><span class="p">](</span><span class="n">v</span><span class="p">,</span> <span class="o">*</span><span class="n">extras</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleFilterError</span><span class="p">(</span><span class="n">alias</span> <span class="o">+</span> <span class="s">&#39;: unknown filter type: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">query</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="bp">False</span></div>
+
+<div class="viewcode-block" id="macaddr"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.ipaddr.macaddr">[docs]</a><span class="k">def</span> <span class="nf">macaddr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">query</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">hwaddr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">alias</span> <span class="o">=</span> <span class="s">&#39;macaddr&#39;</span><span class="p">)</span></div>
+
+<span class="k">def</span> <span class="nf">_need_netaddr</span><span class="p">(</span><span class="n">f_name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">AnsibleFilterError</span><span class="p">(</span><span class="s">&#39;The {0} filter requires python-netaddr be&#39;</span>
+            <span class="s">&#39; installed on the ansible controller&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">f_name</span><span class="p">))</span>
+
+<div class="viewcode-block" id="ip4_hex"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.ipaddr.ip4_hex">[docs]</a><span class="k">def</span> <span class="nf">ip4_hex</span><span class="p">(</span><span class="n">arg</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Convert an IPv4 address to Hexadecimal notation &#39;&#39;&#39;</span>
+    <span class="n">numbers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">arg</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="s">&#39;{:02x}{:02x}{:02x}{:02x}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">numbers</span><span class="p">)</span></div>
+
+<span class="c"># ---- Ansible filters ----</span>
+
+<div class="viewcode-block" id="FilterModule"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.ipaddr.FilterModule">[docs]</a><span class="k">class</span> <span class="nc">FilterModule</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; IP address and network manipulation filters &#39;&#39;&#39;</span>
+    <span class="n">filter_map</span> <span class="o">=</span>  <span class="p">{</span>
+        <span class="c"># IP addresses and networks</span>
+        <span class="s">&#39;ipaddr&#39;</span><span class="p">:</span> <span class="n">ipaddr</span><span class="p">,</span>
+        <span class="s">&#39;ipwrap&#39;</span><span class="p">:</span> <span class="n">ipwrap</span><span class="p">,</span>
+        <span class="s">&#39;ipv4&#39;</span><span class="p">:</span> <span class="n">ipv4</span><span class="p">,</span>
+        <span class="s">&#39;ipv6&#39;</span><span class="p">:</span> <span class="n">ipv6</span><span class="p">,</span>
+        <span class="s">&#39;ipsubnet&#39;</span><span class="p">:</span> <span class="n">ipsubnet</span><span class="p">,</span>
+        <span class="s">&#39;nthhost&#39;</span><span class="p">:</span> <span class="n">nthhost</span><span class="p">,</span>
+        <span class="s">&#39;slaac&#39;</span><span class="p">:</span> <span class="n">slaac</span><span class="p">,</span>
+        <span class="s">&#39;ip4_hex&#39;</span><span class="p">:</span> <span class="n">ip4_hex</span><span class="p">,</span>
+
+        <span class="c"># MAC / HW addresses</span>
+        <span class="s">&#39;hwaddr&#39;</span><span class="p">:</span> <span class="n">hwaddr</span><span class="p">,</span>
+        <span class="s">&#39;macaddr&#39;</span><span class="p">:</span> <span class="n">macaddr</span>
+    <span class="p">}</span>
+
+<div class="viewcode-block" id="FilterModule.filters"><a class="viewcode-back" href="../../../../rst/ansible.plugins.filter.html#ansible.plugins.filter.ipaddr.FilterModule.filters">[docs]</a>    <span class="k">def</span> <span class="nf">filters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">netaddr</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter_map</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># Need to install python-netaddr for these filters to work</span>
+            <span class="k">return</span> <span class="nb">dict</span><span class="p">((</span><span class="n">f</span><span class="p">,</span> <span class="n">partial</span><span class="p">(</span><span class="n">_need_netaddr</span><span class="p">,</span> <span class="n">f</span><span class="p">))</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter_map</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

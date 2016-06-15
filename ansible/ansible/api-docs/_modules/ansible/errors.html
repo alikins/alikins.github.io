@@ -1,0 +1,384 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.errors &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../index.html"/>
+        <link rel="up" title="Module code" href="../index.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      
+    <li>ansible.errors</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.errors</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">from</span> <span class="nn">ansible.errors.yaml_strings</span> <span class="kn">import</span> <span class="p">(</span> <span class="n">YAML_POSITION_DETAILS</span><span class="p">,</span>
+        <span class="n">YAML_COMMON_UNQUOTED_VARIABLE_ERROR</span><span class="p">,</span>
+        <span class="n">YAML_COMMON_DICT_ERROR</span><span class="p">,</span>
+        <span class="n">YAML_COMMON_UNQUOTED_COLON_ERROR</span><span class="p">,</span>
+        <span class="n">YAML_COMMON_PARTIALLY_QUOTED_LINE_ERROR</span><span class="p">,</span>
+        <span class="n">YAML_COMMON_UNBALANCED_QUOTES_ERROR</span> <span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">ansible.utils.unicode</span> <span class="kn">import</span> <span class="n">to_unicode</span><span class="p">,</span> <span class="n">to_str</span>
+
+
+<div class="viewcode-block" id="AnsibleError"><a class="viewcode-back" href="../../rst/ansible.errors.html#ansible.errors.AnsibleError">[docs]</a><span class="k">class</span> <span class="nc">AnsibleError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This is the base class for all errors raised from Ansible code,</span>
+<span class="sd">    and can be instantiated with two optional parameters beyond the</span>
+<span class="sd">    error message to control whether detailed information is displayed</span>
+<span class="sd">    when the error occurred while parsing a data file of some kind.</span>
+
+<span class="sd">    Usage:</span>
+
+<span class="sd">        raise AnsibleError(&#39;some message here&#39;, obj=obj, show_content=True)</span>
+
+<span class="sd">    Where &quot;obj&quot; is some subclass of ansible.parsing.yaml.objects.AnsibleBaseYAMLObject,</span>
+<span class="sd">    which should be returned by the DataLoader() class.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">show_content</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">suppress_extended_error</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="c"># we import this here to prevent an import loop problem,</span>
+        <span class="c"># since the objects code also imports ansible.errors</span>
+        <span class="kn">from</span> <span class="nn">ansible.parsing.yaml.objects</span> <span class="kn">import</span> <span class="n">AnsibleBaseYAMLObject</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_obj</span> <span class="o">=</span> <span class="n">obj</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_show_content</span> <span class="o">=</span> <span class="n">show_content</span>
+        <span class="k">if</span> <span class="n">obj</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">AnsibleBaseYAMLObject</span><span class="p">):</span>
+            <span class="n">extended_error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_extended_error</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">extended_error</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">suppress_extended_error</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="se">\n\n</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">to_str</span><span class="p">(</span><span class="n">message</span><span class="p">),</span> <span class="n">to_str</span><span class="p">(</span><span class="n">extended_error</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">to_str</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">to_str</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">message</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">message</span>
+
+    <span class="k">def</span> <span class="nf">_get_error_lines_from_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_name</span><span class="p">,</span> <span class="n">line_number</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Returns the line in the file which coresponds to the reported error</span>
+<span class="sd">        location, as well as the line preceding it (if the error did not</span>
+<span class="sd">        occur on the first line), to provide context to the error.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">target_line</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="n">prev_line</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">lines</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+
+            <span class="n">target_line</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="n">line_number</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">line_number</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">prev_line</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="n">line_number</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">target_line</span><span class="p">,</span> <span class="n">prev_line</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_extended_error</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Given an object reporting the location of the exception in a file, return</span>
+<span class="sd">        detailed information regarding it including:</span>
+
+<span class="sd">          * the line which caused the error as well as the one preceding it</span>
+<span class="sd">          * causes and suggested remedies for common syntax errors</span>
+
+<span class="sd">        If this error was created with show_content=False, the reporting of content</span>
+<span class="sd">        is suppressed, as the file contents may be sensitive (ie. vault data).</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">error_message</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="p">(</span><span class="n">src_file</span><span class="p">,</span> <span class="n">line_number</span><span class="p">,</span> <span class="n">col_number</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_obj</span><span class="o">.</span><span class="n">ansible_pos</span>
+            <span class="n">error_message</span> <span class="o">+=</span> <span class="n">YAML_POSITION_DETAILS</span> <span class="o">%</span> <span class="p">(</span><span class="n">src_file</span><span class="p">,</span> <span class="n">line_number</span><span class="p">,</span> <span class="n">col_number</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">src_file</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;&lt;string&gt;&#39;</span><span class="p">,</span> <span class="s">&#39;&lt;unicode&gt;&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_show_content</span><span class="p">:</span>
+                <span class="p">(</span><span class="n">target_line</span><span class="p">,</span> <span class="n">prev_line</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_error_lines_from_file</span><span class="p">(</span><span class="n">src_file</span><span class="p">,</span> <span class="n">line_number</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">target_line</span> <span class="o">=</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">target_line</span><span class="p">)</span>
+                <span class="n">prev_line</span> <span class="o">=</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">prev_line</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">target_line</span><span class="p">:</span>
+                    <span class="n">stripped_line</span> <span class="o">=</span> <span class="n">target_line</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot; &quot;</span><span class="p">,</span><span class="s">&quot;&quot;</span><span class="p">)</span>
+                    <span class="n">arrow_line</span>    <span class="o">=</span> <span class="p">(</span><span class="s">&quot; &quot;</span> <span class="o">*</span> <span class="p">(</span><span class="n">col_number</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">+</span> <span class="s">&quot;^ here&quot;</span>
+                    <span class="c">#header_line   = (&quot;=&quot; * 73)</span>
+                    <span class="n">error_message</span> <span class="o">+=</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">The offending line appears to be:</span><span class="se">\n\n</span><span class="si">%s</span><span class="se">\n</span><span class="si">%s</span><span class="se">\n</span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">prev_line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(),</span> <span class="n">target_line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(),</span> <span class="n">arrow_line</span><span class="p">)</span>
+
+                    <span class="c"># common error/remediation checking here:</span>
+                    <span class="c"># check for unquoted vars starting lines</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="s">&#39;{{&#39;</span> <span class="ow">in</span> <span class="n">target_line</span> <span class="ow">and</span> <span class="s">&#39;}}&#39;</span> <span class="ow">in</span> <span class="n">target_line</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="s">&#39;&quot;{{&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">target_line</span> <span class="ow">or</span> <span class="s">&quot;&#39;{{&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">target_line</span><span class="p">):</span>
+                        <span class="n">error_message</span> <span class="o">+=</span> <span class="n">YAML_COMMON_UNQUOTED_VARIABLE_ERROR</span>
+                    <span class="c"># check for common dictionary mistakes</span>
+                    <span class="k">elif</span> <span class="s">&quot;:{{&quot;</span> <span class="ow">in</span> <span class="n">stripped_line</span> <span class="ow">and</span> <span class="s">&quot;}}&quot;</span> <span class="ow">in</span> <span class="n">stripped_line</span><span class="p">:</span>
+                        <span class="n">error_message</span> <span class="o">+=</span> <span class="n">YAML_COMMON_DICT_ERROR</span>
+                    <span class="c"># check for common unquoted colon mistakes</span>
+                    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_line</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_line</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_line</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">col_number</span> <span class="ow">and</span> <span class="n">target_line</span><span class="p">[</span><span class="n">col_number</span><span class="p">]</span> <span class="o">==</span> <span class="s">&quot;:&quot;</span> <span class="ow">and</span> <span class="n">target_line</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="n">error_message</span> <span class="o">+=</span> <span class="n">YAML_COMMON_UNQUOTED_COLON_ERROR</span>
+                    <span class="c"># otherwise, check for some common quoting mistakes</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">parts</span> <span class="o">=</span> <span class="n">target_line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;:&quot;</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                            <span class="n">middle</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                            <span class="n">match</span> <span class="o">=</span> <span class="bp">False</span>
+                            <span class="n">unbalanced</span> <span class="o">=</span> <span class="bp">False</span>
+
+                            <span class="k">if</span> <span class="n">middle</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&quot;&#39;&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">middle</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&quot;&#39;&quot;</span><span class="p">):</span>
+                                <span class="n">match</span> <span class="o">=</span> <span class="bp">True</span>
+                            <span class="k">elif</span> <span class="n">middle</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;&quot;&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">middle</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;&quot;&#39;</span><span class="p">):</span>
+                                <span class="n">match</span> <span class="o">=</span> <span class="bp">True</span>
+
+                            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">middle</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">middle</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span> <span class="s">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s">&quot;&#39;&quot;</span> <span class="p">]</span> <span class="ow">and</span> <span class="n">middle</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span> <span class="s">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s">&quot;&#39;&quot;</span> <span class="p">]</span> <span class="ow">and</span> <span class="n">target_line</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s">&quot;&#39;&quot;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">target_line</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s">&#39;&quot;&#39;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+                                <span class="n">unbalanced</span> <span class="o">=</span> <span class="bp">True</span>
+
+                            <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+                                <span class="n">error_message</span> <span class="o">+=</span> <span class="n">YAML_COMMON_PARTIALLY_QUOTED_LINE_ERROR</span>
+                            <span class="k">if</span> <span class="n">unbalanced</span><span class="p">:</span>
+                                <span class="n">error_message</span> <span class="o">+=</span> <span class="n">YAML_COMMON_UNBALANCED_QUOTES_ERROR</span>
+
+        <span class="k">except</span> <span class="p">(</span><span class="ne">IOError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+            <span class="n">error_message</span> <span class="o">+=</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">(could not open file to display line)&#39;</span>
+        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+            <span class="n">error_message</span> <span class="o">+=</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">(specified line no longer in file, maybe it changed?)&#39;</span>
+
+        <span class="k">return</span> <span class="n">error_message</span></div>
+
+<div class="viewcode-block" id="AnsibleOptionsError"><a class="viewcode-back" href="../../rst/ansible.errors.html#ansible.errors.AnsibleOptionsError">[docs]</a><span class="k">class</span> <span class="nc">AnsibleOptionsError</span><span class="p">(</span><span class="n">AnsibleError</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; bad or incomplete options passed &#39;&#39;&#39;</span>
+    <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="AnsibleParserError"><a class="viewcode-back" href="../../rst/ansible.errors.html#ansible.errors.AnsibleParserError">[docs]</a><span class="k">class</span> <span class="nc">AnsibleParserError</span><span class="p">(</span><span class="n">AnsibleError</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; something was detected early that is wrong about a playbook or data file &#39;&#39;&#39;</span>
+    <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="AnsibleInternalError"><a class="viewcode-back" href="../../rst/ansible.errors.html#ansible.errors.AnsibleInternalError">[docs]</a><span class="k">class</span> <span class="nc">AnsibleInternalError</span><span class="p">(</span><span class="n">AnsibleError</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; internal safeguards tripped, something happened in the code that should never happen &#39;&#39;&#39;</span>
+    <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="AnsibleRuntimeError"><a class="viewcode-back" href="../../rst/ansible.errors.html#ansible.errors.AnsibleRuntimeError">[docs]</a><span class="k">class</span> <span class="nc">AnsibleRuntimeError</span><span class="p">(</span><span class="n">AnsibleError</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; ansible had a problem while running a playbook &#39;&#39;&#39;</span>
+    <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="AnsibleModuleError"><a class="viewcode-back" href="../../rst/ansible.errors.html#ansible.errors.AnsibleModuleError">[docs]</a><span class="k">class</span> <span class="nc">AnsibleModuleError</span><span class="p">(</span><span class="n">AnsibleRuntimeError</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; a module failed somehow &#39;&#39;&#39;</span>
+    <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="AnsibleConnectionFailure"><a class="viewcode-back" href="../../rst/ansible.errors.html#ansible.errors.AnsibleConnectionFailure">[docs]</a><span class="k">class</span> <span class="nc">AnsibleConnectionFailure</span><span class="p">(</span><span class="n">AnsibleRuntimeError</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; the transport / connection_plugin had a fatal error &#39;&#39;&#39;</span>
+    <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="AnsibleFilterError"><a class="viewcode-back" href="../../rst/ansible.errors.html#ansible.errors.AnsibleFilterError">[docs]</a><span class="k">class</span> <span class="nc">AnsibleFilterError</span><span class="p">(</span><span class="n">AnsibleRuntimeError</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; a templating failure &#39;&#39;&#39;</span>
+    <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="AnsibleLookupError"><a class="viewcode-back" href="../../rst/ansible.errors.html#ansible.errors.AnsibleLookupError">[docs]</a><span class="k">class</span> <span class="nc">AnsibleLookupError</span><span class="p">(</span><span class="n">AnsibleRuntimeError</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; a lookup failure &#39;&#39;&#39;</span>
+    <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="AnsibleCallbackError"><a class="viewcode-back" href="../../rst/ansible.errors.html#ansible.errors.AnsibleCallbackError">[docs]</a><span class="k">class</span> <span class="nc">AnsibleCallbackError</span><span class="p">(</span><span class="n">AnsibleRuntimeError</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; a callback failure &#39;&#39;&#39;</span>
+    <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="AnsibleUndefinedVariable"><a class="viewcode-back" href="../../rst/ansible.errors.html#ansible.errors.AnsibleUndefinedVariable">[docs]</a><span class="k">class</span> <span class="nc">AnsibleUndefinedVariable</span><span class="p">(</span><span class="n">AnsibleRuntimeError</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; a templating failure &#39;&#39;&#39;</span>
+    <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="AnsibleFileNotFound"><a class="viewcode-back" href="../../rst/ansible.errors.html#ansible.errors.AnsibleFileNotFound">[docs]</a><span class="k">class</span> <span class="nc">AnsibleFileNotFound</span><span class="p">(</span><span class="n">AnsibleRuntimeError</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; a file missing failure &#39;&#39;&#39;</span>
+    <span class="k">pass</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,334 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.template.safe_eval &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="ansible.template" href="../template.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../template.html">ansible.template</a> &raquo;</li>
+      
+    <li>ansible.template.safe_eval</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.template.safe_eval</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">ast</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">string_types</span>
+<span class="kn">from</span> <span class="nn">ansible.compat.six.moves</span> <span class="kn">import</span> <span class="n">builtins</span>
+
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.plugins</span> <span class="kn">import</span> <span class="n">filter_loader</span><span class="p">,</span> <span class="n">test_loader</span>
+
+<div class="viewcode-block" id="safe_eval"><a class="viewcode-back" href="../../../rst/ansible.template.html#ansible.template.safe_eval.safe_eval">[docs]</a><span class="k">def</span> <span class="nf">safe_eval</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="nb">locals</span><span class="o">=</span><span class="p">{},</span> <span class="n">include_exceptions</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This is intended for allowing things like:</span>
+<span class="sd">    with_items: a_list_variable</span>
+
+<span class="sd">    Where Jinja2 would return a string but we do not want to allow it to</span>
+<span class="sd">    call functions (outside of Jinja2, where the env is constrained). If</span>
+<span class="sd">    the input data to this function came from an untrusted (remote) source,</span>
+<span class="sd">    it should first be run through _clean_data_struct() to ensure the data</span>
+<span class="sd">    is further sanitized prior to evaluation.</span>
+
+<span class="sd">    Based on:</span>
+<span class="sd">    http://stackoverflow.com/questions/12523516/using-ast-and-whitelists-to-make-pythons-eval-safe</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c"># define certain JSON types</span>
+    <span class="c"># eg. JSON booleans are unknown to python eval()</span>
+    <span class="n">JSON_TYPES</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&#39;false&#39;</span><span class="p">:</span> <span class="bp">False</span><span class="p">,</span>
+        <span class="s">&#39;null&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="s">&#39;true&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="c"># this is the whitelist of AST nodes we are going to</span>
+    <span class="c"># allow in the evaluation. Any node type other than</span>
+    <span class="c"># those listed here will raise an exception in our custom</span>
+    <span class="c"># visitor class defined below.</span>
+    <span class="n">SAFE_NODES</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span>
+        <span class="p">(</span>
+            <span class="n">ast</span><span class="o">.</span><span class="n">Add</span><span class="p">,</span>
+            <span class="n">ast</span><span class="o">.</span><span class="n">BinOp</span><span class="p">,</span>
+            <span class="n">ast</span><span class="o">.</span><span class="n">Call</span><span class="p">,</span>
+            <span class="n">ast</span><span class="o">.</span><span class="n">Compare</span><span class="p">,</span>
+            <span class="n">ast</span><span class="o">.</span><span class="n">Dict</span><span class="p">,</span>
+            <span class="n">ast</span><span class="o">.</span><span class="n">Div</span><span class="p">,</span>
+            <span class="n">ast</span><span class="o">.</span><span class="n">Expression</span><span class="p">,</span>
+            <span class="n">ast</span><span class="o">.</span><span class="n">List</span><span class="p">,</span>
+            <span class="n">ast</span><span class="o">.</span><span class="n">Load</span><span class="p">,</span>
+            <span class="n">ast</span><span class="o">.</span><span class="n">Mult</span><span class="p">,</span>
+            <span class="n">ast</span><span class="o">.</span><span class="n">Num</span><span class="p">,</span>
+            <span class="n">ast</span><span class="o">.</span><span class="n">Name</span><span class="p">,</span>
+            <span class="n">ast</span><span class="o">.</span><span class="n">Str</span><span class="p">,</span>
+            <span class="n">ast</span><span class="o">.</span><span class="n">Sub</span><span class="p">,</span>
+            <span class="n">ast</span><span class="o">.</span><span class="n">Tuple</span><span class="p">,</span>
+            <span class="n">ast</span><span class="o">.</span><span class="n">UnaryOp</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="c"># AST node types were expanded after 2.6</span>
+    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">7</span><span class="p">):</span>
+        <span class="n">SAFE_NODES</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="nb">set</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">Set</span><span class="p">,)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="c"># And in Python 3.4 too</span>
+    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
+        <span class="n">SAFE_NODES</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="nb">set</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">NameConstant</span><span class="p">,)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="n">filter_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="nb">filter</span> <span class="ow">in</span> <span class="n">filter_loader</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+        <span class="n">filter_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="nb">filter</span><span class="o">.</span><span class="n">filters</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+    <span class="n">test_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">test</span> <span class="ow">in</span> <span class="n">test_loader</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+        <span class="n">test_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">test</span><span class="o">.</span><span class="n">tests</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+    <span class="n">CALL_WHITELIST</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_CALLABLE_WHITELIST</span> <span class="o">+</span> <span class="n">filter_list</span> <span class="o">+</span> <span class="n">test_list</span>
+
+    <span class="k">class</span> <span class="nc">CleansingNodeVisitor</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">NodeVisitor</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">generic_visit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">inside_call</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">SAFE_NODES</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;invalid expression (</span><span class="si">%s</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="n">expr</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Call</span><span class="p">):</span>
+                <span class="n">inside_call</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Name</span><span class="p">)</span> <span class="ow">and</span> <span class="n">inside_call</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">builtins</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">CALL_WHITELIST</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;invalid function: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">node</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+            <span class="c"># iterate over all child nodes</span>
+            <span class="k">for</span> <span class="n">child_node</span> <span class="ow">in</span> <span class="n">ast</span><span class="o">.</span><span class="n">iter_child_nodes</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">generic_visit</span><span class="p">(</span><span class="n">child_node</span><span class="p">,</span> <span class="n">inside_call</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">string_types</span><span class="p">):</span>
+        <span class="c"># already templated to a datastructure, perhaps?</span>
+        <span class="k">if</span> <span class="n">include_exceptions</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">expr</span>
+
+    <span class="n">cnv</span> <span class="o">=</span> <span class="n">CleansingNodeVisitor</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">parsed_tree</span> <span class="o">=</span> <span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;eval&#39;</span><span class="p">)</span>
+        <span class="n">cnv</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">parsed_tree</span><span class="p">)</span>
+        <span class="n">compiled</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="n">parsed_tree</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="s">&#39;eval&#39;</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">compiled</span><span class="p">,</span> <span class="n">JSON_TYPES</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">locals</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">include_exceptions</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">result</span>
+    <span class="k">except</span> <span class="ne">SyntaxError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="c"># special handling for syntax errors, we just return</span>
+        <span class="c"># the expression string back as-is</span>
+        <span class="k">if</span> <span class="n">include_exceptions</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">expr</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">include_exceptions</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">expr</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

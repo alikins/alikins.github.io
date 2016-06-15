@@ -1,0 +1,773 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.executor.play_iterator &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>ansible.executor.play_iterator</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.executor.play_iterator</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">fnmatch</span>
+
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">iteritems</span>
+
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.block</span> <span class="kn">import</span> <span class="n">Block</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.task</span> <span class="kn">import</span> <span class="n">Task</span>
+
+<span class="kn">from</span> <span class="nn">ansible.utils.boolean</span> <span class="kn">import</span> <span class="n">boolean</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;PlayIterator&#39;</span><span class="p">]</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">HostState</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">blocks</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_blocks</span>          <span class="o">=</span> <span class="n">blocks</span><span class="p">[:]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_block</span>          <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_regular_task</span>   <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_rescue_task</span>    <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_always_task</span>    <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_role</span>           <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cur_dep_chain</span>      <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_state</span>          <span class="o">=</span> <span class="n">PlayIterator</span><span class="o">.</span><span class="n">ITERATING_SETUP</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fail_state</span>         <span class="o">=</span> <span class="n">PlayIterator</span><span class="o">.</span><span class="n">FAILED_NONE</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pending_setup</span>      <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tasks_child_state</span>  <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rescue_child_state</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">always_child_state</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">did_start_at_task</span>  <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&quot;HostState(</span><span class="si">%r</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_blocks</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">_run_state_to_string</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="n">states</span> <span class="o">=</span> <span class="p">[</span><span class="s">&quot;ITERATING_SETUP&quot;</span><span class="p">,</span> <span class="s">&quot;ITERATING_TASKS&quot;</span><span class="p">,</span> <span class="s">&quot;ITERATING_RESCUE&quot;</span><span class="p">,</span> <span class="s">&quot;ITERATING_ALWAYS&quot;</span><span class="p">,</span> <span class="s">&quot;ITERATING_COMPLETE&quot;</span><span class="p">]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">states</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&quot;UNKNOWN STATE&quot;</span>
+
+        <span class="k">def</span> <span class="nf">_failed_state_to_string</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="n">states</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span><span class="s">&quot;FAILED_SETUP&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span><span class="s">&quot;FAILED_TASKS&quot;</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span><span class="s">&quot;FAILED_RESCUE&quot;</span><span class="p">,</span> <span class="mi">8</span><span class="p">:</span><span class="s">&quot;FAILED_ALWAYS&quot;</span><span class="p">}</span>
+            <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&quot;FAILED_NONE&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">n</span> <span class="o">&amp;</span> <span class="n">i</span><span class="p">:</span>
+                        <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">states</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="k">return</span> <span class="s">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="s">&quot;HOST STATE: block=</span><span class="si">%d</span><span class="s">, task=</span><span class="si">%d</span><span class="s">, rescue=</span><span class="si">%d</span><span class="s">, always=</span><span class="si">%d</span><span class="s">, role=</span><span class="si">%s</span><span class="s">, run_state=</span><span class="si">%s</span><span class="s">, fail_state=</span><span class="si">%s</span><span class="s">, pending_setup=</span><span class="si">%s</span><span class="s">, tasks child state? </span><span class="si">%s</span><span class="s">, rescue child state? </span><span class="si">%s</span><span class="s">, always child state? </span><span class="si">%s</span><span class="s">, did start at task? </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cur_block</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cur_regular_task</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cur_rescue_task</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cur_always_task</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cur_role</span><span class="p">,</span>
+            <span class="n">_run_state_to_string</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">run_state</span><span class="p">),</span>
+            <span class="n">_failed_state_to_string</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fail_state</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pending_setup</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tasks_child_state</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rescue_child_state</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">always_child_state</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">did_start_at_task</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">HostState</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="s">&#39;_blocks&#39;</span><span class="p">,</span> <span class="s">&#39;cur_block&#39;</span><span class="p">,</span> <span class="s">&#39;cur_regular_task&#39;</span><span class="p">,</span> <span class="s">&#39;cur_rescue_task&#39;</span><span class="p">,</span> <span class="s">&#39;cur_always_task&#39;</span><span class="p">,</span>
+            <span class="s">&#39;cur_role&#39;</span><span class="p">,</span> <span class="s">&#39;run_state&#39;</span><span class="p">,</span> <span class="s">&#39;fail_state&#39;</span><span class="p">,</span> <span class="s">&#39;pending_setup&#39;</span><span class="p">,</span> <span class="s">&#39;cur_dep_chain&#39;</span><span class="p">,</span>
+            <span class="s">&#39;tasks_child_state&#39;</span><span class="p">,</span> <span class="s">&#39;rescue_child_state&#39;</span><span class="p">,</span> <span class="s">&#39;always_child_state&#39;</span>
+            <span class="p">):</span>
+            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">return</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">get_current_block</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_blocks</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_block</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">new_state</span> <span class="o">=</span> <span class="n">HostState</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_blocks</span><span class="p">)</span>
+        <span class="n">new_state</span><span class="o">.</span><span class="n">cur_block</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_block</span>
+        <span class="n">new_state</span><span class="o">.</span><span class="n">cur_regular_task</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_regular_task</span>
+        <span class="n">new_state</span><span class="o">.</span><span class="n">cur_rescue_task</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_rescue_task</span>
+        <span class="n">new_state</span><span class="o">.</span><span class="n">cur_always_task</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_always_task</span>
+        <span class="n">new_state</span><span class="o">.</span><span class="n">cur_role</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_role</span>
+        <span class="n">new_state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_state</span>
+        <span class="n">new_state</span><span class="o">.</span><span class="n">fail_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fail_state</span>
+        <span class="n">new_state</span><span class="o">.</span><span class="n">pending_setup</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pending_setup</span>
+        <span class="n">new_state</span><span class="o">.</span><span class="n">did_start_at_task</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">did_start_at_task</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_dep_chain</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">new_state</span><span class="o">.</span><span class="n">cur_dep_chain</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cur_dep_chain</span><span class="p">[:]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks_child_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">new_state</span><span class="o">.</span><span class="n">tasks_child_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks_child_state</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rescue_child_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">new_state</span><span class="o">.</span><span class="n">rescue_child_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rescue_child_state</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">always_child_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">new_state</span><span class="o">.</span><span class="n">always_child_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">always_child_state</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">new_state</span>
+
+<div class="viewcode-block" id="PlayIterator"><a class="viewcode-back" href="../../../rst/ansible.executor.html#ansible.executor.play_iterator.PlayIterator">[docs]</a><span class="k">class</span> <span class="nc">PlayIterator</span><span class="p">:</span>
+
+    <span class="c"># the primary running states for the play iteration</span>
+    <span class="n">ITERATING_SETUP</span>    <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">ITERATING_TASKS</span>    <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">ITERATING_RESCUE</span>   <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">ITERATING_ALWAYS</span>   <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">ITERATING_COMPLETE</span> <span class="o">=</span> <span class="mi">4</span>
+
+    <span class="c"># the failure states for the play iteration, which are powers</span>
+    <span class="c"># of 2 as they may be or&#39;ed together in certain circumstances</span>
+    <span class="n">FAILED_NONE</span>        <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">FAILED_SETUP</span>       <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">FAILED_TASKS</span>       <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">FAILED_RESCUE</span>      <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">FAILED_ALWAYS</span>      <span class="o">=</span> <span class="mi">8</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inventory</span><span class="p">,</span> <span class="n">play</span><span class="p">,</span> <span class="n">play_context</span><span class="p">,</span> <span class="n">variable_manager</span><span class="p">,</span> <span class="n">all_vars</span><span class="p">,</span> <span class="n">start_at_done</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_play</span> <span class="o">=</span> <span class="n">play</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_blocks</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c"># Default options to gather</span>
+        <span class="n">gather_subset</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_GATHER_SUBSET</span>
+
+        <span class="c"># Retrieve subset to gather</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play</span><span class="o">.</span><span class="n">gather_subset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">gather_subset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play</span><span class="o">.</span><span class="n">gather_subset</span>
+
+        <span class="n">setup_block</span> <span class="o">=</span> <span class="n">Block</span><span class="p">(</span><span class="n">play</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_play</span><span class="p">)</span>
+        <span class="n">setup_task</span> <span class="o">=</span> <span class="n">Task</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="n">setup_block</span><span class="p">)</span>
+        <span class="n">setup_task</span><span class="o">.</span><span class="n">action</span> <span class="o">=</span> <span class="s">&#39;setup&#39;</span>
+        <span class="n">setup_task</span><span class="o">.</span><span class="n">tags</span>   <span class="o">=</span> <span class="p">[</span><span class="s">&#39;always&#39;</span><span class="p">]</span>
+        <span class="n">setup_task</span><span class="o">.</span><span class="n">args</span>   <span class="o">=</span> <span class="p">{</span>
+          <span class="s">&#39;gather_subset&#39;</span><span class="p">:</span> <span class="n">gather_subset</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">setup_task</span><span class="o">.</span><span class="n">set_loader</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play</span><span class="o">.</span><span class="n">_loader</span><span class="p">)</span>
+        <span class="n">setup_block</span><span class="o">.</span><span class="n">block</span> <span class="o">=</span> <span class="p">[</span><span class="n">setup_task</span><span class="p">]</span>
+
+        <span class="n">setup_block</span> <span class="o">=</span> <span class="n">setup_block</span><span class="o">.</span><span class="n">filter_tagged_tasks</span><span class="p">(</span><span class="n">play_context</span><span class="p">,</span> <span class="n">all_vars</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">setup_block</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play</span><span class="o">.</span><span class="n">compile</span><span class="p">():</span>
+            <span class="n">new_block</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">filter_tagged_tasks</span><span class="p">(</span><span class="n">play_context</span><span class="p">,</span> <span class="n">all_vars</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">new_block</span><span class="o">.</span><span class="n">has_tasks</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_block</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_host_states</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">start_at_matched</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">inventory</span><span class="o">.</span><span class="n">get_hosts</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play</span><span class="o">.</span><span class="n">hosts</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_host_states</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">HostState</span><span class="p">(</span><span class="n">blocks</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_blocks</span><span class="p">)</span>
+            <span class="c"># if the host&#39;s name is in the variable manager&#39;s fact cache, then set</span>
+            <span class="c"># its _gathered_facts flag to true for smart gathering tests later</span>
+            <span class="k">if</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">variable_manager</span><span class="o">.</span><span class="n">_fact_cache</span><span class="p">:</span>
+                <span class="n">host</span><span class="o">.</span><span class="n">_gathered_facts</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="c"># if we&#39;re looking to start at a specific task, iterate through</span>
+            <span class="c"># the tasks for this host until we find the specified task</span>
+            <span class="k">if</span> <span class="n">play_context</span><span class="o">.</span><span class="n">start_at_task</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">start_at_done</span><span class="p">:</span>
+                <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+                    <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_next_task_for_host</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">peek</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">run_state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_COMPLETE</span><span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">play_context</span><span class="o">.</span><span class="n">start_at_task</span> <span class="ow">or</span> <span class="n">fnmatch</span><span class="o">.</span><span class="n">fnmatch</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">play_context</span><span class="o">.</span><span class="n">start_at_task</span><span class="p">)</span> <span class="ow">or</span> \
+                       <span class="n">task</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span> <span class="o">==</span> <span class="n">play_context</span><span class="o">.</span><span class="n">start_at_task</span> <span class="ow">or</span> <span class="n">fnmatch</span><span class="o">.</span><span class="n">fnmatch</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">get_name</span><span class="p">(),</span> <span class="n">play_context</span><span class="o">.</span><span class="n">start_at_task</span><span class="p">):</span>
+                        <span class="n">start_at_matched</span> <span class="o">=</span> <span class="bp">True</span>
+                        <span class="k">break</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">get_next_task_for_host</span><span class="p">(</span><span class="n">host</span><span class="p">)</span>
+
+                <span class="c"># finally, reset the host&#39;s state to ITERATING_SETUP</span>
+                <span class="k">if</span> <span class="n">start_at_matched</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_host_states</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">did_start_at_task</span> <span class="o">=</span> <span class="bp">True</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_host_states</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">run_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_SETUP</span>
+
+        <span class="k">if</span> <span class="n">start_at_matched</span><span class="p">:</span>
+            <span class="c"># we have our match, so clear the start_at_task field on the</span>
+            <span class="c"># play context to flag that we&#39;ve started at a task (and future</span>
+            <span class="c"># plays won&#39;t try to advance)</span>
+            <span class="n">play_context</span><span class="o">.</span><span class="n">start_at_task</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="c"># Extend the play handlers list to include the handlers defined in roles</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_play</span><span class="o">.</span><span class="n">handlers</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">play</span><span class="o">.</span><span class="n">compile_roles_handlers</span><span class="p">())</span>
+
+<div class="viewcode-block" id="PlayIterator.get_host_state"><a class="viewcode-back" href="../../../rst/ansible.executor.html#ansible.executor.play_iterator.PlayIterator.get_host_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_host_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">):</span>
+        <span class="c"># Since we&#39;re using the PlayIterator to carry forward failed hosts,</span>
+        <span class="c"># in the event that a previous host was not in the current inventory</span>
+        <span class="c"># we create a stub state for it now</span>
+        <span class="k">if</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_host_states</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_host_states</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">HostState</span><span class="p">(</span><span class="n">blocks</span><span class="o">=</span><span class="p">[])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_host_states</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="PlayIterator.get_next_task_for_host"><a class="viewcode-back" href="../../../rst/ansible.executor.html#ansible.executor.play_iterator.PlayIterator.get_next_task_for_host">[docs]</a>    <span class="k">def</span> <span class="nf">get_next_task_for_host</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">peek</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;getting the next task for host </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_host_state</span><span class="p">(</span><span class="n">host</span><span class="p">)</span>
+
+        <span class="n">task</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">run_state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_COMPLETE</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;host </span><span class="si">%s</span><span class="s"> is done iterating, returning&quot;</span> <span class="o">%</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+        <span class="n">old_s</span> <span class="o">=</span> <span class="n">s</span>
+        <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_next_task_from_state</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">peek</span><span class="o">=</span><span class="n">peek</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">_roles_are_different</span><span class="p">(</span><span class="n">ra</span><span class="p">,</span> <span class="n">rb</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">ra</span> <span class="o">!=</span> <span class="n">rb</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">old_s</span><span class="o">.</span><span class="n">cur_dep_chain</span> <span class="o">!=</span> <span class="n">task</span><span class="o">.</span><span class="n">_block</span><span class="o">.</span><span class="n">get_dep_chain</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">task</span> <span class="ow">and</span> <span class="n">task</span><span class="o">.</span><span class="n">_role</span><span class="p">:</span>
+            <span class="c"># if we had a current role, mark that role as completed</span>
+            <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">cur_role</span> <span class="ow">and</span> <span class="n">_roles_are_different</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">_role</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">cur_role</span><span class="p">)</span> <span class="ow">and</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">s</span><span class="o">.</span><span class="n">cur_role</span><span class="o">.</span><span class="n">_had_task_run</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">peek</span><span class="p">:</span>
+                <span class="n">s</span><span class="o">.</span><span class="n">cur_role</span><span class="o">.</span><span class="n">_completed</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">cur_role</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">_role</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">cur_dep_chain</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">_block</span><span class="o">.</span><span class="n">get_dep_chain</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">peek</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_host_states</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">s</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;done getting next task for host </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot; ^ task is: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">task</span><span class="p">)</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot; ^ state is: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">s</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_get_next_task_from_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">peek</span><span class="p">):</span>
+
+        <span class="n">task</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="c"># try and find the next task, given the current state.</span>
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="c"># try to get the current block from the list of blocks, and</span>
+            <span class="c"># if we run past the end of the list we know we&#39;re done with</span>
+            <span class="c"># this block</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">block</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">_blocks</span><span class="p">[</span><span class="n">state</span><span class="o">.</span><span class="n">cur_block</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_COMPLETE</span>
+                <span class="k">return</span> <span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_SETUP</span><span class="p">:</span>
+                <span class="c"># First, we check to see if we were pending setup. If not, this is</span>
+                <span class="c"># the first trip through ITERATING_SETUP, so we set the pending_setup</span>
+                <span class="c"># flag and try to determine if we do in fact want to gather facts for</span>
+                <span class="c"># the specified host.</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">state</span><span class="o">.</span><span class="n">pending_setup</span><span class="p">:</span>
+                    <span class="n">state</span><span class="o">.</span><span class="n">pending_setup</span> <span class="o">=</span> <span class="bp">True</span>
+
+                    <span class="c"># Gather facts if the default is &#39;smart&#39; and we have not yet</span>
+                    <span class="c"># done it for this host; or if &#39;explicit&#39; and the play sets</span>
+                    <span class="c"># gather_facts to True; or if &#39;implicit&#39; and the play does</span>
+                    <span class="c"># NOT explicitly set gather_facts to False.</span>
+
+                    <span class="n">gathering</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_GATHERING</span>
+                    <span class="n">implied</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play</span><span class="o">.</span><span class="n">gather_facts</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">boolean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play</span><span class="o">.</span><span class="n">gather_facts</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="p">(</span><span class="n">gathering</span> <span class="o">==</span> <span class="s">&#39;implicit&#39;</span> <span class="ow">and</span> <span class="n">implied</span><span class="p">)</span> <span class="ow">or</span> \
+                       <span class="p">(</span><span class="n">gathering</span> <span class="o">==</span> <span class="s">&#39;explicit&#39;</span> <span class="ow">and</span> <span class="n">boolean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_play</span><span class="o">.</span><span class="n">gather_facts</span><span class="p">))</span> <span class="ow">or</span> \
+                       <span class="p">(</span><span class="n">gathering</span> <span class="o">==</span> <span class="s">&#39;smart&#39;</span> <span class="ow">and</span> <span class="n">implied</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">host</span><span class="o">.</span><span class="n">_gathered_facts</span><span class="p">):</span>
+                        <span class="c"># The setup block is always self._blocks[0], as we inject it</span>
+                        <span class="c"># during the play compilation in __init__ above.</span>
+                        <span class="n">setup_block</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_blocks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="n">setup_block</span><span class="o">.</span><span class="n">has_tasks</span><span class="p">()</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">setup_block</span><span class="o">.</span><span class="n">block</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">task</span> <span class="o">=</span> <span class="n">setup_block</span><span class="o">.</span><span class="n">block</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                            <span class="k">if</span> <span class="ow">not</span> <span class="n">peek</span><span class="p">:</span>
+                                <span class="c"># mark the host as having gathered facts, because we&#39;re</span>
+                                <span class="c"># returning the setup task to be executed</span>
+                                <span class="n">host</span><span class="o">.</span><span class="n">set_gathered_facts</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c"># This is the second trip through ITERATING_SETUP, so we clear</span>
+                    <span class="c"># the flag and move onto the next block in the list while setting</span>
+                    <span class="c"># the run state to ITERATING_TASKS</span>
+                    <span class="n">state</span><span class="o">.</span><span class="n">pending_setup</span> <span class="o">=</span> <span class="bp">False</span>
+
+                    <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_TASKS</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">state</span><span class="o">.</span><span class="n">did_start_at_task</span><span class="p">:</span>
+                        <span class="n">state</span><span class="o">.</span><span class="n">cur_block</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="n">state</span><span class="o">.</span><span class="n">cur_regular_task</span> <span class="o">=</span> <span class="mi">0</span>
+                        <span class="n">state</span><span class="o">.</span><span class="n">cur_rescue_task</span>  <span class="o">=</span> <span class="mi">0</span>
+                        <span class="n">state</span><span class="o">.</span><span class="n">cur_always_task</span>  <span class="o">=</span> <span class="mi">0</span>
+                        <span class="n">state</span><span class="o">.</span><span class="n">child_state</span> <span class="o">=</span> <span class="bp">None</span>
+
+            <span class="k">elif</span> <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_TASKS</span><span class="p">:</span>
+                <span class="c"># clear the pending setup flag, since we&#39;re past that and it didn&#39;t fail</span>
+                <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">pending_setup</span><span class="p">:</span>
+                    <span class="n">state</span><span class="o">.</span><span class="n">pending_setup</span> <span class="o">=</span> <span class="bp">False</span>
+
+                <span class="c"># First, we check for a child task state that is not failed, and if we</span>
+                <span class="c"># have one recurse into it for the next task. If we&#39;re done with the child</span>
+                <span class="c"># state, we clear it and drop back to geting the next task from the list.</span>
+                <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">tasks_child_state</span><span class="p">:</span>
+                    <span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">tasks_child_state</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_next_task_from_state</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">tasks_child_state</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">peek</span><span class="o">=</span><span class="n">peek</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_failed_state</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">tasks_child_state</span><span class="p">):</span>
+                        <span class="c"># failed child state, so clear it and move into the rescue portion</span>
+                        <span class="n">state</span><span class="o">.</span><span class="n">tasks_child_state</span> <span class="o">=</span> <span class="bp">None</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_set_failed_state</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c"># get the next task recursively</span>
+                        <span class="k">if</span> <span class="n">task</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">state</span><span class="o">.</span><span class="n">tasks_child_state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_COMPLETE</span><span class="p">:</span>
+                            <span class="c"># we&#39;re done with the child state, so clear it and continue</span>
+                            <span class="c"># back to the top of the loop to get the next task</span>
+                            <span class="n">state</span><span class="o">.</span><span class="n">tasks_child_state</span> <span class="o">=</span> <span class="bp">None</span>
+                            <span class="k">continue</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c"># First here, we check to see if we&#39;ve failed anywhere down the chain</span>
+                    <span class="c"># of states we have, and if so we move onto the rescue portion. Otherwise,</span>
+                    <span class="c"># we check to see if we&#39;ve moved past the end of the list of tasks. If so,</span>
+                    <span class="c"># we move into the always portion of the block, otherwise we get the next</span>
+                    <span class="c"># task from the list.</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_failed_state</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
+                        <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_RESCUE</span>
+                    <span class="k">elif</span> <span class="n">state</span><span class="o">.</span><span class="n">cur_regular_task</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">block</span><span class="p">):</span>
+                        <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_ALWAYS</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">task</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">block</span><span class="p">[</span><span class="n">state</span><span class="o">.</span><span class="n">cur_regular_task</span><span class="p">]</span>
+                        <span class="c"># if the current task is actually a child block, create a child</span>
+                        <span class="c"># state for us to recurse into on the next pass</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">Block</span><span class="p">)</span> <span class="ow">or</span> <span class="n">state</span><span class="o">.</span><span class="n">tasks_child_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                            <span class="n">state</span><span class="o">.</span><span class="n">tasks_child_state</span> <span class="o">=</span> <span class="n">HostState</span><span class="p">(</span><span class="n">blocks</span><span class="o">=</span><span class="p">[</span><span class="n">task</span><span class="p">])</span>
+                            <span class="n">state</span><span class="o">.</span><span class="n">tasks_child_state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_TASKS</span>
+                            <span class="n">state</span><span class="o">.</span><span class="n">tasks_child_state</span><span class="o">.</span><span class="n">cur_role</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">cur_role</span>
+                            <span class="c"># since we&#39;ve created the child state, clear the task</span>
+                            <span class="c"># so we can pick up the child state on the next pass</span>
+                            <span class="n">task</span> <span class="o">=</span> <span class="bp">None</span>
+                        <span class="n">state</span><span class="o">.</span><span class="n">cur_regular_task</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="k">elif</span> <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_RESCUE</span><span class="p">:</span>
+                <span class="c"># The process here is identical to ITERATING_TASKS, except instead</span>
+                <span class="c"># we move into the always portion of the block.</span>
+                <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">rescue_child_state</span><span class="p">:</span>
+                    <span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">rescue_child_state</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_next_task_from_state</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">rescue_child_state</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">peek</span><span class="o">=</span><span class="n">peek</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_failed_state</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">rescue_child_state</span><span class="p">):</span>
+                        <span class="n">state</span><span class="o">.</span><span class="n">rescue_child_state</span> <span class="o">=</span> <span class="bp">None</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_set_failed_state</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">task</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">state</span><span class="o">.</span><span class="n">rescue_child_state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_COMPLETE</span><span class="p">:</span>
+                            <span class="n">state</span><span class="o">.</span><span class="n">rescue_child_state</span> <span class="o">=</span> <span class="bp">None</span>
+                            <span class="k">continue</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">fail_state</span> <span class="o">&amp;</span> <span class="bp">self</span><span class="o">.</span><span class="n">FAILED_RESCUE</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">FAILED_RESCUE</span><span class="p">:</span>
+                        <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_ALWAYS</span>
+                    <span class="k">elif</span> <span class="n">state</span><span class="o">.</span><span class="n">cur_rescue_task</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">rescue</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">rescue</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">state</span><span class="o">.</span><span class="n">fail_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FAILED_NONE</span>
+                        <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_ALWAYS</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">task</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">rescue</span><span class="p">[</span><span class="n">state</span><span class="o">.</span><span class="n">cur_rescue_task</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">Block</span><span class="p">)</span> <span class="ow">or</span> <span class="n">state</span><span class="o">.</span><span class="n">rescue_child_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                            <span class="n">state</span><span class="o">.</span><span class="n">rescue_child_state</span> <span class="o">=</span> <span class="n">HostState</span><span class="p">(</span><span class="n">blocks</span><span class="o">=</span><span class="p">[</span><span class="n">task</span><span class="p">])</span>
+                            <span class="n">state</span><span class="o">.</span><span class="n">rescue_child_state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_TASKS</span>
+                            <span class="n">state</span><span class="o">.</span><span class="n">rescue_child_state</span><span class="o">.</span><span class="n">cur_role</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">cur_role</span>
+                            <span class="n">task</span> <span class="o">=</span> <span class="bp">None</span>
+                        <span class="n">state</span><span class="o">.</span><span class="n">cur_rescue_task</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="k">elif</span> <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_ALWAYS</span><span class="p">:</span>
+                <span class="c"># And again, the process here is identical to ITERATING_TASKS, except</span>
+                <span class="c"># instead we either move onto the next block in the list, or we set the</span>
+                <span class="c"># run state to ITERATING_COMPLETE in the event of any errors, or when we</span>
+                <span class="c"># have hit the end of the list of blocks.</span>
+                <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">always_child_state</span><span class="p">:</span>
+                    <span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">always_child_state</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_next_task_from_state</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">always_child_state</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">peek</span><span class="o">=</span><span class="n">peek</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_failed_state</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">always_child_state</span><span class="p">):</span>
+                        <span class="n">state</span><span class="o">.</span><span class="n">always_child_state</span> <span class="o">=</span> <span class="bp">None</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_set_failed_state</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">task</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">state</span><span class="o">.</span><span class="n">always_child_state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_COMPLETE</span><span class="p">:</span>
+                            <span class="n">state</span><span class="o">.</span><span class="n">always_child_state</span> <span class="o">=</span> <span class="bp">None</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">cur_always_task</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">always</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">fail_state</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FAILED_NONE</span><span class="p">:</span>
+                            <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_COMPLETE</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">state</span><span class="o">.</span><span class="n">cur_block</span> <span class="o">+=</span> <span class="mi">1</span>
+                            <span class="n">state</span><span class="o">.</span><span class="n">cur_regular_task</span> <span class="o">=</span> <span class="mi">0</span>
+                            <span class="n">state</span><span class="o">.</span><span class="n">cur_rescue_task</span>  <span class="o">=</span> <span class="mi">0</span>
+                            <span class="n">state</span><span class="o">.</span><span class="n">cur_always_task</span>  <span class="o">=</span> <span class="mi">0</span>
+                            <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_TASKS</span>
+                            <span class="n">state</span><span class="o">.</span><span class="n">tasks_child_state</span> <span class="o">=</span> <span class="bp">None</span>
+                            <span class="n">state</span><span class="o">.</span><span class="n">rescue_child_state</span> <span class="o">=</span> <span class="bp">None</span>
+                            <span class="n">state</span><span class="o">.</span><span class="n">always_child_state</span> <span class="o">=</span> <span class="bp">None</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">task</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">always</span><span class="p">[</span><span class="n">state</span><span class="o">.</span><span class="n">cur_always_task</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">Block</span><span class="p">)</span> <span class="ow">or</span> <span class="n">state</span><span class="o">.</span><span class="n">always_child_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                            <span class="n">state</span><span class="o">.</span><span class="n">always_child_state</span> <span class="o">=</span> <span class="n">HostState</span><span class="p">(</span><span class="n">blocks</span><span class="o">=</span><span class="p">[</span><span class="n">task</span><span class="p">])</span>
+                            <span class="n">state</span><span class="o">.</span><span class="n">always_child_state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_TASKS</span>
+                            <span class="n">state</span><span class="o">.</span><span class="n">always_child_state</span><span class="o">.</span><span class="n">cur_role</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">cur_role</span>
+                            <span class="n">task</span> <span class="o">=</span> <span class="bp">None</span>
+                        <span class="n">state</span><span class="o">.</span><span class="n">cur_always_task</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="k">elif</span> <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_COMPLETE</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+            <span class="c"># if something above set the task, break out of the loop now</span>
+            <span class="k">if</span> <span class="n">task</span><span class="p">:</span>
+                <span class="k">break</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_set_failed_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_SETUP</span><span class="p">:</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">fail_state</span> <span class="o">|=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FAILED_SETUP</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_COMPLETE</span>
+        <span class="k">elif</span> <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_TASKS</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">tasks_child_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">tasks_child_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_failed_state</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">tasks_child_state</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">fail_state</span> <span class="o">|=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FAILED_TASKS</span>
+                <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">_blocks</span><span class="p">[</span><span class="n">state</span><span class="o">.</span><span class="n">cur_block</span><span class="p">]</span><span class="o">.</span><span class="n">rescue</span><span class="p">:</span>
+                    <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_RESCUE</span>
+                <span class="k">elif</span> <span class="n">state</span><span class="o">.</span><span class="n">_blocks</span><span class="p">[</span><span class="n">state</span><span class="o">.</span><span class="n">cur_block</span><span class="p">]</span><span class="o">.</span><span class="n">always</span><span class="p">:</span>
+                    <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_ALWAYS</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_COMPLETE</span>
+        <span class="k">elif</span> <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_RESCUE</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">rescue_child_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">rescue_child_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_failed_state</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">rescue_child_state</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">fail_state</span> <span class="o">|=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FAILED_RESCUE</span>
+                <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">_blocks</span><span class="p">[</span><span class="n">state</span><span class="o">.</span><span class="n">cur_block</span><span class="p">]</span><span class="o">.</span><span class="n">always</span><span class="p">:</span>
+                    <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_ALWAYS</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_COMPLETE</span>
+        <span class="k">elif</span> <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_ALWAYS</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">always_child_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">always_child_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_failed_state</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">always_child_state</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">fail_state</span> <span class="o">|=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FAILED_ALWAYS</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_COMPLETE</span>
+        <span class="k">return</span> <span class="n">state</span>
+
+<div class="viewcode-block" id="PlayIterator.mark_host_failed"><a class="viewcode-back" href="../../../rst/ansible.executor.html#ansible.executor.play_iterator.PlayIterator.mark_host_failed">[docs]</a>    <span class="k">def</span> <span class="nf">mark_host_failed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_host_state</span><span class="p">(</span><span class="n">host</span><span class="p">)</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;marking host </span><span class="si">%s</span><span class="s"> failed, current state: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_failed_state</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;^ failed state is now: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">s</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_host_states</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">s</span></div>
+
+<div class="viewcode-block" id="PlayIterator.get_failed_hosts"><a class="viewcode-back" href="../../../rst/ansible.executor.html#ansible.executor.play_iterator.PlayIterator.get_failed_hosts">[docs]</a>    <span class="k">def</span> <span class="nf">get_failed_hosts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">((</span><span class="n">host</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_host_states</span><span class="p">)</span> <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_COMPLETE</span> <span class="ow">and</span> <span class="n">state</span><span class="o">.</span><span class="n">fail_state</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FAILED_NONE</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_check_failed_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">state</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">elif</span> <span class="n">state</span><span class="o">.</span><span class="n">fail_state</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FAILED_NONE</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_RESCUE</span> <span class="ow">and</span> <span class="n">state</span><span class="o">.</span><span class="n">fail_state</span><span class="o">&amp;</span><span class="bp">self</span><span class="o">.</span><span class="n">FAILED_RESCUE</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">elif</span> <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_TASKS</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_failed_state</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">tasks_child_state</span><span class="p">):</span>
+            <span class="n">cur_block</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_blocks</span><span class="p">[</span><span class="n">state</span><span class="o">.</span><span class="n">cur_block</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cur_block</span><span class="o">.</span><span class="n">rescue</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">state</span><span class="o">.</span><span class="n">fail_state</span> <span class="o">&amp;</span> <span class="bp">self</span><span class="o">.</span><span class="n">FAILED_RESCUE</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">elif</span> <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_RESCUE</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_failed_state</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">rescue_child_state</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">elif</span> <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_ALWAYS</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_failed_state</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">always_child_state</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+<div class="viewcode-block" id="PlayIterator.is_failed"><a class="viewcode-back" href="../../../rst/ansible.executor.html#ansible.executor.play_iterator.PlayIterator.is_failed">[docs]</a>    <span class="k">def</span> <span class="nf">is_failed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_host_state</span><span class="p">(</span><span class="n">host</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_failed_state</span><span class="p">(</span><span class="n">s</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PlayIterator.get_original_task"><a class="viewcode-back" href="../../../rst/ansible.executor.html#ansible.executor.play_iterator.PlayIterator.get_original_task">[docs]</a>    <span class="k">def</span> <span class="nf">get_original_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">task</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Finds the task in the task list which matches the UUID of the given task.</span>
+
+<span class="sd">        The executor engine serializes/deserializes objects as they are passed through</span>
+<span class="sd">        the different processes, and not all data structures are preserved. This method</span>
+<span class="sd">        allows us to find the original task passed into the executor engine.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">def</span> <span class="nf">_search_block</span><span class="p">(</span><span class="n">block</span><span class="p">):</span>
+            <span class="sd">&#39;&#39;&#39;Helper method to check a block&#39;s task lists (block/rescue/always) for a given task uuid.</span>
+
+<span class="sd">            If a Block is encountered in the place of a</span>
+<span class="sd">            task, it will be recursively searched (this happens when a task</span>
+<span class="sd">            include inserts one or more blocks into a task list).</span>
+<span class="sd">            &#39;&#39;&#39;</span>
+            <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">block</span><span class="p">,</span> <span class="n">block</span><span class="o">.</span><span class="n">rescue</span><span class="p">,</span> <span class="n">block</span><span class="o">.</span><span class="n">always</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">b</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">Block</span><span class="p">):</span>
+                        <span class="n">res</span> <span class="o">=</span> <span class="n">_search_block</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">res</span><span class="p">:</span>
+                            <span class="k">return</span> <span class="n">res</span>
+                    <span class="k">elif</span> <span class="n">t</span><span class="o">.</span><span class="n">_uuid</span> <span class="o">==</span> <span class="n">task</span><span class="o">.</span><span class="n">_uuid</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="n">t</span>
+            <span class="k">return</span> <span class="bp">None</span>
+
+        <span class="k">def</span> <span class="nf">_search_state</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">state</span><span class="o">.</span><span class="n">_blocks</span><span class="p">:</span>
+                <span class="n">res</span> <span class="o">=</span> <span class="n">_search_block</span><span class="p">(</span><span class="n">block</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">res</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">res</span>
+            <span class="k">for</span> <span class="n">child_state</span> <span class="ow">in</span> <span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">tasks_child_state</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">rescue_child_state</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">always_child_state</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">child_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">res</span> <span class="o">=</span> <span class="n">_search_state</span><span class="p">(</span><span class="n">child_state</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">res</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="n">res</span>
+            <span class="k">return</span> <span class="bp">None</span>
+
+        <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_host_state</span><span class="p">(</span><span class="n">host</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">_search_state</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">res</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">res</span>
+
+        <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_play</span><span class="o">.</span><span class="n">handlers</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">_search_block</span><span class="p">(</span><span class="n">block</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">res</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">res</span>
+
+        <span class="k">return</span> <span class="bp">None</span></div>
+
+    <span class="k">def</span> <span class="nf">_insert_tasks_into_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">task_list</span><span class="p">):</span>
+        <span class="c"># if we&#39;ve failed at all, or if the task list is empty, just return the current state</span>
+        <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">fail_state</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FAILED_NONE</span> <span class="ow">and</span> <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_RESCUE</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_ALWAYS</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">task_list</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">state</span>
+
+        <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_TASKS</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">tasks_child_state</span><span class="p">:</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">tasks_child_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_insert_tasks_into_state</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">tasks_child_state</span><span class="p">,</span> <span class="n">task_list</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">target_block</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">_blocks</span><span class="p">[</span><span class="n">state</span><span class="o">.</span><span class="n">cur_block</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">exclude_parent</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                <span class="n">before</span> <span class="o">=</span> <span class="n">target_block</span><span class="o">.</span><span class="n">block</span><span class="p">[:</span><span class="n">state</span><span class="o">.</span><span class="n">cur_regular_task</span><span class="p">]</span>
+                <span class="n">after</span>  <span class="o">=</span> <span class="n">target_block</span><span class="o">.</span><span class="n">block</span><span class="p">[</span><span class="n">state</span><span class="o">.</span><span class="n">cur_regular_task</span><span class="p">:]</span>
+                <span class="n">target_block</span><span class="o">.</span><span class="n">block</span> <span class="o">=</span> <span class="n">before</span> <span class="o">+</span> <span class="n">task_list</span> <span class="o">+</span> <span class="n">after</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">_blocks</span><span class="p">[</span><span class="n">state</span><span class="o">.</span><span class="n">cur_block</span><span class="p">]</span> <span class="o">=</span> <span class="n">target_block</span>
+        <span class="k">elif</span> <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_RESCUE</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">rescue_child_state</span><span class="p">:</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">rescue_child_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_insert_tasks_into_state</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">rescue_child_state</span><span class="p">,</span> <span class="n">task_list</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">target_block</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">_blocks</span><span class="p">[</span><span class="n">state</span><span class="o">.</span><span class="n">cur_block</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">exclude_parent</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                <span class="n">before</span> <span class="o">=</span> <span class="n">target_block</span><span class="o">.</span><span class="n">rescue</span><span class="p">[:</span><span class="n">state</span><span class="o">.</span><span class="n">cur_rescue_task</span><span class="p">]</span>
+                <span class="n">after</span>  <span class="o">=</span> <span class="n">target_block</span><span class="o">.</span><span class="n">rescue</span><span class="p">[</span><span class="n">state</span><span class="o">.</span><span class="n">cur_rescue_task</span><span class="p">:]</span>
+                <span class="n">target_block</span><span class="o">.</span><span class="n">rescue</span> <span class="o">=</span> <span class="n">before</span> <span class="o">+</span> <span class="n">task_list</span> <span class="o">+</span> <span class="n">after</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">_blocks</span><span class="p">[</span><span class="n">state</span><span class="o">.</span><span class="n">cur_block</span><span class="p">]</span> <span class="o">=</span> <span class="n">target_block</span>
+        <span class="k">elif</span> <span class="n">state</span><span class="o">.</span><span class="n">run_state</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ITERATING_ALWAYS</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">always_child_state</span><span class="p">:</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">always_child_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_insert_tasks_into_state</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">always_child_state</span><span class="p">,</span> <span class="n">task_list</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">target_block</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">_blocks</span><span class="p">[</span><span class="n">state</span><span class="o">.</span><span class="n">cur_block</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">exclude_parent</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                <span class="n">before</span> <span class="o">=</span> <span class="n">target_block</span><span class="o">.</span><span class="n">always</span><span class="p">[:</span><span class="n">state</span><span class="o">.</span><span class="n">cur_always_task</span><span class="p">]</span>
+                <span class="n">after</span>  <span class="o">=</span> <span class="n">target_block</span><span class="o">.</span><span class="n">always</span><span class="p">[</span><span class="n">state</span><span class="o">.</span><span class="n">cur_always_task</span><span class="p">:]</span>
+                <span class="n">target_block</span><span class="o">.</span><span class="n">always</span> <span class="o">=</span> <span class="n">before</span> <span class="o">+</span> <span class="n">task_list</span> <span class="o">+</span> <span class="n">after</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">_blocks</span><span class="p">[</span><span class="n">state</span><span class="o">.</span><span class="n">cur_block</span><span class="p">]</span> <span class="o">=</span> <span class="n">target_block</span>
+        <span class="k">return</span> <span class="n">state</span>
+
+<div class="viewcode-block" id="PlayIterator.add_tasks"><a class="viewcode-back" href="../../../rst/ansible.executor.html#ansible.executor.play_iterator.PlayIterator.add_tasks">[docs]</a>    <span class="k">def</span> <span class="nf">add_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">task_list</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_host_states</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_insert_tasks_into_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_host_state</span><span class="p">(</span><span class="n">host</span><span class="p">),</span> <span class="n">task_list</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

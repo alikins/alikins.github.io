@@ -1,0 +1,315 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.module_utils.gce &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>ansible.module_utils.gce</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.module_utils.gce</h1><div class="highlight"><pre>
+<span class="c"># This code is part of Ansible, but is an independent component.</span>
+<span class="c"># This particular file snippet, and this file snippet only, is BSD licensed.</span>
+<span class="c"># Modules you write using this snippet, which is embedded dynamically by Ansible</span>
+<span class="c"># still belong to the author of the module, and may assign their own license</span>
+<span class="c"># to the complete work.</span>
+<span class="c">#</span>
+<span class="c"># Copyright (c), Franck Cuny &lt;franck.cuny@gmail.com&gt;, 2014</span>
+<span class="c"># All rights reserved.</span>
+<span class="c">#</span>
+<span class="c"># Redistribution and use in source and binary forms, with or without modification,</span>
+<span class="c"># are permitted provided that the following conditions are met:</span>
+<span class="c">#</span>
+<span class="c">#    * Redistributions of source code must retain the above copyright</span>
+<span class="c">#      notice, this list of conditions and the following disclaimer.</span>
+<span class="c">#    * Redistributions in binary form must reproduce the above copyright notice,</span>
+<span class="c">#      this list of conditions and the following disclaimer in the documentation</span>
+<span class="c">#      and/or other materials provided with the distribution.</span>
+<span class="c">#</span>
+<span class="c"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND</span>
+<span class="c"># ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED</span>
+<span class="c"># WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.</span>
+<span class="c"># IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,</span>
+<span class="c"># INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,</span>
+<span class="c"># PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS</span>
+<span class="c"># INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT</span>
+<span class="c"># LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE</span>
+<span class="c"># USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</span>
+<span class="c">#</span>
+
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+<span class="kn">from</span> <span class="nn">distutils.version</span> <span class="kn">import</span> <span class="n">LooseVersion</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">libcloud.compute.types</span> <span class="kn">import</span> <span class="n">Provider</span>
+    <span class="kn">import</span> <span class="nn">libcloud</span>
+    <span class="kn">from</span> <span class="nn">libcloud.compute.providers</span> <span class="kn">import</span> <span class="n">get_driver</span>
+    <span class="n">HAS_LIBCLOUD_BASE</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">HAS_LIBCLOUD_BASE</span> <span class="o">=</span> <span class="bp">False</span>
+
+<span class="n">USER_AGENT_PRODUCT</span><span class="o">=</span><span class="s">&quot;Ansible-gce&quot;</span>
+<span class="n">USER_AGENT_VERSION</span><span class="o">=</span><span class="s">&quot;v1&quot;</span>
+
+<div class="viewcode-block" id="gce_connect"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.gce.gce_connect">[docs]</a><span class="k">def</span> <span class="nf">gce_connect</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">provider</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return a Google Cloud Engine connection.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">HAS_LIBCLOUD_BASE</span><span class="p">:</span>
+        <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&#39;libcloud must be installed to use this module&#39;</span><span class="p">)</span>
+
+    <span class="n">service_account_email</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;service_account_email&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+    <span class="n">credentials_file</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;credentials_file&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+    <span class="n">pem_file</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;pem_file&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+    <span class="n">project_id</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;project_id&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+    <span class="c"># If any of the values are not given as parameters, check the appropriate</span>
+    <span class="c"># environment variables.</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">service_account_email</span><span class="p">:</span>
+        <span class="n">service_account_email</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;GCE_EMAIL&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">project_id</span><span class="p">:</span>
+        <span class="n">project_id</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;GCE_PROJECT&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">pem_file</span><span class="p">:</span>
+        <span class="n">pem_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;GCE_PEM_FILE_PATH&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">credentials_file</span><span class="p">:</span>
+        <span class="n">credentials_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;GCE_CREDENTIALS_FILE_PATH&#39;</span><span class="p">,</span> <span class="n">pem_file</span><span class="p">)</span>
+
+    <span class="c"># If we still don&#39;t have one or more of our credentials, attempt to</span>
+    <span class="c"># get the remaining values from the libcloud secrets file.</span>
+    <span class="k">if</span> <span class="n">service_account_email</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">pem_file</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">secrets</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="n">secrets</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">secrets</span><span class="p">,</span> <span class="s">&#39;GCE_PARAMS&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">service_account_email</span><span class="p">:</span>
+                <span class="n">service_account_email</span> <span class="o">=</span> <span class="n">secrets</span><span class="o">.</span><span class="n">GCE_PARAMS</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">credentials_file</span><span class="p">:</span>
+                <span class="n">credentials_file</span> <span class="o">=</span> <span class="n">secrets</span><span class="o">.</span><span class="n">GCE_PARAMS</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">keyword_params</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">secrets</span><span class="p">,</span> <span class="s">&#39;GCE_KEYWORD_PARAMS&#39;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">project_id</span><span class="p">:</span>
+            <span class="n">project_id</span> <span class="o">=</span> <span class="n">keyword_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;project&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+    <span class="c"># If we *still* don&#39;t have the credentials we need, then it&#39;s time to</span>
+    <span class="c"># just fail out.</span>
+    <span class="k">if</span> <span class="n">service_account_email</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">credentials_file</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">project_id</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&#39;Missing GCE connection parameters in libcloud &#39;</span>
+                             <span class="s">&#39;secrets file.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">None</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c"># We have credentials but lets make sure that if they are JSON we have the minimum</span>
+        <span class="c"># libcloud requirement met</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># Try to read credentials as JSON</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">credentials_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">credentials</span><span class="p">:</span>
+                <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">credentials</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+            <span class="c"># If the credentials are proper JSON and we do not have the minimum</span>
+            <span class="c"># required libcloud version, bail out and return a descriptive error</span>
+            <span class="k">if</span> <span class="n">LooseVersion</span><span class="p">(</span><span class="n">libcloud</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span> <span class="o">&lt;</span> <span class="s">&#39;0.17.0&#39;</span><span class="p">:</span>
+                <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&#39;Using JSON credentials but libcloud minimum version not met. &#39;</span>
+                                     <span class="s">&#39;Upgrade to libcloud&gt;=0.17.0.&#39;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c"># Not JSON</span>
+            <span class="k">pass</span>
+
+    <span class="c"># Allow for passing in libcloud Google DNS (e.g, Provider.GOOGLE)</span>
+    <span class="k">if</span> <span class="n">provider</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">provider</span> <span class="o">=</span> <span class="n">Provider</span><span class="o">.</span><span class="n">GCE</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">gce</span> <span class="o">=</span> <span class="n">get_driver</span><span class="p">(</span><span class="n">provider</span><span class="p">)(</span><span class="n">service_account_email</span><span class="p">,</span> <span class="n">credentials_file</span><span class="p">,</span>
+                <span class="n">datacenter</span><span class="o">=</span><span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;zone&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">),</span>
+                <span class="n">project</span><span class="o">=</span><span class="n">project_id</span><span class="p">)</span>
+        <span class="n">gce</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">user_agent_append</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s">/</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="n">USER_AGENT_PRODUCT</span><span class="p">,</span> <span class="n">USER_AGENT_VERSION</span><span class="p">))</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">RuntimeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">changed</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="n">unexpected_error_msg</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">changed</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">gce</span></div>
+
+<div class="viewcode-block" id="unexpected_error_msg"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.gce.unexpected_error_msg">[docs]</a><span class="k">def</span> <span class="nf">unexpected_error_msg</span><span class="p">(</span><span class="n">error</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create an error string based on passed in error.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="s">&#39;Unexpected response: (</span><span class="si">%s</span><span class="s">). Detail: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">),</span> <span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">(</span><span class="n">error</span><span class="p">))</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

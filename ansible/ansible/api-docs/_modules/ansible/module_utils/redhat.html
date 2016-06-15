@@ -1,0 +1,467 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.module_utils.redhat &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>ansible.module_utils.redhat</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.module_utils.redhat</h1><div class="highlight"><pre>
+<span class="c"># This code is part of Ansible, but is an independent component.</span>
+<span class="c"># This particular file snippet, and this file snippet only, is BSD licensed.</span>
+<span class="c"># Modules you write using this snippet, which is embedded dynamically by Ansible</span>
+<span class="c"># still belong to the author of the module, and may assign their own license</span>
+<span class="c"># to the complete work.</span>
+<span class="c">#</span>
+<span class="c"># Copyright (c), James Laska</span>
+<span class="c"># All rights reserved.</span>
+<span class="c">#</span>
+<span class="c"># Redistribution and use in source and binary forms, with or without modification,</span>
+<span class="c"># are permitted provided that the following conditions are met:</span>
+<span class="c">#</span>
+<span class="c">#    * Redistributions of source code must retain the above copyright</span>
+<span class="c">#      notice, this list of conditions and the following disclaimer.</span>
+<span class="c">#    * Redistributions in binary form must reproduce the above copyright notice,</span>
+<span class="c">#      this list of conditions and the following disclaimer in the documentation</span>
+<span class="c">#      and/or other materials provided with the distribution.</span>
+<span class="c">#</span>
+<span class="c"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND</span>
+<span class="c"># ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED</span>
+<span class="c"># WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.</span>
+<span class="c"># IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,</span>
+<span class="c"># INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,</span>
+<span class="c"># PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS</span>
+<span class="c"># INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT</span>
+<span class="c"># LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE</span>
+<span class="c"># USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">types</span>
+<span class="kn">import</span> <span class="nn">ConfigParser</span>
+
+
+<div class="viewcode-block" id="RegistrationBase"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.redhat.RegistrationBase">[docs]</a><span class="k">class</span> <span class="nc">RegistrationBase</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module</span> <span class="o">=</span> <span class="n">module</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">username</span> <span class="o">=</span> <span class="n">username</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">password</span> <span class="o">=</span> <span class="n">password</span>
+
+<div class="viewcode-block" id="RegistrationBase.configure"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.redhat.RegistrationBase.configure">[docs]</a>    <span class="k">def</span> <span class="nf">configure</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&quot;Must be implemented by a sub-class&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RegistrationBase.enable"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.redhat.RegistrationBase.enable">[docs]</a>    <span class="k">def</span> <span class="nf">enable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># Remove any existing redhat.repo</span>
+        <span class="n">redhat_repo</span> <span class="o">=</span> <span class="s">&#39;/etc/yum.repos.d/redhat.repo&#39;</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">redhat_repo</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">unlink</span><span class="p">(</span><span class="n">redhat_repo</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RegistrationBase.register"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.redhat.RegistrationBase.register">[docs]</a>    <span class="k">def</span> <span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&quot;Must be implemented by a sub-class&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RegistrationBase.unregister"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.redhat.RegistrationBase.unregister">[docs]</a>    <span class="k">def</span> <span class="nf">unregister</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&quot;Must be implemented by a sub-class&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RegistrationBase.unsubscribe"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.redhat.RegistrationBase.unsubscribe">[docs]</a>    <span class="k">def</span> <span class="nf">unsubscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&quot;Must be implemented by a sub-class&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RegistrationBase.update_plugin_conf"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.redhat.RegistrationBase.update_plugin_conf">[docs]</a>    <span class="k">def</span> <span class="nf">update_plugin_conf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plugin</span><span class="p">,</span> <span class="n">enabled</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="n">plugin_conf</span> <span class="o">=</span> <span class="s">&#39;/etc/yum/pluginconf.d/</span><span class="si">%s</span><span class="s">.conf&#39;</span> <span class="o">%</span> <span class="n">plugin</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">plugin_conf</span><span class="p">):</span>
+            <span class="n">cfg</span> <span class="o">=</span> <span class="n">ConfigParser</span><span class="o">.</span><span class="n">ConfigParser</span><span class="p">()</span>
+            <span class="n">cfg</span><span class="o">.</span><span class="n">read</span><span class="p">([</span><span class="n">plugin_conf</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">enabled</span><span class="p">:</span>
+                <span class="n">cfg</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&#39;main&#39;</span><span class="p">,</span> <span class="s">&#39;enabled&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">cfg</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&#39;main&#39;</span><span class="p">,</span> <span class="s">&#39;enabled&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">fd</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">plugin_conf</span><span class="p">,</span> <span class="s">&#39;rwa+&#39;</span><span class="p">)</span>
+            <span class="n">cfg</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+            <span class="n">fd</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="RegistrationBase.subscribe"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.redhat.RegistrationBase.subscribe">[docs]</a>    <span class="k">def</span> <span class="nf">subscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&quot;Must be implemented by a sub-class&quot;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Rhsm"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.redhat.Rhsm">[docs]</a><span class="k">class</span> <span class="nc">Rhsm</span><span class="p">(</span><span class="n">RegistrationBase</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">RegistrationBase</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_config</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module</span> <span class="o">=</span> <span class="n">module</span>
+
+    <span class="k">def</span> <span class="nf">_read_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rhsm_conf</span><span class="o">=</span><span class="s">&#39;/etc/rhsm/rhsm.conf&#39;</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            Load RHSM configuration from /etc/rhsm/rhsm.conf.</span>
+<span class="sd">            Returns:</span>
+<span class="sd">             * ConfigParser object</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c"># Read RHSM defaults ...</span>
+        <span class="n">cp</span> <span class="o">=</span> <span class="n">ConfigParser</span><span class="o">.</span><span class="n">ConfigParser</span><span class="p">()</span>
+        <span class="n">cp</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">rhsm_conf</span><span class="p">)</span>
+
+        <span class="c"># Add support for specifying a default value w/o having to standup some configuration</span>
+        <span class="c"># Yeah, I know this should be subclassed ... but, oh well</span>
+        <span class="k">def</span> <span class="nf">get_option_default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+            <span class="n">sect</span><span class="p">,</span> <span class="n">opt</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_section</span><span class="p">(</span><span class="n">sect</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_option</span><span class="p">(</span><span class="n">sect</span><span class="p">,</span> <span class="n">opt</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">sect</span><span class="p">,</span> <span class="n">opt</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">default</span>
+
+        <span class="n">cp</span><span class="o">.</span><span class="n">get_option</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">MethodType</span><span class="p">(</span><span class="n">get_option_default</span><span class="p">,</span> <span class="n">cp</span><span class="p">,</span> <span class="n">ConfigParser</span><span class="o">.</span><span class="n">ConfigParser</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">cp</span>
+
+<div class="viewcode-block" id="Rhsm.enable"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.redhat.Rhsm.enable">[docs]</a>    <span class="k">def</span> <span class="nf">enable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            Enable the system to receive updates from subscription-manager.</span>
+<span class="sd">            This involves updating affected yum plugins and removing any</span>
+<span class="sd">            conflicting yum repositories.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">RegistrationBase</span><span class="o">.</span><span class="n">enable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_plugin_conf</span><span class="p">(</span><span class="s">&#39;rhnplugin&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_plugin_conf</span><span class="p">(</span><span class="s">&#39;subscription-manager&#39;</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Rhsm.configure"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.redhat.Rhsm.configure">[docs]</a>    <span class="k">def</span> <span class="nf">configure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            Configure the system as directed for registration with RHN</span>
+<span class="sd">            Raises:</span>
+<span class="sd">              * Exception - if error occurs while running command</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;subscription-manager&#39;</span><span class="p">,</span> <span class="s">&#39;config&#39;</span><span class="p">]</span>
+
+        <span class="c"># Pass supplied **kwargs as parameters to subscription-manager.  Ignore</span>
+        <span class="c"># non-configuration parameters and replace &#39;_&#39; with &#39;.&#39;.  For example,</span>
+        <span class="c"># &#39;server_hostname&#39; becomes &#39;--system.hostname&#39;.</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s">r&#39;^(system|rhsm)_&#39;</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+                <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;--</span><span class="si">%s</span><span class="s">=</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">,</span><span class="s">&#39;.&#39;</span><span class="p">),</span> <span class="n">v</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">run_command</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">check_rc</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_registered</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Determine whether the current system is registered to :RHSM:.</span>
+
+<span class="sd">           Returns:</span>
+<span class="sd">              Boolean - whether the current system is currently registered to RHSM.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c"># Quick version...</span>
+        <span class="k">if</span> <span class="bp">False</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="s">&#39;/etc/pki/consumer/cert.pem&#39;</span><span class="p">)</span> <span class="ow">and</span> \
+                   <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="s">&#39;/etc/pki/consumer/key.pem&#39;</span><span class="p">)</span>
+
+        <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;subscription-manager&#39;</span><span class="p">,</span> <span class="s">&#39;identity&#39;</span><span class="p">]</span>
+        <span class="n">rc</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">run_command</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">check_rc</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">rc</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+<div class="viewcode-block" id="Rhsm.register"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.redhat.Rhsm.register">[docs]</a>    <span class="k">def</span> <span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">autosubscribe</span><span class="p">,</span> <span class="n">activationkey</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Register the current system to the configured :RHSM: server.</span>
+
+<span class="sd">           Raises:</span>
+<span class="sd">               Exception - if error occurs while running command :command:`subscription-manager register`</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;subscription-manager&#39;</span><span class="p">,</span> <span class="s">&#39;register&#39;</span><span class="p">]</span>
+
+        <span class="c"># Generate command arguments</span>
+        <span class="k">if</span> <span class="n">activationkey</span><span class="p">:</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;--activationkey &quot;</span><span class="si">%s</span><span class="s">&quot;&#39;</span> <span class="o">%</span> <span class="n">activationkey</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">autosubscribe</span><span class="p">:</span>
+                <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;--autosubscribe&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">username</span><span class="p">:</span>
+                <span class="n">args</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s">&#39;--username&#39;</span><span class="p">,</span> <span class="n">username</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">password</span><span class="p">:</span>
+                <span class="n">args</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s">&#39;--password&#39;</span><span class="p">,</span> <span class="n">password</span><span class="p">])</span>
+
+        <span class="c"># Do the needful...</span>
+        <span class="n">rc</span><span class="p">,</span> <span class="n">stderr</span><span class="p">,</span> <span class="n">stdout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">run_command</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">check_rc</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Rhsm.unsubscribe"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.redhat.Rhsm.unsubscribe">[docs]</a>    <span class="k">def</span> <span class="nf">unsubscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            Unsubscribe a system from all subscribed channels</span>
+<span class="sd">            Raises:</span>
+<span class="sd">              * Exception - if error occurs while running command</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;subscription-manager&#39;</span><span class="p">,</span> <span class="s">&#39;unsubscribe&#39;</span><span class="p">,</span> <span class="s">&#39;--all&#39;</span><span class="p">]</span>
+        <span class="n">rc</span><span class="p">,</span> <span class="n">stderr</span><span class="p">,</span> <span class="n">stdout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">run_command</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">check_rc</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Rhsm.unregister"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.redhat.Rhsm.unregister">[docs]</a>    <span class="k">def</span> <span class="nf">unregister</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            Unregister a currently registered system</span>
+<span class="sd">            Raises:</span>
+<span class="sd">              * Exception - if error occurs while running command</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;subscription-manager&#39;</span><span class="p">,</span> <span class="s">&#39;unregister&#39;</span><span class="p">]</span>
+        <span class="n">rc</span><span class="p">,</span> <span class="n">stderr</span><span class="p">,</span> <span class="n">stdout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">run_command</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">check_rc</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Rhsm.subscribe"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.redhat.Rhsm.subscribe">[docs]</a>    <span class="k">def</span> <span class="nf">subscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">regexp</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            Subscribe current system to available pools matching the specified</span>
+<span class="sd">            regular expression</span>
+<span class="sd">            Raises:</span>
+<span class="sd">              * Exception - if error occurs while running command</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c"># Available pools ready for subscription</span>
+        <span class="n">available_pools</span> <span class="o">=</span> <span class="n">RhsmPools</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">pool</span> <span class="ow">in</span> <span class="n">available_pools</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">regexp</span><span class="p">):</span>
+            <span class="n">pool</span><span class="o">.</span><span class="n">subscribe</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="RhsmPool"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.redhat.RhsmPool">[docs]</a><span class="k">class</span> <span class="nc">RhsmPool</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Convenience class for housing subscription information</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module</span> <span class="o">=</span> <span class="n">module</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__getattribute__</span><span class="p">(</span><span class="s">&#39;_name&#39;</span><span class="p">))</span>
+
+<div class="viewcode-block" id="RhsmPool.subscribe"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.redhat.RhsmPool.subscribe">[docs]</a>    <span class="k">def</span> <span class="nf">subscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="s">&quot;subscription-manager subscribe --pool </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">PoolId</span>
+        <span class="n">rc</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">run_command</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">check_rc</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">rc</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span></div></div>
+
+
+<div class="viewcode-block" id="RhsmPools"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.redhat.RhsmPools">[docs]</a><span class="k">class</span> <span class="nc">RhsmPools</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This class is used for manipulating pools subscriptions with RHSM</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module</span> <span class="o">=</span> <span class="n">module</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">products</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_product_list</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">products</span><span class="o">.</span><span class="n">__iter__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_load_product_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Loads list of all available pools for system in data structure</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="s">&quot;subscription-manager list --available&quot;</span>
+        <span class="n">rc</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">run_command</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">check_rc</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+        <span class="n">products</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">stdout</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">):</span>
+            <span class="c"># Remove leading+trailing whitespace</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="c"># An empty line implies the end of an output group</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="c"># If a colon &#39;:&#39; is found, parse</span>
+            <span class="k">elif</span> <span class="s">&#39;:&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">key</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot; &quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">)</span>  <span class="c"># To unify</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;ProductName&#39;</span><span class="p">,</span> <span class="s">&#39;SubscriptionName&#39;</span><span class="p">]:</span>
+                    <span class="c"># Remember the name for later processing</span>
+                    <span class="n">products</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">RhsmPool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="p">,</span> <span class="n">_name</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">value</span><span class="p">))</span>
+                <span class="k">elif</span> <span class="n">products</span><span class="p">:</span>
+                    <span class="c"># Associate value with most recently recorded product</span>
+                    <span class="n">products</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">__setattr__</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+                <span class="c"># FIXME - log some warning?</span>
+                <span class="c">#else:</span>
+                    <span class="c"># warnings.warn(&quot;Unhandled subscription key/value: %s/%s&quot; % (key,value))</span>
+        <span class="k">return</span> <span class="n">products</span>
+
+<div class="viewcode-block" id="RhsmPools.filter"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.redhat.RhsmPools.filter">[docs]</a>    <span class="k">def</span> <span class="nf">filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">regexp</span><span class="o">=</span><span class="s">&#39;^$&#39;</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            Return a list of RhsmPools whose name matches the provided regular expression</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">regexp</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">products</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">product</span><span class="o">.</span><span class="n">_name</span><span class="p">):</span>
+                <span class="k">yield</span> <span class="n">product</span></div></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

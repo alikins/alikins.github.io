@@ -1,0 +1,451 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.plugins.callback.default &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="ansible.plugins.callback" href="../callback.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../../plugins.html">ansible.plugins</a> &raquo;</li>
+      
+          <li><a href="../callback.html">ansible.plugins.callback</a> &raquo;</li>
+      
+    <li>ansible.plugins.callback.default</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.plugins.callback.default</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.plugins.callback</span> <span class="kn">import</span> <span class="n">CallbackBase</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.color</span> <span class="kn">import</span> <span class="n">colorize</span><span class="p">,</span> <span class="n">hostcolor</span>
+
+<div class="viewcode-block" id="CallbackModule"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.default.CallbackModule">[docs]</a><span class="k">class</span> <span class="nc">CallbackModule</span><span class="p">(</span><span class="n">CallbackBase</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This is the default callback interface, which simply prints messages</span>
+<span class="sd">    to stdout when new callback events are received.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">CALLBACK_VERSION</span> <span class="o">=</span> <span class="mf">2.0</span>
+    <span class="n">CALLBACK_TYPE</span> <span class="o">=</span> <span class="s">&#39;stdout&#39;</span>
+    <span class="n">CALLBACK_NAME</span> <span class="o">=</span> <span class="s">&#39;default&#39;</span>
+
+<div class="viewcode-block" id="CallbackModule.v2_runner_on_failed"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.default.CallbackModule.v2_runner_on_failed">[docs]</a>    <span class="k">def</span> <span class="nf">v2_runner_on_failed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">ignore_errors</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="n">delegated_vars</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;_ansible_delegated_vars&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s">&#39;exception&#39;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="c"># extract just the actual error message from the exception text</span>
+                <span class="n">error</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">[</span><span class="s">&#39;exception&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;An exception occurred during task execution. To see the full traceback, use -vvv. The error was: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">error</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;An exception occurred during task execution. The full traceback is:</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">+</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">[</span><span class="s">&#39;exception&#39;</span><span class="p">]</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_ERROR</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">loop</span> <span class="ow">and</span> <span class="s">&#39;results&#39;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_process_items</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">delegated_vars</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;fatal: [</span><span class="si">%s</span><span class="s"> -&gt; </span><span class="si">%s</span><span class="s">]: FAILED! =&gt; </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="o">.</span><span class="n">get_name</span><span class="p">(),</span> <span class="n">delegated_vars</span><span class="p">[</span><span class="s">&#39;ansible_host&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dump_results</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">)),</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_ERROR</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;fatal: [</span><span class="si">%s</span><span class="s">]: FAILED! =&gt; </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="o">.</span><span class="n">get_name</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dump_results</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">)),</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_ERROR</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">ignore_errors</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;...ignoring&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_SKIP</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CallbackModule.v2_runner_on_ok"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.default.CallbackModule.v2_runner_on_ok">[docs]</a>    <span class="k">def</span> <span class="nf">v2_runner_on_ok</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_clean_results</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">action</span><span class="p">)</span>
+        <span class="n">delegated_vars</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;_ansible_delegated_vars&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="s">&#39;include&#39;</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">elif</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;changed&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">delegated_vars</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;changed: [</span><span class="si">%s</span><span class="s"> -&gt; </span><span class="si">%s</span><span class="s">]&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="o">.</span><span class="n">get_name</span><span class="p">(),</span> <span class="n">delegated_vars</span><span class="p">[</span><span class="s">&#39;ansible_host&#39;</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;changed: [</span><span class="si">%s</span><span class="s">]&quot;</span> <span class="o">%</span> <span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">COLOR_CHANGED</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">delegated_vars</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;ok: [</span><span class="si">%s</span><span class="s"> -&gt; </span><span class="si">%s</span><span class="s">]&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="o">.</span><span class="n">get_name</span><span class="p">(),</span> <span class="n">delegated_vars</span><span class="p">[</span><span class="s">&#39;ansible_host&#39;</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;ok: [</span><span class="si">%s</span><span class="s">]&quot;</span> <span class="o">%</span> <span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">COLOR_OK</span>
+
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">loop</span> <span class="ow">and</span> <span class="s">&#39;results&#39;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_process_items</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="s">&#39;_ansible_verbose_always&#39;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="s">&#39;_ansible_verbose_override&#39;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot; =&gt; </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dump_results</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">),)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_handle_warnings</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CallbackModule.v2_runner_on_skipped"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.default.CallbackModule.v2_runner_on_skipped">[docs]</a>    <span class="k">def</span> <span class="nf">v2_runner_on_skipped</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">C</span><span class="o">.</span><span class="n">DISPLAY_SKIPPED_HOSTS</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">loop</span> <span class="ow">and</span> <span class="s">&#39;results&#39;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_process_items</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;skipping: [</span><span class="si">%s</span><span class="s">]&quot;</span> <span class="o">%</span> <span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span>
+                <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="s">&#39;_ansible_verbose_always&#39;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="s">&#39;_ansible_verbose_override&#39;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">:</span>
+                    <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot; =&gt; </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dump_results</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_SKIP</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CallbackModule.v2_runner_on_unreachable"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.default.CallbackModule.v2_runner_on_unreachable">[docs]</a>    <span class="k">def</span> <span class="nf">v2_runner_on_unreachable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+        <span class="n">delegated_vars</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;_ansible_delegated_vars&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">delegated_vars</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;fatal: [</span><span class="si">%s</span><span class="s"> -&gt; </span><span class="si">%s</span><span class="s">]: UNREACHABLE! =&gt; </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="o">.</span><span class="n">get_name</span><span class="p">(),</span> <span class="n">delegated_vars</span><span class="p">[</span><span class="s">&#39;ansible_host&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dump_results</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">)),</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_UNREACHABLE</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;fatal: [</span><span class="si">%s</span><span class="s">]: UNREACHABLE! =&gt; </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="o">.</span><span class="n">get_name</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dump_results</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">)),</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_UNREACHABLE</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CallbackModule.v2_playbook_on_no_hosts_matched"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.default.CallbackModule.v2_playbook_on_no_hosts_matched">[docs]</a>    <span class="k">def</span> <span class="nf">v2_playbook_on_no_hosts_matched</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;skipping: no hosts matched&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_SKIP</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CallbackModule.v2_playbook_on_no_hosts_remaining"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.default.CallbackModule.v2_playbook_on_no_hosts_remaining">[docs]</a>    <span class="k">def</span> <span class="nf">v2_playbook_on_no_hosts_remaining</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">banner</span><span class="p">(</span><span class="s">&quot;NO MORE HOSTS LEFT&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CallbackModule.v2_playbook_on_task_start"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.default.CallbackModule.v2_playbook_on_task_start">[docs]</a>    <span class="k">def</span> <span class="nf">v2_playbook_on_task_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">is_conditional</span><span class="p">):</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="c"># args can be specified as no_log in several places: in the task or in</span>
+        <span class="c"># the argument spec.  We can check whether the task is no_log but the</span>
+        <span class="c"># argument spec can&#39;t be because that is only run on the target</span>
+        <span class="c"># machine and we haven&#39;t run it thereyet at this time.</span>
+        <span class="c">#</span>
+        <span class="c"># So we give people a config option to affect display of the args so</span>
+        <span class="c"># that they can secure this if they feel that their stdout is insecure</span>
+        <span class="c"># (shoulder surfing, logging stdout straight to a file, etc).</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">task</span><span class="o">.</span><span class="n">no_log</span> <span class="ow">and</span> <span class="n">C</span><span class="o">.</span><span class="n">DISPLAY_ARGS_TO_STDOUT</span><span class="p">:</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">((</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">=</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">task</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="s">&#39; </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">args</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">banner</span><span class="p">(</span><span class="s">&quot;TASK [</span><span class="si">%s%s</span><span class="s">]&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span> <span class="n">args</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">get_path</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">path</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;task path: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">path</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_DEBUG</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CallbackModule.v2_playbook_on_cleanup_task_start"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.default.CallbackModule.v2_playbook_on_cleanup_task_start">[docs]</a>    <span class="k">def</span> <span class="nf">v2_playbook_on_cleanup_task_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">banner</span><span class="p">(</span><span class="s">&quot;CLEANUP TASK [</span><span class="si">%s</span><span class="s">]&quot;</span> <span class="o">%</span> <span class="n">task</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="CallbackModule.v2_playbook_on_handler_task_start"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.default.CallbackModule.v2_playbook_on_handler_task_start">[docs]</a>    <span class="k">def</span> <span class="nf">v2_playbook_on_handler_task_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">banner</span><span class="p">(</span><span class="s">&quot;RUNNING HANDLER [</span><span class="si">%s</span><span class="s">]&quot;</span> <span class="o">%</span> <span class="n">task</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="CallbackModule.v2_playbook_on_play_start"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.default.CallbackModule.v2_playbook_on_play_start">[docs]</a>    <span class="k">def</span> <span class="nf">v2_playbook_on_play_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">play</span><span class="p">):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">play</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;PLAY&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;PLAY [</span><span class="si">%s</span><span class="s">]&quot;</span> <span class="o">%</span> <span class="n">name</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">banner</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CallbackModule.v2_on_file_diff"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.default.CallbackModule.v2_on_file_diff">[docs]</a>    <span class="k">def</span> <span class="nf">v2_on_file_diff</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">loop</span> <span class="ow">and</span> <span class="s">&#39;results&#39;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">[</span><span class="s">&#39;results&#39;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="s">&#39;diff&#39;</span> <span class="ow">in</span> <span class="n">res</span> <span class="ow">and</span> <span class="n">res</span><span class="p">[</span><span class="s">&#39;diff&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">res</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;changed&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">):</span>
+                    <span class="n">diff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_diff</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s">&#39;diff&#39;</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="n">diff</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">diff</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="s">&#39;diff&#39;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span> <span class="ow">and</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">[</span><span class="s">&#39;diff&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;changed&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">):</span>
+            <span class="n">diff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_diff</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">[</span><span class="s">&#39;diff&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">diff</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">diff</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CallbackModule.v2_runner_item_on_ok"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.default.CallbackModule.v2_runner_item_on_ok">[docs]</a>    <span class="k">def</span> <span class="nf">v2_runner_item_on_ok</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+        <span class="n">delegated_vars</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;_ansible_delegated_vars&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="s">&#39;include&#39;</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">elif</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;changed&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;changed&#39;</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">COLOR_CHANGED</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;ok&#39;</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">COLOR_OK</span>
+
+        <span class="k">if</span> <span class="n">delegated_vars</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot;: [</span><span class="si">%s</span><span class="s"> -&gt; </span><span class="si">%s</span><span class="s">]&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="o">.</span><span class="n">get_name</span><span class="p">(),</span> <span class="n">delegated_vars</span><span class="p">[</span><span class="s">&#39;ansible_host&#39;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot;: [</span><span class="si">%s</span><span class="s">]&quot;</span> <span class="o">%</span> <span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span>
+
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot; =&gt; (item=</span><span class="si">%s</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_item</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">),)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="s">&#39;_ansible_verbose_always&#39;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="s">&#39;_ansible_verbose_override&#39;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot; =&gt; </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dump_results</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CallbackModule.v2_runner_item_on_failed"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.default.CallbackModule.v2_runner_item_on_failed">[docs]</a>    <span class="k">def</span> <span class="nf">v2_runner_item_on_failed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+        <span class="n">delegated_vars</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;_ansible_delegated_vars&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s">&#39;exception&#39;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="c"># extract just the actual error message from the exception text</span>
+                <span class="n">error</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">[</span><span class="s">&#39;exception&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;An exception occurred during task execution. To see the full traceback, use -vvv. The error was: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">error</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;An exception occurred during task execution. The full traceback is:</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">+</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">[</span><span class="s">&#39;exception&#39;</span><span class="p">]</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_ERROR</span><span class="p">)</span>
+
+        <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;failed: &quot;</span>
+        <span class="k">if</span> <span class="n">delegated_vars</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot;[</span><span class="si">%s</span><span class="s"> -&gt; </span><span class="si">%s</span><span class="s">]&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="o">.</span><span class="n">get_name</span><span class="p">(),</span> <span class="n">delegated_vars</span><span class="p">[</span><span class="s">&#39;ansible_host&#39;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot;[</span><span class="si">%s</span><span class="s">]&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="o">.</span><span class="n">get_name</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s">&quot; (item=</span><span class="si">%s</span><span class="s">) =&gt; </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_item</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dump_results</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">)),</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_ERROR</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_handle_warnings</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CallbackModule.v2_runner_item_on_skipped"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.default.CallbackModule.v2_runner_item_on_skipped">[docs]</a>    <span class="k">def</span> <span class="nf">v2_runner_item_on_skipped</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">C</span><span class="o">.</span><span class="n">DISPLAY_SKIPPED_HOSTS</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;skipping: [</span><span class="si">%s</span><span class="s">] =&gt; (item=</span><span class="si">%s</span><span class="s">) &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="o">.</span><span class="n">get_name</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_item</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">))</span>
+            <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="s">&#39;_ansible_verbose_always&#39;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="s">&#39;_ansible_verbose_override&#39;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot; =&gt; </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dump_results</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_SKIP</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CallbackModule.v2_playbook_on_include"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.default.CallbackModule.v2_playbook_on_include">[docs]</a>    <span class="k">def</span> <span class="nf">v2_playbook_on_include</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">included_file</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;included: </span><span class="si">%s</span><span class="s"> for </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">included_file</span><span class="o">.</span><span class="n">_filename</span><span class="p">,</span> <span class="s">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">h</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">included_file</span><span class="o">.</span><span class="n">_hosts</span><span class="p">]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_SKIP</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CallbackModule.v2_playbook_on_stats"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.default.CallbackModule.v2_playbook_on_stats">[docs]</a>    <span class="k">def</span> <span class="nf">v2_playbook_on_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stats</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">banner</span><span class="p">(</span><span class="s">&quot;PLAY RECAP&quot;</span><span class="p">)</span>
+
+        <span class="n">hosts</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">stats</span><span class="o">.</span><span class="n">processed</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hosts</span><span class="p">:</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">summarize</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">u&quot;</span><span class="si">%s</span><span class="s"> : </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                <span class="n">hostcolor</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">t</span><span class="p">),</span>
+                <span class="n">colorize</span><span class="p">(</span><span class="s">u&#39;ok&#39;</span><span class="p">,</span> <span class="n">t</span><span class="p">[</span><span class="s">&#39;ok&#39;</span><span class="p">],</span> <span class="n">C</span><span class="o">.</span><span class="n">COLOR_OK</span><span class="p">),</span>
+                <span class="n">colorize</span><span class="p">(</span><span class="s">u&#39;changed&#39;</span><span class="p">,</span> <span class="n">t</span><span class="p">[</span><span class="s">&#39;changed&#39;</span><span class="p">],</span> <span class="n">C</span><span class="o">.</span><span class="n">COLOR_CHANGED</span><span class="p">),</span>
+                <span class="n">colorize</span><span class="p">(</span><span class="s">u&#39;unreachable&#39;</span><span class="p">,</span> <span class="n">t</span><span class="p">[</span><span class="s">&#39;unreachable&#39;</span><span class="p">],</span> <span class="n">C</span><span class="o">.</span><span class="n">COLOR_UNREACHABLE</span><span class="p">),</span>
+                <span class="n">colorize</span><span class="p">(</span><span class="s">u&#39;failed&#39;</span><span class="p">,</span> <span class="n">t</span><span class="p">[</span><span class="s">&#39;failures&#39;</span><span class="p">],</span> <span class="n">C</span><span class="o">.</span><span class="n">COLOR_ERROR</span><span class="p">)),</span>
+                <span class="n">screen_only</span><span class="o">=</span><span class="bp">True</span>
+            <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">u&quot;</span><span class="si">%s</span><span class="s"> : </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                <span class="n">hostcolor</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="bp">False</span><span class="p">),</span>
+                <span class="n">colorize</span><span class="p">(</span><span class="s">u&#39;ok&#39;</span><span class="p">,</span> <span class="n">t</span><span class="p">[</span><span class="s">&#39;ok&#39;</span><span class="p">],</span> <span class="bp">None</span><span class="p">),</span>
+                <span class="n">colorize</span><span class="p">(</span><span class="s">u&#39;changed&#39;</span><span class="p">,</span> <span class="n">t</span><span class="p">[</span><span class="s">&#39;changed&#39;</span><span class="p">],</span> <span class="bp">None</span><span class="p">),</span>
+                <span class="n">colorize</span><span class="p">(</span><span class="s">u&#39;unreachable&#39;</span><span class="p">,</span> <span class="n">t</span><span class="p">[</span><span class="s">&#39;unreachable&#39;</span><span class="p">],</span> <span class="bp">None</span><span class="p">),</span>
+                <span class="n">colorize</span><span class="p">(</span><span class="s">u&#39;failed&#39;</span><span class="p">,</span> <span class="n">t</span><span class="p">[</span><span class="s">&#39;failures&#39;</span><span class="p">],</span> <span class="bp">None</span><span class="p">)),</span>
+                <span class="n">log_only</span><span class="o">=</span><span class="bp">True</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;&quot;</span><span class="p">,</span> <span class="n">screen_only</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CallbackModule.v2_playbook_on_start"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.default.CallbackModule.v2_playbook_on_start">[docs]</a>    <span class="k">def</span> <span class="nf">v2_playbook_on_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">playbook</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">os.path</span> <span class="kn">import</span> <span class="n">basename</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">banner</span><span class="p">(</span><span class="s">&quot;PLAYBOOK: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">basename</span><span class="p">(</span><span class="n">playbook</span><span class="o">.</span><span class="n">_file_name</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">option</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">option</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;read_file&#39;</span><span class="p">,</span> <span class="s">&#39;ensure_value&#39;</span><span class="p">,</span> <span class="s">&#39;read_module&#39;</span><span class="p">]:</span>
+                        <span class="k">continue</span>
+                    <span class="n">val</span> <span class="o">=</span>  <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">,</span><span class="n">option</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">val</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">vvvv</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">option</span><span class="p">,</span><span class="n">val</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="CallbackModule.v2_runner_retry"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.default.CallbackModule.v2_runner_retry">[docs]</a>    <span class="k">def</span> <span class="nf">v2_runner_retry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;FAILED - RETRYING: </span><span class="si">%s</span><span class="s"> (</span><span class="si">%d</span><span class="s"> retries left).&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">[</span><span class="s">&#39;retries&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">[</span><span class="s">&#39;attempts&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="ow">or</span> <span class="s">&#39;_ansible_verbose_always&#39;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="s">&#39;_ansible_verbose_override&#39;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot;Result was: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dump_results</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_result</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_DEBUG</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

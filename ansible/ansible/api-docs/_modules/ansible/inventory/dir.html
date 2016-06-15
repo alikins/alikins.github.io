@@ -1,0 +1,492 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.inventory.dir &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="ansible.inventory" href="../inventory.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../inventory.html">ansible.inventory</a> &raquo;</li>
+      
+    <li>ansible.inventory.dir</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.inventory.dir</h1><div class="highlight"><pre>
+<span class="c"># (c) 2013, Daniel Hokka Zakrisson &lt;daniel@hozac.com&gt;</span>
+<span class="c"># (c) 2014, Serge van Ginderachter &lt;serge@vanginderachter.be&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c">#############################################</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.vars</span> <span class="kn">import</span> <span class="n">combine_vars</span>
+
+<span class="c">#FIXME: make into plugins</span>
+<span class="kn">from</span> <span class="nn">ansible.inventory.ini</span> <span class="kn">import</span> <span class="n">InventoryParser</span> <span class="k">as</span> <span class="n">InventoryINIParser</span>
+<span class="kn">from</span> <span class="nn">ansible.inventory.yaml</span> <span class="kn">import</span> <span class="n">InventoryParser</span> <span class="k">as</span> <span class="n">InventoryYAMLParser</span>
+<span class="kn">from</span> <span class="nn">ansible.inventory.script</span> <span class="kn">import</span> <span class="n">InventoryScript</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;get_file_parser&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="get_file_parser"><a class="viewcode-back" href="../../../rst/ansible.inventory.html#ansible.inventory.dir.get_file_parser">[docs]</a><span class="k">def</span> <span class="nf">get_file_parser</span><span class="p">(</span><span class="n">hostsfile</span><span class="p">,</span> <span class="n">groups</span><span class="p">,</span> <span class="n">loader</span><span class="p">):</span>
+    <span class="c"># check to see if the specified file starts with a</span>
+    <span class="c"># shebang (#!/), so if an error is raised by the parser</span>
+    <span class="c"># class we can show a more apropos error</span>
+
+    <span class="n">shebang_present</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="n">processed</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="n">myerr</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">inv_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">hostsfile</span><span class="p">)</span>
+        <span class="n">first_line</span> <span class="o">=</span> <span class="n">inv_file</span><span class="o">.</span><span class="n">readlines</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">inv_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">first_line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;#!&#39;</span><span class="p">):</span>
+            <span class="n">shebang_present</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+
+    <span class="c">#FIXME: make this &#39;plugin loop&#39;</span>
+    <span class="c"># script</span>
+    <span class="k">if</span> <span class="n">loader</span><span class="o">.</span><span class="n">is_executable</span><span class="p">(</span><span class="n">hostsfile</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">parser</span> <span class="o">=</span> <span class="n">InventoryScript</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span> <span class="n">groups</span><span class="o">=</span><span class="n">groups</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">hostsfile</span><span class="p">)</span>
+            <span class="n">processed</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">myerr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">shebang_present</span><span class="p">:</span>
+        <span class="n">myerr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;The file </span><span class="si">%s</span><span class="s"> looks like it should be an executable inventory script, but is not marked executable. Perhaps you want to correct this with `chmod +x </span><span class="si">%s</span><span class="s">`?&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">hostsfile</span><span class="p">,</span> <span class="n">hostsfile</span><span class="p">))</span>
+
+    <span class="c"># YAML/JSON</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">processed</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">shebang_present</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">hostsfile</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">C</span><span class="o">.</span><span class="n">YAML_FILENAME_EXTENSIONS</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">parser</span> <span class="o">=</span> <span class="n">InventoryYAMLParser</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span> <span class="n">groups</span><span class="o">=</span><span class="n">groups</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">hostsfile</span><span class="p">)</span>
+            <span class="n">processed</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">myerr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+
+    <span class="c"># ini</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">processed</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">shebang_present</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">parser</span> <span class="o">=</span> <span class="n">InventoryINIParser</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span> <span class="n">groups</span><span class="o">=</span><span class="n">groups</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">hostsfile</span><span class="p">)</span>
+            <span class="n">processed</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">myerr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">processed</span> <span class="ow">and</span> <span class="n">myerr</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">myerr</span><span class="p">)</span> <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">parser</span></div>
+
+<span class="k">class</span> <span class="nc">InventoryDirectory</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Host inventory parser for ansible using a directory of inventories. &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loader</span><span class="p">,</span> <span class="n">groups</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_HOST_LIST</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">groups</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">groups</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">directory</span> <span class="o">=</span> <span class="n">filename</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parsers</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hosts</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">groups</span> <span class="o">=</span> <span class="n">groups</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_loader</span> <span class="o">=</span> <span class="n">loader</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
+
+            <span class="c"># Skip files that end with certain extensions or characters</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">ext</span><span class="p">)</span> <span class="k">for</span> <span class="n">ext</span> <span class="ow">in</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_INVENTORY_IGNORE</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="c"># Skip hidden files</span>
+            <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">i</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;./&#39;</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="c"># These are things inside of an inventory basedir</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&quot;host_vars&quot;</span><span class="p">,</span> <span class="s">&quot;group_vars&quot;</span><span class="p">,</span> <span class="s">&quot;vars_plugins&quot;</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="n">fullpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">fullpath</span><span class="p">):</span>
+                <span class="n">parser</span> <span class="o">=</span> <span class="n">InventoryDirectory</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span> <span class="n">groups</span><span class="o">=</span><span class="n">groups</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">fullpath</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">parser</span> <span class="o">=</span> <span class="n">get_file_parser</span><span class="p">(</span><span class="n">fullpath</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">,</span> <span class="n">loader</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">parser</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="c">#FIXME: needs to use display</span>
+                    <span class="kn">import</span> <span class="nn">warnings</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Could not find parser for </span><span class="si">%s</span><span class="s">, skipping&quot;</span> <span class="o">%</span> <span class="n">fullpath</span><span class="p">)</span>
+                    <span class="k">continue</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">parsers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
+
+            <span class="c"># retrieve all groups and hosts form the parser and add them to</span>
+            <span class="c"># self, don&#39;t look at group lists yet, to avoid</span>
+            <span class="c"># recursion trouble, but just make sure all objects exist in self</span>
+            <span class="n">newgroups</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">newgroups</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">hosts</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_add_host</span><span class="p">(</span><span class="n">host</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">newgroups</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_add_group</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+
+            <span class="c"># now check the objects lists so they contain only objects from</span>
+            <span class="c"># self; membership data in groups is already fine (except all &amp;</span>
+            <span class="c"># ungrouped, see later), but might still reference objects not in self</span>
+            <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="c"># iterate on a copy of the lists, as those lists get changed in</span>
+                <span class="c"># the loop</span>
+                <span class="c"># list with group&#39;s child group objects:</span>
+                <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">child_groups</span><span class="p">[:]:</span>
+                    <span class="k">if</span> <span class="n">child</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">child</span><span class="o">.</span><span class="n">name</span><span class="p">]:</span>
+                        <span class="n">group</span><span class="o">.</span><span class="n">child_groups</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+                        <span class="n">group</span><span class="o">.</span><span class="n">child_groups</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">child</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
+                <span class="c"># list with group&#39;s parent group objects:</span>
+                <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">parent_groups</span><span class="p">[:]:</span>
+                    <span class="k">if</span> <span class="n">parent</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">parent</span><span class="o">.</span><span class="n">name</span><span class="p">]:</span>
+                        <span class="n">group</span><span class="o">.</span><span class="n">parent_groups</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+                        <span class="n">group</span><span class="o">.</span><span class="n">parent_groups</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">parent</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
+                <span class="c"># list with group&#39;s host objects:</span>
+                <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">hosts</span><span class="p">[:]:</span>
+                    <span class="k">if</span> <span class="n">host</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hosts</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]:</span>
+                        <span class="n">group</span><span class="o">.</span><span class="n">hosts</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">host</span><span class="p">)</span>
+                        <span class="n">group</span><span class="o">.</span><span class="n">hosts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hosts</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
+                    <span class="c"># also check here that the group that contains host, is</span>
+                    <span class="c"># also contained in the host&#39;s group list</span>
+                    <span class="k">if</span> <span class="n">group</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">hosts</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">groups</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">hosts</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+
+        <span class="c"># extra checks on special groups all and ungrouped</span>
+        <span class="c"># remove hosts from &#39;ungrouped&#39; if they became member of other groups</span>
+        <span class="k">if</span> <span class="s">&#39;ungrouped&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">:</span>
+            <span class="n">ungrouped</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="s">&#39;ungrouped&#39;</span><span class="p">]</span>
+            <span class="c"># loop on a copy of ungrouped hosts, as we want to change that list</span>
+            <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">ungrouped</span><span class="o">.</span><span class="n">hosts</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">host</span><span class="o">.</span><span class="n">groups</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">host</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">ungrouped</span><span class="p">)</span>
+                    <span class="n">ungrouped</span><span class="o">.</span><span class="n">hosts</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">host</span><span class="p">)</span>
+
+        <span class="c"># remove hosts from &#39;all&#39; if they became member of other groups</span>
+        <span class="c"># all should only contain direct children, not grandchildren</span>
+        <span class="c"># direct children should have dept == 1</span>
+        <span class="k">if</span> <span class="s">&#39;all&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">:</span>
+            <span class="n">allgroup</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="s">&#39;all&#39;</span> <span class="p">]</span>
+            <span class="c"># loop on a copy of all&#39;s  child groups, as we want to change that list</span>
+            <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">allgroup</span><span class="o">.</span><span class="n">child_groups</span><span class="p">[:]:</span>
+                <span class="c"># groups might once have beeen added to all, and later be added</span>
+                <span class="c"># to another group: we need to remove the link wit all then</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">group</span><span class="o">.</span><span class="n">parent_groups</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">allgroup</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">parent_groups</span><span class="p">:</span>
+                    <span class="c"># real children of all have just 1 parent, all</span>
+                    <span class="c"># this one has more, so not a direct child of all anymore</span>
+                    <span class="n">group</span><span class="o">.</span><span class="n">parent_groups</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">allgroup</span><span class="p">)</span>
+                    <span class="n">allgroup</span><span class="o">.</span><span class="n">child_groups</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">allgroup</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">parent_groups</span><span class="p">:</span>
+                    <span class="c"># this group was once added to all, but doesn&#39;t list it as</span>
+                    <span class="c"># a parent any more; the info in the group is the correct</span>
+                    <span class="c"># info</span>
+                    <span class="n">allgroup</span><span class="o">.</span><span class="n">child_groups</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">_add_group</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Merge an existing group or add a new one;</span>
+<span class="sd">            Track parent and child groups, and hosts of the new one &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">group</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">:</span>
+            <span class="c"># it&#39;s brand new, add him!</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">group</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">group</span>
+        <span class="c"># the Group class does not (yet) implement __eq__/__ne__,</span>
+        <span class="c"># so unlike Host we do a regular comparison here</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">group</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">!=</span> <span class="n">group</span><span class="p">:</span>
+            <span class="c"># different object, merge</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_merge_groups</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">group</span><span class="o">.</span><span class="n">name</span><span class="p">],</span> <span class="n">group</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_add_host</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">hosts</span><span class="p">:</span>
+            <span class="c"># Papa&#39;s got a brand new host</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hosts</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">host</span>
+        <span class="c"># because the __eq__/__ne__ methods in Host() compare the</span>
+        <span class="c"># name fields rather than references, we use id() here to</span>
+        <span class="c"># do the object comparison for merges</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hosts</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">!=</span> <span class="n">host</span><span class="p">:</span>
+            <span class="c"># different object, merge</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_merge_hosts</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hosts</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">],</span> <span class="n">host</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_merge_groups</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">newgroup</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Merge all of instance newgroup into group,</span>
+<span class="sd">            update parent/child relationships</span>
+<span class="sd">            group lists may still contain group objects that exist in self with</span>
+<span class="sd">            same name, but was instanciated as a different object in some other</span>
+<span class="sd">            inventory parser; these are handled later &quot;&quot;&quot;</span>
+
+        <span class="c"># name</span>
+        <span class="k">if</span> <span class="n">group</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="n">newgroup</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Cannot merge group </span><span class="si">%s</span><span class="s"> with </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">group</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">newgroup</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="c"># depth</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">depth</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">group</span><span class="o">.</span><span class="n">depth</span><span class="p">,</span> <span class="n">newgroup</span><span class="o">.</span><span class="n">depth</span><span class="p">])</span>
+
+        <span class="c"># hosts list (host objects are by now already added to self.hosts)</span>
+        <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">newgroup</span><span class="o">.</span><span class="n">hosts</span><span class="p">:</span>
+            <span class="n">grouphosts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([(</span><span class="n">h</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">hosts</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">grouphosts</span><span class="p">:</span>
+                <span class="c"># same host name but different object, merge</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_merge_hosts</span><span class="p">(</span><span class="n">grouphosts</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">],</span> <span class="n">host</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># new membership, add host to group from self</span>
+                <span class="c"># group from self will also be added again to host.groups, but</span>
+                <span class="c"># as different object</span>
+                <span class="n">group</span><span class="o">.</span><span class="n">add_host</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hosts</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
+                <span class="c"># now remove this the old object for group in host.groups</span>
+                <span class="k">for</span> <span class="n">hostgroup</span> <span class="ow">in</span> <span class="p">[</span><span class="n">g</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">host</span><span class="o">.</span><span class="n">groups</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="n">hostgroup</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">group</span><span class="o">.</span><span class="n">name</span> <span class="ow">and</span> <span class="n">hostgroup</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">group</span><span class="o">.</span><span class="n">name</span><span class="p">]:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">hosts</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">hostgroup</span><span class="p">)</span>
+
+
+        <span class="c"># group child membership relation</span>
+        <span class="k">for</span> <span class="n">newchild</span> <span class="ow">in</span> <span class="n">newgroup</span><span class="o">.</span><span class="n">child_groups</span><span class="p">:</span>
+            <span class="c"># dict with existing child groups:</span>
+            <span class="n">childgroups</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([(</span><span class="n">g</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">g</span><span class="p">)</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">child_groups</span><span class="p">])</span>
+            <span class="c"># check if child of new group is already known as a child</span>
+            <span class="k">if</span> <span class="n">newchild</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">childgroups</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">group</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">add_child_group</span><span class="p">(</span><span class="n">newchild</span><span class="p">)</span>
+
+        <span class="c"># group parent membership relation</span>
+        <span class="k">for</span> <span class="n">newparent</span> <span class="ow">in</span> <span class="n">newgroup</span><span class="o">.</span><span class="n">parent_groups</span><span class="p">:</span>
+            <span class="c"># dict with existing parent groups:</span>
+            <span class="n">parentgroups</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([(</span><span class="n">g</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">g</span><span class="p">)</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">parent_groups</span><span class="p">])</span>
+            <span class="c"># check if parent of new group is already known as a parent</span>
+            <span class="k">if</span> <span class="n">newparent</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">parentgroups</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">newparent</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">:</span>
+                    <span class="c"># group does not exist yet in self, import him</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">newparent</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">newparent</span>
+                <span class="c"># group now exists but not yet as a parent here</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">newparent</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">add_child_group</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+
+        <span class="c"># variables</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">group</span><span class="o">.</span><span class="n">vars</span><span class="p">,</span> <span class="n">newgroup</span><span class="o">.</span><span class="n">vars</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_merge_hosts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">host</span><span class="p">,</span> <span class="n">newhost</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Merge all of instance newhost into host &quot;&quot;&quot;</span>
+
+        <span class="c"># name</span>
+        <span class="k">if</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="n">newhost</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Cannot merge host </span><span class="si">%s</span><span class="s"> with </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">newhost</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="c"># group membership relation</span>
+        <span class="k">for</span> <span class="n">newgroup</span> <span class="ow">in</span> <span class="n">newhost</span><span class="o">.</span><span class="n">groups</span><span class="p">:</span>
+            <span class="c"># dict with existing groups:</span>
+            <span class="n">hostgroups</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([(</span><span class="n">g</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">g</span><span class="p">)</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">host</span><span class="o">.</span><span class="n">groups</span><span class="p">])</span>
+            <span class="c"># check if new group is already known as a group</span>
+            <span class="k">if</span> <span class="n">newgroup</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">hostgroups</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">newgroup</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">:</span>
+                    <span class="c"># group does not exist yet in self, import him</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">newgroup</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">newgroup</span>
+                <span class="c"># group now exists but doesn&#39;t have host yet</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">newgroup</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">add_host</span><span class="p">(</span><span class="n">host</span><span class="p">)</span>
+
+        <span class="c"># variables</span>
+        <span class="n">host</span><span class="o">.</span><span class="n">vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">host</span><span class="o">.</span><span class="n">vars</span><span class="p">,</span> <span class="n">newhost</span><span class="o">.</span><span class="n">vars</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_host_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Gets additional host variables from all inventories &quot;&quot;&quot;</span>
+        <span class="nb">vars</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parsers</span><span class="p">:</span>
+            <span class="nb">vars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">get_host_variables</span><span class="p">(</span><span class="n">host</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">vars</span>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

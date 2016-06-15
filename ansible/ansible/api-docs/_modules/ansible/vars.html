@@ -1,0 +1,858 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.vars &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../index.html"/>
+        <link rel="up" title="Module code" href="../index.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      
+    <li>ansible.vars</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.vars</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">MutableMapping</span>
+
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">iteritems</span>
+<span class="kn">from</span> <span class="nn">jinja2.exceptions</span> <span class="kn">import</span> <span class="n">UndefinedError</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">hashlib</span> <span class="kn">import</span> <span class="n">sha1</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">sha</span> <span class="kn">import</span> <span class="n">sha</span> <span class="k">as</span> <span class="n">sha1</span>
+
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.cli</span> <span class="kn">import</span> <span class="n">CLI</span>
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">string_types</span><span class="p">,</span> <span class="n">text_type</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span><span class="p">,</span> <span class="n">AnsibleParserError</span><span class="p">,</span> <span class="n">AnsibleUndefinedVariable</span><span class="p">,</span> <span class="n">AnsibleFileNotFound</span>
+<span class="kn">from</span> <span class="nn">ansible.inventory.host</span> <span class="kn">import</span> <span class="n">Host</span>
+<span class="kn">from</span> <span class="nn">ansible.plugins</span> <span class="kn">import</span> <span class="n">lookup_loader</span>
+<span class="kn">from</span> <span class="nn">ansible.plugins.cache</span> <span class="kn">import</span> <span class="n">FactCache</span>
+<span class="kn">from</span> <span class="nn">ansible.template</span> <span class="kn">import</span> <span class="n">Templar</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.listify</span> <span class="kn">import</span> <span class="n">listify_lookup_plugin_terms</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.vars</span> <span class="kn">import</span> <span class="n">combine_vars</span>
+<span class="kn">from</span> <span class="nn">ansible.vars.unsafe_proxy</span> <span class="kn">import</span> <span class="n">wrap_var</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+<span class="n">VARIABLE_CACHE</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+<span class="n">HOSTVARS_CACHE</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+<div class="viewcode-block" id="AnsibleInventoryVarsData"><a class="viewcode-back" href="../../rst/ansible.vars.html#ansible.vars.AnsibleInventoryVarsData">[docs]</a><span class="k">class</span> <span class="nc">AnsibleInventoryVarsData</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">AnsibleInventoryVarsData</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="bp">None</span></div>
+
+<div class="viewcode-block" id="preprocess_vars"><a class="viewcode-back" href="../../rst/ansible.vars.html#ansible.vars.preprocess_vars">[docs]</a><span class="k">def</span> <span class="nf">preprocess_vars</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Ensures that vars contained in the parameter passed in are</span>
+<span class="sd">    returned as a list of dictionaries, to ensure for instance</span>
+<span class="sd">    that vars loaded from a file conform to an expected state.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">if</span> <span class="n">a</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">None</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[</span> <span class="n">a</span> <span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">a</span>
+
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">MutableMapping</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;variable files must contain either a dictionary of variables, or a list of dictionaries. Got: </span><span class="si">%s</span><span class="s"> (</span><span class="si">%s</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">a</span><span class="p">)))</span>
+
+    <span class="k">return</span> <span class="n">data</span></div>
+
+<div class="viewcode-block" id="strip_internal_keys"><a class="viewcode-back" href="../../rst/ansible.vars.html#ansible.vars.strip_internal_keys">[docs]</a><span class="k">def</span> <span class="nf">strip_internal_keys</span><span class="p">(</span><span class="n">dirty</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    All keys stating with _ansible_ are internal, so create a copy of the &#39;dirty&#39; dict</span>
+<span class="sd">    and remove them from the clean one before returning it</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">clean</span> <span class="o">=</span> <span class="n">dirty</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">dirty</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">string_types</span><span class="p">)</span> <span class="ow">and</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;_ansible_&#39;</span><span class="p">):</span>
+            <span class="k">del</span> <span class="n">clean</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dirty</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">clean</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">strip_internal_keys</span><span class="p">(</span><span class="n">dirty</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">clean</span></div>
+
+<div class="viewcode-block" id="VariableManager"><a class="viewcode-back" href="../../rst/ansible.vars.html#ansible.vars.VariableManager">[docs]</a><span class="k">class</span> <span class="nc">VariableManager</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fact_cache</span> <span class="o">=</span> <span class="n">FactCache</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_nonpersistent_fact_cache</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_vars_cache</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_extra_vars</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_host_vars_files</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_group_vars_files</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hostvars</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_omit_token</span> <span class="o">=</span> <span class="s">&#39;__omit_place_holder__</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">sha1</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">urandom</span><span class="p">(</span><span class="mi">64</span><span class="p">))</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_options_vars</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">fact_cache</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fact_cache</span><span class="p">,</span>
+            <span class="n">np_fact_cache</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nonpersistent_fact_cache</span><span class="p">,</span>
+            <span class="n">vars_cache</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vars_cache</span><span class="p">,</span>
+            <span class="n">extra_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extra_vars</span><span class="p">,</span>
+            <span class="n">host_vars_files</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_host_vars_files</span><span class="p">,</span>
+            <span class="n">group_vars_files</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group_vars_files</span><span class="p">,</span>
+            <span class="n">omit_token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_omit_token</span><span class="p">,</span>
+            <span class="n">options_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options_vars</span><span class="p">,</span>
+            <span class="c">#inventory = self._inventory,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fact_cache</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;fact_cache&#39;</span><span class="p">,</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_nonpersistent_fact_cache</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;np_fact_cache&#39;</span><span class="p">,</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_vars_cache</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;vars_cache&#39;</span><span class="p">,</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_extra_vars</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;extra_vars&#39;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_host_vars_files</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;host_vars_files&#39;</span><span class="p">,</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_group_vars_files</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;group_vars_files&#39;</span><span class="p">,</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_omit_token</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;omit_token&#39;</span><span class="p">,</span> <span class="s">&#39;__omit_place_holder__</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">sha1</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">urandom</span><span class="p">(</span><span class="mi">64</span><span class="p">))</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;inventory&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_options_vars</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;options_vars&#39;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">_get_cache_entry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">play</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">play_id</span> <span class="o">=</span> <span class="s">&quot;NONE&quot;</span>
+        <span class="k">if</span> <span class="n">play</span><span class="p">:</span>
+            <span class="n">play_id</span> <span class="o">=</span> <span class="n">play</span><span class="o">.</span><span class="n">_uuid</span>
+
+        <span class="n">host_id</span> <span class="o">=</span> <span class="s">&quot;NONE&quot;</span>
+        <span class="k">if</span> <span class="n">host</span><span class="p">:</span>
+            <span class="n">host_id</span> <span class="o">=</span> <span class="n">host</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span>
+
+        <span class="n">task_id</span> <span class="o">=</span> <span class="s">&quot;NONE&quot;</span>
+        <span class="k">if</span> <span class="n">task</span><span class="p">:</span>
+            <span class="n">task_id</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">_uuid</span>
+
+        <span class="k">return</span> <span class="s">&quot;PLAY:</span><span class="si">%s</span><span class="s">;HOST:</span><span class="si">%s</span><span class="s">;TASK:</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">play_id</span><span class="p">,</span> <span class="n">host_id</span><span class="p">,</span> <span class="n">task_id</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">extra_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; ensures a clean copy of the extra_vars are made &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extra_vars</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="nd">@extra_vars.setter</span>
+    <span class="k">def</span> <span class="nf">extra_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; ensures a clean copy of the extra_vars are used to set the value &#39;&#39;&#39;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">MutableMapping</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_extra_vars</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+<div class="viewcode-block" id="VariableManager.set_inventory"><a class="viewcode-back" href="../../rst/ansible.vars.html#ansible.vars.VariableManager.set_inventory">[docs]</a>    <span class="k">def</span> <span class="nf">set_inventory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inventory</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span> <span class="o">=</span> <span class="n">inventory</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">options_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; ensures a clean copy of the options_vars are made &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options_vars</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="nd">@options_vars.setter</span>
+    <span class="k">def</span> <span class="nf">options_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; ensures a clean copy of the options_vars are used to set the value &#39;&#39;&#39;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_options_vars</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_preprocess_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Ensures that vars contained in the parameter passed in are</span>
+<span class="sd">        returned as a list of dictionaries, to ensure for instance</span>
+<span class="sd">        that vars loaded from a file conform to an expected state.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="n">a</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="p">[</span> <span class="n">a</span> <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">a</span>
+
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">MutableMapping</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;variable files must contain either a dictionary of variables, or a list of dictionaries. Got: </span><span class="si">%s</span><span class="s"> (</span><span class="si">%s</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">a</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="n">data</span>
+
+<div class="viewcode-block" id="VariableManager.get_vars"><a class="viewcode-back" href="../../rst/ansible.vars.html#ansible.vars.VariableManager.get_vars">[docs]</a>    <span class="k">def</span> <span class="nf">get_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loader</span><span class="p">,</span> <span class="n">play</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">include_hostvars</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">include_delegate_to</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">use_cache</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Returns the variables, with optional &quot;context&quot; given via the parameter for the play, host, and task.</span>
+
+<span class="sd">        The context can  possibly result in different</span>
+<span class="sd">        sets of variables being returned due to the additional context.</span>
+
+<span class="sd">        The order of precedence is:</span>
+
+<span class="sd">         - play-&gt;roles-&gt;get_default_vars (if there is a play context)</span>
+<span class="sd">         - group_vars_files[host] (if there is a host context)</span>
+<span class="sd">         - host_vars_files[host] (if there is a host context)</span>
+<span class="sd">         - host-&gt;get_vars (if there is a host context)</span>
+<span class="sd">         - fact_cache[host] (if there is a host context)</span>
+<span class="sd">         - play vars (if there is a play context)</span>
+<span class="sd">         - play vars_files (if there&#39;s no host context, ignore</span>
+<span class="sd">           file names that cannot be templated)</span>
+<span class="sd">         - task-&gt;get_vars (if there is a task context)</span>
+<span class="sd">         - vars_cache[host] (if there is a host context)</span>
+<span class="sd">         - extra vars</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;in VariableManager get_vars()&quot;</span><span class="p">)</span>
+        <span class="n">cache_entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_cache_entry</span><span class="p">(</span><span class="n">play</span><span class="o">=</span><span class="n">play</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">task</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cache_entry</span> <span class="ow">in</span> <span class="n">VARIABLE_CACHE</span> <span class="ow">and</span> <span class="n">use_cache</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;vars are cached, returning them now&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">VARIABLE_CACHE</span><span class="p">[</span><span class="n">cache_entry</span><span class="p">]</span>
+
+        <span class="n">all_vars</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">magic_variables</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_magic_variables</span><span class="p">(</span>
+            <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span>
+            <span class="n">play</span><span class="o">=</span><span class="n">play</span><span class="p">,</span>
+            <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span>
+            <span class="n">task</span><span class="o">=</span><span class="n">task</span><span class="p">,</span>
+            <span class="n">include_hostvars</span><span class="o">=</span><span class="n">include_hostvars</span><span class="p">,</span>
+            <span class="n">include_delegate_to</span><span class="o">=</span><span class="n">include_delegate_to</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">play</span><span class="p">:</span>
+            <span class="c"># first we compile any vars specified in defaults/main.yml</span>
+            <span class="c"># for all roles within the specified play</span>
+            <span class="k">for</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">play</span><span class="o">.</span><span class="n">get_roles</span><span class="p">():</span>
+                <span class="n">all_vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">all_vars</span><span class="p">,</span> <span class="n">role</span><span class="o">.</span><span class="n">get_default_vars</span><span class="p">())</span>
+
+            <span class="c"># if we have a task in this context, and that task has a role, make</span>
+            <span class="c"># sure it sees its defaults above any other roles, as we previously</span>
+            <span class="c"># (v1) made sure each task had a copy of its roles default vars</span>
+            <span class="k">if</span> <span class="n">task</span> <span class="ow">and</span> <span class="n">task</span><span class="o">.</span><span class="n">_role</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">all_vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">all_vars</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">_role</span><span class="o">.</span><span class="n">get_default_vars</span><span class="p">(</span><span class="n">dep_chain</span><span class="o">=</span><span class="n">task</span><span class="o">.</span><span class="n">_block</span><span class="o">.</span><span class="n">get_dep_chain</span><span class="p">()))</span>
+
+        <span class="k">if</span> <span class="n">host</span><span class="p">:</span>
+            <span class="c"># next, if a host is specified, we load any vars from group_vars</span>
+            <span class="c"># files and then any vars from host_vars files which may apply to</span>
+            <span class="c"># this host or the groups it belongs to</span>
+
+            <span class="c"># we merge in the special &#39;all&#39; group_vars first, if they exist</span>
+            <span class="k">if</span> <span class="s">&#39;all&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group_vars_files</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">preprocess_vars</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_group_vars_files</span><span class="p">[</span><span class="s">&#39;all&#39;</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                    <span class="n">all_vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">all_vars</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+
+            <span class="c"># we merge in vars from groups specified in the inventory (INI or script)</span>
+            <span class="n">all_vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">all_vars</span><span class="p">,</span> <span class="n">host</span><span class="o">.</span><span class="n">get_group_vars</span><span class="p">())</span>
+
+            <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">host</span><span class="o">.</span><span class="n">get_groups</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">g</span><span class="p">:</span> <span class="n">g</span><span class="o">.</span><span class="n">depth</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">group</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group_vars_files</span> <span class="ow">and</span> <span class="n">group</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s">&#39;all&#39;</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group_vars_files</span><span class="p">[</span><span class="n">group</span><span class="o">.</span><span class="n">name</span><span class="p">]:</span>
+                        <span class="n">data</span> <span class="o">=</span> <span class="n">preprocess_vars</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                            <span class="n">all_vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">all_vars</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+
+            <span class="c"># then we merge in vars from the host specified in the inventory (INI or script)</span>
+            <span class="n">all_vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">all_vars</span><span class="p">,</span> <span class="n">host</span><span class="o">.</span><span class="n">get_vars</span><span class="p">())</span>
+
+            <span class="c"># then we merge in the host_vars/&lt;hostname&gt; file, if it exists</span>
+            <span class="n">host_name</span> <span class="o">=</span> <span class="n">host</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">host_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_host_vars_files</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_host_vars_files</span><span class="p">[</span><span class="n">host_name</span><span class="p">]:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">preprocess_vars</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                        <span class="n">all_vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">all_vars</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+
+            <span class="c"># finally, the facts caches for this host, if it exists</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">host_facts</span> <span class="o">=</span> <span class="n">wrap_var</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fact_cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">dict</span><span class="p">()))</span>
+                <span class="n">all_vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">all_vars</span><span class="p">,</span> <span class="n">host_facts</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+        <span class="k">if</span> <span class="n">play</span><span class="p">:</span>
+            <span class="n">all_vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">all_vars</span><span class="p">,</span> <span class="n">play</span><span class="o">.</span><span class="n">get_vars</span><span class="p">())</span>
+
+            <span class="k">for</span> <span class="n">vars_file_item</span> <span class="ow">in</span> <span class="n">play</span><span class="o">.</span><span class="n">get_vars_files</span><span class="p">():</span>
+                <span class="c"># create a set of temporary vars here, which incorporate the extra</span>
+                <span class="c"># and magic vars so we can properly template the vars_files entries</span>
+                <span class="n">temp_vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">all_vars</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extra_vars</span><span class="p">)</span>
+                <span class="n">temp_vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">temp_vars</span><span class="p">,</span> <span class="n">magic_variables</span><span class="p">)</span>
+                <span class="n">templar</span> <span class="o">=</span> <span class="n">Templar</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="n">temp_vars</span><span class="p">)</span>
+
+                <span class="c"># we assume each item in the list is itself a list, as we</span>
+                <span class="c"># support &quot;conditional includes&quot; for vars_files, which mimics</span>
+                <span class="c"># the with_first_found mechanism.</span>
+                <span class="n">vars_file_list</span> <span class="o">=</span> <span class="n">vars_file_item</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vars_file_list</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                     <span class="n">vars_file_list</span> <span class="o">=</span> <span class="p">[</span> <span class="n">vars_file_list</span> <span class="p">]</span>
+
+                <span class="c"># now we iterate through the (potential) files, and break out</span>
+                <span class="c"># as soon as we read one from the list. If none are found, we</span>
+                <span class="c"># raise an error, which is silently ignored at this point.</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">vars_file</span> <span class="ow">in</span> <span class="n">vars_file_list</span><span class="p">:</span>
+                        <span class="n">vars_file</span> <span class="o">=</span> <span class="n">templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">vars_file</span><span class="p">)</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">data</span> <span class="o">=</span> <span class="n">preprocess_vars</span><span class="p">(</span><span class="n">loader</span><span class="o">.</span><span class="n">load_from_file</span><span class="p">(</span><span class="n">vars_file</span><span class="p">))</span>
+                            <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                                <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                                    <span class="n">all_vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">all_vars</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+                            <span class="k">break</span>
+                        <span class="k">except</span> <span class="n">AnsibleFileNotFound</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                            <span class="c"># we continue on loader failures</span>
+                            <span class="k">continue</span>
+                        <span class="k">except</span> <span class="n">AnsibleParserError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                            <span class="k">raise</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">AnsibleFileNotFound</span><span class="p">(</span><span class="s">&quot;vars file </span><span class="si">%s</span><span class="s"> was not found&quot;</span> <span class="o">%</span> <span class="n">vars_file_item</span><span class="p">)</span>
+                <span class="k">except</span> <span class="p">(</span><span class="n">UndefinedError</span><span class="p">,</span> <span class="n">AnsibleUndefinedVariable</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">host</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fact_cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">dict</span><span class="p">())</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;module_setup&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">task</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">AnsibleUndefinedVariable</span><span class="p">(</span><span class="s">&quot;an undefined variable was found when attempting to template the vars_files item &#39;</span><span class="si">%s</span><span class="s">&#39;&quot;</span> <span class="o">%</span> <span class="n">vars_file_item</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">vars_file_item</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c"># we do not have a full context here, and the missing variable could be</span>
+                        <span class="c"># because of that, so just show a warning and continue</span>
+                        <span class="n">display</span><span class="o">.</span><span class="n">vvv</span><span class="p">(</span><span class="s">&quot;skipping vars_file &#39;</span><span class="si">%s</span><span class="s">&#39; due to an undefined variable&quot;</span> <span class="o">%</span> <span class="n">vars_file_item</span><span class="p">)</span>
+                        <span class="k">continue</span>
+
+            <span class="c"># By default, we now merge in all vars from all roles in the play,</span>
+            <span class="c"># unless the user has disabled this via a config option</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_PRIVATE_ROLE_VARS</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">play</span><span class="o">.</span><span class="n">get_roles</span><span class="p">():</span>
+                    <span class="n">all_vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">all_vars</span><span class="p">,</span> <span class="n">role</span><span class="o">.</span><span class="n">get_vars</span><span class="p">(</span><span class="n">include_params</span><span class="o">=</span><span class="bp">False</span><span class="p">))</span>
+
+        <span class="c"># next, we merge in the vars from the role, which will specifically</span>
+        <span class="c"># follow the role dependency chain, and then we merge in the tasks</span>
+        <span class="c"># vars (which will look at parent blocks/task includes)</span>
+        <span class="k">if</span> <span class="n">task</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">_role</span><span class="p">:</span>
+                <span class="n">all_vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">all_vars</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">_role</span><span class="o">.</span><span class="n">get_vars</span><span class="p">(</span><span class="n">include_params</span><span class="o">=</span><span class="bp">False</span><span class="p">))</span>
+            <span class="n">all_vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">all_vars</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">get_vars</span><span class="p">())</span>
+
+        <span class="c"># next, we merge in the vars cache (include vars) and nonpersistent</span>
+        <span class="c"># facts cache (set_fact/register), in that order</span>
+        <span class="k">if</span> <span class="n">host</span><span class="p">:</span>
+            <span class="n">all_vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">all_vars</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vars_cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">host</span><span class="o">.</span><span class="n">get_name</span><span class="p">(),</span> <span class="nb">dict</span><span class="p">()))</span>
+            <span class="n">all_vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">all_vars</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nonpersistent_fact_cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">dict</span><span class="p">()))</span>
+
+        <span class="c"># next, we merge in role params and task include params</span>
+        <span class="k">if</span> <span class="n">task</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">_role</span><span class="p">:</span>
+                <span class="n">all_vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">all_vars</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">_role</span><span class="o">.</span><span class="n">get_role_params</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">_block</span><span class="o">.</span><span class="n">get_dep_chain</span><span class="p">()))</span>
+
+            <span class="c"># special case for include tasks, where the include params</span>
+            <span class="c"># may be specified in the vars field for the task, which should</span>
+            <span class="c"># have higher precedence than the vars/np facts above</span>
+            <span class="n">all_vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">all_vars</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">get_include_params</span><span class="p">())</span>
+
+        <span class="c"># finally, we merge in extra vars and the magic variables</span>
+        <span class="n">all_vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">all_vars</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extra_vars</span><span class="p">)</span>
+        <span class="n">all_vars</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">all_vars</span><span class="p">,</span> <span class="n">magic_variables</span><span class="p">)</span>
+
+        <span class="c"># special case for the &#39;environment&#39; magic variable, as someone</span>
+        <span class="c"># may have set it as a variable and we don&#39;t want to stomp on it</span>
+        <span class="k">if</span> <span class="n">task</span><span class="p">:</span>
+            <span class="k">if</span>  <span class="s">&#39;environment&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">all_vars</span><span class="p">:</span>
+                <span class="n">all_vars</span><span class="p">[</span><span class="s">&#39;environment&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">environment</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;The variable &#39;environment&#39; appears to be used already, which is also used internally for environment variables set on the task/block/play. You should use a different variable name to avoid conflicts with this internal variable&quot;</span><span class="p">)</span>
+
+        <span class="c"># if we have a task and we&#39;re delegating to another host, figure out the</span>
+        <span class="c"># variables for that host now so we don&#39;t have to rely on hostvars later</span>
+        <span class="k">if</span> <span class="n">task</span> <span class="ow">and</span> <span class="n">task</span><span class="o">.</span><span class="n">delegate_to</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">include_delegate_to</span><span class="p">:</span>
+            <span class="n">all_vars</span><span class="p">[</span><span class="s">&#39;ansible_delegated_vars&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_delegated_vars</span><span class="p">(</span><span class="n">loader</span><span class="p">,</span> <span class="n">play</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">all_vars</span><span class="p">)</span>
+
+        <span class="c">#VARIABLE_CACHE[cache_entry] = all_vars</span>
+        <span class="k">if</span> <span class="n">task</span> <span class="ow">or</span> <span class="n">play</span><span class="p">:</span>
+            <span class="n">all_vars</span><span class="p">[</span><span class="s">&#39;vars&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">all_vars</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;done with get_vars()&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">all_vars</span></div>
+
+<div class="viewcode-block" id="VariableManager.invalidate_hostvars_cache"><a class="viewcode-back" href="../../rst/ansible.vars.html#ansible.vars.VariableManager.invalidate_hostvars_cache">[docs]</a>    <span class="k">def</span> <span class="nf">invalidate_hostvars_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">play</span><span class="p">):</span>
+        <span class="n">hostvars_cache_entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_cache_entry</span><span class="p">(</span><span class="n">play</span><span class="o">=</span><span class="n">play</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">hostvars_cache_entry</span> <span class="ow">in</span> <span class="n">HOSTVARS_CACHE</span><span class="p">:</span>
+            <span class="k">del</span> <span class="n">HOSTVARS_CACHE</span><span class="p">[</span><span class="n">hostvars_cache_entry</span><span class="p">]</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_magic_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loader</span><span class="p">,</span> <span class="n">play</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">include_hostvars</span><span class="p">,</span> <span class="n">include_delegate_to</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Returns a dictionary of so-called &quot;magic&quot; variables in Ansible,</span>
+<span class="sd">        which are special variables we set internally for use.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">variables</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">variables</span><span class="p">[</span><span class="s">&#39;playbook_dir&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">get_basedir</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">host</span><span class="p">:</span>
+            <span class="n">variables</span><span class="p">[</span><span class="s">&#39;group_names&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">group</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">host</span><span class="o">.</span><span class="n">get_groups</span><span class="p">()</span> <span class="k">if</span> <span class="n">group</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s">&#39;all&#39;</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">variables</span><span class="p">[</span><span class="s">&#39;groups&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+                <span class="k">for</span> <span class="p">(</span><span class="n">group_name</span><span class="p">,</span> <span class="n">group</span><span class="p">)</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">groups</span><span class="p">):</span>
+                    <span class="n">variables</span><span class="p">[</span><span class="s">&#39;groups&#39;</span><span class="p">][</span><span class="n">group_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">h</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">get_hosts</span><span class="p">()]</span>
+        <span class="k">if</span> <span class="n">play</span><span class="p">:</span>
+            <span class="n">variables</span><span class="p">[</span><span class="s">&#39;role_names&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">_role_name</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">play</span><span class="o">.</span><span class="n">roles</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">task</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">_role</span><span class="p">:</span>
+                <span class="n">variables</span><span class="p">[</span><span class="s">&#39;role_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">_role</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span>
+                <span class="n">variables</span><span class="p">[</span><span class="s">&#39;role_path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">_role</span><span class="o">.</span><span class="n">_role_path</span>
+                <span class="n">variables</span><span class="p">[</span><span class="s">&#39;role_uuid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">text_type</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">_role</span><span class="o">.</span><span class="n">_uuid</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">variables</span><span class="p">[</span><span class="s">&#39;inventory_dir&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">basedir</span><span class="p">()</span>
+            <span class="n">variables</span><span class="p">[</span><span class="s">&#39;inventory_file&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">src</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">play</span><span class="p">:</span>
+                <span class="c"># add the list of hosts in the play, as adjusted for limit/filters</span>
+                <span class="c"># DEPRECATED: play_hosts should be deprecated in favor of ansible_play_hosts,</span>
+                <span class="c">#             however this would take work in the templating engine, so for now</span>
+                <span class="c">#             we&#39;ll add both so we can give users something transitional to use</span>
+                <span class="n">host_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_hosts</span><span class="p">()]</span>
+                <span class="n">variables</span><span class="p">[</span><span class="s">&#39;play_hosts&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">host_list</span>
+                <span class="n">variables</span><span class="p">[</span><span class="s">&#39;ansible_play_hosts&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">host_list</span>
+
+        <span class="c"># the &#39;omit&#39; value alows params to be left out if the variable they are based on is undefined</span>
+        <span class="n">variables</span><span class="p">[</span><span class="s">&#39;omit&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_omit_token</span>
+        <span class="n">variables</span><span class="p">[</span><span class="s">&#39;ansible_version&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">CLI</span><span class="o">.</span><span class="n">version_info</span><span class="p">(</span><span class="n">gitinfo</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="c"># Set options vars</span>
+        <span class="k">for</span> <span class="n">option</span><span class="p">,</span> <span class="n">option_value</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options_vars</span><span class="p">):</span>
+            <span class="n">variables</span><span class="p">[</span><span class="n">option</span><span class="p">]</span> <span class="o">=</span> <span class="n">option_value</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hostvars</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">include_hostvars</span><span class="p">:</span>
+            <span class="n">variables</span><span class="p">[</span><span class="s">&#39;hostvars&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hostvars</span>
+
+        <span class="k">return</span> <span class="n">variables</span>
+
+    <span class="k">def</span> <span class="nf">_get_delegated_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loader</span><span class="p">,</span> <span class="n">play</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">existing_variables</span><span class="p">):</span>
+        <span class="c"># we unfortunately need to template the delegate_to field here,</span>
+        <span class="c"># as we&#39;re fetching vars before post_validate has been called on</span>
+        <span class="c"># the task that has been passed in</span>
+        <span class="n">vars_copy</span> <span class="o">=</span> <span class="n">existing_variables</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">templar</span> <span class="o">=</span> <span class="n">Templar</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="n">vars_copy</span><span class="p">)</span>
+
+        <span class="n">items</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">loop</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">loop</span> <span class="ow">in</span> <span class="n">lookup_loader</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="c">#TODO: remove convert_bare true and deprecate this in with_</span>
+                    <span class="n">loop_terms</span> <span class="o">=</span> <span class="n">listify_lookup_plugin_terms</span><span class="p">(</span><span class="n">terms</span><span class="o">=</span><span class="n">task</span><span class="o">.</span><span class="n">loop_args</span><span class="p">,</span> <span class="n">templar</span><span class="o">=</span><span class="n">templar</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span> <span class="n">fail_on_undefined</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">convert_bare</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                    <span class="n">items</span> <span class="o">=</span> <span class="n">lookup_loader</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">loop</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span> <span class="n">templar</span><span class="o">=</span><span class="n">templar</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">terms</span><span class="o">=</span><span class="n">loop_terms</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="n">vars_copy</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">AnsibleUndefinedVariable</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="c"># This task will be skipped later due to this, so we just setup</span>
+                    <span class="c"># a dummy array for the later code so it doesn&#39;t fail</span>
+                    <span class="n">items</span> <span class="o">=</span> <span class="p">[</span><span class="bp">None</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Unexpected failure in finding the lookup named &#39;</span><span class="si">%s</span><span class="s">&#39; in the available lookup plugins&quot;</span> <span class="o">%</span> <span class="n">task</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">items</span> <span class="o">=</span> <span class="p">[</span><span class="bp">None</span><span class="p">]</span>
+
+        <span class="n">delegated_host_vars</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+            <span class="c"># update the variables with the item value for templating, in case we need it</span>
+            <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">vars_copy</span><span class="p">[</span><span class="s">&#39;item&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+
+            <span class="n">templar</span><span class="o">.</span><span class="n">set_available_variables</span><span class="p">(</span><span class="n">vars_copy</span><span class="p">)</span>
+            <span class="n">delegated_host_name</span> <span class="o">=</span> <span class="n">templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">delegate_to</span><span class="p">,</span> <span class="n">fail_on_undefined</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">delegated_host_name</span> <span class="ow">in</span> <span class="n">delegated_host_vars</span><span class="p">:</span>
+                <span class="c"># no need to repeat ourselves, as the delegate_to value</span>
+                <span class="c"># does not appear to be tied to the loop item variable</span>
+                <span class="k">continue</span>
+
+            <span class="c"># a dictionary of variables to use if we have to create a new host below</span>
+            <span class="c"># we set the default port based on the default transport here, to make sure</span>
+            <span class="c"># we use the proper default for windows</span>
+            <span class="n">new_port</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_REMOTE_PORT</span>
+            <span class="k">if</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_TRANSPORT</span> <span class="o">==</span> <span class="s">&#39;winrm&#39;</span><span class="p">:</span>
+                <span class="n">new_port</span> <span class="o">=</span> <span class="mi">5986</span>
+
+            <span class="n">new_delegated_host_vars</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                <span class="n">ansible_host</span><span class="o">=</span><span class="n">delegated_host_name</span><span class="p">,</span>
+                <span class="n">ansible_port</span><span class="o">=</span><span class="n">new_port</span><span class="p">,</span>
+                <span class="n">ansible_user</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_REMOTE_USER</span><span class="p">,</span>
+                <span class="n">ansible_connection</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_TRANSPORT</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c"># now try to find the delegated-to host in inventory, or failing that,</span>
+            <span class="c"># create a new host on the fly so we can fetch variables for it</span>
+            <span class="n">delegated_host</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">delegated_host</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_host</span><span class="p">(</span><span class="n">delegated_host_name</span><span class="p">)</span>
+                <span class="c"># try looking it up based on the address field, and finally</span>
+                <span class="c"># fall back to creating a host on the fly to use for the var lookup</span>
+                <span class="k">if</span> <span class="n">delegated_host</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_hosts</span><span class="p">(</span><span class="n">ignore_limits_and_restrictions</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+                        <span class="c"># check if the address matches, or if both the delegated_to host</span>
+                        <span class="c"># and the current host are in the list of localhost aliases</span>
+                        <span class="k">if</span> <span class="n">h</span><span class="o">.</span><span class="n">address</span> <span class="o">==</span> <span class="n">delegated_host_name</span> <span class="ow">or</span> <span class="n">h</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">C</span><span class="o">.</span><span class="n">LOCALHOST</span> <span class="ow">and</span> <span class="n">delegated_host_name</span> <span class="ow">in</span> <span class="n">C</span><span class="o">.</span><span class="n">LOCALHOST</span><span class="p">:</span>
+                            <span class="n">delegated_host</span> <span class="o">=</span> <span class="n">h</span>
+                            <span class="k">break</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">delegated_host</span> <span class="o">=</span> <span class="n">Host</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">delegated_host_name</span><span class="p">)</span>
+                        <span class="n">delegated_host</span><span class="o">.</span><span class="n">vars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">new_delegated_host_vars</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">delegated_host</span> <span class="o">=</span> <span class="n">Host</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">delegated_host_name</span><span class="p">)</span>
+                <span class="n">delegated_host</span><span class="o">.</span><span class="n">vars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">new_delegated_host_vars</span><span class="p">)</span>
+
+            <span class="c"># now we go fetch the vars for the delegated-to host and save them in our</span>
+            <span class="c"># master dictionary of variables to be used later in the TaskExecutor/PlayContext</span>
+            <span class="n">delegated_host_vars</span><span class="p">[</span><span class="n">delegated_host_name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_vars</span><span class="p">(</span>
+                <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span>
+                <span class="n">play</span><span class="o">=</span><span class="n">play</span><span class="p">,</span>
+                <span class="n">host</span><span class="o">=</span><span class="n">delegated_host</span><span class="p">,</span>
+                <span class="n">task</span><span class="o">=</span><span class="n">task</span><span class="p">,</span>
+                <span class="n">include_delegate_to</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                <span class="n">include_hostvars</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">delegated_host_vars</span>
+
+    <span class="k">def</span> <span class="nf">_get_inventory_basename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Returns the basename minus the extension of the given path, so the</span>
+<span class="sd">        bare filename can be matched against host/group names later</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">ext</span><span class="p">)</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">ext</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;.yml&#39;</span><span class="p">,</span> <span class="s">&#39;.yaml&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">name</span>
+
+    <span class="k">def</span> <span class="nf">_load_inventory_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">loader</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        helper function, which loads the file and gets the</span>
+<span class="sd">        basename of the file without the extension</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="n">loader</span><span class="o">.</span><span class="n">is_directory</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">names</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">list_directory</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">os</span><span class="o">.</span><span class="n">error</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;This folder cannot be listed: </span><span class="si">%s</span><span class="s">: </span><span class="si">%s</span><span class="s">.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">err</span><span class="o">.</span><span class="n">strerror</span><span class="p">))</span>
+
+            <span class="c"># evaluate files in a stable order rather than whatever</span>
+            <span class="c"># order the filesystem lists them.</span>
+            <span class="n">names</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+
+            <span class="c"># do not parse hidden files or dirs, e.g. .svn/</span>
+            <span class="n">paths</span> <span class="o">=</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)]</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">paths</span><span class="p">:</span>
+                <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_inventory_file</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">p</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">results</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">results</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">file_name</span><span class="p">,</span> <span class="n">ext</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">ext</span> <span class="ow">or</span> <span class="n">ext</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">C</span><span class="o">.</span><span class="n">YAML_FILENAME_EXTENSIONS</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">test_ext</span> <span class="ow">in</span> <span class="n">C</span><span class="o">.</span><span class="n">YAML_FILENAME_EXTENSIONS</span><span class="p">:</span>
+                    <span class="n">new_path</span> <span class="o">=</span> <span class="n">path</span> <span class="o">+</span> <span class="n">test_ext</span>
+                    <span class="k">if</span> <span class="n">loader</span><span class="o">.</span><span class="n">path_exists</span><span class="p">(</span><span class="n">new_path</span><span class="p">):</span>
+                        <span class="n">data</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">load_from_file</span><span class="p">(</span><span class="n">new_path</span><span class="p">)</span>
+                        <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">loader</span><span class="o">.</span><span class="n">path_exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">load_from_file</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="n">rval</span> <span class="o">=</span> <span class="n">AnsibleInventoryVarsData</span><span class="p">()</span>
+        <span class="n">rval</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span>
+        <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">rval</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rval</span>
+
+<div class="viewcode-block" id="VariableManager.add_host_vars_file"><a class="viewcode-back" href="../../rst/ansible.vars.html#ansible.vars.VariableManager.add_host_vars_file">[docs]</a>    <span class="k">def</span> <span class="nf">add_host_vars_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">loader</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Loads and caches a host_vars file in the _host_vars_files dict,</span>
+<span class="sd">        where the key to that dictionary is the basename of the file, minus</span>
+<span class="sd">        the extension, for matching against a given inventory host name</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_inventory_basename</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_host_vars_files</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_host_vars_files</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_host_vars_files</span><span class="p">[</span><span class="n">name</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="n">path</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">entry</span>
+                <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_inventory_file</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">loader</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">data</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_host_vars_files</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">data</span></div>
+
+
+<div class="viewcode-block" id="VariableManager.add_group_vars_file"><a class="viewcode-back" href="../../rst/ansible.vars.html#ansible.vars.VariableManager.add_group_vars_file">[docs]</a>    <span class="k">def</span> <span class="nf">add_group_vars_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">loader</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Loads and caches a host_vars file in the _host_vars_files dict,</span>
+<span class="sd">        where the key to that dictionary is the basename of the file, minus</span>
+<span class="sd">        the extension, for matching against a given inventory host name</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_inventory_basename</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group_vars_files</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_group_vars_files</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group_vars_files</span><span class="p">[</span><span class="n">name</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="n">path</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">entry</span>
+                <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_inventory_file</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">loader</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">data</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_group_vars_files</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">data</span></div>
+
+<div class="viewcode-block" id="VariableManager.clear_facts"><a class="viewcode-back" href="../../rst/ansible.vars.html#ansible.vars.VariableManager.clear_facts">[docs]</a>    <span class="k">def</span> <span class="nf">clear_facts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hostname</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Clears the facts for a host</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">hostname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fact_cache</span><span class="p">:</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fact_cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="VariableManager.set_host_facts"><a class="viewcode-back" href="../../rst/ansible.vars.html#ansible.vars.VariableManager.set_host_facts">[docs]</a>    <span class="k">def</span> <span class="nf">set_host_facts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">facts</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Sets or updates the given facts for a host in the fact cache.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">facts</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fact_cache</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fact_cache</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">facts</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_fact_cache</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">facts</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_fact_cache</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">facts</span></div>
+
+<div class="viewcode-block" id="VariableManager.set_nonpersistent_facts"><a class="viewcode-back" href="../../rst/ansible.vars.html#ansible.vars.VariableManager.set_nonpersistent_facts">[docs]</a>    <span class="k">def</span> <span class="nf">set_nonpersistent_facts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">facts</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Sets or updates the given facts for a host in the fact cache.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">facts</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nonpersistent_fact_cache</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_nonpersistent_fact_cache</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">facts</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_nonpersistent_fact_cache</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">facts</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_nonpersistent_fact_cache</span><span class="p">[</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">facts</span></div>
+
+<div class="viewcode-block" id="VariableManager.set_host_variable"><a class="viewcode-back" href="../../rst/ansible.vars.html#ansible.vars.VariableManager.set_host_variable">[docs]</a>    <span class="k">def</span> <span class="nf">set_host_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">varname</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Sets a value in the vars_cache for a host.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">host_name</span> <span class="o">=</span> <span class="n">host</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">host_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vars_cache</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_vars_cache</span><span class="p">[</span><span class="n">host_name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">varname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vars_cache</span><span class="p">[</span><span class="n">host_name</span><span class="p">]</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_vars_cache</span><span class="p">[</span><span class="n">host_name</span><span class="p">][</span><span class="n">varname</span><span class="p">],</span> <span class="n">MutableMapping</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">MutableMapping</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_vars_cache</span><span class="p">[</span><span class="n">host_name</span><span class="p">][</span><span class="n">varname</span><span class="p">]</span> <span class="o">=</span> <span class="n">combine_vars</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_vars_cache</span><span class="p">[</span><span class="n">host_name</span><span class="p">][</span><span class="n">varname</span><span class="p">],</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_vars_cache</span><span class="p">[</span><span class="n">host_name</span><span class="p">][</span><span class="n">varname</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

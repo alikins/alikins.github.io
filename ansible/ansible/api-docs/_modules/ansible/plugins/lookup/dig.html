@@ -1,0 +1,410 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.plugins.lookup.dig &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="ansible.plugins.lookup" href="../lookup.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../../plugins.html">ansible.plugins</a> &raquo;</li>
+      
+          <li><a href="../lookup.html">ansible.plugins.lookup</a> &raquo;</li>
+      
+    <li>ansible.plugins.lookup.dig</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.plugins.lookup.dig</h1><div class="highlight"><pre>
+<span class="c"># (c) 2015, Jan-Piet Mens &lt;jpmens(at)gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span>
+<span class="kn">from</span> <span class="nn">ansible.plugins.lookup</span> <span class="kn">import</span> <span class="n">LookupBase</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">dns.resolver</span>
+    <span class="kn">import</span> <span class="nn">dns.reversename</span>
+    <span class="kn">from</span> <span class="nn">dns.rdatatype</span> <span class="kn">import</span> <span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">AAAA</span><span class="p">,</span> <span class="n">CNAME</span><span class="p">,</span> <span class="n">DLV</span><span class="p">,</span> <span class="n">DNAME</span><span class="p">,</span> <span class="n">DNSKEY</span><span class="p">,</span> <span class="n">DS</span><span class="p">,</span> <span class="n">HINFO</span><span class="p">,</span> <span class="n">LOC</span><span class="p">,</span>
+            <span class="n">MX</span><span class="p">,</span> <span class="n">NAPTR</span><span class="p">,</span> <span class="n">NS</span><span class="p">,</span> <span class="n">NSEC3PARAM</span><span class="p">,</span> <span class="n">PTR</span><span class="p">,</span> <span class="n">RP</span><span class="p">,</span> <span class="n">SOA</span><span class="p">,</span> <span class="n">SPF</span><span class="p">,</span> <span class="n">SRV</span><span class="p">,</span> <span class="n">SSHFP</span><span class="p">,</span> <span class="n">TLSA</span><span class="p">,</span> <span class="n">TXT</span><span class="p">)</span>
+    <span class="kn">import</span> <span class="nn">dns.exception</span>
+    <span class="n">HAVE_DNS</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">HAVE_DNS</span> <span class="o">=</span> <span class="bp">False</span>
+
+<div class="viewcode-block" id="make_rdata_dict"><a class="viewcode-back" href="../../../../rst/ansible.plugins.lookup.html#ansible.plugins.lookup.dig.make_rdata_dict">[docs]</a><span class="k">def</span> <span class="nf">make_rdata_dict</span><span class="p">(</span><span class="n">rdata</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; While the &#39;dig&#39; lookup plugin supports anything which dnspython supports</span>
+<span class="sd">        out of the box, the following supported_types list describes which</span>
+<span class="sd">        DNS query types we can convert to a dict.</span>
+
+<span class="sd">        Note: adding support for RRSIG is hard work. :)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">supported_types</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">A</span>           <span class="p">:</span> <span class="p">[</span><span class="s">&#39;address&#39;</span><span class="p">],</span>
+            <span class="n">AAAA</span>        <span class="p">:</span> <span class="p">[</span><span class="s">&#39;address&#39;</span><span class="p">],</span>
+            <span class="n">CNAME</span>       <span class="p">:</span> <span class="p">[</span><span class="s">&#39;target&#39;</span><span class="p">],</span>
+            <span class="n">DNAME</span>       <span class="p">:</span> <span class="p">[</span><span class="s">&#39;target&#39;</span><span class="p">],</span>
+            <span class="n">DLV</span>         <span class="p">:</span> <span class="p">[</span><span class="s">&#39;algorithm&#39;</span><span class="p">,</span> <span class="s">&#39;digest_type&#39;</span><span class="p">,</span> <span class="s">&#39;key_tag&#39;</span><span class="p">,</span> <span class="s">&#39;digest&#39;</span><span class="p">],</span>
+            <span class="n">DNSKEY</span>      <span class="p">:</span> <span class="p">[</span><span class="s">&#39;flags&#39;</span><span class="p">,</span> <span class="s">&#39;algorithm&#39;</span><span class="p">,</span> <span class="s">&#39;protocol&#39;</span><span class="p">,</span> <span class="s">&#39;key&#39;</span><span class="p">],</span>
+            <span class="n">DS</span>          <span class="p">:</span> <span class="p">[</span><span class="s">&#39;algorithm&#39;</span><span class="p">,</span> <span class="s">&#39;digest_type&#39;</span><span class="p">,</span> <span class="s">&#39;key_tag&#39;</span><span class="p">,</span> <span class="s">&#39;digest&#39;</span><span class="p">],</span>
+            <span class="n">HINFO</span>       <span class="p">:</span> <span class="p">[</span><span class="s">&#39;cpu&#39;</span><span class="p">,</span> <span class="s">&#39;os&#39;</span><span class="p">],</span>
+            <span class="n">LOC</span>         <span class="p">:</span> <span class="p">[</span><span class="s">&#39;latitude&#39;</span><span class="p">,</span> <span class="s">&#39;longitude&#39;</span><span class="p">,</span> <span class="s">&#39;altitude&#39;</span><span class="p">,</span> <span class="s">&#39;size&#39;</span><span class="p">,</span> <span class="s">&#39;horizontal_precision&#39;</span><span class="p">,</span> <span class="s">&#39;vertical_precision&#39;</span><span class="p">],</span>
+            <span class="n">MX</span>          <span class="p">:</span> <span class="p">[</span><span class="s">&#39;preference&#39;</span><span class="p">,</span> <span class="s">&#39;exchange&#39;</span><span class="p">],</span>
+            <span class="n">NAPTR</span>       <span class="p">:</span> <span class="p">[</span><span class="s">&#39;order&#39;</span><span class="p">,</span> <span class="s">&#39;preference&#39;</span><span class="p">,</span> <span class="s">&#39;flags&#39;</span><span class="p">,</span> <span class="s">&#39;service&#39;</span><span class="p">,</span> <span class="s">&#39;regexp&#39;</span><span class="p">,</span> <span class="s">&#39;replacement&#39;</span><span class="p">],</span>
+            <span class="n">NS</span>          <span class="p">:</span> <span class="p">[</span><span class="s">&#39;target&#39;</span><span class="p">],</span>
+            <span class="n">NSEC3PARAM</span>  <span class="p">:</span> <span class="p">[</span><span class="s">&#39;algorithm&#39;</span><span class="p">,</span> <span class="s">&#39;flags&#39;</span><span class="p">,</span> <span class="s">&#39;iterations&#39;</span><span class="p">,</span> <span class="s">&#39;salt&#39;</span><span class="p">],</span>
+            <span class="n">PTR</span>         <span class="p">:</span> <span class="p">[</span><span class="s">&#39;target&#39;</span><span class="p">],</span>
+            <span class="n">RP</span>          <span class="p">:</span> <span class="p">[</span><span class="s">&#39;mbox&#39;</span><span class="p">,</span> <span class="s">&#39;txt&#39;</span><span class="p">],</span>
+            <span class="c"># RRSIG       : [&#39;algorithm&#39;, &#39;labels&#39;, &#39;original_ttl&#39;, &#39;expiration&#39;, &#39;inception&#39;, &#39;signature&#39;],</span>
+            <span class="n">SOA</span>         <span class="p">:</span> <span class="p">[</span><span class="s">&#39;mname&#39;</span><span class="p">,</span> <span class="s">&#39;rname&#39;</span><span class="p">,</span> <span class="s">&#39;serial&#39;</span><span class="p">,</span> <span class="s">&#39;refresh&#39;</span><span class="p">,</span> <span class="s">&#39;retry&#39;</span><span class="p">,</span> <span class="s">&#39;expire&#39;</span><span class="p">,</span> <span class="s">&#39;minimum&#39;</span><span class="p">],</span>
+            <span class="n">SPF</span>         <span class="p">:</span> <span class="p">[</span><span class="s">&#39;strings&#39;</span><span class="p">],</span>
+            <span class="n">SRV</span>         <span class="p">:</span> <span class="p">[</span><span class="s">&#39;priority&#39;</span><span class="p">,</span> <span class="s">&#39;weight&#39;</span><span class="p">,</span> <span class="s">&#39;port&#39;</span><span class="p">,</span> <span class="s">&#39;target&#39;</span><span class="p">],</span>
+            <span class="n">SSHFP</span>       <span class="p">:</span> <span class="p">[</span><span class="s">&#39;algorithm&#39;</span><span class="p">,</span> <span class="s">&#39;fp_type&#39;</span><span class="p">,</span> <span class="s">&#39;fingerprint&#39;</span><span class="p">],</span>
+            <span class="n">TLSA</span>        <span class="p">:</span> <span class="p">[</span><span class="s">&#39;usage&#39;</span><span class="p">,</span> <span class="s">&#39;selector&#39;</span><span class="p">,</span> <span class="s">&#39;mtype&#39;</span><span class="p">,</span> <span class="s">&#39;cert&#39;</span><span class="p">],</span>
+            <span class="n">TXT</span>         <span class="p">:</span> <span class="p">[</span><span class="s">&#39;strings&#39;</span><span class="p">],</span>
+        <span class="p">}</span>
+
+    <span class="n">rd</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">if</span> <span class="n">rdata</span><span class="o">.</span><span class="n">rdtype</span> <span class="ow">in</span> <span class="n">supported_types</span><span class="p">:</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="n">supported_types</span><span class="p">[</span><span class="n">rdata</span><span class="o">.</span><span class="n">rdtype</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+            <span class="n">val</span>     <span class="o">=</span> <span class="n">rdata</span><span class="o">.</span><span class="n">__getattribute__</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">==</span> <span class="n">dns</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">Name</span><span class="p">:</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">Name</span><span class="o">.</span><span class="n">to_text</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">rdata</span><span class="o">.</span><span class="n">rdtype</span> <span class="o">==</span> <span class="n">DLV</span> <span class="ow">and</span> <span class="n">f</span> <span class="o">==</span> <span class="s">&#39;digest&#39;</span><span class="p">:</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">rdata</span><span class="o">.</span><span class="n">_hexify</span><span class="p">(</span><span class="n">rdata</span><span class="o">.</span><span class="n">digest</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">rdata</span><span class="o">.</span><span class="n">rdtype</span> <span class="o">==</span> <span class="n">DS</span> <span class="ow">and</span> <span class="n">f</span> <span class="o">==</span> <span class="s">&#39;digest&#39;</span><span class="p">:</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">rdata</span><span class="o">.</span><span class="n">_hexify</span><span class="p">(</span><span class="n">rdata</span><span class="o">.</span><span class="n">digest</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">rdata</span><span class="o">.</span><span class="n">rdtype</span> <span class="o">==</span> <span class="n">DNSKEY</span> <span class="ow">and</span> <span class="n">f</span> <span class="o">==</span> <span class="s">&#39;key&#39;</span><span class="p">:</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">rdata</span><span class="o">.</span><span class="n">_base64ify</span><span class="p">(</span><span class="n">rdata</span><span class="o">.</span><span class="n">key</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">rdata</span><span class="o">.</span><span class="n">rdtype</span> <span class="o">==</span> <span class="n">NSEC3PARAM</span> <span class="ow">and</span> <span class="n">f</span> <span class="o">==</span> <span class="s">&#39;salt&#39;</span><span class="p">:</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">rdata</span><span class="o">.</span><span class="n">_hexify</span><span class="p">(</span><span class="n">rdata</span><span class="o">.</span><span class="n">salt</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">rdata</span><span class="o">.</span><span class="n">rdtype</span> <span class="o">==</span> <span class="n">SSHFP</span> <span class="ow">and</span> <span class="n">f</span> <span class="o">==</span> <span class="s">&#39;fingerprint&#39;</span><span class="p">:</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">rdata</span><span class="o">.</span><span class="n">_hexify</span><span class="p">(</span><span class="n">rdata</span><span class="o">.</span><span class="n">fingerprint</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">rdata</span><span class="o">.</span><span class="n">rdtype</span> <span class="o">==</span> <span class="n">TLSA</span> <span class="ow">and</span> <span class="n">f</span> <span class="o">==</span> <span class="s">&#39;cert&#39;</span><span class="p">:</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">rdata</span><span class="o">.</span><span class="n">_hexify</span><span class="p">(</span><span class="n">rdata</span><span class="o">.</span><span class="n">cert</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+
+
+            <span class="n">rd</span><span class="p">[</span><span class="n">f</span><span class="p">]</span>   <span class="o">=</span> <span class="n">val</span>
+
+    <span class="k">return</span> <span class="n">rd</span></div>
+
+<span class="c"># ==============================================================</span>
+<span class="c"># dig: Lookup DNS records</span>
+<span class="c">#</span>
+<span class="c"># --------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="LookupModule"><a class="viewcode-back" href="../../../../rst/ansible.plugins.lookup.html#ansible.plugins.lookup.dig.LookupModule">[docs]</a><span class="k">class</span> <span class="nc">LookupModule</span><span class="p">(</span><span class="n">LookupBase</span><span class="p">):</span>
+
+<div class="viewcode-block" id="LookupModule.run"><a class="viewcode-back" href="../../../../rst/ansible.plugins.lookup.html#ansible.plugins.lookup.dig.LookupModule.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">terms</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Terms contains a string with things to :command:`dig` for.</span>
+
+<span class="sd">        The following formats are supported:</span>
+
+<span class="sd">            ==============================================  ======</span>
+<span class="sd">            Example                                         Note</span>
+<span class="sd">            ==============================================  ======</span>
+<span class="sd">            example.com                                     # A record</span>
+<span class="sd">            example.com qtype=A                             # same</span>
+<span class="sd">            example.com/TXT                                 # specific qtype</span>
+<span class="sd">            example.com qtype=txt                           # same</span>
+<span class="sd">            192.168.1.2/PTR                                 # reverse PTR</span>
+<span class="sd">                                                              shortcut for 2.1.168.192.in-addr.arpa/PTR</span>
+<span class="sd">            example.net/AAAA @nameserver                    # query specified server</span>
+<span class="sd">                                                              can be comma-sep list of names/addresses</span>
+
+<span class="sd">            ... flat=0                                      # returns a dict; default is 1 == string</span>
+<span class="sd">            ==============================================  ======</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="n">HAVE_DNS</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Can&#39;t LOOKUP(dig): module dns.resolver is not installed&quot;</span><span class="p">)</span>
+
+        <span class="c"># Create Resolver object so that we can set NS if necessary</span>
+        <span class="n">myres</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">()</span>
+        <span class="n">edns_size</span> <span class="o">=</span> <span class="mi">4096</span>
+        <span class="n">myres</span><span class="o">.</span><span class="n">use_edns</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ednsflags</span><span class="o">=</span><span class="n">dns</span><span class="o">.</span><span class="n">flags</span><span class="o">.</span><span class="n">DO</span><span class="p">,</span> <span class="n">payload</span><span class="o">=</span><span class="n">edns_size</span><span class="p">)</span>
+
+        <span class="n">domain</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">qtype</span>  <span class="o">=</span> <span class="s">&#39;A&#39;</span>
+        <span class="n">flat</span>   <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">terms</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;@&#39;</span><span class="p">):</span>       <span class="c"># e.g. &quot;@10.0.1.2,192.168.1.1&quot; is ok.</span>
+                <span class="n">nsset</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)</span>
+                <span class="n">nameservers</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">ns</span> <span class="ow">in</span> <span class="n">nsset</span><span class="p">:</span>
+                    <span class="c"># Check if we have a valid IP address. If so, use that, otherwise</span>
+                    <span class="c"># try to resolve name to address using system&#39;s resolver. If that</span>
+                    <span class="c"># fails we bail out.</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">socket</span><span class="o">.</span><span class="n">inet_aton</span><span class="p">(</span><span class="n">ns</span><span class="p">)</span>
+                        <span class="n">nameservers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ns</span><span class="p">)</span>
+                    <span class="k">except</span><span class="p">:</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">nsaddr</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">ns</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">address</span>
+                            <span class="n">nameservers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nsaddr</span><span class="p">)</span>
+                        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;dns lookup NS: &quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+                    <span class="n">myres</span><span class="o">.</span><span class="n">nameservers</span> <span class="o">=</span> <span class="n">nameservers</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="s">&#39;=&#39;</span> <span class="ow">in</span> <span class="n">t</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">opt</span><span class="p">,</span> <span class="n">arg</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;=&#39;</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">pass</span>
+
+                <span class="k">if</span> <span class="n">opt</span> <span class="o">==</span> <span class="s">&#39;qtype&#39;</span><span class="p">:</span>
+                    <span class="n">qtype</span> <span class="o">=</span> <span class="n">arg</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+                <span class="k">elif</span> <span class="n">opt</span> <span class="o">==</span> <span class="s">&#39;flat&#39;</span><span class="p">:</span>
+                    <span class="n">flat</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="s">&#39;/&#39;</span> <span class="ow">in</span> <span class="n">t</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">domain</span><span class="p">,</span> <span class="n">qtype</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="n">domain</span> <span class="o">=</span> <span class="n">t</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">domain</span> <span class="o">=</span> <span class="n">t</span>
+
+        <span class="c"># print &quot;--- domain = {0} qtype={1}&quot;.format(domain, qtype)</span>
+
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="n">qtype</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;PTR&#39;</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">n</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">reversename</span><span class="o">.</span><span class="n">from_address</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
+                <span class="n">domain</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">to_text</span><span class="p">()</span>
+            <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">SyntaxError</span><span class="p">:</span>
+                <span class="k">pass</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;dns.reversename unhandled exception&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">answers</span> <span class="o">=</span> <span class="n">myres</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">qtype</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">rdata</span> <span class="ow">in</span> <span class="n">answers</span><span class="p">:</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="n">rdata</span><span class="o">.</span><span class="n">to_text</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">qtype</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;TXT&#39;</span><span class="p">:</span>
+                    <span class="n">s</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c"># Strip outside quotes on TXT rdata</span>
+
+                <span class="k">if</span> <span class="n">flat</span><span class="p">:</span>
+                    <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">rd</span> <span class="o">=</span> <span class="n">make_rdata_dict</span><span class="p">(</span><span class="n">rdata</span><span class="p">)</span>
+                        <span class="n">rd</span><span class="p">[</span><span class="s">&#39;owner&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="n">answers</span><span class="o">.</span><span class="n">canonical_name</span><span class="o">.</span><span class="n">to_text</span><span class="p">()</span>
+                        <span class="n">rd</span><span class="p">[</span><span class="s">&#39;type&#39;</span><span class="p">]</span>      <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">rdatatype</span><span class="o">.</span><span class="n">to_text</span><span class="p">(</span><span class="n">rdata</span><span class="o">.</span><span class="n">rdtype</span><span class="p">)</span>
+                        <span class="n">rd</span><span class="p">[</span><span class="s">&#39;ttl&#39;</span><span class="p">]</span>       <span class="o">=</span> <span class="n">answers</span><span class="o">.</span><span class="n">rrset</span><span class="o">.</span><span class="n">ttl</span>
+
+                        <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rd</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+
+        <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">:</span>
+            <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;NXDOMAIN&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NoAnswer</span><span class="p">:</span>
+            <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Timeout</span><span class="p">:</span>
+            <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">DNSException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;dns.resolver unhandled exception&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ret</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

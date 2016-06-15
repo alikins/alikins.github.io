@@ -1,0 +1,965 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.executor.module_common &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>ansible.executor.module_common</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.executor.module_common</h1><div class="highlight"><pre>
+<span class="c"># (c) 2013-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c"># (c) 2015 Toshio Kuratomi &lt;tkuratomi@ansible.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">ast</span>
+<span class="kn">import</span> <span class="nn">base64</span>
+<span class="kn">import</span> <span class="nn">imp</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">shlex</span>
+<span class="kn">import</span> <span class="nn">zipfile</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">BytesIO</span>
+
+<span class="c"># from Ansible</span>
+<span class="kn">from</span> <span class="nn">ansible.release</span> <span class="kn">import</span> <span class="n">__version__</span><span class="p">,</span> <span class="n">__author__</span>
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.unicode</span> <span class="kn">import</span> <span class="n">to_bytes</span><span class="p">,</span> <span class="n">to_unicode</span>
+<span class="c"># Must import strategy and use write_locks from there</span>
+<span class="c"># If we import write_locks directly then we end up binding a</span>
+<span class="c"># variable to the object and then it never gets updated.</span>
+<span class="kn">from</span> <span class="nn">ansible.plugins</span> <span class="kn">import</span> <span class="n">strategy</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+<span class="n">REPLACER</span>          <span class="o">=</span> <span class="n">b</span><span class="s">&quot;#&lt;&lt;INCLUDE_ANSIBLE_MODULE_COMMON&gt;&gt;&quot;</span>
+<span class="n">REPLACER_VERSION</span>  <span class="o">=</span> <span class="n">b</span><span class="s">&quot;</span><span class="se">\&quot;</span><span class="s">&lt;&lt;ANSIBLE_VERSION&gt;&gt;</span><span class="se">\&quot;</span><span class="s">&quot;</span>
+<span class="n">REPLACER_COMPLEX</span>  <span class="o">=</span> <span class="n">b</span><span class="s">&quot;</span><span class="se">\&quot;</span><span class="s">&lt;&lt;INCLUDE_ANSIBLE_MODULE_COMPLEX_ARGS&gt;&gt;</span><span class="se">\&quot;</span><span class="s">&quot;</span>
+<span class="n">REPLACER_WINDOWS</span>  <span class="o">=</span> <span class="n">b</span><span class="s">&quot;# POWERSHELL_COMMON&quot;</span>
+<span class="n">REPLACER_JSONARGS</span> <span class="o">=</span> <span class="n">b</span><span class="s">&quot;&lt;&lt;INCLUDE_ANSIBLE_MODULE_JSON_ARGS&gt;&gt;&quot;</span>
+<span class="n">REPLACER_SELINUX</span>  <span class="o">=</span> <span class="n">b</span><span class="s">&quot;&lt;&lt;SELINUX_SPECIAL_FILESYSTEMS&gt;&gt;&quot;</span>
+
+<span class="c"># We could end up writing out parameters with unicode characters so we need to</span>
+<span class="c"># specify an encoding for the python source file</span>
+<span class="n">ENCODING_STRING</span> <span class="o">=</span> <span class="s">u&#39;# -*- coding: utf-8 -*-&#39;</span>
+
+<span class="c"># we&#39;ve moved the module_common relative to the snippets, so fix the path</span>
+<span class="n">_SNIPPET_PATH</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">__file__</span><span class="p">),</span> <span class="s">&#39;..&#39;</span><span class="p">,</span> <span class="s">&#39;module_utils&#39;</span><span class="p">)</span>
+
+<span class="c"># ******************************************************************************</span>
+
+<span class="n">ZIPLOADER_TEMPLATE</span> <span class="o">=</span> <span class="s">u&#39;&#39;&#39;</span><span class="si">%(shebang)s</span><span class="s"></span>
+<span class="si">%(coding)s</span><span class="s"></span>
+<span class="s">ZIPLOADER_WRAPPER = True # For test-module script to tell this is a ZIPLOADER_WRAPPER</span>
+<span class="s"># This code is part of Ansible, but is an independent component.</span>
+<span class="s"># The code in this particular templatable string, and this templatable string</span>
+<span class="s"># only, is BSD licensed.  Modules which end up using this snippet, which is</span>
+<span class="s"># dynamically combined together by Ansible still belong to the author of the</span>
+<span class="s"># module, and they may assign their own license to the complete work.</span>
+<span class="s">#</span>
+<span class="s"># Copyright (c), James Cammarata, 2016</span>
+<span class="s"># Copyright (c), Toshio Kuratomi, 2016</span>
+<span class="s">#</span>
+<span class="s"># Redistribution and use in source and binary forms, with or without modification,</span>
+<span class="s"># are permitted provided that the following conditions are met:</span>
+<span class="s">#</span>
+<span class="s">#    * Redistributions of source code must retain the above copyright</span>
+<span class="s">#      notice, this list of conditions and the following disclaimer.</span>
+<span class="s">#    * Redistributions in binary form must reproduce the above copyright notice,</span>
+<span class="s">#      this list of conditions and the following disclaimer in the documentation</span>
+<span class="s">#      and/or other materials provided with the distribution.</span>
+<span class="s">#</span>
+<span class="s"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND</span>
+<span class="s"># ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED</span>
+<span class="s"># WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.</span>
+<span class="s"># IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,</span>
+<span class="s"># INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,</span>
+<span class="s"># PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS</span>
+<span class="s"># INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT</span>
+<span class="s"># LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE</span>
+<span class="s"># USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</span>
+<span class="s">import os</span>
+<span class="s">import sys</span>
+<span class="s">import base64</span>
+<span class="s">import shutil</span>
+<span class="s">import zipfile</span>
+<span class="s">import tempfile</span>
+<span class="s">import subprocess</span>
+
+<span class="s">if sys.version_info &lt; (3,):</span>
+<span class="s">    bytes = str</span>
+<span class="s">    PY3 = False</span>
+<span class="s">else:</span>
+<span class="s">    unicode = str</span>
+<span class="s">    PY3 = True</span>
+<span class="s">try:</span>
+<span class="s">    # Python-2.6+</span>
+<span class="s">    from io import BytesIO as IOStream</span>
+<span class="s">except ImportError:</span>
+<span class="s">    # Python &lt; 2.6</span>
+<span class="s">    from StringIO import StringIO as IOStream</span>
+
+<span class="s">ZIPDATA = &quot;&quot;&quot;</span><span class="si">%(zipdata)s</span><span class="s">&quot;&quot;&quot;</span>
+
+<span class="s">def invoke_module(module, modlib_path, json_params):</span>
+<span class="s">    pythonpath = os.environ.get(&#39;PYTHONPATH&#39;)</span>
+<span class="s">    if pythonpath:</span>
+<span class="s">        os.environ[&#39;PYTHONPATH&#39;] = &#39;:&#39;.join((modlib_path, pythonpath))</span>
+<span class="s">    else:</span>
+<span class="s">        os.environ[&#39;PYTHONPATH&#39;] = modlib_path</span>
+
+<span class="s">    p = subprocess.Popen([</span><span class="si">%(interpreter)s</span><span class="s">, module], env=os.environ, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)</span>
+<span class="s">    (stdout, stderr) = p.communicate(json_params)</span>
+
+<span class="s">    if not isinstance(stderr, (bytes, unicode)):</span>
+<span class="s">        stderr = stderr.read()</span>
+<span class="s">    if not isinstance(stdout, (bytes, unicode)):</span>
+<span class="s">        stdout = stdout.read()</span>
+<span class="s">    if PY3:</span>
+<span class="s">        sys.stderr.buffer.write(stderr)</span>
+<span class="s">        sys.stdout.buffer.write(stdout)</span>
+<span class="s">    else:</span>
+<span class="s">        sys.stderr.write(stderr)</span>
+<span class="s">        sys.stdout.write(stdout)</span>
+<span class="s">    return p.returncode</span>
+
+<span class="s">def debug(command, zipped_mod, json_params):</span>
+<span class="s">    # The code here normally doesn&#39;t run.  It&#39;s only used for debugging on the</span>
+<span class="s">    # remote machine.</span>
+<span class="s">    #</span>
+<span class="s">    # The subcommands in this function make it easier to debug ziploader</span>
+<span class="s">    # modules.  Here&#39;s the basic steps:</span>
+<span class="s">    #</span>
+<span class="s">    # Run ansible with the environment variable: ANSIBLE_KEEP_REMOTE_FILES=1 and -vvv</span>
+<span class="s">    # to save the module file remotely::</span>
+<span class="s">    #   $ ANSIBLE_KEEP_REMOTE_FILES=1 ansible host1 -m ping -a &#39;data=october&#39; -vvv</span>
+<span class="s">    #</span>
+<span class="s">    # Part of the verbose output will tell you where on the remote machine the</span>
+<span class="s">    # module was written to::</span>
+<span class="s">    #   [...]</span>
+<span class="s">    #   &lt;host1&gt; SSH: EXEC ssh -C -q -o ControlMaster=auto -o ControlPersist=60s -o KbdInteractiveAuthentication=no -o</span>
+<span class="s">    #   PreferredAuthentications=gssapi-with-mic,gssapi-keyex,hostbased,publickey -o PasswordAuthentication=no -o ConnectTimeout=10 -o</span>
+<span class="s">    #   ControlPath=/home/badger/.ansible/cp/ansible-ssh-</span><span class="si">%%</span><span class="s">h-</span><span class="si">%%</span><span class="s">p-</span><span class="si">%%</span><span class="s">r -tt rhel7 &#39;/bin/sh -c &#39;&quot;&#39;&quot;&#39;LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8</span>
+<span class="s">    #   LC_MESSAGES=en_US.UTF-8 /usr/bin/python /home/badger/.ansible/tmp/ansible-tmp-1461173013.93-9076457629738/ping&#39;&quot;&#39;&quot;&#39;&#39;</span>
+<span class="s">    #   [...]</span>
+<span class="s">    #</span>
+<span class="s">    # Login to the remote machine and run the module file via from the previous</span>
+<span class="s">    # step with the explode subcommand to extract the module payload into</span>
+<span class="s">    # source files::</span>
+<span class="s">    #   $ ssh host1</span>
+<span class="s">    #   $ /usr/bin/python /home/badger/.ansible/tmp/ansible-tmp-1461173013.93-9076457629738/ping explode</span>
+<span class="s">    #   Module expanded into:</span>
+<span class="s">    #   /home/badger/.ansible/tmp/ansible-tmp-1461173408.08-279692652635227/ansible</span>
+<span class="s">    #</span>
+<span class="s">    # You can now edit the source files to instrument the code or experiment with</span>
+<span class="s">    # different parameter values.  When you&#39;re ready to run the code you&#39;ve modified</span>
+<span class="s">    # (instead of the code from the actual zipped module), use the execute subcommand like this::</span>
+<span class="s">    #   $ /usr/bin/python /home/badger/.ansible/tmp/ansible-tmp-1461173013.93-9076457629738/ping execute</span>
+
+<span class="s">    # Okay to use __file__ here because we&#39;re running from a kept file</span>
+<span class="s">    basedir = os.path.join(os.path.abspath(os.path.dirname(__file__)), &#39;debug_dir&#39;)</span>
+<span class="s">    args_path = os.path.join(basedir, &#39;args&#39;)</span>
+<span class="s">    script_path = os.path.join(basedir, &#39;ansible_module_</span><span class="si">%(ansible_module)s</span><span class="s">.py&#39;)</span>
+
+<span class="s">    if command == &#39;explode&#39;:</span>
+<span class="s">        # transform the ZIPDATA into an exploded directory of code and then</span>
+<span class="s">        # print the path to the code.  This is an easy way for people to look</span>
+<span class="s">        # at the code on the remote machine for debugging it in that</span>
+<span class="s">        # environment</span>
+<span class="s">        z = zipfile.ZipFile(zipped_mod)</span>
+<span class="s">        for filename in z.namelist():</span>
+<span class="s">            if filename.startswith(&#39;/&#39;):</span>
+<span class="s">                raise Exception(&#39;Something wrong with this module zip file: should not contain absolute paths&#39;)</span>
+
+<span class="s">            dest_filename = os.path.join(basedir, filename)</span>
+<span class="s">            if dest_filename.endswith(os.path.sep) and not os.path.exists(dest_filename):</span>
+<span class="s">                os.makedirs(dest_filename)</span>
+<span class="s">            else:</span>
+<span class="s">                directory = os.path.dirname(dest_filename)</span>
+<span class="s">                if not os.path.exists(directory):</span>
+<span class="s">                    os.makedirs(directory)</span>
+<span class="s">                f = open(dest_filename, &#39;w&#39;)</span>
+<span class="s">                f.write(z.read(filename))</span>
+<span class="s">                f.close()</span>
+
+<span class="s">        # write the args file</span>
+<span class="s">        f = open(args_path, &#39;w&#39;)</span>
+<span class="s">        f.write(json_params)</span>
+<span class="s">        f.close()</span>
+
+<span class="s">        print(&#39;Module expanded into:&#39;)</span>
+<span class="s">        print(&#39;</span><span class="si">%%</span><span class="s">s&#39; </span><span class="si">%%</span><span class="s"> basedir)</span>
+<span class="s">        exitcode = 0</span>
+
+<span class="s">    elif command == &#39;execute&#39;:</span>
+<span class="s">        # Execute the exploded code instead of executing the module from the</span>
+<span class="s">        # embedded ZIPDATA.  This allows people to easily run their modified</span>
+<span class="s">        # code on the remote machine to see how changes will affect it.</span>
+<span class="s">        # This differs slightly from default Ansible execution of Python modules</span>
+<span class="s">        # as it passes the arguments to the module via a file instead of stdin.</span>
+
+<span class="s">        # Set pythonpath to the debug dir</span>
+<span class="s">        pythonpath = os.environ.get(&#39;PYTHONPATH&#39;)</span>
+<span class="s">        if pythonpath:</span>
+<span class="s">            os.environ[&#39;PYTHONPATH&#39;] = &#39;:&#39;.join((basedir, pythonpath))</span>
+<span class="s">        else:</span>
+<span class="s">            os.environ[&#39;PYTHONPATH&#39;] = basedir</span>
+
+<span class="s">        p = subprocess.Popen([</span><span class="si">%(interpreter)s</span><span class="s">, script_path, args_path], env=os.environ, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)</span>
+<span class="s">        (stdout, stderr) = p.communicate()</span>
+
+<span class="s">        if not isinstance(stderr, (bytes, unicode)):</span>
+<span class="s">            stderr = stderr.read()</span>
+<span class="s">        if not isinstance(stdout, (bytes, unicode)):</span>
+<span class="s">            stdout = stdout.read()</span>
+<span class="s">        if PY3:</span>
+<span class="s">            sys.stderr.buffer.write(stderr)</span>
+<span class="s">            sys.stdout.buffer.write(stdout)</span>
+<span class="s">        else:</span>
+<span class="s">            sys.stderr.write(stderr)</span>
+<span class="s">            sys.stdout.write(stdout)</span>
+<span class="s">        return p.returncode</span>
+
+<span class="s">    elif command == &#39;excommunicate&#39;:</span>
+<span class="s">        # This attempts to run the module in-process (by importing a main</span>
+<span class="s">        # function and then calling it).  It is not the way ansible generally</span>
+<span class="s">        # invokes the module so it won&#39;t work in every case.  It is here to</span>
+<span class="s">        # aid certain debuggers which work better when the code doesn&#39;t change</span>
+<span class="s">        # from one process to another but there may be problems that occur</span>
+<span class="s">        # when using this that are only artifacts of how we&#39;re invoking here,</span>
+<span class="s">        # not actual bugs (as they don&#39;t affect the real way that we invoke</span>
+<span class="s">        # ansible modules)</span>
+
+<span class="s">        # stub the args and python path</span>
+<span class="s">        sys.argv = [&#39;</span><span class="si">%(ansible_module)s</span><span class="s">&#39;, args_path]</span>
+<span class="s">        sys.path.insert(0, basedir)</span>
+
+<span class="s">        from ansible_module_</span><span class="si">%(ansible_module)s</span><span class="s"> import main</span>
+<span class="s">        main()</span>
+<span class="s">        print(&#39;WARNING: Module returned to wrapper instead of exiting&#39;)</span>
+<span class="s">        sys.exit(1)</span>
+<span class="s">    else:</span>
+<span class="s">        print(&#39;WARNING: Unknown debug command.  Doing nothing.&#39;)</span>
+<span class="s">        exitcode = 0</span>
+
+<span class="s">    return exitcode</span>
+
+<span class="s">if __name__ == &#39;__main__&#39;:</span>
+<span class="s">    #</span>
+<span class="s">    # See comments in the debug() method for information on debugging</span>
+<span class="s">    #</span>
+
+<span class="s">    ZIPLOADER_PARAMS = </span><span class="si">%(params)s</span><span class="s"></span>
+<span class="s">    if PY3:</span>
+<span class="s">        ZIPLOADER_PARAMS = ZIPLOADER_PARAMS.encode(&#39;utf-8&#39;)</span>
+<span class="s">    try:</span>
+<span class="s">        # There&#39;s a race condition with the controller removing the</span>
+<span class="s">        # remote_tmpdir and this module executing under async.  So we cannot</span>
+<span class="s">        # store this in remote_tmpdir (use system tempdir instead)</span>
+<span class="s">        temp_path = tempfile.mkdtemp(prefix=&#39;ansible_&#39;)</span>
+
+<span class="s">        zipped_mod = os.path.join(temp_path, &#39;ansible_modlib.zip&#39;)</span>
+<span class="s">        modlib = open(zipped_mod, &#39;wb&#39;)</span>
+<span class="s">        modlib.write(base64.b64decode(ZIPDATA))</span>
+<span class="s">        modlib.close()</span>
+
+<span class="s">        if len(sys.argv) == 2:</span>
+<span class="s">            exitcode = debug(sys.argv[1], zipped_mod, ZIPLOADER_PARAMS)</span>
+<span class="s">        else:</span>
+<span class="s">            z = zipfile.ZipFile(zipped_mod, mode=&#39;r&#39;)</span>
+<span class="s">            module = os.path.join(temp_path, &#39;ansible_module_</span><span class="si">%(ansible_module)s</span><span class="s">.py&#39;)</span>
+<span class="s">            f = open(module, &#39;wb&#39;)</span>
+<span class="s">            f.write(z.read(&#39;ansible_module_</span><span class="si">%(ansible_module)s</span><span class="s">.py&#39;))</span>
+<span class="s">            f.close()</span>
+
+<span class="s">            # When installed via setuptools (including python setup.py install),</span>
+<span class="s">            # ansible may be installed with an easy-install.pth file.  That file</span>
+<span class="s">            # may load the system-wide install of ansible rather than the one in</span>
+<span class="s">            # the module.  sitecustomize is the only way to override that setting.</span>
+<span class="s">            z = zipfile.ZipFile(zipped_mod, mode=&#39;a&#39;)</span>
+<span class="s">            # py3: zipped_mod will be text, py2: it&#39;s bytes.  Need bytes at the end</span>
+<span class="s">            z = zipfile.ZipFile(zipped_mod, mode=&#39;a&#39;)</span>
+<span class="s">            sitecustomize = u&#39;import sys</span><span class="se">\\</span><span class="s">nsys.path.insert(0,&quot;</span><span class="si">%%</span><span class="s">s&quot;)</span><span class="se">\\</span><span class="s">n&#39; </span><span class="si">%%</span><span class="s">  zipped_mod</span>
+<span class="s">            sitecustomize = sitecustomize.encode(&#39;utf-8&#39;)</span>
+<span class="s">            z.writestr(&#39;sitecustomize.py&#39;, sitecustomize)</span>
+<span class="s">            z.close()</span>
+
+<span class="s">            exitcode = invoke_module(module, zipped_mod, ZIPLOADER_PARAMS)</span>
+<span class="s">    finally:</span>
+<span class="s">        try:</span>
+<span class="s">            shutil.rmtree(temp_path)</span>
+<span class="s">        except OSError:</span>
+<span class="s">            # tempdir creation probably failed</span>
+<span class="s">            pass</span>
+<span class="s">    sys.exit(exitcode)</span>
+<span class="s">&#39;&#39;&#39;</span>
+
+<span class="k">def</span> <span class="nf">_strip_comments</span><span class="p">(</span><span class="n">source</span><span class="p">):</span>
+    <span class="c"># Strip comments and blank lines from the wrapper</span>
+    <span class="n">buf</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">source</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">l</span> <span class="ow">or</span> <span class="n">l</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">u&#39;#&#39;</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="n">buf</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s">u&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_KEEP_REMOTE_FILES</span><span class="p">:</span>
+    <span class="c"># Keep comments when KEEP_REMOTE_FILES is set.  That way users will see</span>
+    <span class="c"># the comments with some nice usage instructions</span>
+    <span class="n">ACTIVE_ZIPLOADER_TEMPLATE</span> <span class="o">=</span> <span class="n">ZIPLOADER_TEMPLATE</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="c"># ZIPLOADER_TEMPLATE stripped of comments for smaller over the wire size</span>
+    <span class="n">ACTIVE_ZIPLOADER_TEMPLATE</span> <span class="o">=</span> <span class="n">_strip_comments</span><span class="p">(</span><span class="n">ZIPLOADER_TEMPLATE</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ModuleDepFinder"><a class="viewcode-back" href="../../../rst/ansible.executor.html#ansible.executor.module_common.ModuleDepFinder">[docs]</a><span class="k">class</span> <span class="nc">ModuleDepFinder</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">NodeVisitor</span><span class="p">):</span>
+    <span class="c"># Caveats:</span>
+    <span class="c"># This code currently does not handle:</span>
+    <span class="c"># * relative imports from py2.6+ from . import urls</span>
+    <span class="n">IMPORT_PREFIX_SIZE</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="s">&#39;ansible.module_utils.&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Walk the ast tree for the python module.</span>
+
+<span class="sd">        Save submodule[.submoduleN][.identifier] into self.submodules</span>
+
+<span class="sd">        self.submodules will end up with tuples like:</span>
+<span class="sd">          - (&#39;basic&#39;,)</span>
+<span class="sd">          - (&#39;urls&#39;, &#39;fetch_url&#39;)</span>
+<span class="sd">          - (&#39;database&#39;, &#39;postgres&#39;)</span>
+<span class="sd">          - (&#39;database&#39;, &#39;postgres&#39;, &#39;quote&#39;)</span>
+
+<span class="sd">        It&#39;s up to calling code to determine whether the final element of the</span>
+<span class="sd">        dotted strings are module names or something else (function, class, or</span>
+<span class="sd">        variable names)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ModuleDepFinder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">submodules</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+<div class="viewcode-block" id="ModuleDepFinder.visit_Import"><a class="viewcode-back" href="../../../rst/ansible.executor.html#ansible.executor.module_common.ModuleDepFinder.visit_Import">[docs]</a>    <span class="k">def</span> <span class="nf">visit_Import</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="c"># import ansible.module_utils.MODLIB[.MODLIBn] [as asname]</span>
+        <span class="k">for</span> <span class="n">alias</span> <span class="ow">in</span> <span class="p">(</span><span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">names</span> <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;ansible.module_utils.&#39;</span><span class="p">)):</span>
+            <span class="n">py_mod</span> <span class="o">=</span> <span class="n">alias</span><span class="o">.</span><span class="n">name</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">IMPORT_PREFIX_SIZE</span><span class="p">:]</span>
+            <span class="n">py_mod</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">py_mod</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">submodules</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">py_mod</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generic_visit</span><span class="p">(</span><span class="n">node</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ModuleDepFinder.visit_ImportFrom"><a class="viewcode-back" href="../../../rst/ansible.executor.html#ansible.executor.module_common.ModuleDepFinder.visit_ImportFrom">[docs]</a>    <span class="k">def</span> <span class="nf">visit_ImportFrom</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;ansible.module_utils&#39;</span><span class="p">):</span>
+            <span class="n">where_from</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">module</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">IMPORT_PREFIX_SIZE</span><span class="p">:]</span>
+            <span class="k">if</span> <span class="n">where_from</span><span class="p">:</span>
+                <span class="c"># from ansible.module_utils.MODULE1[.MODULEn] import IDENTIFIER [as asname]</span>
+                <span class="c"># from ansible.module_utils.MODULE1[.MODULEn] import MODULEn+1 [as asname]</span>
+                <span class="c"># from ansible.module_utils.MODULE1[.MODULEn] import MODULEn+1 [,IDENTIFIER] [as asname]</span>
+                <span class="n">py_mod</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">where_from</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">alias</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">submodules</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">py_mod</span> <span class="o">+</span> <span class="p">(</span><span class="n">alias</span><span class="o">.</span><span class="n">name</span><span class="p">,))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># from ansible.module_utils import MODLIB [,MODLIB2] [as asname]</span>
+                <span class="k">for</span> <span class="n">alias</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">submodules</span><span class="o">.</span><span class="n">add</span><span class="p">((</span><span class="n">alias</span><span class="o">.</span><span class="n">name</span><span class="p">,))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generic_visit</span><span class="p">(</span><span class="n">node</span><span class="p">)</span></div></div>
+
+
+<span class="k">def</span> <span class="nf">_slurp</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;imported module support code does not exist at </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+    <span class="n">fd</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">fd</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="n">fd</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">data</span>
+
+<span class="k">def</span> <span class="nf">_get_shebang</span><span class="p">(</span><span class="n">interpreter</span><span class="p">,</span> <span class="n">task_vars</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="nb">tuple</span><span class="p">()):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Note not stellar API:</span>
+<span class="sd">       Returns None instead of always returning a shebang line.  Doing it this</span>
+<span class="sd">       way allows the caller to decide to use the shebang it read from the</span>
+<span class="sd">       file rather than trust that we reformatted what they already have</span>
+<span class="sd">       correctly.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">interpreter_config</span> <span class="o">=</span> <span class="s">u&#39;ansible_</span><span class="si">%s</span><span class="s">_interpreter&#39;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">interpreter</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">interpreter_config</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">task_vars</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="n">interpreter</span><span class="p">)</span>
+
+    <span class="n">interpreter</span> <span class="o">=</span> <span class="n">task_vars</span><span class="p">[</span><span class="n">interpreter_config</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="n">shebang</span> <span class="o">=</span> <span class="s">u&#39;#!&#39;</span> <span class="o">+</span> <span class="n">interpreter</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="p">:</span>
+        <span class="n">shebang</span> <span class="o">=</span> <span class="n">shebang</span> <span class="o">+</span> <span class="s">u&#39; &#39;</span> <span class="o">+</span> <span class="s">u&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">shebang</span><span class="p">,</span> <span class="n">interpreter</span><span class="p">)</span>
+
+<div class="viewcode-block" id="recursive_finder"><a class="viewcode-back" href="../../../rst/ansible.executor.html#ansible.executor.module_common.recursive_finder">[docs]</a><span class="k">def</span> <span class="nf">recursive_finder</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">py_module_names</span><span class="p">,</span> <span class="n">py_module_cache</span><span class="p">,</span> <span class="n">zf</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Using ModuleDepFinder, make sure we have all of the module_utils files that</span>
+<span class="sd">    the module its module_utils files needs.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># Parse the module and find the imports of ansible.module_utils</span>
+    <span class="n">tree</span> <span class="o">=</span> <span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">finder</span> <span class="o">=</span> <span class="n">ModuleDepFinder</span><span class="p">()</span>
+    <span class="n">finder</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">tree</span><span class="p">)</span>
+
+    <span class="c">#</span>
+    <span class="c"># Determine what imports that we&#39;ve found are modules (vs class, function.</span>
+    <span class="c"># variable names) for packages</span>
+    <span class="c">#</span>
+
+    <span class="n">normalized_modules</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="c"># Loop through the imports that we&#39;ve found to normalize them</span>
+    <span class="c"># Exclude paths that match with paths we&#39;ve already processed</span>
+    <span class="c"># (Have to exclude them a second time once the paths are processed)</span>
+    <span class="k">for</span> <span class="n">py_module_name</span> <span class="ow">in</span> <span class="n">finder</span><span class="o">.</span><span class="n">submodules</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">py_module_names</span><span class="p">):</span>
+        <span class="n">module_info</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="k">if</span> <span class="n">py_module_name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;six&#39;</span><span class="p">:</span>
+            <span class="c"># Special case the python six library because it messes up the</span>
+            <span class="c"># import process in an incompatible way</span>
+            <span class="n">module_info</span> <span class="o">=</span> <span class="n">imp</span><span class="o">.</span><span class="n">find_module</span><span class="p">(</span><span class="s">&#39;six&#39;</span><span class="p">,</span> <span class="p">[</span><span class="n">_SNIPPET_PATH</span><span class="p">])</span>
+            <span class="n">py_module_name</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;six&#39;</span><span class="p">,)</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># Check whether either the last or the second to last identifier is</span>
+            <span class="c"># a module name</span>
+            <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">py_module_name</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">idx</span><span class="p">:</span>
+                    <span class="k">break</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">module_info</span> <span class="o">=</span> <span class="n">imp</span><span class="o">.</span><span class="n">find_module</span><span class="p">(</span><span class="n">py_module_name</span><span class="p">[</span><span class="o">-</span><span class="n">idx</span><span class="p">],</span>
+                            <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_SNIPPET_PATH</span><span class="p">,</span> <span class="o">*</span><span class="n">py_module_name</span><span class="p">[:</span><span class="o">-</span><span class="n">idx</span><span class="p">])])</span>
+                    <span class="k">break</span>
+                <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+        <span class="c"># Could not find the module.  Construct a helpful error message.</span>
+        <span class="k">if</span> <span class="n">module_info</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;Could not find imported module support code for </span><span class="si">%s</span><span class="s">.  Looked for&#39;</span> <span class="o">%</span> <span class="n">name</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">idx</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;either </span><span class="si">%s</span><span class="s"> or </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">py_module_name</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">py_module_name</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">py_module_name</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">idx</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="c"># We&#39;ve determined that the last portion was an identifier and</span>
+            <span class="c"># thus, not part of the module name</span>
+            <span class="n">py_module_name</span> <span class="o">=</span> <span class="n">py_module_name</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c"># If not already processed then we&#39;ve got work to do</span>
+        <span class="k">if</span> <span class="n">py_module_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">py_module_names</span><span class="p">:</span>
+            <span class="c"># If not in the cache, then read the file into the cache</span>
+            <span class="c"># We already have a file handle for the module open so it makes</span>
+            <span class="c"># sense to read it now</span>
+            <span class="k">if</span> <span class="n">py_module_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">py_module_cache</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">module_info</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="n">imp</span><span class="o">.</span><span class="n">PKG_DIRECTORY</span><span class="p">:</span>
+                    <span class="c"># Read the __init__.py instead of the module file as this is</span>
+                    <span class="c"># a python package</span>
+                    <span class="n">py_module_cache</span><span class="p">[</span><span class="n">py_module_name</span> <span class="o">+</span> <span class="p">(</span><span class="s">&#39;__init__&#39;</span><span class="p">,)]</span> <span class="o">=</span> <span class="n">_slurp</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_SNIPPET_PATH</span><span class="p">,</span> <span class="o">*</span><span class="n">py_module_name</span><span class="p">),</span> <span class="s">&#39;__init__.py&#39;</span><span class="p">))</span>
+                    <span class="n">normalized_modules</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">py_module_name</span> <span class="o">+</span> <span class="p">(</span><span class="s">&#39;__init__&#39;</span><span class="p">,))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">py_module_cache</span><span class="p">[</span><span class="n">py_module_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">module_info</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+                    <span class="n">module_info</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                    <span class="n">normalized_modules</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">py_module_name</span><span class="p">)</span>
+
+            <span class="c"># Make sure that all the packages that this module is a part of</span>
+            <span class="c"># are also added</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">py_module_name</span><span class="p">)):</span>
+                <span class="n">py_pkg_name</span> <span class="o">=</span> <span class="n">py_module_name</span><span class="p">[:</span><span class="o">-</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="s">&#39;__init__&#39;</span><span class="p">,)</span>
+                <span class="k">if</span> <span class="n">py_pkg_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">py_module_names</span><span class="p">:</span>
+                    <span class="n">normalized_modules</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">py_pkg_name</span><span class="p">)</span>
+                    <span class="n">py_module_cache</span><span class="p">[</span><span class="n">py_pkg_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">_slurp</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">.py&#39;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_SNIPPET_PATH</span><span class="p">,</span> <span class="o">*</span><span class="n">py_pkg_name</span><span class="p">))</span>
+
+    <span class="c">#</span>
+    <span class="c"># iterate through all of the ansible.module_utils* imports that we haven&#39;t</span>
+    <span class="c"># already checked for new imports</span>
+    <span class="c">#</span>
+
+    <span class="c"># set of modules that we haven&#39;t added to the zipfile</span>
+    <span class="n">unprocessed_py_module_names</span> <span class="o">=</span> <span class="n">normalized_modules</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">py_module_names</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">py_module_name</span> <span class="ow">in</span> <span class="n">unprocessed_py_module_names</span><span class="p">:</span>
+        <span class="n">py_module_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="o">*</span><span class="n">py_module_name</span><span class="p">)</span>
+        <span class="n">py_module_file_name</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">.py&#39;</span> <span class="o">%</span> <span class="n">py_module_path</span>
+
+        <span class="n">zf</span><span class="o">.</span><span class="n">writestr</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&quot;ansible/module_utils&quot;</span><span class="p">,</span>
+                <span class="n">py_module_file_name</span><span class="p">),</span> <span class="n">py_module_cache</span><span class="p">[</span><span class="n">py_module_name</span><span class="p">])</span>
+
+    <span class="c"># Add the names of the files we&#39;re scheduling to examine in the loop to</span>
+    <span class="c"># py_module_names so that we don&#39;t re-examine them in the next pass</span>
+    <span class="c"># through recursive_finder()</span>
+    <span class="n">py_module_names</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">unprocessed_py_module_names</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">py_module_file</span> <span class="ow">in</span> <span class="n">unprocessed_py_module_names</span><span class="p">:</span>
+        <span class="n">recursive_finder</span><span class="p">(</span><span class="n">py_module_file</span><span class="p">,</span> <span class="n">py_module_cache</span><span class="p">[</span><span class="n">py_module_file</span><span class="p">],</span> <span class="n">py_module_names</span><span class="p">,</span> <span class="n">py_module_cache</span><span class="p">,</span> <span class="n">zf</span><span class="p">)</span>
+        <span class="c"># Save memory; the file won&#39;t have to be read again for this ansible module.</span>
+        <span class="k">del</span> <span class="n">py_module_cache</span><span class="p">[</span><span class="n">py_module_file</span><span class="p">]</span></div>
+
+<span class="k">def</span> <span class="nf">_is_binary</span><span class="p">(</span><span class="n">module_data</span><span class="p">):</span>
+    <span class="n">textchars</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">27</span><span class="p">])</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mh">0x20</span><span class="p">,</span> <span class="mh">0x100</span><span class="p">))</span> <span class="o">-</span> <span class="nb">set</span><span class="p">([</span><span class="mh">0x7f</span><span class="p">]))</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">module_data</span><span class="p">[:</span><span class="mi">1024</span><span class="p">]</span>
+    <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">start</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="n">textchars</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">_find_snippet_imports</span><span class="p">(</span><span class="n">module_name</span><span class="p">,</span> <span class="n">module_data</span><span class="p">,</span> <span class="n">module_path</span><span class="p">,</span> <span class="n">module_args</span><span class="p">,</span> <span class="n">task_vars</span><span class="p">,</span> <span class="n">module_compression</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Given the source of the module, convert it to a Jinja2 template to insert</span>
+<span class="sd">    module code and return whether it&#39;s a new or old style module.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">module_substyle</span> <span class="o">=</span> <span class="n">module_style</span> <span class="o">=</span> <span class="s">&#39;old&#39;</span>
+
+    <span class="c"># module_style is something important to calling code (ActionBase).  It</span>
+    <span class="c"># determines how arguments are formatted (json vs k=v) and whether</span>
+    <span class="c"># a separate arguments file needs to be sent over the wire.</span>
+    <span class="c"># module_substyle is extra information that&#39;s useful internally.  It tells</span>
+    <span class="c"># us what we have to look to substitute in the module files and whether</span>
+    <span class="c"># we&#39;re using module replacer or ziploader to format the module itself.</span>
+    <span class="k">if</span> <span class="n">_is_binary</span><span class="p">(</span><span class="n">module_data</span><span class="p">):</span>
+        <span class="n">module_substyle</span> <span class="o">=</span> <span class="n">module_style</span> <span class="o">=</span> <span class="s">&#39;binary&#39;</span>
+    <span class="k">elif</span> <span class="n">REPLACER</span> <span class="ow">in</span> <span class="n">module_data</span><span class="p">:</span>
+        <span class="c"># Do REPLACER before from ansible.module_utils because we need make sure</span>
+        <span class="c"># we substitute &quot;from ansible.module_utils basic&quot; for REPLACER</span>
+        <span class="n">module_style</span> <span class="o">=</span> <span class="s">&#39;new&#39;</span>
+        <span class="n">module_substyle</span> <span class="o">=</span> <span class="s">&#39;python&#39;</span>
+        <span class="n">module_data</span> <span class="o">=</span> <span class="n">module_data</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">REPLACER</span><span class="p">,</span> <span class="n">b</span><span class="s">&#39;from ansible.module_utils.basic import *&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">b</span><span class="s">&#39;from ansible.module_utils.&#39;</span> <span class="ow">in</span> <span class="n">module_data</span><span class="p">:</span>
+        <span class="n">module_style</span> <span class="o">=</span> <span class="s">&#39;new&#39;</span>
+        <span class="n">module_substyle</span> <span class="o">=</span> <span class="s">&#39;python&#39;</span>
+    <span class="k">elif</span> <span class="n">REPLACER_WINDOWS</span> <span class="ow">in</span> <span class="n">module_data</span><span class="p">:</span>
+        <span class="n">module_style</span> <span class="o">=</span> <span class="s">&#39;new&#39;</span>
+        <span class="n">module_substyle</span> <span class="o">=</span> <span class="s">&#39;powershell&#39;</span>
+    <span class="k">elif</span> <span class="n">REPLACER_JSONARGS</span> <span class="ow">in</span> <span class="n">module_data</span><span class="p">:</span>
+        <span class="n">module_style</span> <span class="o">=</span> <span class="s">&#39;new&#39;</span>
+        <span class="n">module_substyle</span> <span class="o">=</span> <span class="s">&#39;jsonargs&#39;</span>
+    <span class="k">elif</span> <span class="n">b</span><span class="s">&#39;WANT_JSON&#39;</span> <span class="ow">in</span> <span class="n">module_data</span><span class="p">:</span>
+        <span class="n">module_substyle</span> <span class="o">=</span> <span class="n">module_style</span> <span class="o">=</span> <span class="s">&#39;non_native_want_json&#39;</span>
+
+    <span class="n">shebang</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="c"># Neither old-style, non_native_want_json nor binary modules should be modified</span>
+    <span class="c"># except for the shebang line (Done by modify_module)</span>
+    <span class="k">if</span> <span class="n">module_style</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;old&#39;</span><span class="p">,</span> <span class="s">&#39;non_native_want_json&#39;</span><span class="p">,</span> <span class="s">&#39;binary&#39;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">module_data</span><span class="p">,</span> <span class="n">module_style</span><span class="p">,</span> <span class="n">shebang</span>
+
+    <span class="n">output</span> <span class="o">=</span> <span class="n">BytesIO</span><span class="p">()</span>
+    <span class="n">py_module_names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">module_substyle</span> <span class="o">==</span> <span class="s">&#39;python&#39;</span><span class="p">:</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">ANSIBLE_MODULE_ARGS</span><span class="o">=</span><span class="n">module_args</span><span class="p">,)</span>
+        <span class="n">python_repred_params</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">params</span><span class="p">))</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">compression_method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">zipfile</span><span class="p">,</span> <span class="n">module_compression</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">u&#39;Bad module compression string specified: </span><span class="si">%s</span><span class="s">.  Using ZIP_STORED (no compression)&#39;</span> <span class="o">%</span> <span class="n">module_compression</span><span class="p">)</span>
+            <span class="n">compression_method</span> <span class="o">=</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZIP_STORED</span>
+
+        <span class="n">lookup_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_LOCAL_TMP</span><span class="p">,</span> <span class="s">&#39;ziploader_cache&#39;</span><span class="p">)</span>
+        <span class="n">cached_module_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lookup_path</span><span class="p">,</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">-</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">module_name</span><span class="p">,</span> <span class="n">module_compression</span><span class="p">))</span>
+
+        <span class="n">zipdata</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="c"># Optimization -- don&#39;t lock if the module has already been cached</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">cached_module_filename</span><span class="p">):</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;ZIPLOADER: using cached module: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">cached_module_filename</span><span class="p">)</span>
+            <span class="n">zipdata</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">cached_module_filename</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="c"># Fool the check later... I think we should just remove the check</span>
+            <span class="n">py_module_names</span><span class="o">.</span><span class="n">add</span><span class="p">((</span><span class="s">&#39;basic&#39;</span><span class="p">,))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">module_name</span> <span class="ow">in</span> <span class="n">strategy</span><span class="o">.</span><span class="n">action_write_locks</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;ZIPLOADER: Using lock for </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">module_name</span><span class="p">)</span>
+                <span class="n">lock</span> <span class="o">=</span> <span class="n">strategy</span><span class="o">.</span><span class="n">action_write_locks</span><span class="p">[</span><span class="n">module_name</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># If the action plugin directly invokes the module (instead of</span>
+                <span class="c"># going through a strategy) then we don&#39;t have a cross-process</span>
+                <span class="c"># Lock specifically for this module.  Use the &quot;unexpected</span>
+                <span class="c"># module&quot; lock instead</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;ZIPLOADER: Using generic lock for </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">module_name</span><span class="p">)</span>
+                <span class="n">lock</span> <span class="o">=</span> <span class="n">strategy</span><span class="o">.</span><span class="n">action_write_locks</span><span class="p">[</span><span class="bp">None</span><span class="p">]</span>
+
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;ZIPLOADER: Acquiring lock&#39;</span><span class="p">)</span>
+            <span class="k">with</span> <span class="n">lock</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;ZIPLOADER: Lock acquired: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="nb">id</span><span class="p">(</span><span class="n">lock</span><span class="p">))</span>
+                <span class="c"># Check that no other process has created this while we were</span>
+                <span class="c"># waiting for the lock</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">cached_module_filename</span><span class="p">):</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;ZIPLOADER: Creating module&#39;</span><span class="p">)</span>
+                    <span class="c"># Create the module zip data</span>
+                    <span class="n">zipoutput</span> <span class="o">=</span> <span class="n">BytesIO</span><span class="p">()</span>
+                    <span class="n">zf</span> <span class="o">=</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">zipoutput</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;w&#39;</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="n">compression_method</span><span class="p">)</span>
+                    <span class="n">zf</span><span class="o">.</span><span class="n">writestr</span><span class="p">(</span><span class="s">&#39;ansible/__init__.py&#39;</span><span class="p">,</span> <span class="n">b</span><span class="s">&#39;from pkgutil import extend_path</span><span class="se">\n</span><span class="s">__path__=extend_path(__path__,__name__)</span><span class="se">\n</span><span class="s">try:</span><span class="se">\n</span><span class="s">    from ansible.release import __version__,__author__</span><span class="se">\n</span><span class="s">except ImportError:</span><span class="se">\n</span><span class="s">    __version__=&quot;&#39;</span> <span class="o">+</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">__version__</span><span class="p">)</span> <span class="o">+</span> <span class="n">b</span><span class="s">&#39;&quot;</span><span class="se">\n</span><span class="s">    __author__=&quot;&#39;</span> <span class="o">+</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">__author__</span><span class="p">)</span> <span class="o">+</span> <span class="n">b</span><span class="s">&#39;&quot;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+                    <span class="n">zf</span><span class="o">.</span><span class="n">writestr</span><span class="p">(</span><span class="s">&#39;ansible/module_utils/__init__.py&#39;</span><span class="p">,</span> <span class="n">b</span><span class="s">&#39;from pkgutil import extend_path</span><span class="se">\n</span><span class="s">__path__=extend_path(__path__,__name__)</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+
+                    <span class="n">zf</span><span class="o">.</span><span class="n">writestr</span><span class="p">(</span><span class="s">&#39;ansible_module_</span><span class="si">%s</span><span class="s">.py&#39;</span> <span class="o">%</span> <span class="n">module_name</span><span class="p">,</span> <span class="n">module_data</span><span class="p">)</span>
+
+                    <span class="n">py_module_cache</span> <span class="o">=</span> <span class="p">{</span> <span class="p">(</span><span class="s">&#39;__init__&#39;</span><span class="p">,):</span> <span class="n">b</span><span class="s">&#39;&#39;</span> <span class="p">}</span>
+                    <span class="n">recursive_finder</span><span class="p">(</span><span class="n">module_name</span><span class="p">,</span> <span class="n">module_data</span><span class="p">,</span> <span class="n">py_module_names</span><span class="p">,</span> <span class="n">py_module_cache</span><span class="p">,</span> <span class="n">zf</span><span class="p">)</span>
+                    <span class="n">zf</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                    <span class="n">zipdata</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">zipoutput</span><span class="o">.</span><span class="n">getvalue</span><span class="p">())</span>
+
+                    <span class="c"># Write the assembled module to a temp file (write to temp</span>
+                    <span class="c"># so that no one looking for the file reads a partially</span>
+                    <span class="c"># written file)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">lookup_path</span><span class="p">):</span>
+                        <span class="c"># Note -- if we have a global function to setup, that would</span>
+                        <span class="c"># be a better place to run this</span>
+                        <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">lookup_path</span><span class="p">)</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;ZIPLOADER: Writing module&#39;</span><span class="p">)</span>
+                    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">cached_module_filename</span> <span class="o">+</span> <span class="s">&#39;-part&#39;</span><span class="p">,</span> <span class="s">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">zipdata</span><span class="p">)</span>
+
+                    <span class="c"># Rename the file into its final position in the cache so</span>
+                    <span class="c"># future users of this module can read it off the</span>
+                    <span class="c"># filesystem instead of constructing from scratch.</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;ZIPLOADER: Renaming module&#39;</span><span class="p">)</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">cached_module_filename</span> <span class="o">+</span> <span class="s">&#39;-part&#39;</span><span class="p">,</span> <span class="n">cached_module_filename</span><span class="p">)</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;ZIPLOADER: Done creating module&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">zipdata</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;ZIPLOADER: Reading module after lock&#39;</span><span class="p">)</span>
+                <span class="c"># Another process wrote the file while we were waiting for</span>
+                <span class="c"># the write lock.  Go ahead and read the data from disk</span>
+                <span class="c"># instead of re-creating it.</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">zipdata</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">cached_module_filename</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+                <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&#39;A different worker process failed to create module file.  Look at traceback for that process for debugging information.&#39;</span><span class="p">)</span>
+                <span class="c"># Fool the check later... I think we should just remove the check</span>
+                <span class="n">py_module_names</span><span class="o">.</span><span class="n">add</span><span class="p">((</span><span class="s">&#39;basic&#39;</span><span class="p">,))</span>
+        <span class="n">zipdata</span> <span class="o">=</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">zipdata</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+
+        <span class="n">shebang</span><span class="p">,</span> <span class="n">interpreter</span> <span class="o">=</span> <span class="n">_get_shebang</span><span class="p">(</span><span class="s">u&#39;/usr/bin/python&#39;</span><span class="p">,</span> <span class="n">task_vars</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">shebang</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">shebang</span> <span class="o">=</span> <span class="s">u&#39;#!/usr/bin/python&#39;</span>
+
+        <span class="n">executable</span> <span class="o">=</span> <span class="n">interpreter</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">u&#39; &#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">executable</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">executable</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">u&#39;env&#39;</span><span class="p">):</span>
+            <span class="c"># Handle /usr/bin/env python style interpreter settings</span>
+            <span class="n">interpreter</span> <span class="o">=</span> <span class="s">u&quot;&#39;{0}&#39;, &#39;{1}&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">executable</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># Still have to enclose the parts of the interpreter in quotes</span>
+            <span class="c"># because we&#39;re substituting it into the template as a python</span>
+            <span class="c"># string</span>
+            <span class="n">interpreter</span> <span class="o">=</span> <span class="s">u&quot;&#39;{0}&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">interpreter</span><span class="p">)</span>
+
+        <span class="n">output</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">ACTIVE_ZIPLOADER_TEMPLATE</span> <span class="o">%</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">zipdata</span><span class="o">=</span><span class="n">zipdata</span><span class="p">,</span>
+            <span class="n">ansible_module</span><span class="o">=</span><span class="n">module_name</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">python_repred_params</span><span class="p">,</span>
+            <span class="n">shebang</span><span class="o">=</span><span class="n">shebang</span><span class="p">,</span>
+            <span class="n">interpreter</span><span class="o">=</span><span class="n">interpreter</span><span class="p">,</span>
+            <span class="n">coding</span><span class="o">=</span><span class="n">ENCODING_STRING</span><span class="p">,</span>
+            <span class="p">)))</span>
+        <span class="n">module_data</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
+
+        <span class="c"># Sanity check from 1.x days.  Maybe too strict.  Some custom python</span>
+        <span class="c"># modules that use ziploader may implement their own helpers and not</span>
+        <span class="c"># need basic.py.  All the constants that we substituted into basic.py</span>
+        <span class="c"># for module_replacer are now available in other, better ways.</span>
+        <span class="k">if</span> <span class="p">(</span><span class="s">&#39;basic&#39;</span><span class="p">,)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">py_module_names</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;missing required import in </span><span class="si">%s</span><span class="s">: Did not import ansible.module_utils.basic for boilerplate helper code&quot;</span> <span class="o">%</span> <span class="n">module_path</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">module_substyle</span> <span class="o">==</span> <span class="s">&#39;powershell&#39;</span><span class="p">:</span>
+        <span class="c"># Module replacer for jsonargs and windows</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">module_data</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">b</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">REPLACER_WINDOWS</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                <span class="n">ps_data</span> <span class="o">=</span> <span class="n">_slurp</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_SNIPPET_PATH</span><span class="p">,</span> <span class="s">&quot;powershell.ps1&quot;</span><span class="p">))</span>
+                <span class="n">output</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">ps_data</span><span class="p">)</span>
+                <span class="n">py_module_names</span><span class="o">.</span><span class="n">add</span><span class="p">((</span><span class="n">b</span><span class="s">&#39;powershell&#39;</span><span class="p">,))</span>
+                <span class="k">continue</span>
+            <span class="n">output</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">line</span> <span class="o">+</span> <span class="n">b</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="n">module_data</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
+
+        <span class="n">module_args_json</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">module_args</span><span class="p">))</span>
+        <span class="n">module_data</span> <span class="o">=</span> <span class="n">module_data</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">REPLACER_JSONARGS</span><span class="p">,</span> <span class="n">module_args_json</span><span class="p">)</span>
+
+        <span class="c"># Sanity check from 1.x days.  This is currently useless as we only</span>
+        <span class="c"># get here if we are going to substitute powershell.ps1 into the</span>
+        <span class="c"># module anyway.  Leaving it for when/if we add other powershell</span>
+        <span class="c"># module_utils files.</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">b</span><span class="s">&#39;powershell&#39;</span><span class="p">,)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">py_module_names</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;missing required import in </span><span class="si">%s</span><span class="s">: # POWERSHELL_COMMON&quot;</span> <span class="o">%</span> <span class="n">module_path</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">module_substyle</span> <span class="o">==</span> <span class="s">&#39;jsonargs&#39;</span><span class="p">:</span>
+        <span class="n">module_args_json</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">module_args</span><span class="p">))</span>
+
+        <span class="c"># these strings could be included in a third-party module but</span>
+        <span class="c"># officially they were included in the &#39;basic&#39; snippet for new-style</span>
+        <span class="c"># python modules (which has been replaced with something else in</span>
+        <span class="c"># ziploader) If we remove them from jsonargs-style module replacer</span>
+        <span class="c"># then we can remove them everywhere.</span>
+        <span class="n">python_repred_args</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">module_args_json</span><span class="p">))</span>
+        <span class="n">module_data</span> <span class="o">=</span> <span class="n">module_data</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">REPLACER_VERSION</span><span class="p">,</span> <span class="n">to_bytes</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">__version__</span><span class="p">)))</span>
+        <span class="n">module_data</span> <span class="o">=</span> <span class="n">module_data</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">REPLACER_COMPLEX</span><span class="p">,</span> <span class="n">python_repred_args</span><span class="p">)</span>
+        <span class="n">module_data</span> <span class="o">=</span> <span class="n">module_data</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">REPLACER_SELINUX</span><span class="p">,</span> <span class="n">to_bytes</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_SELINUX_SPECIAL_FS</span><span class="p">)))</span>
+
+        <span class="c"># The main event -- substitute the JSON args string into the module</span>
+        <span class="n">module_data</span> <span class="o">=</span> <span class="n">module_data</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">REPLACER_JSONARGS</span><span class="p">,</span> <span class="n">module_args_json</span><span class="p">)</span>
+
+        <span class="n">facility</span> <span class="o">=</span> <span class="n">b</span><span class="s">&#39;syslog.&#39;</span> <span class="o">+</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">task_vars</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ansible_syslog_facility&#39;</span><span class="p">,</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_SYSLOG_FACILITY</span><span class="p">),</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+        <span class="n">module_data</span> <span class="o">=</span> <span class="n">module_data</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">b</span><span class="s">&#39;syslog.LOG_USER&#39;</span><span class="p">,</span> <span class="n">facility</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">module_data</span><span class="p">,</span> <span class="n">module_style</span><span class="p">,</span> <span class="n">shebang</span><span class="p">)</span>
+
+<span class="c"># ******************************************************************************</span>
+
+<div class="viewcode-block" id="modify_module"><a class="viewcode-back" href="../../../rst/ansible.executor.html#ansible.executor.module_common.modify_module">[docs]</a><span class="k">def</span> <span class="nf">modify_module</span><span class="p">(</span><span class="n">module_name</span><span class="p">,</span> <span class="n">module_path</span><span class="p">,</span> <span class="n">module_args</span><span class="p">,</span> <span class="n">task_vars</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span> <span class="n">module_compression</span><span class="o">=</span><span class="s">&#39;ZIP_STORED&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Used to insert chunks of code into modules before transfer rather than doing regular python imports.</span>
+
+<span class="sd">    This allows for more efficient transfer in a non-bootstrapping scenario by not</span>
+<span class="sd">    moving extra files over the wire and also takes care of embedding arguments in</span>
+<span class="sd">    the transferred modules.</span>
+
+<span class="sd">    This version is done in such a way that local imports can still be</span>
+<span class="sd">    used in the module code, so IDEs don&#39;t have to be aware of what is going on.</span>
+
+<span class="sd">    Example::</span>
+
+<span class="sd">        from ansible.module_utils.basic import *</span>
+
+<span class="sd">        ... will result in the insertion of basic.py into the module</span>
+<span class="sd">        from the module_utils/ directory in the source tree.</span>
+
+<span class="sd">    All modules are required to import at least basic, though there will also</span>
+<span class="sd">    be other snippets.</span>
+
+<span class="sd">    For powershell, there&#39;s equivalent conventions like this::</span>
+
+<span class="sd">        # POWERSHELL_COMMON</span>
+
+<span class="sd">    Which results in the inclusion of the common code from powershell.ps1</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">module_path</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+
+        <span class="c"># read in the module source</span>
+        <span class="n">module_data</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+    <span class="p">(</span><span class="n">module_data</span><span class="p">,</span> <span class="n">module_style</span><span class="p">,</span> <span class="n">shebang</span><span class="p">)</span> <span class="o">=</span> <span class="n">_find_snippet_imports</span><span class="p">(</span><span class="n">module_name</span><span class="p">,</span> <span class="n">module_data</span><span class="p">,</span> <span class="n">module_path</span><span class="p">,</span> <span class="n">module_args</span><span class="p">,</span> <span class="n">task_vars</span><span class="p">,</span> <span class="n">module_compression</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">module_style</span> <span class="o">==</span> <span class="s">&#39;binary&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">module_data</span><span class="p">,</span> <span class="n">module_style</span><span class="p">,</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">shebang</span><span class="p">,</span> <span class="n">nonstring</span><span class="o">=</span><span class="s">&#39;passthru&#39;</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">shebang</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">module_data</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">b</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">b</span><span class="s">&quot;#!&quot;</span><span class="p">):</span>
+            <span class="n">shebang</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="n">shlex</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">shebang</span><span class="p">[</span><span class="mi">2</span><span class="p">:]))</span>
+            <span class="n">interpreter</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">interpreter</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">interpreter</span><span class="p">)</span>
+
+            <span class="n">new_shebang</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">_get_shebang</span><span class="p">(</span><span class="n">interpreter</span><span class="p">,</span> <span class="n">task_vars</span><span class="p">,</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:])[</span><span class="mi">0</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">,</span> <span class="n">nonstring</span><span class="o">=</span><span class="s">&#39;passthru&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">new_shebang</span><span class="p">:</span>
+                <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">shebang</span> <span class="o">=</span> <span class="n">new_shebang</span>
+
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">interpreter</span><span class="p">)</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">b</span><span class="s">&#39;python&#39;</span><span class="p">):</span>
+                <span class="n">lines</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">ENCODING_STRING</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># No shebang, assume a binary module?</span>
+            <span class="k">pass</span>
+
+        <span class="n">module_data</span> <span class="o">=</span> <span class="n">b</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">shebang</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">shebang</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">module_data</span><span class="p">,</span> <span class="n">module_style</span><span class="p">,</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">shebang</span><span class="p">,</span> <span class="n">nonstring</span><span class="o">=</span><span class="s">&#39;passthru&#39;</span><span class="p">))</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,474 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.utils.unicode &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>ansible.utils.unicode</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.utils.unicode</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012-2014, Toshio Kuratomi &lt;a.badger@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">string_types</span><span class="p">,</span> <span class="n">text_type</span><span class="p">,</span> <span class="n">binary_type</span><span class="p">,</span> <span class="n">PY3</span>
+
+<span class="c"># to_bytes and to_unicode were written by Toshio Kuratomi for the</span>
+<span class="c"># python-kitchen library https://pypi.python.org/pypi/kitchen</span>
+<span class="c"># They are licensed in kitchen under the terms of the GPLv2+</span>
+<span class="c"># They were copied and modified for use in ansible by Toshio in Jan 2015</span>
+<span class="c"># (simply removing the deprecated features)</span>
+
+<span class="c">#: Aliases for the utf-8 codec</span>
+<span class="n">_UTF8_ALIASES</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">((</span><span class="s">&#39;utf-8&#39;</span><span class="p">,</span> <span class="s">&#39;UTF-8&#39;</span><span class="p">,</span> <span class="s">&#39;utf8&#39;</span><span class="p">,</span> <span class="s">&#39;UTF8&#39;</span><span class="p">,</span> <span class="s">&#39;utf_8&#39;</span><span class="p">,</span> <span class="s">&#39;UTF_8&#39;</span><span class="p">,</span> <span class="s">&#39;utf&#39;</span><span class="p">,</span> <span class="s">&#39;UTF&#39;</span><span class="p">,</span> <span class="s">&#39;u8&#39;</span><span class="p">,</span> <span class="s">&#39;U8&#39;</span><span class="p">))</span>
+
+<span class="c">#: Aliases for the latin-1 codec</span>
+<span class="n">_LATIN1_ALIASES</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">((</span><span class="s">&#39;latin-1&#39;</span><span class="p">,</span> <span class="s">&#39;LATIN-1&#39;</span><span class="p">,</span> <span class="s">&#39;latin1&#39;</span><span class="p">,</span> <span class="s">&#39;LATIN1&#39;</span><span class="p">,</span>
+    <span class="s">&#39;latin&#39;</span><span class="p">,</span> <span class="s">&#39;LATIN&#39;</span><span class="p">,</span> <span class="s">&#39;l1&#39;</span><span class="p">,</span> <span class="s">&#39;L1&#39;</span><span class="p">,</span> <span class="s">&#39;cp819&#39;</span><span class="p">,</span> <span class="s">&#39;CP819&#39;</span><span class="p">,</span> <span class="s">&#39;8859&#39;</span><span class="p">,</span> <span class="s">&#39;iso8859-1&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ISO8859-1&#39;</span><span class="p">,</span> <span class="s">&#39;iso-8859-1&#39;</span><span class="p">,</span> <span class="s">&#39;ISO-8859-1&#39;</span><span class="p">))</span>
+
+<span class="c"># EXCEPTION_CONVERTERS is defined below due to using to_unicode</span>
+
+<span class="k">if</span> <span class="n">PY3</span><span class="p">:</span>
+    <span class="nb">basestring</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)</span>
+
+<div class="viewcode-block" id="to_unicode"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.unicode.to_unicode">[docs]</a><span class="k">def</span> <span class="nf">to_unicode</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s">&#39;utf-8&#39;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;replace&#39;</span><span class="p">,</span> <span class="n">nonstring</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Convert an object (:obj:) into a :unicode: string.</span>
+
+<span class="sd">    :arg obj: Object to convert to a :class:`unicode` string.  This should</span>
+<span class="sd">        normally be a byte :class:`str`</span>
+<span class="sd">    :kwarg encoding: What encoding to try converting the byte :class:`str` as.</span>
+<span class="sd">        Defaults to :term:`utf-8`</span>
+<span class="sd">    :kwarg errors: If errors are found while decoding, perform this action.</span>
+<span class="sd">        Defaults to ``replace`` which replaces the invalid bytes with</span>
+<span class="sd">        a character that means the bytes were unable to be decoded.  Other</span>
+<span class="sd">        values are the same as the error handling schemes in the `codec base</span>
+<span class="sd">        classes</span>
+<span class="sd">        &lt;http://docs.python.org/library/codecs.html#codec-base-classes&gt;`_.</span>
+<span class="sd">        For instance ``strict`` which raises an exception and ``ignore`` which</span>
+<span class="sd">        simply omits the non-decodable characters.</span>
+<span class="sd">    :kwarg nonstring: How to treat nonstring values.  Possible values are:</span>
+
+<span class="sd">        :simplerepr: Attempt to call the object&#39;s &quot;simple representation&quot;</span>
+<span class="sd">            method and return that value.  Python-2.3+ has two methods that</span>
+<span class="sd">            try to return a simple representation: :meth:`object.__unicode__`</span>
+<span class="sd">            and :meth:`object.__str__`.  We first try to get a usable value</span>
+<span class="sd">            from :meth:`object.__unicode__`.  If that fails we try the same</span>
+<span class="sd">            with :meth:`object.__str__`.</span>
+<span class="sd">        :empty: Return an empty :class:`unicode` string</span>
+<span class="sd">        :strict: Raise a :exc:`TypeError`</span>
+<span class="sd">        :passthru: Return the object unchanged</span>
+<span class="sd">        :repr: Attempt to return a :class:`unicode` string of the repr of the</span>
+<span class="sd">            object</span>
+
+<span class="sd">        Default is ``simplerepr``</span>
+
+<span class="sd">    :raises TypeError: if :attr:`nonstring` is ``strict`` and</span>
+<span class="sd">        a non-:class:`basestring` object is passed in or if :attr:`nonstring`</span>
+<span class="sd">        is set to an unknown value</span>
+<span class="sd">    :raises UnicodeDecodeError: if :attr:`errors` is ``strict`` and</span>
+<span class="sd">        :attr:`obj` is not decodable using the given encoding</span>
+<span class="sd">    :returns: :class:`unicode` string or the original object depending on the</span>
+<span class="sd">        value of :attr:`nonstring`.</span>
+
+<span class="sd">    Usually this should be used on a byte :class:`str` but it can take both</span>
+<span class="sd">    byte :class:`str` and :class:`unicode` strings intelligently.  Nonstring</span>
+<span class="sd">    objects are handled in different ways depending on the setting of the</span>
+<span class="sd">    :attr:`nonstring` parameter.</span>
+
+<span class="sd">    The default values of this function are set so as to always return</span>
+<span class="sd">    a :class:`unicode` string and never raise an error when converting from</span>
+<span class="sd">    a byte :class:`str` to a :class:`unicode` string.  However, when you do</span>
+<span class="sd">    not pass validly encoded text (or a nonstring object), you may end up with</span>
+<span class="sd">    output that you don&#39;t expect.  Be sure you understand the requirements of</span>
+<span class="sd">    your data, not just ignore errors by passing it through this function.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c"># Could use isbasestring/isunicode here but we want this code to be as</span>
+    <span class="c"># fast as possible</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">text_type</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">obj</span>
+        <span class="k">if</span> <span class="n">encoding</span> <span class="ow">in</span> <span class="n">_UTF8_ALIASES</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">text_type</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s">&#39;utf-8&#39;</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">encoding</span> <span class="ow">in</span> <span class="n">_LATIN1_ALIASES</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">text_type</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s">&#39;latin-1&#39;</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">nonstring</span><span class="p">:</span>
+        <span class="n">nonstring</span> <span class="o">=</span> <span class="s">&#39;simplerepr&#39;</span>
+    <span class="k">if</span> <span class="n">nonstring</span> <span class="o">==</span> <span class="s">&#39;empty&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s">u&#39;&#39;</span>
+    <span class="k">elif</span> <span class="n">nonstring</span> <span class="o">==</span> <span class="s">&#39;passthru&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">obj</span>
+    <span class="k">elif</span> <span class="n">nonstring</span> <span class="o">==</span> <span class="s">&#39;simplerepr&#39;</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">simple</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">__unicode__</span><span class="p">()</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">UnicodeError</span><span class="p">):</span>
+            <span class="n">simple</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">simple</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">simple</span> <span class="o">=</span> <span class="n">text_type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">UnicodeError</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">simple</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">__str__</span><span class="p">()</span>
+                <span class="k">except</span> <span class="p">(</span><span class="ne">UnicodeError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">):</span>
+                    <span class="n">simple</span> <span class="o">=</span> <span class="s">u&#39;&#39;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">simple</span><span class="p">,</span> <span class="n">binary_type</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">text_type</span><span class="p">(</span><span class="n">simple</span><span class="p">,</span> <span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">simple</span>
+    <span class="k">elif</span> <span class="n">nonstring</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;repr&#39;</span><span class="p">,</span> <span class="s">&#39;strict&#39;</span><span class="p">):</span>
+        <span class="n">obj_repr</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj_repr</span><span class="p">,</span> <span class="n">binary_type</span><span class="p">):</span>
+            <span class="n">obj_repr</span> <span class="o">=</span> <span class="n">text_type</span><span class="p">(</span><span class="n">obj_repr</span><span class="p">,</span> <span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">nonstring</span> <span class="o">==</span> <span class="s">&#39;repr&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">obj_repr</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;to_unicode was given &quot;</span><span class="si">%(obj)s</span><span class="s">&quot; which is neither&#39;</span>
+            <span class="s">&#39; a byte string (str) or a unicode string&#39;</span> <span class="o">%</span>
+            <span class="p">{</span><span class="s">&#39;obj&#39;</span><span class="p">:</span> <span class="n">obj_repr</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoding</span><span class="p">,</span> <span class="s">&#39;replace&#39;</span><span class="p">)})</span>
+
+    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;nonstring value, </span><span class="si">%(param)s</span><span class="s">, is not set to a valid&#39;</span>
+        <span class="s">&#39; action&#39;</span> <span class="o">%</span> <span class="p">{</span><span class="s">&#39;param&#39;</span><span class="p">:</span> <span class="n">nonstring</span><span class="p">})</span></div>
+
+<div class="viewcode-block" id="to_bytes"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.unicode.to_bytes">[docs]</a><span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s">&#39;utf-8&#39;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;replace&#39;</span><span class="p">,</span> <span class="n">nonstring</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Convert an object into a byte :class:`str`</span>
+
+<span class="sd">    :arg obj: Object to convert to a byte :class:`str`.  This should normally</span>
+<span class="sd">        be a :class:`unicode` string.</span>
+<span class="sd">    :kwarg encoding: Encoding to use to convert the :class:`unicode` string</span>
+<span class="sd">        into a byte :class:`str`.  Defaults to :term:`utf-8`.</span>
+<span class="sd">    :kwarg errors: If errors are found while encoding, perform this action.</span>
+<span class="sd">        Defaults to ``replace`` which replaces the invalid bytes with</span>
+<span class="sd">        a character that means the bytes were unable to be encoded.  Other</span>
+<span class="sd">        values are the same as the error handling schemes in the `codec base</span>
+<span class="sd">        classes</span>
+<span class="sd">        &lt;http://docs.python.org/library/codecs.html#codec-base-classes&gt;`_.</span>
+<span class="sd">        For instance ``strict`` which raises an exception and ``ignore`` which</span>
+<span class="sd">        simply omits the non-encodable characters.</span>
+<span class="sd">    :kwarg nonstring: How to treat nonstring values.  Possible values are:</span>
+
+<span class="sd">        :simplerepr: Attempt to call the object&#39;s &quot;simple representation&quot;</span>
+<span class="sd">            method and return that value.  Python-2.3+ has two methods that</span>
+<span class="sd">            try to return a simple representation: :meth:`object.__unicode__`</span>
+<span class="sd">            and :meth:`object.__str__`.  We first try to get a usable value</span>
+<span class="sd">            from :meth:`object.__str__`.  If that fails we try the same</span>
+<span class="sd">            with :meth:`object.__unicode__`.</span>
+<span class="sd">        :empty: Return an empty byte :class:`str`</span>
+<span class="sd">        :strict: Raise a :exc:`TypeError`</span>
+<span class="sd">        :passthru: Return the object unchanged</span>
+<span class="sd">        :repr: Attempt to return a byte :class:`str` of the :func:`repr` of the</span>
+<span class="sd">            object</span>
+
+<span class="sd">        Default is ``simplerepr``.</span>
+
+<span class="sd">    :raises TypeError: if :attr:`nonstring` is ``strict`` and</span>
+<span class="sd">        a non-:class:`basestring` object is passed in or if :attr:`nonstring`</span>
+<span class="sd">        is set to an unknown value.</span>
+<span class="sd">    :raises UnicodeEncodeError: if :attr:`errors` is ``strict`` and all of the</span>
+<span class="sd">        bytes of :attr:`obj` are unable to be encoded using :attr:`encoding`.</span>
+<span class="sd">    :returns: byte :class:`str` or the original object depending on the value</span>
+<span class="sd">        of :attr:`nonstring`.</span>
+
+<span class="sd">    .. warning::</span>
+
+<span class="sd">        If you pass a byte :class:`str` into this function the byte</span>
+<span class="sd">        :class:`str` is returned unmodified.  It is **not** re-encoded with</span>
+<span class="sd">        the specified :attr:`encoding`.  The easiest way to achieve that is::</span>
+
+<span class="sd">            to_bytes(to_unicode(text), encoding=&#39;utf-8&#39;)</span>
+
+<span class="sd">        The initial :func:`to_unicode` call will ensure text is</span>
+<span class="sd">        a :class:`unicode` string.  Then, :func:`to_bytes` will turn that into</span>
+<span class="sd">        a byte :class:`str` with the specified encoding.</span>
+
+<span class="sd">    Usually, this should be used on a :class:`unicode` string but it can take</span>
+<span class="sd">    either a byte :class:`str` or a :class:`unicode` string intelligently.</span>
+<span class="sd">    Nonstring objects are handled in different ways depending on the setting</span>
+<span class="sd">    of the :attr:`nonstring` parameter.</span>
+
+<span class="sd">    The default values of this function are set so as to always return a byte</span>
+<span class="sd">    :class:`str` and never raise an error when converting from unicode to</span>
+<span class="sd">    bytes.  However, when you do not pass an encoding that can validly encode</span>
+<span class="sd">    the object (or a non-string object), you may end up with output that you</span>
+<span class="sd">    don&#39;t expect.  Be sure you understand the requirements of your data, not</span>
+<span class="sd">    just ignore errors by passing it through this function.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c"># Could use isbasestring, isbytestring here but we want this to be as fast</span>
+    <span class="c"># as possible</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">binary_type</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">obj</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">nonstring</span><span class="p">:</span>
+        <span class="n">nonstring</span> <span class="o">=</span> <span class="s">&#39;simplerepr&#39;</span>
+
+    <span class="k">if</span> <span class="n">nonstring</span> <span class="o">==</span> <span class="s">&#39;empty&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">b</span><span class="s">&#39;&#39;</span>
+    <span class="k">elif</span> <span class="n">nonstring</span> <span class="o">==</span> <span class="s">&#39;passthru&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">obj</span>
+    <span class="k">elif</span> <span class="n">nonstring</span> <span class="o">==</span> <span class="s">&#39;simplerepr&#39;</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">simple</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">UnicodeError</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">simple</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">__str__</span><span class="p">()</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">UnicodeError</span><span class="p">):</span>
+                <span class="n">simple</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">simple</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">simple</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">__unicode__</span><span class="p">()</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">UnicodeError</span><span class="p">):</span>
+                <span class="n">simple</span> <span class="o">=</span> <span class="n">b</span><span class="s">&#39;&#39;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">simple</span><span class="p">,</span> <span class="n">text_type</span><span class="p">):</span>
+            <span class="n">simple</span> <span class="o">=</span> <span class="n">simple</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoding</span><span class="p">,</span> <span class="s">&#39;replace&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">simple</span>
+    <span class="k">elif</span> <span class="n">nonstring</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;repr&#39;</span><span class="p">,</span> <span class="s">&#39;strict&#39;</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">obj_repr</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">__repr__</span><span class="p">()</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">UnicodeError</span><span class="p">):</span>
+            <span class="n">obj_repr</span> <span class="o">=</span> <span class="n">b</span><span class="s">&#39;&#39;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj_repr</span><span class="p">,</span> <span class="n">text_type</span><span class="p">):</span>
+            <span class="n">obj_repr</span> <span class="o">=</span>  <span class="n">obj_repr</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">obj_repr</span> <span class="o">=</span> <span class="n">binary_type</span><span class="p">(</span><span class="n">obj_repr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">nonstring</span> <span class="o">==</span> <span class="s">&#39;repr&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">obj_repr</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;to_bytes was given &quot;</span><span class="si">%(obj)s</span><span class="s">&quot; which is neither&#39;</span>
+            <span class="s">&#39; a unicode string or a byte string (str)&#39;</span> <span class="o">%</span> <span class="p">{</span><span class="s">&#39;obj&#39;</span><span class="p">:</span> <span class="n">obj_repr</span><span class="p">})</span>
+
+    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;nonstring value, </span><span class="si">%(param)s</span><span class="s">, is not set to a valid&#39;</span>
+        <span class="s">&#39; action&#39;</span> <span class="o">%</span> <span class="p">{</span><span class="s">&#39;param&#39;</span><span class="p">:</span> <span class="n">nonstring</span><span class="p">})</span></div>
+
+
+<span class="c"># force the return value of a function to be unicode.  Use with partial to</span>
+<span class="c"># ensure that a filter will return unicode values.</span>
+<div class="viewcode-block" id="unicode_wrap"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.unicode.unicode_wrap">[docs]</a><span class="k">def</span> <span class="nf">unicode_wrap</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="n">nonstring</span><span class="o">=</span><span class="s">&#39;passthru&#39;</span><span class="p">)</span></div>
+
+
+<span class="c"># Alias for converting to native strings.</span>
+<span class="c"># Native strings are the default string type for the particular version of</span>
+<span class="c"># python.  The objects are called &quot;str&quot; in both py2 and py3 but they mean</span>
+<span class="c"># different things.  In py2, it&#39;s a byte string like in C.  In py3 it&#39;s an</span>
+<span class="c"># abstract text type (like py2&#39;s unicode type).</span>
+<span class="c">#</span>
+<span class="c"># Use this when raising exceptions and wanting to get the string</span>
+<span class="c"># representation of an object for the exception message.  For example:</span>
+<span class="c">#</span>
+<span class="c"># try:</span>
+<span class="c">#    do_something()</span>
+<span class="c"># except Exception as e:</span>
+<span class="c">#    raise AnsibleError(to_str(e))</span>
+<span class="c">#</span>
+<span class="c"># Note that this is because python&#39;s exception handling expects native strings</span>
+<span class="c"># and doe the wrong thing if given the other sort of string (in py2, if given</span>
+<span class="c"># unicode strings, it could traceback or omit the message.  in py3, if given</span>
+<span class="c"># byte strings it prints their repr (so the message ends up as b&#39;message&#39;).</span>
+<span class="c">#</span>
+<span class="c"># If you use ansible&#39;s API instead of re-raising an exception, use to_unicode</span>
+<span class="c"># instead:</span>
+<span class="c">#</span>
+<span class="c"># try:</span>
+<span class="c">#     do_something()</span>
+<span class="c"># except Exception as e:</span>
+<span class="c">#     display.warn(to_unicode(e))</span>
+<span class="k">if</span> <span class="n">PY3</span><span class="p">:</span>
+    <span class="n">to_str</span> <span class="o">=</span> <span class="n">to_unicode</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">to_str</span> <span class="o">=</span> <span class="n">to_bytes</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

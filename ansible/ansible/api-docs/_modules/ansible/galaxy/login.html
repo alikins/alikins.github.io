@@ -1,0 +1,304 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.galaxy.login &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="ansible.galaxy" href="../galaxy.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../galaxy.html">ansible.galaxy</a> &raquo;</li>
+      
+    <li>ansible.galaxy.login</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.galaxy.login</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+
+<span class="c">########################################################################</span>
+<span class="c">#</span>
+<span class="c"># (C) 2015, Chris Houseknecht &lt;chouse@ansible.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+<span class="c">#</span>
+<span class="c">########################################################################</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">getpass</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">urllib</span>
+
+<span class="kn">from</span> <span class="nn">urllib2</span> <span class="kn">import</span> <span class="n">quote</span> <span class="k">as</span> <span class="n">urlquote</span><span class="p">,</span> <span class="n">HTTPError</span>
+<span class="kn">from</span> <span class="nn">urlparse</span> <span class="kn">import</span> <span class="n">urlparse</span>
+
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span><span class="p">,</span> <span class="n">AnsibleOptionsError</span>
+<span class="kn">from</span> <span class="nn">ansible.module_utils.urls</span> <span class="kn">import</span> <span class="n">open_url</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.color</span> <span class="kn">import</span> <span class="n">stringc</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+<div class="viewcode-block" id="GalaxyLogin"><a class="viewcode-back" href="../../../rst/ansible.galaxy.html#ansible.galaxy.login.GalaxyLogin">[docs]</a><span class="k">class</span> <span class="nc">GalaxyLogin</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Class to handle authenticating user with Galaxy API prior to performing CUD operations &#39;&#39;&#39;</span>
+
+    <span class="n">GITHUB_AUTH</span> <span class="o">=</span> <span class="s">&#39;https://api.github.com/authorizations&#39;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">galaxy</span><span class="p">,</span> <span class="n">github_token</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">galaxy</span> <span class="o">=</span> <span class="n">galaxy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">github_username</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">github_password</span> <span class="o">=</span> <span class="bp">None</span>
+        
+        <span class="k">if</span> <span class="n">github_token</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_credentials</span><span class="p">()</span>
+
+<div class="viewcode-block" id="GalaxyLogin.get_credentials"><a class="viewcode-back" href="../../../rst/ansible.galaxy.html#ansible.galaxy.login.GalaxyLogin.get_credentials">[docs]</a>    <span class="k">def</span> <span class="nf">get_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">u&#39;</span><span class="se">\n\n</span><span class="s">&#39;</span> <span class="o">+</span> <span class="s">&quot;We need your &quot;</span> <span class="o">+</span> <span class="n">stringc</span><span class="p">(</span><span class="s">&quot;Github login&quot;</span><span class="p">,</span><span class="s">&#39;bright cyan&#39;</span><span class="p">)</span> <span class="o">+</span> 
+            <span class="s">&quot; to identify you.&quot;</span><span class="p">,</span> <span class="n">screen_only</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;This information will &quot;</span> <span class="o">+</span> <span class="n">stringc</span><span class="p">(</span><span class="s">&quot;not be sent to Galaxy&quot;</span><span class="p">,</span><span class="s">&#39;bright cyan&#39;</span><span class="p">)</span> <span class="o">+</span> 
+            <span class="s">&quot;, only to &quot;</span> <span class="o">+</span> <span class="n">stringc</span><span class="p">(</span><span class="s">&quot;api.github.com.&quot;</span><span class="p">,</span><span class="s">&quot;yellow&quot;</span><span class="p">),</span> <span class="n">screen_only</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;The password will not be displayed.&quot;</span> <span class="o">+</span> <span class="s">u&#39;</span><span class="se">\n\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">screen_only</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;Use &quot;</span> <span class="o">+</span> <span class="n">stringc</span><span class="p">(</span><span class="s">&quot;--github-token&quot;</span><span class="p">,</span><span class="s">&#39;yellow&#39;</span><span class="p">)</span> <span class="o">+</span> 
+            <span class="s">&quot; if you do not want to enter your password.&quot;</span> <span class="o">+</span> <span class="s">u&#39;</span><span class="se">\n\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">screen_only</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">github_username</span> <span class="o">=</span> <span class="nb">raw_input</span><span class="p">(</span><span class="s">&quot;Github Username: &quot;</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">github_password</span> <span class="o">=</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getpass</span><span class="p">(</span><span class="s">&quot;Password for </span><span class="si">%s</span><span class="s">: &quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">github_username</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">github_username</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">github_password</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Invalid Github credentials. Username and password are required.&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="GalaxyLogin.remove_github_token"><a class="viewcode-back" href="../../../rst/ansible.galaxy.html#ansible.galaxy.login.GalaxyLogin.remove_github_token">[docs]</a>    <span class="k">def</span> <span class="nf">remove_github_token</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        If for some reason an ansible-galaxy token was left from a prior login, remove it. We cannot</span>
+<span class="sd">        retrieve the token after creation, so we are forced to create a new one.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">tokens</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">open_url</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">GITHUB_AUTH</span><span class="p">,</span> <span class="n">url_username</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">github_username</span><span class="p">,</span>
+                <span class="n">url_password</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">github_password</span><span class="p">,</span> <span class="n">force_basic_auth</span><span class="o">=</span><span class="bp">True</span><span class="p">,))</span>
+        <span class="k">except</span> <span class="n">HTTPError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s">&#39;message&#39;</span><span class="p">])</span>
+
+        <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">token</span><span class="p">[</span><span class="s">&#39;note&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;ansible-galaxy login&#39;</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">vvvvv</span><span class="p">(</span><span class="s">&#39;removing token: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">token</span><span class="p">[</span><span class="s">&#39;token_last_eight&#39;</span><span class="p">])</span>
+                <span class="k">try</span><span class="p">:</span> 
+                    <span class="n">open_url</span><span class="p">(</span><span class="s">&#39;https://api.github.com/authorizations/</span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">token</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">],</span> <span class="n">url_username</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">github_username</span><span class="p">,</span>
+                        <span class="n">url_password</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">github_password</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s">&#39;DELETE&#39;</span><span class="p">,</span> <span class="n">force_basic_auth</span><span class="o">=</span><span class="bp">True</span><span class="p">,)</span>
+                <span class="k">except</span> <span class="n">HTTPError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">res</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s">&#39;message&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="GalaxyLogin.create_github_token"><a class="viewcode-back" href="../../../rst/ansible.galaxy.html#ansible.galaxy.login.GalaxyLogin.create_github_token">[docs]</a>    <span class="k">def</span> <span class="nf">create_github_token</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Create a personal authorization token with a note of &#39;ansible-galaxy login&#39;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">remove_github_token</span><span class="p">()</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s">&quot;scopes&quot;</span><span class="p">:[</span><span class="s">&quot;public_repo&quot;</span><span class="p">],</span> <span class="s">&quot;note&quot;</span><span class="p">:</span><span class="s">&quot;ansible-galaxy login&quot;</span><span class="p">})</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">open_url</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">GITHUB_AUTH</span><span class="p">,</span> <span class="n">url_username</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">github_username</span><span class="p">,</span>
+                <span class="n">url_password</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">github_password</span><span class="p">,</span> <span class="n">force_basic_auth</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">args</span><span class="p">))</span>
+        <span class="k">except</span> <span class="n">HTTPError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s">&#39;message&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;token&#39;</span><span class="p">]</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

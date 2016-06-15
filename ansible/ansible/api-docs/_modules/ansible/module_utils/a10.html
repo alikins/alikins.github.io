@@ -1,0 +1,296 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.module_utils.a10 &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>ansible.module_utils.a10</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.module_utils.a10</h1><div class="highlight"><pre>
+<span class="c"># This code is part of Ansible, but is an independent component.</span>
+<span class="c"># This particular file snippet, and this file snippet only, is BSD licensed.</span>
+<span class="c"># Modules you write using this snippet, which is embedded dynamically by Ansible</span>
+<span class="c"># still belong to the author of the module, and may assign their own license</span>
+<span class="c"># to the complete work.</span>
+<span class="c">#</span>
+<span class="c"># Copyright (c), Michael DeHaan &lt;michael.dehaan@gmail.com&gt;, 2012-2013</span>
+<span class="c"># All rights reserved.</span>
+<span class="c">#</span>
+<span class="c"># Redistribution and use in source and binary forms, with or without modification,</span>
+<span class="c"># are permitted provided that the following conditions are met:</span>
+<span class="c">#</span>
+<span class="c">#    * Redistributions of source code must retain the above copyright</span>
+<span class="c">#      notice, this list of conditions and the following disclaimer.</span>
+<span class="c">#    * Redistributions in binary form must reproduce the above copyright notice,</span>
+<span class="c">#      this list of conditions and the following disclaimer in the documentation</span>
+<span class="c">#      and/or other materials provided with the distribution.</span>
+<span class="c">#</span>
+<span class="c"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND</span>
+<span class="c"># ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED</span>
+<span class="c"># WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.</span>
+<span class="c"># IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,</span>
+<span class="c"># INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,</span>
+<span class="c"># PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS</span>
+<span class="c"># INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT</span>
+<span class="c"># LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE</span>
+<span class="c"># USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</span>
+
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="kn">from</span> <span class="nn">ansible.module_utils.urls</span> <span class="kn">import</span> <span class="n">fetch_url</span>
+
+<span class="n">AXAPI_PORT_PROTOCOLS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&#39;tcp&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="s">&#39;udp&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">AXAPI_VPORT_PROTOCOLS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&#39;tcp&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="s">&#39;udp&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="s">&#39;fast-http&#39;</span><span class="p">:</span> <span class="mi">9</span><span class="p">,</span>
+    <span class="s">&#39;http&#39;</span><span class="p">:</span> <span class="mi">11</span><span class="p">,</span>
+    <span class="s">&#39;https&#39;</span><span class="p">:</span> <span class="mi">12</span><span class="p">,</span>
+<span class="p">}</span>
+
+<div class="viewcode-block" id="a10_argument_spec"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.a10.a10_argument_spec">[docs]</a><span class="k">def</span> <span class="nf">a10_argument_spec</span><span class="p">():</span>
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">host</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;str&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+        <span class="n">username</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;str&#39;</span><span class="p">,</span> <span class="n">aliases</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;user&#39;</span><span class="p">,</span> <span class="s">&#39;admin&#39;</span><span class="p">],</span> <span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+        <span class="n">password</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;str&#39;</span><span class="p">,</span> <span class="n">aliases</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;pass&#39;</span><span class="p">,</span> <span class="s">&#39;pwd&#39;</span><span class="p">],</span> <span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">no_log</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+        <span class="n">write_config</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="p">)</span></div>
+
+<div class="viewcode-block" id="axapi_failure"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.a10.axapi_failure">[docs]</a><span class="k">def</span> <span class="nf">axapi_failure</span><span class="p">(</span><span class="n">result</span><span class="p">):</span>
+    <span class="k">if</span> <span class="s">&#39;response&#39;</span> <span class="ow">in</span> <span class="n">result</span> <span class="ow">and</span> <span class="n">result</span><span class="p">[</span><span class="s">&#39;response&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;status&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s">&#39;fail&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">True</span>
+    <span class="k">return</span> <span class="bp">False</span></div>
+
+<div class="viewcode-block" id="axapi_call"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.a10.axapi_call">[docs]</a><span class="k">def</span> <span class="nf">axapi_call</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">post</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Returns a datastructure based on the result of the API call</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">rsp</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">fetch_url</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">post</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">rsp</span> <span class="ow">or</span> <span class="n">info</span><span class="p">[</span><span class="s">&#39;status&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">400</span><span class="p">:</span>
+        <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;failed to connect (status code </span><span class="si">%s</span><span class="s">), error was </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">info</span><span class="p">[</span><span class="s">&#39;status&#39;</span><span class="p">],</span> <span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;msg&#39;</span><span class="p">,</span> <span class="s">&#39;no error given&#39;</span><span class="p">)))</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">raw_data</span> <span class="o">=</span> <span class="n">rsp</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">raw_data</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="c"># at least one API call (system.action.write_config) returns</span>
+        <span class="c"># XML even when JSON is requested, so do some minimal handling</span>
+        <span class="c"># here to prevent failing even when the call succeeded</span>
+        <span class="k">if</span> <span class="s">&#39;status=&quot;ok&quot;&#39;</span> <span class="ow">in</span> <span class="n">raw_data</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="s">&quot;response&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s">&quot;status&quot;</span><span class="p">:</span> <span class="s">&quot;OK&quot;</span><span class="p">}}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="s">&quot;response&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s">&quot;status&quot;</span><span class="p">:</span> <span class="s">&quot;fail&quot;</span><span class="p">,</span> <span class="s">&quot;err&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s">&quot;msg&quot;</span><span class="p">:</span> <span class="n">raw_data</span><span class="p">}}}</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;could not read the result from the host&quot;</span><span class="p">)</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">rsp</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">data</span></div>
+
+<div class="viewcode-block" id="axapi_authenticate"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.a10.axapi_authenticate">[docs]</a><span class="k">def</span> <span class="nf">axapi_authenticate</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">base_url</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">):</span>
+    <span class="n">url</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">&amp;method=authenticate&amp;username=</span><span class="si">%s</span><span class="s">&amp;password=</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">base_url</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">axapi_call</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">axapi_failure</span><span class="p">(</span><span class="n">result</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s">&#39;response&#39;</span><span class="p">][</span><span class="s">&#39;err&#39;</span><span class="p">][</span><span class="s">&#39;msg&#39;</span><span class="p">])</span>
+    <span class="n">sessid</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s">&#39;session_id&#39;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">base_url</span> <span class="o">+</span> <span class="s">&#39;&amp;session_id=&#39;</span> <span class="o">+</span> <span class="n">sessid</span></div>
+
+<div class="viewcode-block" id="axapi_enabled_disabled"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.a10.axapi_enabled_disabled">[docs]</a><span class="k">def</span> <span class="nf">axapi_enabled_disabled</span><span class="p">(</span><span class="n">flag</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    The axapi uses 0/1 integer values for flags, rather than strings</span>
+<span class="sd">    or booleans, so convert the given flag to a 0 or 1. For now, params</span>
+<span class="sd">    are specified as strings only so thats what we check.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="n">flag</span> <span class="o">==</span> <span class="s">&#39;enabled&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="axapi_get_port_protocol"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.a10.axapi_get_port_protocol">[docs]</a><span class="k">def</span> <span class="nf">axapi_get_port_protocol</span><span class="p">(</span><span class="n">protocol</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">AXAPI_PORT_PROTOCOLS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">protocol</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="bp">None</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="axapi_get_vport_protocol"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.a10.axapi_get_vport_protocol">[docs]</a><span class="k">def</span> <span class="nf">axapi_get_vport_protocol</span><span class="p">(</span><span class="n">protocol</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">AXAPI_VPORT_PROTOCOLS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">protocol</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="bp">None</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

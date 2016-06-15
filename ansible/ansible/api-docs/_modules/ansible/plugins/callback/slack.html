@@ -1,0 +1,426 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.plugins.callback.slack &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="ansible.plugins.callback" href="../callback.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../../plugins.html">ansible.plugins</a> &raquo;</li>
+      
+          <li><a href="../callback.html">ansible.plugins.callback</a> &raquo;</li>
+      
+    <li>ansible.plugins.callback.slack</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.plugins.callback.slack</h1><div class="highlight"><pre>
+<span class="c"># (C) 2014-2015, Matt Martz &lt;matt@sivel.net&gt;</span>
+
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">cli</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">cli</span> <span class="o">=</span> <span class="bp">None</span>
+
+<span class="kn">from</span> <span class="nn">ansible.constants</span> <span class="kn">import</span> <span class="n">mk_boolean</span>
+<span class="kn">from</span> <span class="nn">ansible.module_utils.urls</span> <span class="kn">import</span> <span class="n">open_url</span>
+<span class="kn">from</span> <span class="nn">ansible.plugins.callback</span> <span class="kn">import</span> <span class="n">CallbackBase</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">prettytable</span>
+    <span class="n">HAS_PRETTYTABLE</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">HAS_PRETTYTABLE</span> <span class="o">=</span> <span class="bp">False</span>
+
+
+<div class="viewcode-block" id="CallbackModule"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.slack.CallbackModule">[docs]</a><span class="k">class</span> <span class="nc">CallbackModule</span><span class="p">(</span><span class="n">CallbackBase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This is an ansible callback plugin that sends status</span>
+<span class="sd">    updates to a Slack channel during playbook execution.</span>
+
+<span class="sd">    This plugin makes use of the following environment variables:</span>
+<span class="sd">        SLACK_WEBHOOK_URL (required): Slack Webhook URL</span>
+<span class="sd">        SLACK_CHANNEL     (optional): Slack room to post in. Default: #ansible</span>
+<span class="sd">        SLACK_USERNAME    (optional): Username to post as. Default: ansible</span>
+<span class="sd">        SLACK_INVOCATION  (optional): Show command line invocation</span>
+<span class="sd">                                      details. Default: False</span>
+
+<span class="sd">    Requires:</span>
+<span class="sd">        prettytable</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">CALLBACK_VERSION</span> <span class="o">=</span> <span class="mf">2.0</span>
+    <span class="n">CALLBACK_TYPE</span> <span class="o">=</span> <span class="s">&#39;notification&#39;</span>
+    <span class="n">CALLBACK_NAME</span> <span class="o">=</span> <span class="s">&#39;slack&#39;</span>
+    <span class="n">CALLBACK_NEEDS_WHITELIST</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">display</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="n">cli</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="o">=</span> <span class="n">cli</span><span class="o">.</span><span class="n">options</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="o">=</span> <span class="bp">None</span>
+
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">CallbackModule</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">display</span><span class="o">=</span><span class="n">display</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">HAS_PRETTYTABLE</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;The `prettytable` python module is not &#39;</span>
+                                  <span class="s">&#39;installed. Disabling the Slack callback &#39;</span>
+                                  <span class="s">&#39;plugin.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">webhook_url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s">&#39;SLACK_WEBHOOK_URL&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">channel</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s">&#39;SLACK_CHANNEL&#39;</span><span class="p">,</span> <span class="s">&#39;#ansible&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">username</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s">&#39;SLACK_USERNAME&#39;</span><span class="p">,</span> <span class="s">&#39;ansible&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_invocation</span> <span class="o">=</span> <span class="n">mk_boolean</span><span class="p">(</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s">&#39;SLACK_INVOCATION&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">webhook_url</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Slack Webhook URL was not provided. The &#39;</span>
+                                  <span class="s">&#39;Slack Webhook URL can be provided using &#39;</span>
+                                  <span class="s">&#39;the `SLACK_WEBHOOK_URL` environment &#39;</span>
+                                  <span class="s">&#39;variable.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">playbook_name</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="c"># This is a 6 character identifier provided with each message</span>
+        <span class="c"># This makes it easier to correlate messages when there are more</span>
+        <span class="c"># than 1 simultaneous playbooks running</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">guid</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span><span class="p">[:</span><span class="mi">6</span><span class="p">]</span>
+
+<div class="viewcode-block" id="CallbackModule.send_msg"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.slack.CallbackModule.send_msg">[docs]</a>    <span class="k">def</span> <span class="nf">send_msg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attachments</span><span class="p">):</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;channel&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>
+            <span class="s">&#39;username&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">username</span><span class="p">,</span>
+            <span class="s">&#39;attachments&#39;</span><span class="p">:</span> <span class="n">attachments</span><span class="p">,</span>
+            <span class="s">&#39;parse&#39;</span><span class="p">:</span> <span class="s">&#39;none&#39;</span><span class="p">,</span>
+            <span class="s">&#39;icon_url&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;http://cdn2.hubspot.net/hub/330046/&#39;</span>
+                         <span class="s">&#39;file-449187601-png/ansible_badge.png&#39;</span><span class="p">),</span>
+        <span class="p">}</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">webhook_url</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">open_url</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">webhook_url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Could not submit message to Slack: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span>
+                                  <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="CallbackModule.v2_playbook_on_start"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.slack.CallbackModule.v2_playbook_on_start">[docs]</a>    <span class="k">def</span> <span class="nf">v2_playbook_on_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">playbook</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">playbook_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">playbook</span><span class="o">.</span><span class="n">_file_name</span><span class="p">)</span>
+
+        <span class="n">title</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s">&#39;*Playbook initiated* (_</span><span class="si">%s</span><span class="s">_)&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">guid</span>
+        <span class="p">]</span>
+        <span class="n">invocation_items</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">show_invocation</span><span class="p">:</span>
+            <span class="n">tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">tags</span>
+            <span class="n">skip_tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">skip_tags</span>
+            <span class="n">extra_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">extra_vars</span>
+            <span class="n">subset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">subset</span>
+            <span class="n">inventory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">inventory</span><span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="n">invocation_items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;Inventory:  </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">inventory</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">tags</span> <span class="ow">and</span> <span class="n">tags</span> <span class="o">!=</span> <span class="s">&#39;all&#39;</span><span class="p">:</span>
+                <span class="n">invocation_items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;Tags:       </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">tags</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">skip_tags</span><span class="p">:</span>
+                <span class="n">invocation_items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;Skip Tags:  </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">skip_tags</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">subset</span><span class="p">:</span>
+                <span class="n">invocation_items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;Limit:      </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">subset</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">extra_vars</span><span class="p">:</span>
+                <span class="n">invocation_items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;Extra Vars: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span>
+                                        <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">extra_vars</span><span class="p">))</span>
+
+            <span class="n">title</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;by *</span><span class="si">%s</span><span class="s">*&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">remote_user</span><span class="p">)</span>
+
+        <span class="n">title</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n\n</span><span class="s">*</span><span class="si">%s</span><span class="s">*&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">playbook_name</span><span class="p">)</span>
+        <span class="n">msg_items</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">title</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">invocation_items</span><span class="p">:</span>
+            <span class="n">msg_items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;```</span><span class="se">\n</span><span class="si">%s</span><span class="se">\n</span><span class="s">```&#39;</span> <span class="o">%</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">invocation_items</span><span class="p">))</span>
+
+        <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg_items</span><span class="p">)</span>
+
+        <span class="n">attachments</span> <span class="o">=</span> <span class="p">[{</span>
+            <span class="s">&#39;fallback&#39;</span><span class="p">:</span> <span class="n">msg</span><span class="p">,</span>
+            <span class="s">&#39;fields&#39;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="s">&#39;value&#39;</span><span class="p">:</span> <span class="n">msg</span>
+                <span class="p">}</span>
+            <span class="p">],</span>
+            <span class="s">&#39;color&#39;</span><span class="p">:</span> <span class="s">&#39;warning&#39;</span><span class="p">,</span>
+            <span class="s">&#39;mrkdwn_in&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;text&#39;</span><span class="p">,</span> <span class="s">&#39;fallback&#39;</span><span class="p">,</span> <span class="s">&#39;fields&#39;</span><span class="p">],</span>
+        <span class="p">}]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">send_msg</span><span class="p">(</span><span class="n">attachments</span><span class="o">=</span><span class="n">attachments</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CallbackModule.v2_playbook_on_play_start"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.slack.CallbackModule.v2_playbook_on_play_start">[docs]</a>    <span class="k">def</span> <span class="nf">v2_playbook_on_play_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">play</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Display Play start messages&quot;&quot;&quot;</span>
+
+        <span class="n">name</span> <span class="o">=</span> <span class="n">play</span><span class="o">.</span><span class="n">name</span> <span class="ow">or</span> <span class="s">&#39;Play name not specified (</span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="n">play</span><span class="o">.</span><span class="n">_uuid</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;*Starting play* (_</span><span class="si">%s</span><span class="s">_)</span><span class="se">\n\n</span><span class="s">*</span><span class="si">%s</span><span class="s">*&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">guid</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="n">attachments</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s">&#39;fallback&#39;</span><span class="p">:</span> <span class="n">msg</span><span class="p">,</span>
+                <span class="s">&#39;text&#39;</span><span class="p">:</span> <span class="n">msg</span><span class="p">,</span>
+                <span class="s">&#39;color&#39;</span><span class="p">:</span> <span class="s">&#39;warning&#39;</span><span class="p">,</span>
+                <span class="s">&#39;mrkdwn_in&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;text&#39;</span><span class="p">,</span> <span class="s">&#39;fallback&#39;</span><span class="p">,</span> <span class="s">&#39;fields&#39;</span><span class="p">],</span>
+            <span class="p">}</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">send_msg</span><span class="p">(</span><span class="n">attachments</span><span class="o">=</span><span class="n">attachments</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CallbackModule.v2_playbook_on_stats"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.slack.CallbackModule.v2_playbook_on_stats">[docs]</a>    <span class="k">def</span> <span class="nf">v2_playbook_on_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stats</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Display info about playbook statistics&quot;&quot;&quot;</span>
+
+        <span class="n">hosts</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">stats</span><span class="o">.</span><span class="n">processed</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+        <span class="n">t</span> <span class="o">=</span> <span class="n">prettytable</span><span class="o">.</span><span class="n">PrettyTable</span><span class="p">([</span><span class="s">&#39;Host&#39;</span><span class="p">,</span> <span class="s">&#39;Ok&#39;</span><span class="p">,</span> <span class="s">&#39;Changed&#39;</span><span class="p">,</span> <span class="s">&#39;Unreachable&#39;</span><span class="p">,</span>
+                                     <span class="s">&#39;Failures&#39;</span><span class="p">])</span>
+
+        <span class="n">failures</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="n">unreachable</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hosts</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">summarize</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="s">&#39;failures&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">failures</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="s">&#39;unreachable&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">unreachable</span> <span class="o">=</span> <span class="bp">True</span>
+
+            <span class="n">t</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="n">h</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;ok&#39;</span><span class="p">,</span> <span class="s">&#39;changed&#39;</span><span class="p">,</span> <span class="s">&#39;unreachable&#39;</span><span class="p">,</span>
+                                            <span class="s">&#39;failures&#39;</span><span class="p">]])</span>
+
+        <span class="n">attachments</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">msg_items</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s">&#39;*Playbook Complete* (_</span><span class="si">%s</span><span class="s">_)&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">guid</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="n">failures</span> <span class="ow">or</span> <span class="n">unreachable</span><span class="p">:</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="s">&#39;danger&#39;</span>
+            <span class="n">msg_items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">*Failed!*&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="s">&#39;good&#39;</span>
+            <span class="n">msg_items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">*Success!*&#39;</span><span class="p">)</span>
+
+        <span class="n">msg_items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;```</span><span class="se">\n</span><span class="si">%s</span><span class="se">\n</span><span class="s">```&#39;</span> <span class="o">%</span> <span class="n">t</span><span class="p">)</span>
+
+        <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg_items</span><span class="p">)</span>
+
+        <span class="n">attachments</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+            <span class="s">&#39;fallback&#39;</span><span class="p">:</span> <span class="n">msg</span><span class="p">,</span>
+            <span class="s">&#39;fields&#39;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="s">&#39;value&#39;</span><span class="p">:</span> <span class="n">msg</span>
+                <span class="p">}</span>
+            <span class="p">],</span>
+            <span class="s">&#39;color&#39;</span><span class="p">:</span> <span class="n">color</span><span class="p">,</span>
+            <span class="s">&#39;mrkdwn_in&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;text&#39;</span><span class="p">,</span> <span class="s">&#39;fallback&#39;</span><span class="p">,</span> <span class="s">&#39;fields&#39;</span><span class="p">]</span>
+        <span class="p">})</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">send_msg</span><span class="p">(</span><span class="n">attachments</span><span class="o">=</span><span class="n">attachments</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,543 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.utils.display &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>ansible.utils.display</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.utils.display</h1><div class="highlight"><pre>
+<span class="c"># (c) 2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">fcntl</span>
+<span class="kn">import</span> <span class="nn">textwrap</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">locale</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">getpass</span>
+<span class="kn">import</span> <span class="nn">errno</span>
+<span class="kn">from</span> <span class="nn">struct</span> <span class="kn">import</span> <span class="n">unpack</span><span class="p">,</span> <span class="n">pack</span>
+<span class="kn">from</span> <span class="nn">termios</span> <span class="kn">import</span> <span class="n">TIOCGWINSZ</span>
+
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.color</span> <span class="kn">import</span> <span class="n">stringc</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.unicode</span> <span class="kn">import</span> <span class="n">to_bytes</span><span class="p">,</span> <span class="n">to_unicode</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">debug_lock</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="c"># for those not using a CLI, though ...</span>
+    <span class="c"># this might not work well after fork</span>
+    <span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Lock</span>
+    <span class="n">debug_lock</span> <span class="o">=</span> <span class="n">Lock</span><span class="p">()</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="c"># Python 2</span>
+    <span class="nb">input</span> <span class="o">=</span> <span class="nb">raw_input</span>
+<span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+    <span class="c"># Python 3, we already have raw_input</span>
+    <span class="k">pass</span>
+
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="bp">None</span>
+<span class="c">#TODO: make this a logging callback instead</span>
+<span class="k">if</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_LOG_PATH</span><span class="p">:</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_LOG_PATH</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">W_OK</span><span class="p">))</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="n">os</span><span class="o">.</span><span class="n">W_OK</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;</span><span class="si">%(asctime)s</span><span class="s"> </span><span class="si">%(name)s</span><span class="s"> </span><span class="si">%(message)s</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="n">mypid</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">())</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getuser</span><span class="p">()</span>
+        <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&quot;p=</span><span class="si">%s</span><span class="s"> u=</span><span class="si">%s</span><span class="s"> | &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">mypid</span><span class="p">,</span> <span class="n">user</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&quot;[WARNING]: log file at </span><span class="si">%s</span><span class="s"> is not writeable and we cannot create it, aborting</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">path</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Display"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.display.Display">[docs]</a><span class="k">class</span> <span class="nc">Display</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbosity</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">=</span> <span class="n">verbosity</span>
+
+        <span class="c"># list of all deprecation messages to prevent duplicate display</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_deprecations</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_warns</span>        <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span>       <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">cowsay</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">noncow</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">ANSIBLE_COW_SELECTION</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_cowsay_info</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cowsay</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">cmd</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">cowsay</span><span class="p">,</span> <span class="s">&quot;-l&quot;</span><span class="p">],</span> <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">)</span>
+                <span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span> <span class="o">=</span> <span class="n">cmd</span><span class="o">.</span><span class="n">communicate</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">cows_available</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">ANSIBLE_COW_WHITELIST</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">split</span><span class="p">()))</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="c"># could not execute cowsay for some reason</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">cowsay</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_column_width</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Display.set_cowsay_info"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.display.Display.set_cowsay_info">[docs]</a>    <span class="k">def</span> <span class="nf">set_cowsay_info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">C</span><span class="o">.</span><span class="n">ANSIBLE_NOCOWS</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s">&quot;/usr/bin/cowsay&quot;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">cowsay</span> <span class="o">=</span> <span class="s">&quot;/usr/bin/cowsay&quot;</span>
+            <span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s">&quot;/usr/games/cowsay&quot;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">cowsay</span> <span class="o">=</span> <span class="s">&quot;/usr/games/cowsay&quot;</span>
+            <span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s">&quot;/usr/local/bin/cowsay&quot;</span><span class="p">):</span>
+                <span class="c"># BSD path for cowsay</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">cowsay</span> <span class="o">=</span> <span class="s">&quot;/usr/local/bin/cowsay&quot;</span>
+            <span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s">&quot;/opt/local/bin/cowsay&quot;</span><span class="p">):</span>
+                <span class="c"># MacPorts path for cowsay</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">cowsay</span> <span class="o">=</span> <span class="s">&quot;/opt/local/bin/cowsay&quot;</span></div>
+
+<div class="viewcode-block" id="Display.display"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.display.Display.display">[docs]</a>    <span class="k">def</span> <span class="nf">display</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">screen_only</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">log_only</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Display a message to the user</span>
+
+<span class="sd">        Note: msg *must* be a unicode string to prevent UnicodeError tracebacks.</span>
+<span class="sd">        &quot;&quot;&quot;</span> 
+
+        <span class="c"># FIXME: this needs to be implemented</span>
+        <span class="c">#msg = utils.sanitize_output(msg)</span>
+        <span class="n">nocolor</span> <span class="o">=</span> <span class="n">msg</span>
+        <span class="k">if</span> <span class="n">color</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="n">stringc</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">color</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">log_only</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">msg</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">u&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">):</span>
+                <span class="n">msg2</span> <span class="o">=</span> <span class="n">msg</span> <span class="o">+</span> <span class="s">u&#39;</span><span class="se">\n</span><span class="s">&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">msg2</span> <span class="o">=</span> <span class="n">msg</span>
+
+            <span class="n">msg2</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">msg2</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_output_encoding</span><span class="p">(</span><span class="n">stderr</span><span class="o">=</span><span class="n">stderr</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,):</span>
+                <span class="c"># Convert back to text string on python3</span>
+                <span class="c"># We first convert to a byte string so that we get rid of</span>
+                <span class="c"># characters that are invalid in the user&#39;s locale</span>
+                <span class="n">msg2</span> <span class="o">=</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">msg2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output_encoding</span><span class="p">(</span><span class="n">stderr</span><span class="o">=</span><span class="n">stderr</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">stderr</span><span class="p">:</span>
+                <span class="n">fileobj</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">fileobj</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span>
+
+            <span class="n">fileobj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg2</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">fileobj</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">IOError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="c"># Ignore EPIPE in case fileobj has been prematurely closed, eg.</span>
+                <span class="c"># when piping to &quot;head -n1&quot;</span>
+                <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">errno</span> <span class="o">!=</span> <span class="n">errno</span><span class="o">.</span><span class="n">EPIPE</span><span class="p">:</span>
+                    <span class="k">raise</span>
+
+        <span class="k">if</span> <span class="n">logger</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">screen_only</span><span class="p">:</span>
+            <span class="n">msg2</span> <span class="o">=</span> <span class="n">nocolor</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s">u&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+
+            <span class="n">msg2</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">msg2</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,):</span>
+                <span class="c"># Convert back to text string on python3</span>
+                <span class="c"># We first convert to a byte string so that we get rid of</span>
+                <span class="c"># characters that are invalid in the user&#39;s locale</span>
+                <span class="n">msg2</span> <span class="o">=</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">msg2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output_encoding</span><span class="p">(</span><span class="n">stderr</span><span class="o">=</span><span class="n">stderr</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="n">color</span> <span class="o">==</span> <span class="n">C</span><span class="o">.</span><span class="n">COLOR_ERROR</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg2</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">msg2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Display.v"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.display.Display.v">[docs]</a>    <span class="k">def</span> <span class="nf">v</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">caplevel</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Display.vv"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.display.Display.vv">[docs]</a>    <span class="k">def</span> <span class="nf">vv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">caplevel</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Display.vvv"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.display.Display.vvv">[docs]</a>    <span class="k">def</span> <span class="nf">vvv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">caplevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Display.vvvv"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.display.Display.vvvv">[docs]</a>    <span class="k">def</span> <span class="nf">vvvv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">caplevel</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Display.vvvvv"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.display.Display.vvvvv">[docs]</a>    <span class="k">def</span> <span class="nf">vvvvv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">caplevel</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Display.vvvvvv"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.display.Display.vvvvvv">[docs]</a>    <span class="k">def</span> <span class="nf">vvvvvv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">caplevel</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Display.debug"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.display.Display.debug">[docs]</a>    <span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_DEBUG</span><span class="p">:</span>
+            <span class="n">debug_lock</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%6d</span><span class="s"> </span><span class="si">%0.5f</span><span class="s">: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">(),</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span> <span class="n">msg</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_DEBUG</span><span class="p">)</span>
+            <span class="n">debug_lock</span><span class="o">.</span><span class="n">release</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Display.verbose"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.display.Display.verbose">[docs]</a>    <span class="k">def</span> <span class="nf">verbose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">caplevel</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+        <span class="c"># FIXME: this needs to be implemented</span>
+        <span class="c">#msg = utils.sanitize_output(msg)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;</span> <span class="n">caplevel</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">host</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_VERBOSE</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;&lt;</span><span class="si">%s</span><span class="s">&gt; </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">msg</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_VERBOSE</span><span class="p">,</span> <span class="n">screen_only</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Display.deprecated"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.display.Display.deprecated">[docs]</a>    <span class="k">def</span> <span class="nf">deprecated</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">removed</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; used to print out a deprecation message.&#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">removed</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">C</span><span class="o">.</span><span class="n">DEPRECATION_WARNINGS</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">removed</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">version</span><span class="p">:</span>
+                <span class="n">new_msg</span> <span class="o">=</span> <span class="s">&quot;[DEPRECATION WARNING]: </span><span class="si">%s</span><span class="s">.</span><span class="se">\n</span><span class="s">This feature will be removed in version </span><span class="si">%s</span><span class="s">.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">version</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">new_msg</span> <span class="o">=</span> <span class="s">&quot;[DEPRECATION WARNING]: </span><span class="si">%s</span><span class="s">.</span><span class="se">\n</span><span class="s">This feature will be removed in a future release.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">new_msg</span> <span class="o">=</span> <span class="n">new_msg</span> <span class="o">+</span> <span class="s">&quot; Deprecation warnings can be disabled by setting deprecation_warnings=False in ansible.cfg.</span><span class="se">\n\n</span><span class="s">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;[DEPRECATED]: </span><span class="si">%s</span><span class="s">.</span><span class="se">\n</span><span class="s">Please update your playbooks.&quot;</span> <span class="o">%</span> <span class="n">msg</span><span class="p">)</span>
+
+        <span class="n">wrapped</span> <span class="o">=</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="n">new_msg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">replace_whitespace</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">drop_whitespace</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="n">new_msg</span> <span class="o">=</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">wrapped</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span>
+
+        <span class="k">if</span> <span class="n">new_msg</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deprecations</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">new_msg</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_DEPRECATE</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_deprecations</span><span class="p">[</span><span class="n">new_msg</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span></div>
+
+<div class="viewcode-block" id="Display.warning"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.display.Display.warning">[docs]</a>    <span class="k">def</span> <span class="nf">warning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">formatted</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">formatted</span><span class="p">:</span>
+            <span class="n">new_msg</span> <span class="o">=</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">[WARNING]: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">msg</span>
+            <span class="n">wrapped</span> <span class="o">=</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="n">new_msg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+            <span class="n">new_msg</span> <span class="o">=</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">wrapped</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_msg</span> <span class="o">=</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">[WARNING]: </span><span class="se">\n</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">msg</span>
+
+        <span class="k">if</span> <span class="n">new_msg</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_warns</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">new_msg</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_WARN</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_warns</span><span class="p">[</span><span class="n">new_msg</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span></div>
+
+<div class="viewcode-block" id="Display.system_warning"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.display.Display.system_warning">[docs]</a>    <span class="k">def</span> <span class="nf">system_warning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">C</span><span class="o">.</span><span class="n">SYSTEM_WARNINGS</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Display.banner"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.display.Display.banner">[docs]</a>    <span class="k">def</span> <span class="nf">banner</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Prints a header-looking line with stars taking up to 80 columns</span>
+<span class="sd">        of width (3 columns, minimum)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cowsay</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">banner_cowsay</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="k">return</span>
+            <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;somebody cleverly deleted cowsay or something during the PB run.  heh.&quot;</span><span class="p">)</span>
+
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">star_len</span> <span class="o">=</span> <span class="p">(</span><span class="mi">79</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">msg</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">star_len</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">star_len</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="n">stars</span> <span class="o">=</span> <span class="s">&quot;*&quot;</span> <span class="o">*</span> <span class="n">star_len</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">stars</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Display.banner_cowsay"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.display.Display.banner_cowsay">[docs]</a>    <span class="k">def</span> <span class="nf">banner_cowsay</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s">&quot;: [&quot;</span> <span class="ow">in</span> <span class="n">msg</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot;[&quot;</span><span class="p">,</span><span class="s">&quot;&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&quot;]&quot;</span><span class="p">):</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">runcmd</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">cowsay</span><span class="p">,</span><span class="s">&quot;-W&quot;</span><span class="p">,</span> <span class="s">&quot;60&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">noncow</span><span class="p">:</span>
+            <span class="n">thecow</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">noncow</span>
+            <span class="k">if</span> <span class="n">thecow</span> <span class="o">==</span> <span class="s">&#39;random&#39;</span><span class="p">:</span>
+                <span class="n">thecow</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cows_available</span><span class="p">)</span>
+            <span class="n">runcmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;-f&#39;</span><span class="p">)</span>
+            <span class="n">runcmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">thecow</span><span class="p">)</span>
+        <span class="n">runcmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">runcmd</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span> <span class="o">=</span> <span class="n">cmd</span><span class="o">.</span><span class="n">communicate</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">out</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Display.error"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.display.Display.error">[docs]</a>    <span class="k">def</span> <span class="nf">error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">wrap_text</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">wrap_text</span><span class="p">:</span>
+            <span class="n">new_msg</span> <span class="o">=</span> <span class="s">u&quot;</span><span class="se">\n</span><span class="s">[ERROR]: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">msg</span>
+            <span class="n">wrapped</span> <span class="o">=</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="n">new_msg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+            <span class="n">new_msg</span> <span class="o">=</span> <span class="s">u&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">wrapped</span><span class="p">)</span> <span class="o">+</span> <span class="s">u&quot;</span><span class="se">\n</span><span class="s">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_msg</span> <span class="o">=</span> <span class="s">u&quot;ERROR! &quot;</span> <span class="o">+</span> <span class="n">msg</span>
+        <span class="k">if</span> <span class="n">new_msg</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">new_msg</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">COLOR_ERROR</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span><span class="p">[</span><span class="n">new_msg</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span></div>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Display.prompt"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.display.Display.prompt">[docs]</a>    <span class="k">def</span> <span class="nf">prompt</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">private</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="n">prompt_string</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">Display</span><span class="o">.</span><span class="n">_output_encoding</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,):</span>
+            <span class="c"># Convert back into text on python3.  We do this double conversion</span>
+            <span class="c"># to get rid of characters that are illegal in the user&#39;s locale</span>
+            <span class="n">prompt_string</span> <span class="o">=</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">prompt_string</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">private</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getpass</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">input</span><span class="p">(</span><span class="n">prompt_string</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Display.do_var_prompt"><a class="viewcode-back" href="../../../rst/ansible.utils.html#ansible.utils.display.Display.do_var_prompt">[docs]</a>    <span class="k">def</span> <span class="nf">do_var_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">varname</span><span class="p">,</span> <span class="n">private</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">encrypt</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">confirm</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">salt_size</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">salt</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">__stdin__</span><span class="o">.</span><span class="n">isatty</span><span class="p">():</span>
+
+            <span class="n">do_prompt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prompt</span>
+
+            <span class="k">if</span> <span class="n">prompt</span> <span class="ow">and</span> <span class="n">default</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s"> [</span><span class="si">%s</span><span class="s">]: &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">prompt</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">: &quot;</span> <span class="o">%</span> <span class="n">prompt</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;input for </span><span class="si">%s</span><span class="s">: &#39;</span> <span class="o">%</span> <span class="n">varname</span>
+
+            <span class="k">if</span> <span class="n">confirm</span><span class="p">:</span>
+                <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="n">do_prompt</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">private</span><span class="p">)</span>
+                    <span class="n">second</span> <span class="o">=</span> <span class="n">do_prompt</span><span class="p">(</span><span class="s">&quot;confirm &quot;</span> <span class="o">+</span> <span class="n">msg</span><span class="p">,</span> <span class="n">private</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="n">second</span><span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;***** VALUES ENTERED DO NOT MATCH ****&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="n">do_prompt</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">private</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Not prompting as we are not in interactive mode&quot;</span><span class="p">)</span>
+
+        <span class="c"># if result is false and default is not None</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span> <span class="ow">and</span> <span class="n">default</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">default</span>
+
+        <span class="k">if</span> <span class="n">encrypt</span><span class="p">:</span>
+            <span class="c"># Circular import because encrypt needs a display class</span>
+            <span class="kn">from</span> <span class="nn">ansible.utils.encrypt</span> <span class="kn">import</span> <span class="n">do_encrypt</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">do_encrypt</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">encrypt</span><span class="p">,</span> <span class="n">salt_size</span><span class="p">,</span> <span class="n">salt</span><span class="p">)</span>
+
+        <span class="c"># handle utf-8 chars</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_output_encoding</span><span class="p">(</span><span class="n">stderr</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="n">encoding</span> <span class="o">=</span> <span class="n">locale</span><span class="o">.</span><span class="n">getpreferredencoding</span><span class="p">()</span>
+        <span class="c"># https://bugs.python.org/issue6202</span>
+        <span class="c"># Python2 hardcodes an obsolete value on Mac.  Use MacOSX defaults</span>
+        <span class="c"># instead.</span>
+        <span class="k">if</span> <span class="n">encoding</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;mac-roman&#39;</span><span class="p">,):</span>
+            <span class="n">encoding</span> <span class="o">=</span> <span class="s">&#39;utf-8&#39;</span>
+        <span class="k">return</span> <span class="n">encoding</span>
+
+    <span class="k">def</span> <span class="nf">_set_column_width</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">isatty</span><span class="p">(</span><span class="mi">0</span><span class="p">):</span>
+            <span class="n">tty_size</span> <span class="o">=</span> <span class="n">unpack</span><span class="p">(</span><span class="s">&#39;HHHH&#39;</span><span class="p">,</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">ioctl</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">TIOCGWINSZ</span><span class="p">,</span> <span class="n">pack</span><span class="p">(</span><span class="s">&#39;HHHH&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)))[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tty_size</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">79</span><span class="p">,</span> <span class="n">tty_size</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

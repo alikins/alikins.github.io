@@ -1,0 +1,670 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.plugins &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../index.html"/>
+        <link rel="up" title="Module code" href="../index.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      
+    <li>ansible.plugins</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.plugins</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012, Daniel Hokka Zakrisson &lt;daniel@hozac.com&gt;</span>
+<span class="c"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt; and others</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">imp</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">os.path</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.unicode</span> <span class="kn">import</span> <span class="n">to_unicode</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+<span class="c"># Global so that all instances of a PluginLoader will share the caches</span>
+<span class="n">MODULE_CACHE</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">PATH_CACHE</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">PLUGIN_PATH_CACHE</span> <span class="o">=</span> <span class="p">{}</span>
+
+<div class="viewcode-block" id="get_all_plugin_loaders"><a class="viewcode-back" href="../../rst/ansible.plugins.html#ansible.plugins.get_all_plugin_loaders">[docs]</a><span class="k">def</span> <span class="nf">get_all_plugin_loaders</span><span class="p">():</span>
+    <span class="k">return</span> <span class="p">[(</span><span class="n">name</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span> <span class="ow">in</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getmembers</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">__name__</span><span class="p">])</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">PluginLoader</span><span class="p">)]</span></div>
+
+<div class="viewcode-block" id="PluginLoader"><a class="viewcode-back" href="../../rst/ansible.plugins.html#ansible.plugins.PluginLoader">[docs]</a><span class="k">class</span> <span class="nc">PluginLoader</span><span class="p">:</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    PluginLoader loads plugins from the configured plugin directories.</span>
+
+<span class="sd">    It searches for plugins by iterating through the combined list of</span>
+<span class="sd">    play basedirs, configured paths, and the python path.</span>
+<span class="sd">    The first match is used.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">class_name</span><span class="p">,</span> <span class="n">package</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">subdir</span><span class="p">,</span> <span class="n">aliases</span><span class="o">=</span><span class="p">{},</span> <span class="n">required_base_class</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">class_name</span>         <span class="o">=</span> <span class="n">class_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base_class</span>         <span class="o">=</span> <span class="n">required_base_class</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">package</span>            <span class="o">=</span> <span class="n">package</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subdir</span>             <span class="o">=</span> <span class="n">subdir</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aliases</span>            <span class="o">=</span> <span class="n">aliases</span>
+
+        <span class="k">if</span> <span class="n">config</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="p">[</span><span class="n">config</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">config</span><span class="p">:</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">class_name</span> <span class="ow">in</span> <span class="n">MODULE_CACHE</span><span class="p">:</span>
+            <span class="n">MODULE_CACHE</span><span class="p">[</span><span class="n">class_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">class_name</span> <span class="ow">in</span> <span class="n">PATH_CACHE</span><span class="p">:</span>
+            <span class="n">PATH_CACHE</span><span class="p">[</span><span class="n">class_name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">class_name</span> <span class="ow">in</span> <span class="n">PLUGIN_PATH_CACHE</span><span class="p">:</span>
+            <span class="n">PLUGIN_PATH_CACHE</span><span class="p">[</span><span class="n">class_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_module_cache</span>      <span class="o">=</span> <span class="n">MODULE_CACHE</span><span class="p">[</span><span class="n">class_name</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_paths</span>             <span class="o">=</span> <span class="n">PATH_CACHE</span><span class="p">[</span><span class="n">class_name</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_plugin_path_cache</span> <span class="o">=</span> <span class="n">PLUGIN_PATH_CACHE</span><span class="p">[</span><span class="n">class_name</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_extra_dirs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_searched_paths</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+<div class="viewcode-block" id="PluginLoader.__setstate__"><a class="viewcode-back" href="../../rst/ansible.plugins.html#ansible.plugins.PluginLoader.__setstate__">[docs]</a>    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Deserializer.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">class_name</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;class_name&#39;</span><span class="p">)</span>
+        <span class="n">package</span>    <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;package&#39;</span><span class="p">)</span>
+        <span class="n">config</span>     <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;config&#39;</span><span class="p">)</span>
+        <span class="n">subdir</span>     <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;subdir&#39;</span><span class="p">)</span>
+        <span class="n">aliases</span>    <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;aliases&#39;</span><span class="p">)</span>
+        <span class="n">base_class</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;base_class&#39;</span><span class="p">)</span>
+
+        <span class="n">PATH_CACHE</span><span class="p">[</span><span class="n">class_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;PATH_CACHE&#39;</span><span class="p">)</span>
+        <span class="n">PLUGIN_PATH_CACHE</span><span class="p">[</span><span class="n">class_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;PLUGIN_PATH_CACHE&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">class_name</span><span class="p">,</span> <span class="n">package</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">subdir</span><span class="p">,</span> <span class="n">aliases</span><span class="p">,</span> <span class="n">base_class</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_extra_dirs</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;_extra_dirs&#39;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_searched_paths</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;_searched_paths&#39;</span><span class="p">,</span> <span class="nb">set</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="PluginLoader.__getstate__"><a class="viewcode-back" href="../../rst/ansible.plugins.html#ansible.plugins.PluginLoader.__getstate__">[docs]</a>    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Serializer.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">class_name</span>        <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">class_name</span><span class="p">,</span>
+            <span class="n">base_class</span>        <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_class</span><span class="p">,</span>
+            <span class="n">package</span>           <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">package</span><span class="p">,</span>
+            <span class="n">config</span>            <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
+            <span class="n">subdir</span>            <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">subdir</span><span class="p">,</span>
+            <span class="n">aliases</span>           <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aliases</span><span class="p">,</span>
+            <span class="n">_extra_dirs</span>       <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extra_dirs</span><span class="p">,</span>
+            <span class="n">_searched_paths</span>   <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_searched_paths</span><span class="p">,</span>
+            <span class="n">PATH_CACHE</span>        <span class="o">=</span> <span class="n">PATH_CACHE</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">class_name</span><span class="p">],</span>
+            <span class="n">PLUGIN_PATH_CACHE</span> <span class="o">=</span> <span class="n">PLUGIN_PATH_CACHE</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">class_name</span><span class="p">],</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="PluginLoader.print_paths"><a class="viewcode-back" href="../../rst/ansible.plugins.html#ansible.plugins.PluginLoader.print_paths">[docs]</a>    <span class="k">def</span> <span class="nf">print_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Returns a string suitable for printing of the search path &#39;&#39;&#39;</span>
+
+        <span class="c"># Uses a list to get the order right</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_paths</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">pathsep</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_all_directories</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">dir</span><span class="p">):</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dir</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">root</span><span class="p">,</span> <span class="n">subdirs</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="nb">dir</span><span class="p">,</span> <span class="n">followlinks</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+           <span class="k">if</span> <span class="s">&#39;__init__.py&#39;</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+               <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">subdirs</span><span class="p">:</span>
+                   <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span><span class="n">x</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">results</span>
+
+    <span class="k">def</span> <span class="nf">_get_package_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Gets the path of a Python package &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">package</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;package_path&#39;</span><span class="p">):</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="nb">__import__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">package</span><span class="p">)</span>
+            <span class="n">parts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">package</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="k">for</span> <span class="n">parent_mod</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">:</span>
+                <span class="n">m</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">parent_mod</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">package_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">__file__</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_directories</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">package_path</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Return a list of paths to search for plugins in &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_paths</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_paths</span>
+
+        <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extra_dirs</span><span class="p">[:]</span>
+
+        <span class="c"># look in any configured plugin paths, allow one level deep for subcategories</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">:</span>
+                <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+                <span class="n">contents</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s">/*&quot;</span> <span class="o">%</span> <span class="n">path</span><span class="p">)</span> <span class="o">+</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s">/*/*&quot;</span> <span class="o">%</span> <span class="n">path</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">contents</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="ow">and</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                        <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">path</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                    <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="c"># look for any plugins installed in the package subtree</span>
+        <span class="n">ret</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_package_paths</span><span class="p">())</span>
+
+        <span class="c"># HACK: because powershell modules are in the same directory</span>
+        <span class="c"># hierarchy as other modules we have to process them last.  This is</span>
+        <span class="c"># because powershell only works on windows but the other modules work</span>
+        <span class="c"># anywhere (possibly including windows if the correct language</span>
+        <span class="c"># interpreter is installed).  the non-powershell modules can have any</span>
+        <span class="c"># file extension and thus powershell modules are picked up in that.</span>
+        <span class="c"># The non-hack way to fix this is to have powershell modules be</span>
+        <span class="c"># a different PluginLoader/ModuleLoader.  But that requires changing</span>
+        <span class="c"># other things too (known thing to change would be PATHS_CACHE,</span>
+        <span class="c"># PLUGIN_PATHS_CACHE, and MODULE_CACHE.  Since those three dicts key</span>
+        <span class="c"># on the class_name and neither regular modules nor powershell modules</span>
+        <span class="c"># would have class_names, they would not work as written.</span>
+        <span class="n">reordered_paths</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">win_dirs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;windows&#39;</span><span class="p">):</span>
+                <span class="n">win_dirs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">reordered_paths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">reordered_paths</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">win_dirs</span><span class="p">)</span>
+
+        <span class="c"># cache and return the result</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_paths</span> <span class="o">=</span> <span class="n">reordered_paths</span>
+        <span class="k">return</span> <span class="n">reordered_paths</span>
+
+
+<div class="viewcode-block" id="PluginLoader.add_directory"><a class="viewcode-back" href="../../rst/ansible.plugins.html#ansible.plugins.PluginLoader.add_directory">[docs]</a>    <span class="k">def</span> <span class="nf">add_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory</span><span class="p">,</span> <span class="n">with_subdir</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Adds an additional directory to the search path &#39;&#39;&#39;</span>
+
+        <span class="n">directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">directory</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">with_subdir</span><span class="p">:</span>
+                <span class="n">directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">subdir</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">directory</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extra_dirs</span><span class="p">:</span>
+                <span class="c"># append the directory and invalidate the path cache</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_extra_dirs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_paths</span> <span class="o">=</span> <span class="bp">None</span></div>
+
+<div class="viewcode-block" id="PluginLoader.find_plugin"><a class="viewcode-back" href="../../rst/ansible.plugins.html#ansible.plugins.PluginLoader.find_plugin">[docs]</a>    <span class="k">def</span> <span class="nf">find_plugin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">mod_type</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Find a plugin named name &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="n">mod_type</span><span class="p">:</span>
+            <span class="n">suffix</span> <span class="o">=</span> <span class="n">mod_type</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">class_name</span><span class="p">:</span>
+            <span class="c"># Ansible plugins that run in the controller process (most plugins)</span>
+            <span class="n">suffix</span> <span class="o">=</span> <span class="s">&#39;.py&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># Only Ansible Modules.  Ansible modules can be any executable so</span>
+            <span class="c"># they can have any suffix</span>
+            <span class="n">suffix</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+
+        <span class="c"># The particular cache to look for modules within.  This matches the</span>
+        <span class="c"># requested mod_type</span>
+        <span class="n">pull_cache</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plugin_path_cache</span><span class="p">[</span><span class="n">suffix</span><span class="p">]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pull_cache</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="c"># Cache miss.  Now let&#39;s find the plugin</span>
+            <span class="k">pass</span>
+
+        <span class="c"># TODO: Instead of using the self._paths cache (PATH_CACHE) and</span>
+        <span class="c">#       self._searched_paths we could use an iterator.  Before enabling that</span>
+        <span class="c">#       we need to make sure we don&#39;t want to add additional directories</span>
+        <span class="c">#       (add_directory()) once we start using the iterator.  Currently, it</span>
+        <span class="c">#       looks like _get_paths() never forces a cache refresh so if we expect</span>
+        <span class="c">#       additional directories to be added later, it is buggy.</span>
+        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="p">(</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_paths</span><span class="p">()</span> <span class="k">if</span> <span class="n">p</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_searched_paths</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">p</span><span class="p">)):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">full_paths</span> <span class="o">=</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Error accessing plugin paths: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+
+            <span class="k">for</span> <span class="n">full_path</span> <span class="ow">in</span> <span class="p">(</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">full_paths</span> <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">f</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;__init__.py&#39;</span><span class="p">)):</span>
+                <span class="n">full_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">full_path</span><span class="p">)</span>
+
+                <span class="c"># HACK: We have no way of executing python byte</span>
+                <span class="c"># compiled files as ansible modules so specifically exclude them</span>
+                <span class="k">if</span> <span class="n">full_path</span><span class="o">.</span><span class="n">endswith</span><span class="p">((</span><span class="s">&#39;.pyc&#39;</span><span class="p">,</span> <span class="s">&#39;.pyo&#39;</span><span class="p">)):</span>
+                    <span class="k">continue</span>
+
+                <span class="n">splitname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">full_name</span><span class="p">)</span>
+                <span class="n">base_name</span> <span class="o">=</span> <span class="n">splitname</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">extension</span> <span class="o">=</span> <span class="n">splitname</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                    <span class="n">extension</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+
+                <span class="c"># Module found, now enter it into the caches that match</span>
+                <span class="c"># this file</span>
+                <span class="k">if</span> <span class="n">base_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plugin_path_cache</span><span class="p">[</span><span class="s">&#39;&#39;</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_plugin_path_cache</span><span class="p">[</span><span class="s">&#39;&#39;</span><span class="p">][</span><span class="n">base_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">full_path</span>
+
+                <span class="k">if</span> <span class="n">full_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plugin_path_cache</span><span class="p">[</span><span class="s">&#39;&#39;</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_plugin_path_cache</span><span class="p">[</span><span class="s">&#39;&#39;</span><span class="p">][</span><span class="n">full_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">full_path</span>
+
+                <span class="k">if</span> <span class="n">base_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plugin_path_cache</span><span class="p">[</span><span class="n">extension</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_plugin_path_cache</span><span class="p">[</span><span class="n">extension</span><span class="p">][</span><span class="n">base_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">full_path</span>
+
+                <span class="k">if</span> <span class="n">full_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plugin_path_cache</span><span class="p">[</span><span class="n">extension</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_plugin_path_cache</span><span class="p">[</span><span class="n">extension</span><span class="p">][</span><span class="n">full_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">full_path</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_searched_paths</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">pull_cache</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="c"># Didn&#39;t find the plugin in this directory.  Load modules from</span>
+                <span class="c"># the next one</span>
+                <span class="k">pass</span>
+
+        <span class="c"># if nothing is found, try finding alias/deprecated</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">):</span>
+            <span class="n">alias_name</span> <span class="o">=</span> <span class="s">&#39;_&#39;</span> <span class="o">+</span> <span class="n">name</span>
+            <span class="c"># We&#39;ve already cached all the paths at this point</span>
+            <span class="k">if</span> <span class="n">alias_name</span> <span class="ow">in</span> <span class="n">pull_cache</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">islink</span><span class="p">(</span><span class="n">pull_cache</span><span class="p">[</span><span class="n">alias_name</span><span class="p">]):</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">deprecated</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> is kept for backwards compatibility &#39;</span>
+                              <span class="s">&#39;but usage is discouraged. The module &#39;</span>
+                              <span class="s">&#39;documentation details page may explain &#39;</span>
+                              <span class="s">&#39;more about this rationale.&#39;</span> <span class="o">%</span>
+                              <span class="n">name</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">))</span>
+                <span class="k">return</span> <span class="n">pull_cache</span><span class="p">[</span><span class="n">alias_name</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="bp">None</span></div>
+
+<div class="viewcode-block" id="PluginLoader.has_plugin"><a class="viewcode-back" href="../../rst/ansible.plugins.html#ansible.plugins.PluginLoader.has_plugin">[docs]</a>    <span class="k">def</span> <span class="nf">has_plugin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Checks if a plugin named name exists &#39;&#39;&#39;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_plugin</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span></div>
+
+    <span class="n">__contains__</span> <span class="o">=</span> <span class="n">has_plugin</span>
+
+    <span class="k">def</span> <span class="nf">_load_module_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+            <span class="c"># See https://github.com/ansible/ansible/issues/13110</span>
+            <span class="k">return</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s">&quot;ignore&quot;</span><span class="p">,</span> <span class="ne">RuntimeWarning</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">module_file</span><span class="p">:</span>
+                <span class="n">module</span> <span class="o">=</span> <span class="n">imp</span><span class="o">.</span><span class="n">load_source</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">module_file</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">module</span>
+
+<div class="viewcode-block" id="PluginLoader.get"><a class="viewcode-back" href="../../rst/ansible.plugins.html#ansible.plugins.PluginLoader.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; instantiates a plugin of the given name using arguments &#39;&#39;&#39;</span>
+
+        <span class="n">class_only</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;class_only&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">aliases</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aliases</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_plugin</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+
+        <span class="k">if</span> <span class="n">path</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_module_cache</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_module_cache</span><span class="p">[</span><span class="n">path</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_module_source</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">package</span><span class="p">,</span> <span class="n">name</span><span class="p">]),</span> <span class="n">path</span><span class="p">)</span>
+
+        <span class="n">obj</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_module_cache</span><span class="p">[</span><span class="n">path</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">class_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_class</span><span class="p">:</span>
+            <span class="c"># The import path is hardcoded and should be the right place,</span>
+            <span class="c"># so we are not expecting an ImportError.</span>
+            <span class="n">module</span> <span class="o">=</span> <span class="nb">__import__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">package</span><span class="p">,</span> <span class="n">fromlist</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">base_class</span><span class="p">])</span>
+            <span class="c"># Check whether this obj has the required base class.</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">plugin_class</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_class</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">None</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">plugin_class</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">None</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">class_only</span><span class="p">:</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="n">obj</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">obj</span></div>
+
+<div class="viewcode-block" id="PluginLoader.all"><a class="viewcode-back" href="../../rst/ansible.plugins.html#ansible.plugins.PluginLoader.all">[docs]</a>    <span class="k">def</span> <span class="nf">all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; instantiates all plugins with the same arguments &#39;&#39;&#39;</span>
+
+        <span class="n">class_only</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;class_only&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+        <span class="n">all_matches</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_paths</span><span class="p">():</span>
+            <span class="n">all_matches</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="s">&quot;*.py&quot;</span><span class="p">)))</span>
+
+        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">all_matches</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">match</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">match</span><span class="p">)):</span>
+            <span class="n">name</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s">&#39;__init__&#39;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">path</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_module_cache</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_module_cache</span><span class="p">[</span><span class="n">path</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_module_source</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">obj</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_module_cache</span><span class="p">[</span><span class="n">path</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">class_name</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Skipping plugin (</span><span class="si">%s</span><span class="s">) as it seems to be invalid: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_class</span><span class="p">:</span>
+                <span class="c"># The import path is hardcoded and should be the right place,</span>
+                <span class="c"># so we are not expecting an ImportError.</span>
+                <span class="n">module</span> <span class="o">=</span> <span class="nb">__import__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">package</span><span class="p">,</span> <span class="n">fromlist</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">base_class</span><span class="p">])</span>
+                <span class="c"># Check whether this obj has the required base class.</span>
+                <span class="k">try</span><span class="p">:</span>
+                   <span class="n">plugin_class</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_class</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                   <span class="k">continue</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">plugin_class</span><span class="p">):</span>
+                   <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">class_only</span><span class="p">:</span>
+                <span class="n">obj</span> <span class="o">=</span> <span class="n">obj</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+            <span class="c"># set extra info on the module, in case we want it later</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s">&#39;_original_path&#39;</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">obj</span></div></div>
+
+<span class="n">action_loader</span> <span class="o">=</span> <span class="n">PluginLoader</span><span class="p">(</span>
+    <span class="s">&#39;ActionModule&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ansible.plugins.action&#39;</span><span class="p">,</span>
+    <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_ACTION_PLUGIN_PATH</span><span class="p">,</span>
+    <span class="s">&#39;action_plugins&#39;</span><span class="p">,</span>
+    <span class="n">required_base_class</span><span class="o">=</span><span class="s">&#39;ActionBase&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">cache_loader</span> <span class="o">=</span> <span class="n">PluginLoader</span><span class="p">(</span>
+    <span class="s">&#39;CacheModule&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ansible.plugins.cache&#39;</span><span class="p">,</span>
+    <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_CACHE_PLUGIN_PATH</span><span class="p">,</span>
+    <span class="s">&#39;cache_plugins&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">callback_loader</span> <span class="o">=</span> <span class="n">PluginLoader</span><span class="p">(</span>
+    <span class="s">&#39;CallbackModule&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ansible.plugins.callback&#39;</span><span class="p">,</span>
+    <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_CALLBACK_PLUGIN_PATH</span><span class="p">,</span>
+    <span class="s">&#39;callback_plugins&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">connection_loader</span> <span class="o">=</span> <span class="n">PluginLoader</span><span class="p">(</span>
+    <span class="s">&#39;Connection&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ansible.plugins.connection&#39;</span><span class="p">,</span>
+    <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_CONNECTION_PLUGIN_PATH</span><span class="p">,</span>
+    <span class="s">&#39;connection_plugins&#39;</span><span class="p">,</span>
+    <span class="n">aliases</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;paramiko&#39;</span><span class="p">:</span> <span class="s">&#39;paramiko_ssh&#39;</span><span class="p">},</span>
+    <span class="n">required_base_class</span><span class="o">=</span><span class="s">&#39;ConnectionBase&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">shell_loader</span> <span class="o">=</span> <span class="n">PluginLoader</span><span class="p">(</span>
+    <span class="s">&#39;ShellModule&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ansible.plugins.shell&#39;</span><span class="p">,</span>
+    <span class="s">&#39;shell_plugins&#39;</span><span class="p">,</span>
+    <span class="s">&#39;shell_plugins&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">module_loader</span> <span class="o">=</span> <span class="n">PluginLoader</span><span class="p">(</span>
+    <span class="s">&#39;&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ansible.modules&#39;</span><span class="p">,</span>
+    <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_MODULE_PATH</span><span class="p">,</span>
+    <span class="s">&#39;library&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">lookup_loader</span> <span class="o">=</span> <span class="n">PluginLoader</span><span class="p">(</span>
+    <span class="s">&#39;LookupModule&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ansible.plugins.lookup&#39;</span><span class="p">,</span>
+    <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_LOOKUP_PLUGIN_PATH</span><span class="p">,</span>
+    <span class="s">&#39;lookup_plugins&#39;</span><span class="p">,</span>
+    <span class="n">required_base_class</span><span class="o">=</span><span class="s">&#39;LookupBase&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">vars_loader</span> <span class="o">=</span> <span class="n">PluginLoader</span><span class="p">(</span>
+    <span class="s">&#39;VarsModule&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ansible.plugins.vars&#39;</span><span class="p">,</span>
+    <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_VARS_PLUGIN_PATH</span><span class="p">,</span>
+    <span class="s">&#39;vars_plugins&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">filter_loader</span> <span class="o">=</span> <span class="n">PluginLoader</span><span class="p">(</span>
+    <span class="s">&#39;FilterModule&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ansible.plugins.filter&#39;</span><span class="p">,</span>
+    <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_FILTER_PLUGIN_PATH</span><span class="p">,</span>
+    <span class="s">&#39;filter_plugins&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">test_loader</span> <span class="o">=</span> <span class="n">PluginLoader</span><span class="p">(</span>
+    <span class="s">&#39;TestModule&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ansible.plugins.test&#39;</span><span class="p">,</span>
+    <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_TEST_PLUGIN_PATH</span><span class="p">,</span>
+    <span class="s">&#39;test_plugins&#39;</span>
+<span class="p">)</span>
+
+<span class="n">fragment_loader</span> <span class="o">=</span> <span class="n">PluginLoader</span><span class="p">(</span>
+    <span class="s">&#39;ModuleDocFragment&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ansible.utils.module_docs_fragments&#39;</span><span class="p">,</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">__file__</span><span class="p">),</span> <span class="s">&#39;module_docs_fragments&#39;</span><span class="p">),</span>
+    <span class="s">&#39;&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">strategy_loader</span> <span class="o">=</span> <span class="n">PluginLoader</span><span class="p">(</span>
+    <span class="s">&#39;StrategyModule&#39;</span><span class="p">,</span>
+    <span class="s">&#39;ansible.plugins.strategy&#39;</span><span class="p">,</span>
+    <span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_STRATEGY_PLUGIN_PATH</span><span class="p">,</span>
+    <span class="s">&#39;strategy_plugins&#39;</span><span class="p">,</span>
+    <span class="n">required_base_class</span><span class="o">=</span><span class="s">&#39;StrategyBase&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

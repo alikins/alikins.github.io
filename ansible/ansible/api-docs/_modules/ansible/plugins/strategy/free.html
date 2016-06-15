@@ -1,0 +1,393 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.plugins.strategy.free &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="ansible.plugins.strategy" href="../strategy.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../../plugins.html">ansible.plugins</a> &raquo;</li>
+      
+          <li><a href="../strategy.html">ansible.plugins.strategy</a> &raquo;</li>
+      
+    <li>ansible.plugins.strategy.free</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.plugins.strategy.free</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.included_file</span> <span class="kn">import</span> <span class="n">IncludedFile</span>
+<span class="kn">from</span> <span class="nn">ansible.plugins</span> <span class="kn">import</span> <span class="n">action_loader</span>
+<span class="kn">from</span> <span class="nn">ansible.plugins.strategy</span> <span class="kn">import</span> <span class="n">StrategyBase</span>
+<span class="kn">from</span> <span class="nn">ansible.template</span> <span class="kn">import</span> <span class="n">Templar</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="StrategyModule"><a class="viewcode-back" href="../../../../rst/ansible.plugins.strategy.html#ansible.plugins.strategy.free.StrategyModule">[docs]</a><span class="k">class</span> <span class="nc">StrategyModule</span><span class="p">(</span><span class="n">StrategyBase</span><span class="p">):</span>
+
+<div class="viewcode-block" id="StrategyModule.run"><a class="viewcode-back" href="../../../../rst/ansible.plugins.strategy.html#ansible.plugins.strategy.free.StrategyModule.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iterator</span><span class="p">,</span> <span class="n">play_context</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        The &quot;free&quot; strategy is a bit more complex, in that it allows tasks to</span>
+<span class="sd">        be sent to hosts as quickly as they can be processed. This means that</span>
+<span class="sd">        some hosts may finish very quickly if run tasks result in little or no</span>
+<span class="sd">        work being done versus other systems.</span>
+
+<span class="sd">        The algorithm used here also tries to be more &quot;fair&quot; when iterating</span>
+<span class="sd">        through hosts by remembering the last host in the list to be given a task</span>
+<span class="sd">        and starting the search from there as opposed to the top of the hosts</span>
+<span class="sd">        list again, which would end up favoring hosts near the beginning of the</span>
+<span class="sd">        list.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c"># the last host to be given a task</span>
+        <span class="n">last_host</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="n">work_to_do</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">while</span> <span class="n">work_to_do</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_terminated</span><span class="p">:</span>
+
+            <span class="n">hosts_left</span> <span class="o">=</span> <span class="p">[</span><span class="n">host</span> <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="o">.</span><span class="n">get_hosts</span><span class="p">(</span><span class="n">iterator</span><span class="o">.</span><span class="n">_play</span><span class="o">.</span><span class="n">hosts</span><span class="p">)</span> <span class="k">if</span> <span class="n">host</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_unreachable_hosts</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">hosts_left</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">send_callback</span><span class="p">(</span><span class="s">&#39;v2_playbook_on_no_hosts_remaining&#39;</span><span class="p">)</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="k">break</span>
+
+            <span class="n">work_to_do</span> <span class="o">=</span> <span class="bp">False</span>        <span class="c"># assume we have no more work to do</span>
+            <span class="n">starting_host</span> <span class="o">=</span> <span class="n">last_host</span> <span class="c"># save current position so we know when we&#39;ve</span>
+                                      <span class="c"># looped back around and need to break</span>
+
+            <span class="c"># try and find an unblocked host with a task to run</span>
+            <span class="n">host_results</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="n">host</span> <span class="o">=</span> <span class="n">hosts_left</span><span class="p">[</span><span class="n">last_host</span><span class="p">]</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;next free host: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">host</span><span class="p">)</span>
+                <span class="n">host_name</span> <span class="o">=</span> <span class="n">host</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span>
+
+                <span class="c"># peek at the next task for the host, to see if there&#39;s</span>
+                <span class="c"># anything to do do for this host</span>
+                <span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span> <span class="o">=</span> <span class="n">iterator</span><span class="o">.</span><span class="n">get_next_task_for_host</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">peek</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;free host state: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">state</span><span class="p">)</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;free host task: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">task</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">host_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_unreachable_hosts</span> <span class="ow">and</span> <span class="n">task</span><span class="p">:</span>
+
+                    <span class="c"># set the flag so the outer loop knows we&#39;ve still found</span>
+                    <span class="c"># some work which needs to be done</span>
+                    <span class="n">work_to_do</span> <span class="o">=</span> <span class="bp">True</span>
+
+                    <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;this host has work to do&quot;</span><span class="p">)</span>
+
+                    <span class="c"># check to see if this host is blocked (still executing a previous task)</span>
+                    <span class="k">if</span> <span class="n">host_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_blocked_hosts</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_blocked_hosts</span><span class="p">[</span><span class="n">host_name</span><span class="p">]:</span>
+                        <span class="c"># pop the task, mark the host blocked, and queue it</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_blocked_hosts</span><span class="p">[</span><span class="n">host_name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+                        <span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span> <span class="o">=</span> <span class="n">iterator</span><span class="o">.</span><span class="n">get_next_task_for_host</span><span class="p">(</span><span class="n">host</span><span class="p">)</span>
+
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">action</span> <span class="o">=</span> <span class="n">action_loader</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">action</span><span class="p">,</span> <span class="n">class_only</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                            <span class="c"># we don&#39;t care here, because the action may simply not have a</span>
+                            <span class="c"># corresponding action plugin</span>
+                            <span class="n">action</span> <span class="o">=</span> <span class="bp">None</span>
+
+                        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;getting variables&quot;</span><span class="p">)</span>
+                        <span class="n">task_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="o">.</span><span class="n">get_vars</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span> <span class="n">play</span><span class="o">=</span><span class="n">iterator</span><span class="o">.</span><span class="n">_play</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">task</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">add_tqm_variables</span><span class="p">(</span><span class="n">task_vars</span><span class="p">,</span> <span class="n">play</span><span class="o">=</span><span class="n">iterator</span><span class="o">.</span><span class="n">_play</span><span class="p">)</span>
+                        <span class="n">templar</span> <span class="o">=</span> <span class="n">Templar</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="n">task_vars</span><span class="p">)</span>
+                        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;done getting variables&quot;</span><span class="p">)</span>
+
+                        <span class="n">run_once</span> <span class="o">=</span> <span class="n">templar</span><span class="o">.</span><span class="n">template</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">run_once</span><span class="p">)</span> <span class="ow">or</span> <span class="n">action</span> <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="s">&#39;BYPASS_HOST_LOOP&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">run_once</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">action</span> <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="s">&#39;BYPASS_HOST_LOOP&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">):</span>
+                                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;The &#39;</span><span class="si">%s</span><span class="s">&#39; module bypasses the host loop, which is currently not supported in the free strategy &quot;</span> \
+                                                   <span class="s">&quot;and would instead execute for every host in the inventory list.&quot;</span> <span class="o">%</span> <span class="n">task</span><span class="o">.</span><span class="n">action</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">task</span><span class="o">.</span><span class="n">_ds</span><span class="p">)</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">display</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Using run_once with the free strategy is not currently supported. This task will still be &quot;</span> \
+                                                <span class="s">&quot;executed for every host in the inventory list.&quot;</span><span class="p">)</span>
+
+                        <span class="c"># check to see if this task should be skipped, due to it being a member of a</span>
+                        <span class="c"># role which has already run (and whether that role allows duplicate execution)</span>
+                        <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">_role</span> <span class="ow">and</span> <span class="n">task</span><span class="o">.</span><span class="n">_role</span><span class="o">.</span><span class="n">has_run</span><span class="p">(</span><span class="n">host</span><span class="p">):</span>
+                            <span class="c"># If there is no metadata, the default behavior is to not allow duplicates,</span>
+                            <span class="c"># if there is metadata, check to see if the allow_duplicates flag was set to true</span>
+                            <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">_role</span><span class="o">.</span><span class="n">_metadata</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">task</span><span class="o">.</span><span class="n">_role</span><span class="o">.</span><span class="n">_metadata</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">task</span><span class="o">.</span><span class="n">_role</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">allow_duplicates</span><span class="p">:</span>
+                                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;&#39;</span><span class="si">%s</span><span class="s">&#39; skipped because role has already run&quot;</span> <span class="o">%</span> <span class="n">task</span><span class="p">)</span>
+                                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_blocked_hosts</span><span class="p">[</span><span class="n">host_name</span><span class="p">]</span>
+                                <span class="k">continue</span>
+
+                        <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="s">&#39;meta&#39;</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_execute_meta</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">play_context</span><span class="p">,</span> <span class="n">iterator</span><span class="p">)</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_blocked_hosts</span><span class="p">[</span><span class="n">host_name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="c"># handle step if needed, skip meta actions as they are used internally</span>
+                            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_step</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_take_step</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">host_name</span><span class="p">):</span>
+                                <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">any_errors_fatal</span><span class="p">:</span>
+                                    <span class="n">display</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Using any_errors_fatal with the free strategy is not supported, as tasks are executed independently on each host&quot;</span><span class="p">)</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">send_callback</span><span class="p">(</span><span class="s">&#39;v2_playbook_on_task_start&#39;</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">is_conditional</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">_queue_task</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">task_vars</span><span class="p">,</span> <span class="n">play_context</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> is blocked, skipping for now&quot;</span> <span class="o">%</span> <span class="n">host_name</span><span class="p">)</span>
+
+                <span class="c"># move on to the next host and make sure we</span>
+                <span class="c"># haven&#39;t gone past the end of our hosts list</span>
+                <span class="n">last_host</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">last_host</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">hosts_left</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">last_host</span> <span class="o">=</span> <span class="mi">0</span>
+
+                <span class="c"># if we&#39;ve looped around back to the start, break out</span>
+                <span class="k">if</span> <span class="n">last_host</span> <span class="o">==</span> <span class="n">starting_host</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+            <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_pending_results</span><span class="p">(</span><span class="n">iterator</span><span class="p">)</span>
+            <span class="n">host_results</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">included_files</span> <span class="o">=</span> <span class="n">IncludedFile</span><span class="o">.</span><span class="n">process_include_results</span><span class="p">(</span>
+                    <span class="n">host_results</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="p">,</span>
+                    <span class="n">iterator</span><span class="o">=</span><span class="n">iterator</span><span class="p">,</span>
+                    <span class="n">inventory</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_inventory</span><span class="p">,</span>
+                    <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span>
+                    <span class="n">variable_manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="n">AnsibleError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">False</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">included_files</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">all_blocks</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">((</span><span class="n">host</span><span class="p">,</span> <span class="p">[])</span> <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">hosts_left</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">included_file</span> <span class="ow">in</span> <span class="n">included_files</span><span class="p">:</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;collecting new blocks for </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">included_file</span><span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">new_blocks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_included_file</span><span class="p">(</span><span class="n">included_file</span><span class="p">,</span> <span class="n">iterator</span><span class="o">=</span><span class="n">iterator</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="n">AnsibleError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">included_file</span><span class="o">.</span><span class="n">_hosts</span><span class="p">:</span>
+                            <span class="n">iterator</span><span class="o">.</span><span class="n">mark_host_failed</span><span class="p">(</span><span class="n">host</span><span class="p">)</span>
+                        <span class="n">display</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+                        <span class="k">continue</span>
+
+                    <span class="k">for</span> <span class="n">new_block</span> <span class="ow">in</span> <span class="n">new_blocks</span><span class="p">:</span>
+                        <span class="n">task_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span><span class="o">.</span><span class="n">get_vars</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span> <span class="n">play</span><span class="o">=</span><span class="n">iterator</span><span class="o">.</span><span class="n">_play</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">included_file</span><span class="o">.</span><span class="n">_task</span><span class="p">)</span>
+                        <span class="n">final_block</span> <span class="o">=</span> <span class="n">new_block</span><span class="o">.</span><span class="n">filter_tagged_tasks</span><span class="p">(</span><span class="n">play_context</span><span class="p">,</span> <span class="n">task_vars</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">hosts_left</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">included_file</span><span class="o">.</span><span class="n">_hosts</span><span class="p">:</span>
+                                <span class="n">all_blocks</span><span class="p">[</span><span class="n">host</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">final_block</span><span class="p">)</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;done collecting new blocks for </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">included_file</span><span class="p">)</span>
+
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;adding all collected blocks from </span><span class="si">%d</span><span class="s"> included file(s) to iterator&quot;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">included_files</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">hosts_left</span><span class="p">:</span>
+                    <span class="n">iterator</span><span class="o">.</span><span class="n">add_tasks</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">all_blocks</span><span class="p">[</span><span class="n">host</span><span class="p">])</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;done adding collected blocks to iterator&quot;</span><span class="p">)</span>
+
+            <span class="c"># pause briefly so we don&#39;t spin lock</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.001</span><span class="p">)</span>
+
+        <span class="c"># collect all the final results</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wait_on_pending_results</span><span class="p">(</span><span class="n">iterator</span><span class="p">)</span>
+
+        <span class="c"># run the base class run() method, which executes the cleanup function</span>
+        <span class="c"># and runs any outstanding handlers which have been triggered</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">StrategyModule</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">iterator</span><span class="p">,</span> <span class="n">play_context</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

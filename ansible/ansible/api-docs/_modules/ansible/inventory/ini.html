@@ -1,0 +1,560 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.inventory.ini &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="ansible.inventory" href="../inventory.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../inventory.html">ansible.inventory</a> &raquo;</li>
+      
+    <li>ansible.inventory.ini</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.inventory.ini</h1><div class="highlight"><pre>
+<span class="c"># Copyright 2015 Abhijit Menon-Sen &lt;ams@2ndQuadrant.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c">#############################################</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">ast</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span>
+<span class="kn">from</span> <span class="nn">ansible.inventory.host</span> <span class="kn">import</span> <span class="n">Host</span>
+<span class="kn">from</span> <span class="nn">ansible.inventory.group</span> <span class="kn">import</span> <span class="n">Group</span>
+<span class="kn">from</span> <span class="nn">ansible.inventory.expand_hosts</span> <span class="kn">import</span> <span class="n">detect_range</span>
+<span class="kn">from</span> <span class="nn">ansible.inventory.expand_hosts</span> <span class="kn">import</span> <span class="n">expand_hostname_range</span>
+<span class="kn">from</span> <span class="nn">ansible.parsing.utils.addresses</span> <span class="kn">import</span> <span class="n">parse_address</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.shlex</span> <span class="kn">import</span> <span class="n">shlex_split</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.unicode</span> <span class="kn">import</span> <span class="n">to_unicode</span>
+
+<div class="viewcode-block" id="InventoryParser"><a class="viewcode-back" href="../../../rst/ansible.inventory.html#ansible.inventory.ini.InventoryParser">[docs]</a><span class="k">class</span> <span class="nc">InventoryParser</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Takes an INI-format inventory file and builds a list of groups and subgroups</span>
+<span class="sd">    with their associated hosts and variable settings.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loader</span><span class="p">,</span> <span class="n">groups</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_HOST_LIST</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_loader</span> <span class="o">=</span> <span class="n">loader</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span>
+
+        <span class="c"># Start with an empty host list and whatever groups we&#39;re passed in</span>
+        <span class="c"># (which should include the default &#39;all&#39; and &#39;ungrouped&#39; groups).</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">hosts</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">patterns</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">groups</span> <span class="o">=</span> <span class="n">groups</span>
+
+        <span class="c"># Read in the hosts, groups, and variables defined in the</span>
+        <span class="c"># inventory file.</span>
+
+        <span class="k">if</span> <span class="n">loader</span><span class="p">:</span>
+            <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">private</span><span class="p">)</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">_get_file_contents</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">fh</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parse</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_raise_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s">:</span><span class="si">%d</span><span class="s">: &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span><span class="p">)</span> <span class="o">+</span> <span class="n">message</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lines</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Populates self.groups from the given array of lines. Raises an error on</span>
+<span class="sd">        any parse failure.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_compile_patterns</span><span class="p">()</span>
+
+        <span class="c"># We behave as though the first line of the inventory is &#39;[ungrouped]&#39;,</span>
+        <span class="c"># and begin to look for host definitions. We make a single pass through</span>
+        <span class="c"># each line of the inventory, building up self.groups and adding hosts,</span>
+        <span class="c"># subgroups, and setting variables as we go.</span>
+
+        <span class="n">pending_declarations</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">groupname</span> <span class="o">=</span> <span class="s">&#39;ungrouped&#39;</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="s">&#39;hosts&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+            <span class="c"># Skip empty lines and comments</span>
+            <span class="k">if</span> <span class="n">line</span> <span class="o">==</span> <span class="s">&#39;&#39;</span> <span class="ow">or</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&quot;;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&quot;#&quot;</span><span class="p">):</span>
+                <span class="k">continue</span>
+
+            <span class="c"># Is this a [section] header? That tells us what group we&#39;re parsing</span>
+            <span class="c"># definitions for, and what kind of definitions to expect.</span>
+
+            <span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">patterns</span><span class="p">[</span><span class="s">&#39;section&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">m</span><span class="p">:</span>
+                <span class="p">(</span><span class="n">groupname</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">groups</span><span class="p">()</span>
+
+                <span class="n">state</span> <span class="o">=</span> <span class="n">state</span> <span class="ow">or</span> <span class="s">&#39;hosts&#39;</span>
+                <span class="k">if</span> <span class="n">state</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;hosts&#39;</span><span class="p">,</span> <span class="s">&#39;children&#39;</span><span class="p">,</span> <span class="s">&#39;vars&#39;</span><span class="p">]:</span>
+                    <span class="n">title</span> <span class="o">=</span> <span class="s">&quot;:&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">groups</span><span class="p">())</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_raise_error</span><span class="p">(</span><span class="s">&quot;Section [</span><span class="si">%s</span><span class="s">] has unknown type: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">state</span><span class="p">))</span>
+
+                <span class="c"># If we haven&#39;t seen this group before, we add a new Group.</span>
+                <span class="c">#</span>
+                <span class="c"># Either [groupname] or [groupname:children] is sufficient to</span>
+                <span class="c"># declare a group, but [groupname:vars] is allowed only if the</span>
+                <span class="c"># group is declared elsewhere (not necessarily earlier). We add</span>
+                <span class="c"># the group anyway, but make a note in pending_declarations to</span>
+                <span class="c"># check at the end.</span>
+
+                <span class="k">if</span> <span class="n">groupname</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">groupname</span><span class="p">]</span> <span class="o">=</span> <span class="n">Group</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">groupname</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">state</span> <span class="o">==</span> <span class="s">&#39;vars&#39;</span><span class="p">:</span>
+                        <span class="n">pending_declarations</span><span class="p">[</span><span class="n">groupname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">line</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lineno</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="n">state</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">groupname</span><span class="p">)</span>
+
+                <span class="c"># When we see a declaration that we&#39;ve been waiting for, we can</span>
+                <span class="c"># delete the note.</span>
+
+                <span class="k">if</span> <span class="n">groupname</span> <span class="ow">in</span> <span class="n">pending_declarations</span> <span class="ow">and</span> <span class="n">state</span> <span class="o">!=</span> <span class="s">&#39;vars&#39;</span><span class="p">:</span>
+                    <span class="k">del</span> <span class="n">pending_declarations</span><span class="p">[</span><span class="n">groupname</span><span class="p">]</span>
+
+                <span class="k">continue</span>
+            <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;[&#39;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_raise_error</span><span class="p">(</span><span class="s">&quot;Invalid section entry: &#39;</span><span class="si">%s</span><span class="s">&#39;. Please make sure that there are no spaces&quot;</span> <span class="o">%</span> <span class="n">line</span> <span class="o">+</span> \
+                                  <span class="s">&quot;in the section entry, and that there are no other invalid characters&quot;</span><span class="p">)</span>
+
+            <span class="c"># It&#39;s not a section, so the current state tells us what kind of</span>
+            <span class="c"># definition it must be. The individual parsers will raise an</span>
+            <span class="c"># error if we feed them something they can&#39;t digest.</span>
+
+            <span class="c"># [groupname] contains host definitions that must be added to</span>
+            <span class="c"># the current group.</span>
+            <span class="k">if</span> <span class="n">state</span> <span class="o">==</span> <span class="s">&#39;hosts&#39;</span><span class="p">:</span>
+                <span class="n">hosts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_host_definition</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hosts</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">groupname</span><span class="p">]</span><span class="o">.</span><span class="n">add_host</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+
+            <span class="c"># [groupname:vars] contains variable definitions that must be</span>
+            <span class="c"># applied to the current group.</span>
+            <span class="k">elif</span> <span class="n">state</span> <span class="o">==</span> <span class="s">&#39;vars&#39;</span><span class="p">:</span>
+                <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_variable_definition</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="s">&#39;ansible_group_priority&#39;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">groupname</span><span class="p">]</span><span class="o">.</span><span class="n">set_variable</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">groupname</span><span class="p">]</span><span class="o">.</span><span class="n">set_priority</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+            <span class="c"># [groupname:children] contains subgroup names that must be</span>
+            <span class="c"># added as children of the current group. The subgroup names</span>
+            <span class="c"># must themselves be declared as groups, but as before, they</span>
+            <span class="c"># may only be declared later.</span>
+            <span class="k">elif</span> <span class="n">state</span> <span class="o">==</span> <span class="s">&#39;children&#39;</span><span class="p">:</span>
+                <span class="n">child</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_group_name</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">child</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">child</span><span class="p">]</span> <span class="o">=</span> <span class="n">Group</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">child</span><span class="p">)</span>
+                    <span class="n">pending_declarations</span><span class="p">[</span><span class="n">child</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">line</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lineno</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="n">state</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">child</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">groupname</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">groupname</span><span class="p">]</span><span class="o">.</span><span class="n">add_child_group</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">child</span><span class="p">])</span>
+
+                <span class="c"># Note: there&#39;s no reason why we couldn&#39;t accept variable</span>
+                <span class="c"># definitions here, and set them on the named child group.</span>
+
+            <span class="c"># This is a fencepost. It can happen only if the state checker</span>
+            <span class="c"># accepts a state that isn&#39;t handled above.</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_raise_error</span><span class="p">(</span><span class="s">&quot;Entered unhandled state: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">state</span><span class="p">))</span>
+
+        <span class="c"># Any entries in pending_declarations not removed by a group declaration</span>
+        <span class="c"># above mean that there was an unresolved forward reference. We report</span>
+        <span class="c"># only the first such error here.</span>
+
+        <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">pending_declarations</span><span class="p">:</span>
+            <span class="n">decl</span> <span class="o">=</span> <span class="n">pending_declarations</span><span class="p">[</span><span class="n">g</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">decl</span><span class="p">[</span><span class="s">&#39;state&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;vars&#39;</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s">:</span><span class="si">%d</span><span class="s">: Section [</span><span class="si">%s</span><span class="s">:vars] not valid for undefined group: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">decl</span><span class="p">[</span><span class="s">&#39;line&#39;</span><span class="p">],</span> <span class="n">decl</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">],</span> <span class="n">decl</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]))</span>
+            <span class="k">elif</span> <span class="n">decl</span><span class="p">[</span><span class="s">&#39;state&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;children&#39;</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s">:</span><span class="si">%d</span><span class="s">: Section [</span><span class="si">%s</span><span class="s">:children] includes undefined group: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">decl</span><span class="p">[</span><span class="s">&#39;line&#39;</span><span class="p">],</span> <span class="n">decl</span><span class="p">[</span><span class="s">&#39;parent&#39;</span><span class="p">],</span> <span class="n">decl</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]))</span>
+
+        <span class="c"># Finally, add all top-level groups as children of &#39;all&#39;.</span>
+        <span class="c"># We exclude ungrouped here because it was already added as a child of</span>
+        <span class="c"># &#39;all&#39; at the time it was created.</span>
+
+        <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">group</span><span class="o">.</span><span class="n">depth</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">group</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;all&#39;</span><span class="p">,</span> <span class="s">&#39;ungrouped&#39;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="s">&#39;all&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">add_child_group</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">_parse_group_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Takes a single line and tries to parse it as a group name. Returns the</span>
+<span class="sd">        group name if successful, or raises an error.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">patterns</span><span class="p">[</span><span class="s">&#39;groupname&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">m</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_raise_error</span><span class="p">(</span><span class="s">&quot;Expected group name, got: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">line</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_parse_variable_definition</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Takes a string and tries to parse it as a variable definition. Returns</span>
+<span class="sd">        the key and value if successful, or raises an error.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c"># TODO: We parse variable assignments as a key (anything to the left of</span>
+        <span class="c"># an &#39;=&#39;&quot;), an &#39;=&#39;, and a value (anything left) and leave the value to</span>
+        <span class="c"># _parse_value to sort out. We should be more systematic here about</span>
+        <span class="c"># defining what is acceptable, how quotes work, and so on.</span>
+
+        <span class="k">if</span> <span class="s">&#39;=&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;=&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_value</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_raise_error</span><span class="p">(</span><span class="s">&quot;Expected key=value, got: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">line</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_parse_host_definition</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Takes a single line and tries to parse it as a host definition. Returns</span>
+<span class="sd">        a list of Hosts if successful, or raises an error.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c"># A host definition comprises (1) a non-whitespace hostname or range,</span>
+        <span class="c"># optionally followed by (2) a series of key=&quot;some value&quot; assignments.</span>
+        <span class="c"># We ignore any trailing whitespace and/or comments. For example, here</span>
+        <span class="c"># are a series of host definitions in a group:</span>
+        <span class="c">#</span>
+        <span class="c"># [groupname]</span>
+        <span class="c"># alpha</span>
+        <span class="c"># beta:2345 user=admin      # we&#39;ll tell shlex</span>
+        <span class="c"># gamma sudo=True user=root # to ignore comments</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">tokens</span> <span class="o">=</span> <span class="n">shlex_split</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">comments</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_raise_error</span><span class="p">(</span><span class="s">&quot;Error parsing host definition &#39;</span><span class="si">%s</span><span class="s">&#39;: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span>
+
+        <span class="p">(</span><span class="n">hostnames</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expand_hostpattern</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">hosts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_Hosts</span><span class="p">(</span><span class="n">hostnames</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span>
+
+        <span class="c"># Try to process anything remaining as a series of key=value pairs.</span>
+
+        <span class="n">variables</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="k">if</span> <span class="s">&#39;=&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">t</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_raise_error</span><span class="p">(</span><span class="s">&quot;Expected key=value host variable assignment, got: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">t</span><span class="p">))</span>
+            <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;=&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">variables</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_value</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+        <span class="c"># Apply any variable settings found to every host.</span>
+
+        <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hosts</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">:</span>
+                <span class="n">h</span><span class="o">.</span><span class="n">set_variable</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">variables</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;ansible_host&#39;</span><span class="p">,</span> <span class="s">&#39;ansible_ssh_host&#39;</span><span class="p">]:</span>
+                    <span class="n">h</span><span class="o">.</span><span class="n">address</span> <span class="o">=</span> <span class="n">variables</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">hosts</span>
+
+    <span class="k">def</span> <span class="nf">_expand_hostpattern</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hostpattern</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Takes a single host pattern and returns a list of hostnames and an</span>
+<span class="sd">        optional port number that applies to all of them.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c"># Can the given hostpattern be parsed as a host with an optional port</span>
+        <span class="c"># specification?</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span> <span class="o">=</span> <span class="n">parse_address</span><span class="p">(</span><span class="n">hostpattern</span><span class="p">,</span> <span class="n">allow_ranges</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="c"># not a recognizable host pattern</span>
+            <span class="n">pattern</span> <span class="o">=</span> <span class="n">hostpattern</span>
+            <span class="n">port</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="c"># Once we have separated the pattern, we expand it into list of one or</span>
+        <span class="c"># more hostnames, depending on whether it contains any [x:y] ranges.</span>
+
+        <span class="k">if</span> <span class="n">detect_range</span><span class="p">(</span><span class="n">pattern</span><span class="p">):</span>
+            <span class="n">hostnames</span> <span class="o">=</span> <span class="n">expand_hostname_range</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">hostnames</span> <span class="o">=</span> <span class="p">[</span><span class="n">pattern</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">hostnames</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_Hosts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hostnames</span><span class="p">,</span> <span class="n">port</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Takes a list of hostnames and a port (which may be None) and returns a</span>
+<span class="sd">        list of Hosts (without recreating anything in self.hosts).</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">hosts</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c"># Note that we decide whether or not to create a Host based solely on</span>
+        <span class="c"># the (non-)existence of its hostname in self.hosts. This means that one</span>
+        <span class="c"># cannot add both &quot;foo:22&quot; and &quot;foo:23&quot; to the inventory.</span>
+
+        <span class="k">for</span> <span class="n">hn</span> <span class="ow">in</span> <span class="n">hostnames</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">hn</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">hosts</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">hosts</span><span class="p">[</span><span class="n">hn</span><span class="p">]</span> <span class="o">=</span> <span class="n">Host</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">hn</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">)</span>
+            <span class="n">hosts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hosts</span><span class="p">[</span><span class="n">hn</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">hosts</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_parse_value</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Attempt to transform the string value from an ini file into a basic python object</span>
+<span class="sd">        (int, dict, list, unicode string, etc).</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="s">&quot;#&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">v</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="n">ast</span><span class="o">.</span><span class="n">literal_eval</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="c"># Using explicit exceptions.</span>
+            <span class="c"># Likely a string that literal_eval does not like. We wil then just set it.</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="c"># For some reason this was thought to be malformed.</span>
+                <span class="k">pass</span>
+            <span class="k">except</span> <span class="ne">SyntaxError</span><span class="p">:</span>
+                <span class="c"># Is this a hash with an equals at the end?</span>
+                <span class="k">pass</span>
+        <span class="k">return</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">nonstring</span><span class="o">=</span><span class="s">&#39;passthru&#39;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s">&#39;strict&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="InventoryParser.get_host_variables"><a class="viewcode-back" href="../../../rst/ansible.inventory.html#ansible.inventory.ini.InventoryParser.get_host_variables">[docs]</a>    <span class="k">def</span> <span class="nf">get_host_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{}</span></div>
+
+    <span class="k">def</span> <span class="nf">_compile_patterns</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Compiles the regular expressions required to parse the inventory and</span>
+<span class="sd">        stores them in self.patterns.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c"># Section names are square-bracketed expressions at the beginning of a</span>
+        <span class="c"># line, comprising (1) a group name optionally followed by (2) a tag</span>
+        <span class="c"># that specifies the contents of the section. We ignore any trailing</span>
+        <span class="c"># whitespace and/or comments. For example:</span>
+        <span class="c">#</span>
+        <span class="c"># [groupname]</span>
+        <span class="c"># [somegroup:vars]</span>
+        <span class="c"># [naughty:children] # only get coal in their stockings</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">patterns</span><span class="p">[</span><span class="s">&#39;section&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+            <span class="sd">r&#39;&#39;&#39;^\[</span>
+<span class="sd">                    ([^:\]\s]+)             # group name (see groupname below)</span>
+<span class="sd">                    (?::(\w+))?             # optional : and tag name</span>
+<span class="sd">                \]</span>
+<span class="sd">                \s*                         # ignore trailing whitespace</span>
+<span class="sd">                (?:\#.*)?                   # and/or a comment till the</span>
+<span class="sd">                $                           # end of the line</span>
+<span class="sd">            &#39;&#39;&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">X</span>
+        <span class="p">)</span>
+
+        <span class="c"># FIXME: What are the real restrictions on group names, or rather, what</span>
+        <span class="c"># should they be? At the moment, they must be non-empty sequences of non</span>
+        <span class="c"># whitespace characters excluding &#39;:&#39; and &#39;]&#39;, but we should define more</span>
+        <span class="c"># precise rules in order to support better diagnostics.</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">patterns</span><span class="p">[</span><span class="s">&#39;groupname&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+            <span class="sd">r&#39;&#39;&#39;^</span>
+<span class="sd">                ([^:\]\s]+)</span>
+<span class="sd">                \s*                         # ignore trailing whitespace</span>
+<span class="sd">                (?:\#.*)?                   # and/or a comment till the</span>
+<span class="sd">                $                           # end of the line</span>
+<span class="sd">            &#39;&#39;&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">X</span>
+        <span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

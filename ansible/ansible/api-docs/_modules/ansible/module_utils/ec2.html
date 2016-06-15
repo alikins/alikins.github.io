@@ -1,0 +1,662 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.module_utils.ec2 &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>ansible.module_utils.ec2</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.module_utils.ec2</h1><div class="highlight"><pre>
+<span class="c"># This code is part of Ansible, but is an independent component.</span>
+<span class="c"># This particular file snippet, and this file snippet only, is BSD licensed.</span>
+<span class="c"># Modules you write using this snippet, which is embedded dynamically by Ansible</span>
+<span class="c"># still belong to the author of the module, and may assign their own license</span>
+<span class="c"># to the complete work.</span>
+<span class="c">#</span>
+<span class="c"># Copyright (c), Michael DeHaan &lt;michael.dehaan@gmail.com&gt;, 2012-2013</span>
+<span class="c"># All rights reserved.</span>
+<span class="c">#</span>
+<span class="c"># Redistribution and use in source and binary forms, with or without modification,</span>
+<span class="c"># are permitted provided that the following conditions are met:</span>
+<span class="c">#</span>
+<span class="c">#    * Redistributions of source code must retain the above copyright</span>
+<span class="c">#      notice, this list of conditions and the following disclaimer.</span>
+<span class="c">#    * Redistributions in binary form must reproduce the above copyright notice,</span>
+<span class="c">#      this list of conditions and the following disclaimer in the documentation</span>
+<span class="c">#      and/or other materials provided with the distribution.</span>
+<span class="c">#</span>
+<span class="c"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND</span>
+<span class="c"># ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED</span>
+<span class="c"># WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.</span>
+<span class="c"># IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,</span>
+<span class="c"># INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,</span>
+<span class="c"># PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS</span>
+<span class="c"># INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT</span>
+<span class="c"># LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE</span>
+<span class="c"># USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">sleep</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">boto</span>
+    <span class="kn">import</span> <span class="nn">boto.ec2</span> <span class="c">#boto does weird import stuff</span>
+    <span class="n">HAS_BOTO</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">HAS_BOTO</span> <span class="o">=</span> <span class="bp">False</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">boto3</span>
+    <span class="kn">import</span> <span class="nn">botocore</span>
+    <span class="n">HAS_BOTO3</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="n">HAS_BOTO3</span> <span class="o">=</span> <span class="bp">False</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">distutils.version</span> <span class="kn">import</span> <span class="n">LooseVersion</span>
+    <span class="n">HAS_LOOSE_VERSION</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="n">HAS_LOOSE_VERSION</span> <span class="o">=</span> <span class="bp">False</span>
+
+
+<div class="viewcode-block" id="AnsibleAWSError"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.ec2.AnsibleAWSError">[docs]</a><span class="k">class</span> <span class="nc">AnsibleAWSError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="boto3_conn"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.ec2.boto3_conn">[docs]</a><span class="k">def</span> <span class="nf">boto3_conn</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">conn_type</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">resource</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">region</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+    <span class="n">profile</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;profile_name&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">conn_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;both&#39;</span><span class="p">,</span> <span class="s">&#39;resource&#39;</span><span class="p">,</span> <span class="s">&#39;client&#39;</span><span class="p">]:</span>
+        <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&#39;There is an issue in the code of the module. You must specify either both, resource or client to the conn_type parameter in the boto3_conn function call&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">conn_type</span> <span class="o">==</span> <span class="s">&#39;resource&#39;</span><span class="p">:</span>
+        <span class="n">resource</span> <span class="o">=</span> <span class="n">boto3</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">Session</span><span class="p">(</span><span class="n">profile_name</span><span class="o">=</span><span class="n">profile</span><span class="p">)</span><span class="o">.</span><span class="n">resource</span><span class="p">(</span><span class="n">resource</span><span class="p">,</span> <span class="n">region_name</span><span class="o">=</span><span class="n">region</span><span class="p">,</span> <span class="n">endpoint_url</span><span class="o">=</span><span class="n">endpoint</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">resource</span>
+    <span class="k">elif</span> <span class="n">conn_type</span> <span class="o">==</span> <span class="s">&#39;client&#39;</span><span class="p">:</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="n">boto3</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">Session</span><span class="p">(</span><span class="n">profile_name</span><span class="o">=</span><span class="n">profile</span><span class="p">)</span><span class="o">.</span><span class="n">client</span><span class="p">(</span><span class="n">resource</span><span class="p">,</span> <span class="n">region_name</span><span class="o">=</span><span class="n">region</span><span class="p">,</span> <span class="n">endpoint_url</span><span class="o">=</span><span class="n">endpoint</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">client</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">resource</span> <span class="o">=</span> <span class="n">boto3</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">Session</span><span class="p">(</span><span class="n">profile_name</span><span class="o">=</span><span class="n">profile</span><span class="p">)</span><span class="o">.</span><span class="n">resource</span><span class="p">(</span><span class="n">resource</span><span class="p">,</span> <span class="n">region_name</span><span class="o">=</span><span class="n">region</span><span class="p">,</span> <span class="n">endpoint_url</span><span class="o">=</span><span class="n">endpoint</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="n">boto3</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">Session</span><span class="p">(</span><span class="n">profile_name</span><span class="o">=</span><span class="n">profile</span><span class="p">)</span><span class="o">.</span><span class="n">client</span><span class="p">(</span><span class="n">resource</span><span class="p">,</span> <span class="n">region_name</span><span class="o">=</span><span class="n">region</span><span class="p">,</span> <span class="n">endpoint_url</span><span class="o">=</span><span class="n">endpoint</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">client</span><span class="p">,</span> <span class="n">resource</span></div>
+
+
+<div class="viewcode-block" id="aws_common_argument_spec"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.ec2.aws_common_argument_spec">[docs]</a><span class="k">def</span> <span class="nf">aws_common_argument_spec</span><span class="p">():</span>
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">ec2_url</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
+        <span class="n">aws_secret_key</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">aliases</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;ec2_secret_key&#39;</span><span class="p">,</span> <span class="s">&#39;secret_key&#39;</span><span class="p">],</span> <span class="n">no_log</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+        <span class="n">aws_access_key</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">aliases</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;ec2_access_key&#39;</span><span class="p">,</span> <span class="s">&#39;access_key&#39;</span><span class="p">]),</span>
+        <span class="n">validate_certs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">),</span>
+        <span class="n">security_token</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">aliases</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;access_token&#39;</span><span class="p">],</span> <span class="n">no_log</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+        <span class="n">profile</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ec2_argument_spec"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.ec2.ec2_argument_spec">[docs]</a><span class="k">def</span> <span class="nf">ec2_argument_spec</span><span class="p">():</span>
+    <span class="n">spec</span> <span class="o">=</span> <span class="n">aws_common_argument_spec</span><span class="p">()</span>
+    <span class="n">spec</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+        <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">region</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">aliases</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;aws_region&#39;</span><span class="p">,</span> <span class="s">&#39;ec2_region&#39;</span><span class="p">]),</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">spec</span></div>
+
+
+<div class="viewcode-block" id="get_aws_connection_info"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.ec2.get_aws_connection_info">[docs]</a><span class="k">def</span> <span class="nf">get_aws_connection_info</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">boto3</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+
+    <span class="c"># Check module args for credentials, then check environment vars</span>
+    <span class="c"># access_key</span>
+
+    <span class="n">ec2_url</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ec2_url&#39;</span><span class="p">)</span>
+    <span class="n">access_key</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;aws_access_key&#39;</span><span class="p">)</span>
+    <span class="n">secret_key</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;aws_secret_key&#39;</span><span class="p">)</span>
+    <span class="n">security_token</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;security_token&#39;</span><span class="p">)</span>
+    <span class="n">region</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;region&#39;</span><span class="p">)</span>
+    <span class="n">profile_name</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;profile&#39;</span><span class="p">)</span>
+    <span class="n">validate_certs</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;validate_certs&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ec2_url</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s">&#39;AWS_URL&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+            <span class="n">ec2_url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;AWS_URL&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="s">&#39;EC2_URL&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+            <span class="n">ec2_url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;EC2_URL&#39;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">access_key</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s">&#39;AWS_ACCESS_KEY_ID&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+            <span class="n">access_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;AWS_ACCESS_KEY_ID&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="s">&#39;AWS_ACCESS_KEY&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+            <span class="n">access_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;AWS_ACCESS_KEY&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="s">&#39;EC2_ACCESS_KEY&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+            <span class="n">access_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;EC2_ACCESS_KEY&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># in case access_key came in as empty string</span>
+            <span class="n">access_key</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">secret_key</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s">&#39;AWS_SECRET_ACCESS_KEY&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+            <span class="n">secret_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;AWS_SECRET_ACCESS_KEY&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="s">&#39;AWS_SECRET_KEY&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+            <span class="n">secret_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;AWS_SECRET_KEY&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="s">&#39;EC2_SECRET_KEY&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+            <span class="n">secret_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;EC2_SECRET_KEY&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># in case secret_key came in as empty string</span>
+            <span class="n">secret_key</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">region</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s">&#39;AWS_REGION&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+            <span class="n">region</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;AWS_REGION&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="s">&#39;AWS_DEFAULT_REGION&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+            <span class="n">region</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;AWS_DEFAULT_REGION&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="s">&#39;EC2_REGION&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+            <span class="n">region</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;EC2_REGION&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">boto3</span><span class="p">:</span>
+                <span class="c"># boto.config.get returns None if config not found</span>
+                <span class="n">region</span> <span class="o">=</span> <span class="n">boto</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;Boto&#39;</span><span class="p">,</span> <span class="s">&#39;aws_region&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">region</span><span class="p">:</span>
+                    <span class="n">region</span> <span class="o">=</span> <span class="n">boto</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;Boto&#39;</span><span class="p">,</span> <span class="s">&#39;ec2_region&#39;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">HAS_BOTO3</span><span class="p">:</span>
+                <span class="c"># here we don&#39;t need to make an additional call, will default to &#39;us-east-1&#39; if the below evaluates to None.</span>
+                <span class="n">region</span> <span class="o">=</span> <span class="n">botocore</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get_session</span><span class="p">()</span><span class="o">.</span><span class="n">get_config_variable</span><span class="p">(</span><span class="s">&#39;region&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;Boto3 is required for this module. Please install boto3 and try again&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">security_token</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s">&#39;AWS_SECURITY_TOKEN&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+            <span class="n">security_token</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;AWS_SECURITY_TOKEN&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="s">&#39;EC2_SECURITY_TOKEN&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+            <span class="n">security_token</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;EC2_SECURITY_TOKEN&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># in case security_token came in as empty string</span>
+            <span class="n">security_token</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">if</span> <span class="n">HAS_BOTO3</span> <span class="ow">and</span> <span class="n">boto3</span><span class="p">:</span>
+        <span class="n">boto_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">aws_access_key_id</span><span class="o">=</span><span class="n">access_key</span><span class="p">,</span>
+                           <span class="n">aws_secret_access_key</span><span class="o">=</span><span class="n">secret_key</span><span class="p">,</span>
+                           <span class="n">aws_session_token</span><span class="o">=</span><span class="n">security_token</span><span class="p">)</span>
+        <span class="n">boto_params</span><span class="p">[</span><span class="s">&#39;verify&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">validate_certs</span>
+
+        <span class="k">if</span> <span class="n">profile_name</span><span class="p">:</span>
+            <span class="n">boto_params</span><span class="p">[</span><span class="s">&#39;profile_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">profile_name</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">boto_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">aws_access_key_id</span><span class="o">=</span><span class="n">access_key</span><span class="p">,</span>
+                           <span class="n">aws_secret_access_key</span><span class="o">=</span><span class="n">secret_key</span><span class="p">,</span>
+                           <span class="n">security_token</span><span class="o">=</span><span class="n">security_token</span><span class="p">)</span>
+
+        <span class="c"># only set profile_name if passed as an argument</span>
+        <span class="k">if</span> <span class="n">profile_name</span><span class="p">:</span>
+            <span class="n">boto_params</span><span class="p">[</span><span class="s">&#39;profile_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">profile_name</span>
+
+        <span class="n">boto_params</span><span class="p">[</span><span class="s">&#39;validate_certs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">validate_certs</span>
+
+    <span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">boto_params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">boto_params</span><span class="p">[</span><span class="n">param</span><span class="p">]</span> <span class="o">=</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s">&#39;utf-8&#39;</span><span class="p">,</span> <span class="s">&#39;strict&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">region</span><span class="p">,</span> <span class="n">ec2_url</span><span class="p">,</span> <span class="n">boto_params</span></div>
+
+
+<div class="viewcode-block" id="get_ec2_creds"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.ec2.get_ec2_creds">[docs]</a><span class="k">def</span> <span class="nf">get_ec2_creds</span><span class="p">(</span><span class="n">module</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; for compatibility mode with old modules that don&#39;t/can&#39;t yet</span>
+<span class="sd">        use ec2_connect method &#39;&#39;&#39;</span>
+    <span class="n">region</span><span class="p">,</span> <span class="n">ec2_url</span><span class="p">,</span> <span class="n">boto_params</span> <span class="o">=</span> <span class="n">get_aws_connection_info</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ec2_url</span><span class="p">,</span> <span class="n">boto_params</span><span class="p">[</span><span class="s">&#39;aws_access_key_id&#39;</span><span class="p">],</span> <span class="n">boto_params</span><span class="p">[</span><span class="s">&#39;aws_secret_access_key&#39;</span><span class="p">],</span> <span class="n">region</span></div>
+
+
+<div class="viewcode-block" id="boto_fix_security_token_in_profile"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.ec2.boto_fix_security_token_in_profile">[docs]</a><span class="k">def</span> <span class="nf">boto_fix_security_token_in_profile</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">profile_name</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; monkey patch for boto issue boto/boto#2100 &#39;&#39;&#39;</span>
+    <span class="n">profile</span> <span class="o">=</span> <span class="s">&#39;profile &#39;</span> <span class="o">+</span> <span class="n">profile_name</span>
+    <span class="k">if</span> <span class="n">boto</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">has_option</span><span class="p">(</span><span class="n">profile</span><span class="p">,</span> <span class="s">&#39;aws_security_token&#39;</span><span class="p">):</span>
+        <span class="n">conn</span><span class="o">.</span><span class="n">provider</span><span class="o">.</span><span class="n">set_security_token</span><span class="p">(</span><span class="n">boto</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">profile</span><span class="p">,</span> <span class="s">&#39;aws_security_token&#39;</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">conn</span></div>
+
+
+<div class="viewcode-block" id="connect_to_aws"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.ec2.connect_to_aws">[docs]</a><span class="k">def</span> <span class="nf">connect_to_aws</span><span class="p">(</span><span class="n">aws_module</span><span class="p">,</span> <span class="n">region</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+    <span class="n">conn</span> <span class="o">=</span> <span class="n">aws_module</span><span class="o">.</span><span class="n">connect_to_region</span><span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">conn</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">region</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">aws_module_region</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">aws_module_region</span> <span class="ow">in</span> <span class="n">aws_module</span><span class="o">.</span><span class="n">regions</span><span class="p">()]:</span>
+            <span class="k">raise</span> <span class="n">AnsibleAWSError</span><span class="p">(</span><span class="s">&quot;Region </span><span class="si">%s</span><span class="s"> does not seem to be available for aws module </span><span class="si">%s</span><span class="s">. If the region definitely exists, you may need to upgrade boto or extend with endpoints_path&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="n">aws_module</span><span class="o">.</span><span class="n">__name__</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleAWSError</span><span class="p">(</span><span class="s">&quot;Unknown problem connecting to region </span><span class="si">%s</span><span class="s"> for aws module </span><span class="si">%s</span><span class="s">.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="n">aws_module</span><span class="o">.</span><span class="n">__name__</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;profile_name&#39;</span><span class="p">):</span>
+        <span class="n">conn</span> <span class="o">=</span> <span class="n">boto_fix_security_token_in_profile</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s">&#39;profile_name&#39;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">conn</span></div>
+
+
+<div class="viewcode-block" id="ec2_connect"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.ec2.ec2_connect">[docs]</a><span class="k">def</span> <span class="nf">ec2_connect</span><span class="p">(</span><span class="n">module</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot; Return an ec2 connection&quot;&quot;&quot;</span>
+
+    <span class="n">region</span><span class="p">,</span> <span class="n">ec2_url</span><span class="p">,</span> <span class="n">boto_params</span> <span class="o">=</span> <span class="n">get_aws_connection_info</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+
+    <span class="c"># If we have a region specified, connect to its endpoint.</span>
+    <span class="k">if</span> <span class="n">region</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ec2</span> <span class="o">=</span> <span class="n">connect_to_aws</span><span class="p">(</span><span class="n">boto</span><span class="o">.</span><span class="n">ec2</span><span class="p">,</span> <span class="n">region</span><span class="p">,</span> <span class="o">**</span><span class="n">boto_params</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">boto</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">NoAuthHandlerFound</span><span class="p">,</span> <span class="n">AnsibleAWSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+    <span class="c"># Otherwise, no region so we fallback to the old connection method</span>
+    <span class="k">elif</span> <span class="n">ec2_url</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ec2</span> <span class="o">=</span> <span class="n">boto</span><span class="o">.</span><span class="n">connect_ec2_endpoint</span><span class="p">(</span><span class="n">ec2_url</span><span class="p">,</span> <span class="o">**</span><span class="n">boto_params</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">boto</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">NoAuthHandlerFound</span><span class="p">,</span> <span class="n">AnsibleAWSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">module</span><span class="o">.</span><span class="n">fail_json</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&quot;Either region or ec2_url must be specified&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ec2</span></div>
+
+<div class="viewcode-block" id="paging"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.ec2.paging">[docs]</a><span class="k">def</span> <span class="nf">paging</span><span class="p">(</span><span class="n">pause</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">marker_property</span><span class="o">=</span><span class="s">&#39;marker&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Adds paging to boto retrieval functions that support a &#39;marker&#39;</span>
+<span class="sd">        this is configurable as not all boto functions seem to use the</span>
+<span class="sd">        same name.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">page</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">marker</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">new</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="n">marker</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                    <span class="n">marker</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">new</span><span class="p">,</span> <span class="n">marker_property</span><span class="p">)</span>
+                    <span class="n">results</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">new</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">marker</span><span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="k">elif</span> <span class="n">pause</span><span class="p">:</span>
+                        <span class="n">sleep</span><span class="p">(</span><span class="n">pause</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                    <span class="c"># Older version of boto do not allow for marker param, just run normally</span>
+                    <span class="n">results</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                    <span class="k">break</span>
+            <span class="k">return</span> <span class="n">results</span>
+        <span class="k">return</span> <span class="n">page</span>
+    <span class="k">return</span> <span class="n">wrapper</span></div>
+
+
+<div class="viewcode-block" id="camel_dict_to_snake_dict"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.ec2.camel_dict_to_snake_dict">[docs]</a><span class="k">def</span> <span class="nf">camel_dict_to_snake_dict</span><span class="p">(</span><span class="n">camel_dict</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">camel_to_snake</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+
+        <span class="kn">import</span> <span class="nn">re</span>
+
+        <span class="n">first_cap_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">&#39;(.)([A-Z][a-z]+)&#39;</span><span class="p">)</span>
+        <span class="n">all_cap_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">&#39;([a-z0-9])([A-Z])&#39;</span><span class="p">)</span>
+        <span class="n">s1</span> <span class="o">=</span> <span class="n">first_cap_re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">r&#39;\1_\2&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">all_cap_re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">r&#39;\1_\2&#39;</span><span class="p">,</span> <span class="n">s1</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+
+    <span class="k">def</span> <span class="nf">value_is_list</span><span class="p">(</span><span class="n">camel_list</span><span class="p">):</span>
+
+        <span class="n">checked_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">camel_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">checked_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">camel_dict_to_snake_dict</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">checked_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value_is_list</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">checked_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">checked_list</span>
+
+
+    <span class="n">snake_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">camel_dict</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">snake_dict</span><span class="p">[</span><span class="n">camel_to_snake</span><span class="p">(</span><span class="n">k</span><span class="p">)]</span> <span class="o">=</span> <span class="n">camel_dict_to_snake_dict</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">snake_dict</span><span class="p">[</span><span class="n">camel_to_snake</span><span class="p">(</span><span class="n">k</span><span class="p">)]</span> <span class="o">=</span> <span class="n">value_is_list</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">snake_dict</span><span class="p">[</span><span class="n">camel_to_snake</span><span class="p">(</span><span class="n">k</span><span class="p">)]</span> <span class="o">=</span> <span class="n">v</span>
+
+    <span class="k">return</span> <span class="n">snake_dict</span></div>
+
+
+<div class="viewcode-block" id="ansible_dict_to_boto3_filter_list"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.ec2.ansible_dict_to_boto3_filter_list">[docs]</a><span class="k">def</span> <span class="nf">ansible_dict_to_boto3_filter_list</span><span class="p">(</span><span class="n">filters_dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert :filters_dict: (an Ansible dict of filters) to a list of dicts that :boto3: can use.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        filters_dict (dict): Dict of AWS filters.</span>
+
+<span class="sd">    Basic Usage::</span>
+
+<span class="sd">        &gt;&gt;&gt; filters = {&#39;some-aws-id&#39;, &#39;i-01234567&#39;}</span>
+<span class="sd">        &gt;&gt;&gt; ansible_dict_to_boto3_filter_list(filters)</span>
+<span class="sd">        {</span>
+<span class="sd">            &#39;some-aws-id&#39;: &#39;i-01234567&#39;</span>
+<span class="sd">        }</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List: List of AWS filters and their values</span>
+<span class="sd">        ::</span>
+
+<span class="sd">        [</span>
+<span class="sd">            {</span>
+<span class="sd">                &#39;Name&#39;: &#39;some-aws-id&#39;,</span>
+<span class="sd">                &#39;Values&#39;: [</span>
+<span class="sd">                    &#39;i-01234567&#39;,</span>
+<span class="sd">                ]</span>
+<span class="sd">            }</span>
+<span class="sd">        ]</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">filters_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">filters_dict</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="n">filter_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;Name&#39;</span><span class="p">:</span> <span class="n">k</span><span class="p">}</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+            <span class="n">filter_dict</span><span class="p">[</span><span class="s">&#39;Values&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">filter_dict</span><span class="p">[</span><span class="s">&#39;Values&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+
+        <span class="n">filters_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">filter_dict</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">filters_list</span></div>
+
+
+<div class="viewcode-block" id="boto3_tag_list_to_ansible_dict"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.ec2.boto3_tag_list_to_ansible_dict">[docs]</a><span class="k">def</span> <span class="nf">boto3_tag_list_to_ansible_dict</span><span class="p">(</span><span class="n">tags_list</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot; Convert a boto3 list of resource tags to a flat dict of key:value pairs</span>
+<span class="sd">    Args:</span>
+<span class="sd">        tags_list (list): List of dicts representing AWS tags.</span>
+<span class="sd">    Basic Usage:</span>
+<span class="sd">        &gt;&gt;&gt; tags_list = [{&#39;Key&#39;: &#39;MyTagKey&#39;, &#39;Value&#39;: &#39;MyTagValue&#39;}]</span>
+<span class="sd">        &gt;&gt;&gt; boto3_tag_list_to_ansible_dict(tags_list)</span>
+<span class="sd">        [</span>
+<span class="sd">            {</span>
+<span class="sd">                &#39;Key&#39;: &#39;MyTagKey&#39;,</span>
+<span class="sd">                &#39;Value&#39;: &#39;MyTagValue&#39;</span>
+<span class="sd">            }</span>
+<span class="sd">        ]</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Dict: Dict of key:value pairs representing AWS tags</span>
+<span class="sd">         {</span>
+<span class="sd">            &#39;MyTagKey&#39;: &#39;MyTagValue&#39;,</span>
+<span class="sd">        }</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">tags_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">tags_list</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s">&#39;key&#39;</span> <span class="ow">in</span> <span class="n">tag</span><span class="p">:</span>
+            <span class="n">tags_dict</span><span class="p">[</span><span class="n">tag</span><span class="p">[</span><span class="s">&#39;key&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">tag</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="s">&#39;Key&#39;</span> <span class="ow">in</span> <span class="n">tag</span><span class="p">:</span>
+            <span class="n">tags_dict</span><span class="p">[</span><span class="n">tag</span><span class="p">[</span><span class="s">&#39;Key&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">tag</span><span class="p">[</span><span class="s">&#39;Value&#39;</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">tags_dict</span></div>
+
+
+<div class="viewcode-block" id="ansible_dict_to_boto3_tag_list"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.ec2.ansible_dict_to_boto3_tag_list">[docs]</a><span class="k">def</span> <span class="nf">ansible_dict_to_boto3_tag_list</span><span class="p">(</span><span class="n">tags_dict</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot; Convert a flat dict of key:value pairs representing AWS resource tags to a boto3 list of dicts</span>
+<span class="sd">    Args:</span>
+<span class="sd">        tags_dict (dict): Dict representing AWS resource tags.</span>
+<span class="sd">    Basic Usage:</span>
+<span class="sd">        &gt;&gt;&gt; tags_dict = {&#39;MyTagKey&#39;: &#39;MyTagValue&#39;}</span>
+<span class="sd">        &gt;&gt;&gt; ansible_dict_to_boto3_tag_list(tags_dict)</span>
+<span class="sd">        {</span>
+<span class="sd">            &#39;MyTagKey&#39;: &#39;MyTagValue&#39;</span>
+<span class="sd">        }</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        List: List of dicts containing tag keys and values</span>
+<span class="sd">        [</span>
+<span class="sd">            {</span>
+<span class="sd">                &#39;Key&#39;: &#39;MyTagKey&#39;,</span>
+<span class="sd">                &#39;Value&#39;: &#39;MyTagValue&#39;</span>
+<span class="sd">            }</span>
+<span class="sd">        ]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">tags_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">tags_dict</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="n">tags_list</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s">&#39;Key&#39;</span><span class="p">:</span> <span class="n">k</span><span class="p">,</span> <span class="s">&#39;Value&#39;</span><span class="p">:</span> <span class="n">v</span><span class="p">})</span>
+
+    <span class="k">return</span> <span class="n">tags_list</span></div>
+
+
+<div class="viewcode-block" id="get_ec2_security_group_ids_from_names"><a class="viewcode-back" href="../../../rst/ansible.module_utils.html#ansible.module_utils.ec2.get_ec2_security_group_ids_from_names">[docs]</a><span class="k">def</span> <span class="nf">get_ec2_security_group_ids_from_names</span><span class="p">(</span><span class="n">sec_group_list</span><span class="p">,</span> <span class="n">ec2_connection</span><span class="p">,</span> <span class="n">vpc_id</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">boto3</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot; Return list of security group IDs from security group names. Note that security group names are not unique</span>
+<span class="sd">     across VPCs.  If a name exists across multiple VPCs and no VPC ID is supplied, all matching IDs will be returned. This</span>
+<span class="sd">     will probably lead to a boto exception if you attempt to assign both IDs to a resource so ensure you wrap the call in</span>
+<span class="sd">     a try block</span>
+<span class="sd">     &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">get_sg_name</span><span class="p">(</span><span class="n">sg</span><span class="p">,</span> <span class="n">boto3</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">boto3</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">sg</span><span class="p">[</span><span class="s">&#39;GroupName&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">sg</span><span class="o">.</span><span class="n">name</span>
+
+
+    <span class="k">def</span> <span class="nf">get_sg_id</span><span class="p">(</span><span class="n">sg</span><span class="p">,</span> <span class="n">boto3</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">boto3</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">sg</span><span class="p">[</span><span class="s">&#39;GroupId&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">sg</span><span class="o">.</span><span class="n">id</span>
+
+
+    <span class="n">sec_group_id_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sec_group_list</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+        <span class="n">sec_group_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">sec_group_list</span><span class="p">]</span>
+
+    <span class="c"># Get all security groups</span>
+    <span class="k">if</span> <span class="n">boto3</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">vpc_id</span><span class="p">:</span>
+            <span class="n">filters</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="s">&#39;Name&#39;</span><span class="p">:</span> <span class="s">&#39;vpc-id&#39;</span><span class="p">,</span>
+                    <span class="s">&#39;Values&#39;</span><span class="p">:</span> <span class="p">[</span>
+                        <span class="n">vpc_id</span><span class="p">,</span>
+                    <span class="p">]</span>
+                <span class="p">}</span>
+            <span class="p">]</span>
+            <span class="n">all_sec_groups</span> <span class="o">=</span> <span class="n">ec2_connection</span><span class="o">.</span><span class="n">describe_security_groups</span><span class="p">(</span><span class="n">Filters</span><span class="o">=</span><span class="n">filters</span><span class="p">)[</span><span class="s">&#39;SecurityGroups&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">all_sec_groups</span> <span class="o">=</span> <span class="n">ec2_connection</span><span class="o">.</span><span class="n">describe_security_groups</span><span class="p">()[</span><span class="s">&#39;SecurityGroups&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">vpc_id</span><span class="p">:</span>
+            <span class="n">filters</span> <span class="o">=</span> <span class="p">{</span> <span class="s">&#39;vpc-id&#39;</span><span class="p">:</span> <span class="n">vpc_id</span> <span class="p">}</span>
+            <span class="n">all_sec_groups</span> <span class="o">=</span> <span class="n">ec2_connection</span><span class="o">.</span><span class="n">get_all_security_groups</span><span class="p">(</span><span class="n">filters</span><span class="o">=</span><span class="n">filters</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">all_sec_groups</span> <span class="o">=</span> <span class="n">ec2_connection</span><span class="o">.</span><span class="n">get_all_security_groups</span><span class="p">()</span>
+
+    <span class="n">unmatched</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">sec_group_list</span><span class="p">)</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">get_sg_name</span><span class="p">(</span><span class="n">all_sg</span><span class="p">,</span> <span class="n">boto3</span><span class="p">))</span> <span class="k">for</span> <span class="n">all_sg</span> <span class="ow">in</span> <span class="n">all_sec_groups</span><span class="p">)</span>
+    <span class="n">sec_group_name_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">sec_group_list</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">unmatched</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">unmatched</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c"># If we have unmatched names that look like an ID, assume they are</span>
+        <span class="kn">import</span> <span class="nn">re</span>
+        <span class="n">sec_group_id_list</span><span class="p">[:]</span> <span class="o">=</span> <span class="p">[</span><span class="n">sg</span> <span class="k">for</span> <span class="n">sg</span> <span class="ow">in</span> <span class="n">unmatched</span> <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">&#39;sg-[a-fA-F0-9]+$&#39;</span><span class="p">,</span> <span class="n">sg</span><span class="p">)]</span>
+        <span class="n">still_unmatched</span> <span class="o">=</span> <span class="p">[</span><span class="n">sg</span> <span class="k">for</span> <span class="n">sg</span> <span class="ow">in</span> <span class="n">unmatched</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">&#39;sg-[a-fA-F0-9]+$&#39;</span><span class="p">,</span> <span class="n">sg</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">still_unmatched</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;The following group names are not valid: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">still_unmatched</span><span class="p">))</span>
+
+    <span class="n">sec_group_id_list</span> <span class="o">+=</span> <span class="p">[</span> <span class="nb">str</span><span class="p">(</span><span class="n">get_sg_id</span><span class="p">(</span><span class="n">all_sg</span><span class="p">,</span> <span class="n">boto3</span><span class="p">))</span> <span class="k">for</span> <span class="n">all_sg</span> <span class="ow">in</span> <span class="n">all_sec_groups</span> <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">get_sg_name</span><span class="p">(</span><span class="n">all_sg</span><span class="p">,</span> <span class="n">boto3</span><span class="p">))</span> <span class="ow">in</span> <span class="n">sec_group_name_list</span> <span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">sec_group_id_list</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,643 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.cli.console &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="ansible.cli" href="../cli.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../cli.html">ansible.cli</a> &raquo;</li>
+      
+    <li>ansible.cli.console</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.cli.console</h1><div class="highlight"><pre>
+<span class="c"># (c) 2014, Nandor Sivok &lt;dominis@haxor.hu&gt;</span>
+<span class="c"># (c) 2016, Redhat Inc</span>
+<span class="c">#</span>
+<span class="c"># ansible-console is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># ansible-console is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+<span class="c">#</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="c">########################################################</span>
+<span class="c"># ansible-console is an interactive REPL shell for ansible</span>
+<span class="c"># with built-in tab completion for all the documented modules</span>
+<span class="c">#</span>
+<span class="c"># Available commands:</span>
+<span class="c">#  cd - change host/group (you can use host patterns eg.: app*.dc*:!app01*)</span>
+<span class="c">#  list - list available hosts in the current path</span>
+<span class="c">#  forks - change fork</span>
+<span class="c">#  become - become</span>
+<span class="c">#  ! - forces shell module instead of the ansible module (!yum update -y)</span>
+
+<span class="kn">import</span> <span class="nn">atexit</span>
+<span class="kn">import</span> <span class="nn">cmd</span>
+<span class="kn">import</span> <span class="nn">getpass</span>
+<span class="kn">import</span> <span class="nn">readline</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.cli</span> <span class="kn">import</span> <span class="n">CLI</span>
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span>
+
+<span class="kn">from</span> <span class="nn">ansible.executor.task_queue_manager</span> <span class="kn">import</span> <span class="n">TaskQueueManager</span>
+<span class="kn">from</span> <span class="nn">ansible.inventory</span> <span class="kn">import</span> <span class="n">Inventory</span>
+<span class="kn">from</span> <span class="nn">ansible.parsing.dataloader</span> <span class="kn">import</span> <span class="n">DataLoader</span>
+<span class="kn">from</span> <span class="nn">ansible.parsing.splitter</span> <span class="kn">import</span> <span class="n">parse_kv</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.play</span> <span class="kn">import</span> <span class="n">Play</span>
+<span class="kn">from</span> <span class="nn">ansible.vars</span> <span class="kn">import</span> <span class="n">VariableManager</span>
+<span class="kn">from</span> <span class="nn">ansible.utils</span> <span class="kn">import</span> <span class="n">module_docs</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.color</span> <span class="kn">import</span> <span class="n">stringc</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.unicode</span> <span class="kn">import</span> <span class="n">to_unicode</span><span class="p">,</span> <span class="n">to_str</span>
+<span class="kn">from</span> <span class="nn">ansible.plugins</span> <span class="kn">import</span> <span class="n">module_loader</span>
+
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="ConsoleCLI"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.console.ConsoleCLI">[docs]</a><span class="k">class</span> <span class="nc">ConsoleCLI</span><span class="p">(</span><span class="n">CLI</span><span class="p">,</span> <span class="n">cmd</span><span class="o">.</span><span class="n">Cmd</span><span class="p">):</span>
+
+    <span class="n">modules</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">ConsoleCLI</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">intro</span> <span class="o">=</span> <span class="s">&#39;Welcome to the ansible console.</span><span class="se">\n</span><span class="s">Type help or ? to list commands.</span><span class="se">\n</span><span class="s">&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">groups</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hosts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">variable_manager</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loader</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">passwords</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">modules</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">Cmd</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ConsoleCLI.parse"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.console.ConsoleCLI.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span> <span class="o">=</span> <span class="n">CLI</span><span class="o">.</span><span class="n">base_parser</span><span class="p">(</span>
+            <span class="n">usage</span><span class="o">=</span><span class="s">&#39;%prog &lt;host-pattern&gt; [options]&#39;</span><span class="p">,</span>
+            <span class="n">runas_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">inventory_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">connect_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">check_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">vault_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">fork_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">module_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c"># options unique to shell</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;--step&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;step&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s">&quot;one-step-at-a-time: confirm each task before running&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">set_defaults</span><span class="p">(</span><span class="n">cwd</span><span class="o">=</span><span class="s">&#39;*&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">verbosity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">validate_conflicts</span><span class="p">(</span><span class="n">runas_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">vault_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">fork_opts</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">True</span></div>
+
+<div class="viewcode-block" id="ConsoleCLI.get_names"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.console.ConsoleCLI.get_names">[docs]</a>    <span class="k">def</span> <span class="nf">get_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">dir</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConsoleCLI.cmdloop"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.console.ConsoleCLI.cmdloop">[docs]</a>    <span class="k">def</span> <span class="nf">cmdloop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">cmd</span><span class="o">.</span><span class="n">Cmd</span><span class="o">.</span><span class="n">cmdloop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">do_exit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConsoleCLI.set_prompt"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.console.ConsoleCLI.set_prompt">[docs]</a>    <span class="k">def</span> <span class="nf">set_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">login_user</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">remote_user</span> <span class="ow">or</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getuser</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selected</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inventory</span><span class="o">.</span><span class="n">list_hosts</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">cwd</span><span class="p">)</span>
+        <span class="n">prompt</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">@</span><span class="si">%s</span><span class="s"> (</span><span class="si">%d</span><span class="s">)[f:</span><span class="si">%s</span><span class="s">]&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">login_user</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">cwd</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">forks</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">become</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">become_user</span> <span class="ow">in</span> <span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="s">&#39;root&#39;</span><span class="p">]:</span>
+            <span class="n">prompt</span> <span class="o">+=</span> <span class="s">&quot;# &quot;</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">COLOR_ERROR</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">prompt</span> <span class="o">+=</span> <span class="s">&quot;$ &quot;</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">COLOR_HIGHLIGHT</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prompt</span> <span class="o">=</span> <span class="n">stringc</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">color</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConsoleCLI.list_modules"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.console.ConsoleCLI.list_modules">[docs]</a>    <span class="k">def</span> <span class="nf">list_modules</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">modules</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">module_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">module_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">pathsep</span><span class="p">):</span>
+                <span class="n">module_loader</span><span class="o">.</span><span class="n">add_directory</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+
+        <span class="n">module_paths</span> <span class="o">=</span> <span class="n">module_loader</span><span class="o">.</span><span class="n">_get_paths</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">module_paths</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">modules</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_find_modules_in_path</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">modules</span></div>
+
+    <span class="k">def</span> <span class="nf">_find_modules_in_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">module</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">module</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_find_modules_in_path</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">module</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;__&#39;</span><span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="k">elif</span> <span class="nb">any</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">C</span><span class="o">.</span><span class="n">BLACKLIST_EXTS</span><span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="k">elif</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">C</span><span class="o">.</span><span class="n">IGNORE_FILES</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">elif</span> <span class="n">module</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">):</span>
+                    <span class="n">fullpath</span> <span class="o">=</span> <span class="s">&#39;/&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">path</span><span class="p">,</span><span class="n">module</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">islink</span><span class="p">(</span><span class="n">fullpath</span><span class="p">):</span> <span class="c"># avoids aliases</span>
+                        <span class="k">continue</span>
+                    <span class="n">module</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+                <span class="n">module</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">module</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="c"># removes the extension</span>
+                <span class="k">yield</span> <span class="n">module</span>
+
+<div class="viewcode-block" id="ConsoleCLI.default"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.console.ConsoleCLI.default">[docs]</a>    <span class="k">def</span> <span class="nf">default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">,</span> <span class="n">forceshell</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; actually runs modules &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">arg</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&quot;#&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">cwd</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;No host found&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="n">arg</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+            <span class="n">module</span> <span class="o">=</span> <span class="n">arg</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">module_args</span> <span class="o">=</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">module</span> <span class="o">=</span> <span class="s">&#39;shell&#39;</span>
+            <span class="n">module_args</span> <span class="o">=</span> <span class="n">arg</span>
+
+        <span class="k">if</span> <span class="n">forceshell</span> <span class="ow">is</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="n">module</span> <span class="o">=</span> <span class="s">&#39;shell&#39;</span>
+            <span class="n">module_args</span> <span class="o">=</span> <span class="n">arg</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">module_name</span> <span class="o">=</span> <span class="n">module</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">check_raw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">module_name</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;command&#39;</span><span class="p">,</span> <span class="s">&#39;shell&#39;</span><span class="p">,</span> <span class="s">&#39;script&#39;</span><span class="p">,</span> <span class="s">&#39;raw&#39;</span><span class="p">)</span>
+            <span class="n">play_ds</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;Ansible Shell&quot;</span><span class="p">,</span>
+                <span class="n">hosts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">cwd</span><span class="p">,</span>
+                <span class="n">gather_facts</span> <span class="o">=</span> <span class="s">&#39;no&#39;</span><span class="p">,</span>
+                <span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span> <span class="nb">dict</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">module</span><span class="o">=</span><span class="n">module</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">parse_kv</span><span class="p">(</span><span class="n">module_args</span><span class="p">,</span> <span class="n">check_raw</span><span class="o">=</span><span class="n">check_raw</span><span class="p">)))]</span>
+            <span class="p">)</span>
+            <span class="n">play</span> <span class="o">=</span> <span class="n">Play</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">play_ds</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">variable_manager</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loader</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">u&quot;Unable to build command: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">cb</span> <span class="o">=</span> <span class="s">&#39;minimal&#39;</span> <span class="c">#FIXME: make callbacks configurable</span>
+            <span class="c"># now create a task queue manager to execute the play</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span> <span class="o">=</span> <span class="n">TaskQueueManager</span><span class="p">(</span>
+                        <span class="n">inventory</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inventory</span><span class="p">,</span>
+                        <span class="n">variable_manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">variable_manager</span><span class="p">,</span>
+                        <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loader</span><span class="p">,</span>
+                        <span class="n">options</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">,</span>
+                        <span class="n">passwords</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">passwords</span><span class="p">,</span>
+                        <span class="n">stdout_callback</span><span class="o">=</span><span class="n">cb</span><span class="p">,</span>
+                        <span class="n">run_additional_callbacks</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_LOAD_CALLBACK_PLUGINS</span><span class="p">,</span>
+                        <span class="n">run_tree</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+                <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">play</span><span class="p">)</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">loader</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">cleanup_all_tmp_files</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;No hosts found&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;User interrupted execution&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">to_unicode</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+            <span class="c">#FIXME: add traceback in very very verbose mode</span>
+            <span class="k">return</span> <span class="bp">False</span></div>
+
+<div class="viewcode-block" id="ConsoleCLI.emptyline"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.console.ConsoleCLI.emptyline">[docs]</a>    <span class="k">def</span> <span class="nf">emptyline</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span></div>
+
+<div class="viewcode-block" id="ConsoleCLI.do_shell"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.console.ConsoleCLI.do_shell">[docs]</a>    <span class="k">def</span> <span class="nf">do_shell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        You can run shell commands through the shell module.</span>
+
+<span class="sd">        eg.:</span>
+<span class="sd">        shell ps uax | grep java | wc -l</span>
+<span class="sd">        shell killall python</span>
+<span class="sd">        shell halt -n</span>
+
+<span class="sd">        You can use the ! to force the shell module. eg.:</span>
+<span class="sd">        !ps aux | grep java | wc -l</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConsoleCLI.do_forks"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.console.ConsoleCLI.do_forks">[docs]</a>    <span class="k">def</span> <span class="nf">do_forks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the number of forks&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">arg</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&#39;Usage: forks &lt;number&gt;&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">forks</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_prompt</span><span class="p">()</span></div>
+
+    <span class="n">do_serial</span> <span class="o">=</span> <span class="n">do_forks</span>
+
+<div class="viewcode-block" id="ConsoleCLI.do_verbosity"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.console.ConsoleCLI.do_verbosity">[docs]</a>    <span class="k">def</span> <span class="nf">do_verbosity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set verbosity level&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">arg</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&#39;Usage: verbosity &lt;number&gt;&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">v</span><span class="p">(</span><span class="s">&#39;verbosity level set to </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">arg</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConsoleCLI.do_cd"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.console.ConsoleCLI.do_cd">[docs]</a>    <span class="k">def</span> <span class="nf">do_cd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Change active host/group. You can use hosts patterns as well eg.:</span>
+<span class="sd">            cd webservers</span>
+<span class="sd">            cd webservers:dbservers</span>
+<span class="sd">            cd webservers:!phoenix</span>
+<span class="sd">            cd webservers:&amp;staging</span>
+<span class="sd">            cd webservers:dbservers:&amp;staging:!phoenix</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">arg</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">cwd</span> <span class="o">=</span> <span class="s">&#39;*&#39;</span>
+        <span class="k">elif</span> <span class="n">arg</span> <span class="o">==</span> <span class="s">&#39;..&#39;</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">cwd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inventory</span><span class="o">.</span><span class="n">groups_for_host</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">cwd</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">cwd</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="k">elif</span> <span class="n">arg</span> <span class="ow">in</span> <span class="s">&#39;/*&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">cwd</span> <span class="o">=</span> <span class="s">&#39;all&#39;</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">inventory</span><span class="o">.</span><span class="n">get_hosts</span><span class="p">(</span><span class="n">arg</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">cwd</span> <span class="o">=</span> <span class="n">arg</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;no host matched&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_prompt</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ConsoleCLI.do_list"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.console.ConsoleCLI.do_list">[docs]</a>    <span class="k">def</span> <span class="nf">do_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;List the hosts in the current group&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">arg</span> <span class="o">==</span> <span class="s">&#39;groups&#39;</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">host</span><span class="o">.</span><span class="n">name</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConsoleCLI.do_become"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.console.ConsoleCLI.do_become">[docs]</a>    <span class="k">def</span> <span class="nf">do_become</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Toggle whether plays run with become&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">arg</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">become_user</span> <span class="o">=</span> <span class="n">arg</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">v</span><span class="p">(</span><span class="s">&quot;become changed to </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">become</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_prompt</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;Please specify become value, e.g. `become yes`&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConsoleCLI.do_remote_user"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.console.ConsoleCLI.do_remote_user">[docs]</a>    <span class="k">def</span> <span class="nf">do_remote_user</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Given a username, set the remote user plays are run by&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">arg</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">remote_user</span> <span class="o">=</span> <span class="n">arg</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_prompt</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;Please specify a remote user, e.g. `remote_user root`&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConsoleCLI.do_become_user"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.console.ConsoleCLI.do_become_user">[docs]</a>    <span class="k">def</span> <span class="nf">do_become_user</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Given a username, set the user that plays are run by when using become&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">arg</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">become_user</span> <span class="o">=</span> <span class="n">arg</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;Please specify a user, e.g. `become_user jenkins`&quot;</span><span class="p">)</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">v</span><span class="p">(</span><span class="s">&quot;Current user is </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">become_user</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_prompt</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ConsoleCLI.do_become_method"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.console.ConsoleCLI.do_become_method">[docs]</a>    <span class="k">def</span> <span class="nf">do_become_method</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Given a become_method, set the privilege escalation method when using become&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">arg</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">become_method</span> <span class="o">=</span> <span class="n">arg</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">v</span><span class="p">(</span><span class="s">&quot;become_method changed to </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">become_method</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&quot;Please specify a become_method, e.g. `become_method su`&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConsoleCLI.do_exit"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.console.ConsoleCLI.do_exit">[docs]</a>    <span class="k">def</span> <span class="nf">do_exit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Exits from the console&quot;&quot;&quot;</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span></div>
+
+    <span class="n">do_EOF</span> <span class="o">=</span> <span class="n">do_exit</span>
+
+<div class="viewcode-block" id="ConsoleCLI.helpdefault"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.console.ConsoleCLI.helpdefault">[docs]</a>    <span class="k">def</span> <span class="nf">helpdefault</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module_name</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">module_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+            <span class="n">in_path</span> <span class="o">=</span> <span class="n">module_loader</span><span class="o">.</span><span class="n">find_plugin</span><span class="p">(</span><span class="n">module_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">in_path</span><span class="p">:</span>
+                <span class="n">oc</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">module_docs</span><span class="o">.</span><span class="n">get_docstring</span><span class="p">(</span><span class="n">in_path</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">oc</span><span class="p">:</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">oc</span><span class="p">[</span><span class="s">&#39;short_description&#39;</span><span class="p">])</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&#39;Parameters:&#39;</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">opt</span> <span class="ow">in</span> <span class="n">oc</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="s">&#39;  &#39;</span> <span class="o">+</span> <span class="n">stringc</span><span class="p">(</span><span class="n">opt</span><span class="p">,</span> <span class="n">C</span><span class="o">.</span><span class="n">COLOR_HIGHLIGHT</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39; &#39;</span> <span class="o">+</span> <span class="n">oc</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="n">opt</span><span class="p">][</span><span class="s">&#39;description&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;No documentation found for </span><span class="si">%s</span><span class="s">.&#39;</span> <span class="o">%</span> <span class="n">module_name</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">display</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> is not a valid command, use ? to list all valid commands.&#39;</span> <span class="o">%</span> <span class="n">module_name</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConsoleCLI.complete_cd"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.console.ConsoleCLI.complete_cd">[docs]</a>    <span class="k">def</span> <span class="nf">complete_cd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">begidx</span><span class="p">,</span> <span class="n">endidx</span><span class="p">):</span>
+        <span class="n">mline</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">offs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">mline</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">cwd</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;all&#39;</span><span class="p">,</span><span class="s">&#39;*&#39;</span><span class="p">,</span><span class="s">&#39;</span><span class="se">\\</span><span class="s">&#39;</span><span class="p">):</span>
+            <span class="n">completions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hosts</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">completions</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inventory</span><span class="o">.</span><span class="n">list_hosts</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">cwd</span><span class="p">)]</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="n">to_str</span><span class="p">(</span><span class="n">s</span><span class="p">)[</span><span class="n">offs</span><span class="p">:]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">completions</span> <span class="k">if</span> <span class="n">to_str</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">to_str</span><span class="p">(</span><span class="n">mline</span><span class="p">))]</span></div>
+
+<div class="viewcode-block" id="ConsoleCLI.completedefault"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.console.ConsoleCLI.completedefault">[docs]</a>    <span class="k">def</span> <span class="nf">completedefault</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">begidx</span><span class="p">,</span> <span class="n">endidx</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+            <span class="n">mline</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">offs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">mline</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+            <span class="n">completions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module_args</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+
+            <span class="k">return</span> <span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="n">offs</span><span class="p">:]</span> <span class="o">+</span> <span class="s">&#39;=&#39;</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">completions</span> <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">mline</span><span class="p">)]</span></div>
+
+<div class="viewcode-block" id="ConsoleCLI.module_args"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.console.ConsoleCLI.module_args">[docs]</a>    <span class="k">def</span> <span class="nf">module_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module_name</span><span class="p">):</span>
+        <span class="n">in_path</span> <span class="o">=</span> <span class="n">module_loader</span><span class="o">.</span><span class="n">find_plugin</span><span class="p">(</span><span class="n">module_name</span><span class="p">)</span>
+        <span class="n">oc</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">module_docs</span><span class="o">.</span><span class="n">get_docstring</span><span class="p">(</span><span class="n">in_path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">oc</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ConsoleCLI.run"><a class="viewcode-back" href="../../../rst/ansible.cli.html#ansible.cli.console.ConsoleCLI.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">ConsoleCLI</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+        <span class="n">sshpass</span>    <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">becomepass</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">vault_pass</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="c"># hosts</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span> <span class="o">=</span> <span class="s">&#39;all&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">cwd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span>
+
+
+        <span class="c"># dynamically add modules as commands</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">modules</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_modules</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;do_&#39;</span> <span class="o">+</span> <span class="n">module</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">arg</span><span class="p">,</span> <span class="n">module</span><span class="o">=</span><span class="n">module</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">default</span><span class="p">(</span><span class="n">module</span> <span class="o">+</span> <span class="s">&#39; &#39;</span> <span class="o">+</span> <span class="n">arg</span><span class="p">))</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;help_&#39;</span> <span class="o">+</span> <span class="n">module</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">module</span><span class="o">=</span><span class="n">module</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">helpdefault</span><span class="p">(</span><span class="n">module</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">normalize_become_options</span><span class="p">()</span>
+        <span class="p">(</span><span class="n">sshpass</span><span class="p">,</span> <span class="n">becomepass</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ask_passwords</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">passwords</span> <span class="o">=</span> <span class="p">{</span> <span class="s">&#39;conn_pass&#39;</span><span class="p">:</span> <span class="n">sshpass</span><span class="p">,</span> <span class="s">&#39;become_pass&#39;</span><span class="p">:</span> <span class="n">becomepass</span> <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">loader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">vault_password_file</span><span class="p">:</span>
+            <span class="c"># read vault_pass from a file</span>
+            <span class="n">vault_pass</span> <span class="o">=</span> <span class="n">CLI</span><span class="o">.</span><span class="n">read_vault_password_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">vault_password_file</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loader</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">set_vault_password</span><span class="p">(</span><span class="n">vault_pass</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">ask_vault_pass</span><span class="p">:</span>
+            <span class="n">vault_pass</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ask_vault_passwords</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">set_vault_password</span><span class="p">(</span><span class="n">vault_pass</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">variable_manager</span> <span class="o">=</span> <span class="n">VariableManager</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inventory</span> <span class="o">=</span> <span class="n">Inventory</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loader</span><span class="p">,</span> <span class="n">variable_manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">variable_manager</span><span class="p">,</span> <span class="n">host_list</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">inventory</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">variable_manager</span><span class="o">.</span><span class="n">set_inventory</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inventory</span><span class="p">)</span>
+
+        <span class="n">no_hosts</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inventory</span><span class="o">.</span><span class="n">list_hosts</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c"># Empty inventory</span>
+            <span class="n">no_hosts</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;provided hosts list is empty, only localhost is available&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">inventory</span><span class="o">.</span><span class="n">subset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">subset</span><span class="p">)</span>
+        <span class="n">hosts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inventory</span><span class="o">.</span><span class="n">list_hosts</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pattern</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">hosts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">no_hosts</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;Specified hosts and/or --limit does not match any hosts&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">groups</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inventory</span><span class="o">.</span><span class="n">list_groups</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hosts</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">hosts</span><span class="p">]</span>
+
+        <span class="c"># This hack is to work around readline issues on a mac:</span>
+        <span class="c">#  http://stackoverflow.com/a/7116997/541202</span>
+        <span class="k">if</span> <span class="s">&#39;libedit&#39;</span> <span class="ow">in</span> <span class="n">readline</span><span class="o">.</span><span class="n">__doc__</span><span class="p">:</span>
+            <span class="n">readline</span><span class="o">.</span><span class="n">parse_and_bind</span><span class="p">(</span><span class="s">&quot;bind ^I rl_complete&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">readline</span><span class="o">.</span><span class="n">parse_and_bind</span><span class="p">(</span><span class="s">&quot;tab: complete&quot;</span><span class="p">)</span>
+
+        <span class="n">histfile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="s">&quot;~&quot;</span><span class="p">),</span> <span class="s">&quot;.ansible-console_history&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">readline</span><span class="o">.</span><span class="n">read_history_file</span><span class="p">(</span><span class="n">histfile</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">readline</span><span class="o">.</span><span class="n">write_history_file</span><span class="p">,</span> <span class="n">histfile</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_prompt</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cmdloop</span><span class="p">()</span></div></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

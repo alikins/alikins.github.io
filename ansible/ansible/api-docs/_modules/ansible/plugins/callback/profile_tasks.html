@@ -1,0 +1,333 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.plugins.callback.profile_tasks &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="ansible.plugins.callback" href="../callback.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../../plugins.html">ansible.plugins</a> &raquo;</li>
+      
+          <li><a href="../callback.html">ansible.plugins.callback</a> &raquo;</li>
+      
+    <li>ansible.plugins.callback.profile_tasks</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.plugins.callback.profile_tasks</h1><div class="highlight"><pre>
+<span class="c"># (C) 2016, Joel, http://github.com/jjshoe </span>
+<span class="c"># (C) 2015, Tom Paine, &lt;github@aioue.net&gt;</span>
+<span class="c"># (C) 2014, Jharrod LaFon, @JharrodLaFon</span>
+<span class="c"># (C) 2012-2013, Michael DeHaan, &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># File is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># See &lt;http://www.gnu.org/licenses/&gt; for a copy of the</span>
+<span class="c"># GNU General Public License</span>
+
+<span class="c"># Provides per-task timing, ongoing playbook elapsed time and</span>
+<span class="c"># ordered list of top 20 longest running tasks at end</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">ansible.plugins.callback</span> <span class="kn">import</span> <span class="n">CallbackBase</span>
+
+<span class="c"># define start time</span>
+<span class="n">t0</span> <span class="o">=</span> <span class="n">tn</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+<div class="viewcode-block" id="secondsToStr"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.profile_tasks.secondsToStr">[docs]</a><span class="k">def</span> <span class="nf">secondsToStr</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+    <span class="c"># http://bytes.com/topic/python/answers/635958-handy-short-cut-formatting-elapsed-time-floating-point-seconds</span>
+    <span class="n">rediv</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">ll</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">divmod</span><span class="p">(</span><span class="n">ll</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">b</span><span class="p">))</span> <span class="o">+</span> <span class="n">ll</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="k">return</span> <span class="s">&quot;</span><span class="si">%d</span><span class="s">:</span><span class="si">%02d</span><span class="s">:</span><span class="si">%02d</span><span class="s">.</span><span class="si">%03d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">reduce</span><span class="p">(</span><span class="n">rediv</span><span class="p">,</span> <span class="p">[[</span><span class="n">t</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">,</span> <span class="p">],</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">60</span><span class="p">]))</span></div>
+
+
+<div class="viewcode-block" id="filled"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.profile_tasks.filled">[docs]</a><span class="k">def</span> <span class="nf">filled</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">fchar</span><span class="o">=</span><span class="s">&quot;*&quot;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="mi">79</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s"> &quot;</span> <span class="o">%</span> <span class="n">msg</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="mi">79</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">width</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">filler</span> <span class="o">=</span> <span class="n">fchar</span> <span class="o">*</span> <span class="n">width</span>
+    <span class="k">return</span> <span class="s">&quot;</span><span class="si">%s%s</span><span class="s"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">filler</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="timestamp"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.profile_tasks.timestamp">[docs]</a><span class="k">def</span> <span class="nf">timestamp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current</span><span class="p">][</span><span class="s">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current</span><span class="p">][</span><span class="s">&#39;time&#39;</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="tasktime"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.profile_tasks.tasktime">[docs]</a><span class="k">def</span> <span class="nf">tasktime</span><span class="p">():</span>
+    <span class="k">global</span> <span class="n">tn</span>
+    <span class="n">time_current</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%A </span><span class="si">%d</span><span class="s"> %B %Y  %H:%M:%S %z&#39;</span><span class="p">)</span>
+    <span class="n">time_elapsed</span> <span class="o">=</span> <span class="n">secondsToStr</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">tn</span><span class="p">)</span>
+    <span class="n">time_total_elapsed</span> <span class="o">=</span> <span class="n">secondsToStr</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span>
+    <span class="n">tn</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">filled</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> (</span><span class="si">%s</span><span class="s">)</span><span class="si">%s%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">time_current</span><span class="p">,</span> <span class="n">time_elapsed</span><span class="p">,</span> <span class="s">&#39; &#39;</span> <span class="o">*</span> <span class="mi">7</span><span class="p">,</span> <span class="n">time_total_elapsed</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="CallbackModule"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.profile_tasks.CallbackModule">[docs]</a><span class="k">class</span> <span class="nc">CallbackModule</span><span class="p">(</span><span class="n">CallbackBase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This callback module provides per-task timing, ongoing playbook elapsed time</span>
+<span class="sd">    and ordered list of top 20 longest running tasks at end.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">CALLBACK_VERSION</span> <span class="o">=</span> <span class="mf">2.0</span>
+    <span class="n">CALLBACK_TYPE</span> <span class="o">=</span> <span class="s">&#39;aggregate&#39;</span>
+    <span class="n">CALLBACK_NAME</span> <span class="o">=</span> <span class="s">&#39;profile_tasks&#39;</span>
+    <span class="n">CALLBACK_NEEDS_WHITELIST</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stats</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sort_order</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s">&#39;PROFILE_TASKS_SORT_ORDER&#39;</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">task_output_limit</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s">&#39;PROFILE_TASKS_TASK_OUTPUT_LIMIT&#39;</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sort_order</span> <span class="o">==</span> <span class="s">&#39;ascending&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sort_order</span> <span class="o">=</span> <span class="bp">False</span><span class="p">;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">task_output_limit</span> <span class="o">==</span> <span class="s">&#39;all&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">task_output_limit</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">task_output_limit</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">task_output_limit</span><span class="p">)</span> 
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">CallbackModule</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_record_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Logs the start of each task</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">tasktime</span><span class="p">())</span>
+        <span class="n">timestamp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="c"># Record the start time of the current task</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">_uuid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;time&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span> <span class="s">&#39;name&#39;</span><span class="p">:</span> <span class="n">task</span><span class="o">.</span><span class="n">get_name</span><span class="p">()}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current</span><span class="p">][</span> <span class="s">&#39;path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">get_path</span><span class="p">()</span>
+
+<div class="viewcode-block" id="CallbackModule.v2_playbook_on_task_start"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.profile_tasks.CallbackModule.v2_playbook_on_task_start">[docs]</a>    <span class="k">def</span> <span class="nf">v2_playbook_on_task_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">is_conditional</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_record_task</span><span class="p">(</span><span class="n">task</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CallbackModule.v2_playbook_on_handler_task_start"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.profile_tasks.CallbackModule.v2_playbook_on_handler_task_start">[docs]</a>    <span class="k">def</span> <span class="nf">v2_playbook_on_handler_task_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_record_task</span><span class="p">(</span><span class="n">task</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CallbackModule.playbook_on_setup"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.profile_tasks.CallbackModule.playbook_on_setup">[docs]</a>    <span class="k">def</span> <span class="nf">playbook_on_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">tasktime</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="CallbackModule.playbook_on_stats"><a class="viewcode-back" href="../../../../rst/ansible.plugins.callback.html#ansible.plugins.callback.profile_tasks.CallbackModule.playbook_on_stats">[docs]</a>    <span class="k">def</span> <span class="nf">playbook_on_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stats</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">tasktime</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">filled</span><span class="p">(</span><span class="s">&quot;&quot;</span><span class="p">,</span> <span class="n">fchar</span><span class="o">=</span><span class="s">&quot;=&quot;</span><span class="p">))</span>
+
+        <span class="n">timestamp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> 
+
+        <span class="c"># Sort the tasks by the specified sort</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sort_order</span> <span class="o">!=</span> <span class="s">&#39;none&#39;</span><span class="p">:</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(),</span>
+                <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s">&#39;time&#39;</span><span class="p">],</span>
+                <span class="n">reverse</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sort_order</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c"># Display the number of tasks specified or the default of 20 </span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">results</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">task_output_limit</span><span class="p">]</span>
+
+        <span class="c"># Print the timings</span>
+        <span class="k">for</span> <span class="n">uuid</span><span class="p">,</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+            <span class="n">msg</span><span class="o">=</span><span class="s">&quot;{0:-&lt;70}{1:-&gt;9}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s">&#39;{0} &#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]),</span><span class="s">&#39; {0:.02f}s&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">]))</span>
+            <span class="k">if</span> <span class="s">&#39;path&#39;</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">{0:-&lt;79}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span> <span class="s">&#39;{0} &#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s">&#39;path&#39;</span><span class="p">]))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

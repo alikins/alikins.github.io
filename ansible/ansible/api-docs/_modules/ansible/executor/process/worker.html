@@ -1,0 +1,337 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.executor.process.worker &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>ansible.executor.process.worker</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.executor.process.worker</h1><div class="highlight"><pre>
+<span class="c"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c"># Make coding more python3-ish</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">from</span> <span class="nn">ansible.compat.six.moves</span> <span class="kn">import</span> <span class="n">queue</span>
+
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">multiprocessing</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">signal</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+<span class="kn">import</span> <span class="nn">zlib</span>
+
+<span class="kn">from</span> <span class="nn">jinja2.exceptions</span> <span class="kn">import</span> <span class="n">TemplateNotFound</span>
+
+<span class="c"># TODO: not needed if we use the cryptography library with its default RNG</span>
+<span class="c"># engine</span>
+<span class="n">HAS_ATFORK</span><span class="o">=</span><span class="bp">True</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">Crypto.Random</span> <span class="kn">import</span> <span class="n">atfork</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">HAS_ATFORK</span><span class="o">=</span><span class="bp">False</span>
+
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span><span class="p">,</span> <span class="n">AnsibleConnectionFailure</span>
+<span class="kn">from</span> <span class="nn">ansible.executor.task_executor</span> <span class="kn">import</span> <span class="n">TaskExecutor</span>
+<span class="kn">from</span> <span class="nn">ansible.executor.task_result</span> <span class="kn">import</span> <span class="n">TaskResult</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.handler</span> <span class="kn">import</span> <span class="n">Handler</span>
+<span class="kn">from</span> <span class="nn">ansible.playbook.task</span> <span class="kn">import</span> <span class="n">Task</span>
+<span class="kn">from</span> <span class="nn">ansible.vars.unsafe_proxy</span> <span class="kn">import</span> <span class="n">AnsibleJSONUnsafeDecoder</span>
+<span class="kn">from</span> <span class="nn">ansible.utils.unicode</span> <span class="kn">import</span> <span class="n">to_unicode</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">__main__</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ansible.utils.display</span> <span class="kn">import</span> <span class="n">Display</span>
+    <span class="n">display</span> <span class="o">=</span> <span class="n">Display</span><span class="p">()</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;WorkerProcess&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="WorkerProcess"><a class="viewcode-back" href="../../../../rst/ansible.executor.process.html#ansible.executor.process.worker.WorkerProcess">[docs]</a><span class="k">class</span> <span class="nc">WorkerProcess</span><span class="p">(</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">Process</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    The worker thread class, which uses TaskExecutor to run tasks</span>
+<span class="sd">    read from a job queue and pushes results into a results queue</span>
+<span class="sd">    for reading later.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rslt_q</span><span class="p">,</span> <span class="n">task_vars</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">play_context</span><span class="p">,</span> <span class="n">loader</span><span class="p">,</span> <span class="n">variable_manager</span><span class="p">,</span> <span class="n">shared_loader_obj</span><span class="p">):</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">WorkerProcess</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="c"># takes a task queue manager as the sole param:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rslt_q</span>            <span class="o">=</span> <span class="n">rslt_q</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_task_vars</span>         <span class="o">=</span> <span class="n">task_vars</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_host</span>              <span class="o">=</span> <span class="n">host</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_task</span>              <span class="o">=</span> <span class="n">task</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span>      <span class="o">=</span> <span class="n">play_context</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_loader</span>            <span class="o">=</span> <span class="n">loader</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_variable_manager</span>  <span class="o">=</span> <span class="n">variable_manager</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_shared_loader_obj</span> <span class="o">=</span> <span class="n">shared_loader_obj</span>
+
+        <span class="c"># dupe stdin, if we have one</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_new_stdin</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">fileno</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">fileno</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">fileno</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_new_stdin</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">fdopen</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">dup</span><span class="p">(</span><span class="n">fileno</span><span class="p">))</span>
+                <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+                    <span class="c"># couldn&#39;t dupe stdin, most likely because it&#39;s</span>
+                    <span class="c"># not a valid file descriptor, so we just rely on</span>
+                    <span class="c"># using the one that was passed in</span>
+                    <span class="k">pass</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="c"># couldn&#39;t get stdin&#39;s fileno, so we just carry on</span>
+            <span class="k">pass</span>
+
+<div class="viewcode-block" id="WorkerProcess.run"><a class="viewcode-back" href="../../../../rst/ansible.executor.process.html#ansible.executor.process.worker.WorkerProcess.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Called when the process is started.  Pushes the result onto the</span>
+<span class="sd">        results queue. We also remove the host from the blocked hosts list, to</span>
+<span class="sd">        signify that they are ready for their next task.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="n">HAS_ATFORK</span><span class="p">:</span>
+            <span class="n">atfork</span><span class="p">()</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># execute the task and build a TaskResult from the result</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;running TaskExecutor() for </span><span class="si">%s</span><span class="s">/</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="p">))</span>
+            <span class="n">executor_result</span> <span class="o">=</span> <span class="n">TaskExecutor</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_task_vars</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_play_context</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_new_stdin</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_shared_loader_obj</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_rslt_q</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;done running TaskExecutor() for </span><span class="si">%s</span><span class="s">/</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="o">.</span><span class="n">vars</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="o">.</span><span class="n">groups</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">task_result</span> <span class="o">=</span> <span class="n">TaskResult</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span> <span class="n">executor_result</span><span class="p">)</span>
+
+            <span class="c"># put the result on the result queue</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;sending task result&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_rslt_q</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">task_result</span><span class="p">)</span>
+            <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;done sending task result&quot;</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="n">AnsibleConnectionFailure</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="o">.</span><span class="n">vars</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="o">.</span><span class="n">groups</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">task_result</span> <span class="o">=</span> <span class="n">TaskResult</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">unreachable</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_rslt_q</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">task_result</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="p">(</span><span class="ne">IOError</span><span class="p">,</span> <span class="ne">EOFError</span><span class="p">,</span> <span class="ne">KeyboardInterrupt</span><span class="p">,</span> <span class="ne">SystemExit</span><span class="p">))</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">TemplateNotFound</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="o">.</span><span class="n">vars</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="o">.</span><span class="n">groups</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="n">task_result</span> <span class="o">=</span> <span class="n">TaskResult</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">failed</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">exception</span><span class="o">=</span><span class="n">to_unicode</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()),</span> <span class="n">stdout</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_rslt_q</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">task_result</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">u&quot;WORKER EXCEPTION: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+                    <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">u&quot;WORKER TRACEBACK: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()))</span>
+
+        <span class="n">display</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;WORKER PROCESS EXITING&quot;</span><span class="p">)</span></div></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

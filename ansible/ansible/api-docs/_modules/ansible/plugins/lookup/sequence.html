@@ -1,0 +1,395 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.plugins.lookup.sequence &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../../index.html"/>
+        <link rel="up" title="ansible.plugins.lookup" href="../lookup.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../../plugins.html">ansible.plugins</a> &raquo;</li>
+      
+          <li><a href="../lookup.html">ansible.plugins.lookup</a> &raquo;</li>
+      
+    <li>ansible.plugins.lookup.sequence</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.plugins.lookup.sequence</h1><div class="highlight"><pre>
+<span class="c"># (c) 2013, Jayson Vantuyl &lt;jayson@aggressive.ly&gt;</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">from</span> <span class="nn">re</span> <span class="kn">import</span> <span class="nb">compile</span> <span class="k">as</span> <span class="n">re_compile</span><span class="p">,</span> <span class="n">IGNORECASE</span>
+
+<span class="kn">from</span> <span class="nn">ansible.errors</span> <span class="kn">import</span> <span class="n">AnsibleError</span>
+<span class="kn">from</span> <span class="nn">ansible.parsing.splitter</span> <span class="kn">import</span> <span class="n">parse_kv</span>
+<span class="kn">from</span> <span class="nn">ansible.plugins.lookup</span> <span class="kn">import</span> <span class="n">LookupBase</span>
+
+<span class="c"># shortcut format</span>
+<span class="n">NUM</span> <span class="o">=</span> <span class="s">&quot;(0?x?[0-9a-f]+)&quot;</span>
+<span class="n">SHORTCUT</span> <span class="o">=</span> <span class="n">re_compile</span><span class="p">(</span>
+    <span class="s">&quot;^(&quot;</span> <span class="o">+</span>        <span class="c"># Group 0</span>
+    <span class="n">NUM</span> <span class="o">+</span>         <span class="c"># Group 1: Start</span>
+    <span class="s">&quot;-)?&quot;</span> <span class="o">+</span>
+    <span class="n">NUM</span> <span class="o">+</span>         <span class="c"># Group 2: End</span>
+    <span class="s">&quot;(/&quot;</span> <span class="o">+</span>        <span class="c"># Group 3</span>
+    <span class="n">NUM</span> <span class="o">+</span>         <span class="c"># Group 4: Stride</span>
+    <span class="s">&quot;)?&quot;</span> <span class="o">+</span>
+    <span class="s">&quot;(:(.+))?$&quot;</span><span class="p">,</span>  <span class="c"># Group 5, Group 6: Format String</span>
+    <span class="n">IGNORECASE</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="LookupModule"><a class="viewcode-back" href="../../../../rst/ansible.plugins.lookup.html#ansible.plugins.lookup.sequence.LookupModule">[docs]</a><span class="k">class</span> <span class="nc">LookupModule</span><span class="p">(</span><span class="n">LookupBase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    sequence lookup module</span>
+
+<span class="sd">    Used to generate some sequence of items. Takes arguments in two forms.</span>
+
+<span class="sd">    The simple / shortcut form is:</span>
+
+<span class="sd">      [start-]end[/stride][:format]</span>
+
+<span class="sd">    As indicated by the brackets: start, stride, and format string are all</span>
+<span class="sd">    optional.  The format string is in the style of printf.  This can be used</span>
+<span class="sd">    to pad with zeros, format in hexadecimal, etc.  All of the numerical values</span>
+<span class="sd">    can be specified in octal (i.e. 0664) or hexadecimal (i.e. 0x3f8).</span>
+<span class="sd">    Negative numbers are not supported.</span>
+
+<span class="sd">    Some examples:</span>
+
+<span class="sd">      5 -&gt; [&quot;1&quot;,&quot;2&quot;,&quot;3&quot;,&quot;4&quot;,&quot;5&quot;]</span>
+<span class="sd">      5-8 -&gt; [&quot;5&quot;, &quot;6&quot;, &quot;7&quot;, &quot;8&quot;]</span>
+<span class="sd">      2-10/2 -&gt; [&quot;2&quot;, &quot;4&quot;, &quot;6&quot;, &quot;8&quot;, &quot;10&quot;]</span>
+<span class="sd">      4:host%02d -&gt; [&quot;host01&quot;,&quot;host02&quot;,&quot;host03&quot;,&quot;host04&quot;]</span>
+
+<span class="sd">    The standard Ansible key-value form is accepted as well.  For example:</span>
+
+<span class="sd">      start=5 end=11 stride=2 format=0x%02x -&gt; [&quot;0x05&quot;,&quot;0x07&quot;,&quot;0x09&quot;,&quot;0x0a&quot;]</span>
+
+<span class="sd">    This format takes an alternate form of &quot;end&quot; called &quot;count&quot;, which counts</span>
+<span class="sd">    some number from the starting value.  For example:</span>
+
+<span class="sd">      count=5 -&gt; [&quot;1&quot;, &quot;2&quot;, &quot;3&quot;, &quot;4&quot;, &quot;5&quot;]</span>
+<span class="sd">      start=0x0f00 count=4 format=%04x -&gt; [&quot;0f00&quot;, &quot;0f01&quot;, &quot;0f02&quot;, &quot;0f03&quot;]</span>
+<span class="sd">      start=0 count=5 stride=2 -&gt; [&quot;0&quot;, &quot;2&quot;, &quot;4&quot;, &quot;6&quot;, &quot;8&quot;]</span>
+<span class="sd">      start=1 count=5 stride=2 -&gt; [&quot;1&quot;, &quot;3&quot;, &quot;5&quot;, &quot;7&quot;, &quot;9&quot;]</span>
+
+<span class="sd">    The count option is mostly useful for avoiding off-by-one errors and errors</span>
+<span class="sd">    calculating the number of entries in a sequence when a stride is specified.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="LookupModule.reset"><a class="viewcode-back" href="../../../../rst/ansible.plugins.lookup.html#ansible.plugins.lookup.sequence.LookupModule.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;set sensible defaults&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stride</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">format</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%d</span><span class="s">&quot;</span></div>
+
+<div class="viewcode-block" id="LookupModule.parse_kv_args"><a class="viewcode-back" href="../../../../rst/ansible.plugins.lookup.html#ansible.plugins.lookup.sequence.LookupModule.parse_kv_args">[docs]</a>    <span class="k">def</span> <span class="nf">parse_kv_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;parse key-value style arguments&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&quot;start&quot;</span><span class="p">,</span> <span class="s">&quot;end&quot;</span><span class="p">,</span> <span class="s">&quot;count&quot;</span><span class="p">,</span> <span class="s">&quot;stride&quot;</span><span class="p">]:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">arg_raw</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">arg_raw</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">arg_cooked</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">arg_raw</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">,</span> <span class="n">arg_cooked</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span>
+                    <span class="s">&quot;can&#39;t parse arg </span><span class="si">%s</span><span class="s">=</span><span class="si">%r</span><span class="s"> as integer&quot;</span>
+                        <span class="o">%</span> <span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">arg_raw</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="s">&#39;format&#39;</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">format</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&quot;format&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">args</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span>
+                <span class="s">&quot;unrecognized arguments to with_sequence: </span><span class="si">%r</span><span class="s">&quot;</span>
+                <span class="o">%</span> <span class="n">args</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="LookupModule.parse_simple_args"><a class="viewcode-back" href="../../../../rst/ansible.plugins.lookup.html#ansible.plugins.lookup.sequence.LookupModule.parse_simple_args">[docs]</a>    <span class="k">def</span> <span class="nf">parse_simple_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">term</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;parse the shortcut forms, return True/False&quot;&quot;&quot;</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">SHORTCUT</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">term</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">match</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="n">_</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">stride</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">format</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">groups</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">start</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;can&#39;t parse start=</span><span class="si">%s</span><span class="s"> as integer&quot;</span> <span class="o">%</span> <span class="n">start</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">end</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">end</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;can&#39;t parse end=</span><span class="si">%s</span><span class="s"> as integer&quot;</span> <span class="o">%</span> <span class="n">end</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">stride</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">stride</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">stride</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;can&#39;t parse stride=</span><span class="si">%s</span><span class="s"> as integer&quot;</span> <span class="o">%</span> <span class="n">stride</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="o">=</span> <span class="n">start</span>
+        <span class="k">if</span> <span class="n">end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="n">end</span>
+        <span class="k">if</span> <span class="n">stride</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stride</span> <span class="o">=</span> <span class="n">stride</span>
+        <span class="k">if</span> <span class="n">format</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">format</span> <span class="o">=</span> <span class="n">format</span></div>
+
+<div class="viewcode-block" id="LookupModule.sanity_check"><a class="viewcode-back" href="../../../../rst/ansible.plugins.lookup.html#ansible.plugins.lookup.sequence.LookupModule.sanity_check">[docs]</a>    <span class="k">def</span> <span class="nf">sanity_check</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span> <span class="s">&quot;must specify count or end in with_sequence&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span> <span class="s">&quot;can&#39;t specify both count and end in with_sequence&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c"># convert count to end</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">stride</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">stride</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stride</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;to count backwards make stride negative&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stride</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;to count forward don&#39;t make stride negative&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s">&#39;%&#39;</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;bad formatting string: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LookupModule.generate_sequence"><a class="viewcode-back" href="../../../../rst/ansible.plugins.lookup.html#ansible.plugins.lookup.sequence.LookupModule.generate_sequence">[docs]</a>    <span class="k">def</span> <span class="nf">generate_sequence</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stride</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">adjust</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">adjust</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">numbers</span> <span class="o">=</span> <span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">+</span> <span class="n">adjust</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stride</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">numbers</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">formatted</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span> <span class="o">%</span> <span class="n">i</span>
+                <span class="k">yield</span> <span class="n">formatted</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span>
+                    <span class="s">&quot;problem formatting </span><span class="si">%r</span><span class="s"> with </span><span class="si">%r</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span>
+                <span class="p">)</span></div>
+
+<div class="viewcode-block" id="LookupModule.run"><a class="viewcode-back" href="../../../../rst/ansible.plugins.lookup.html#ansible.plugins.lookup.sequence.LookupModule.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">terms</span><span class="p">,</span> <span class="n">variables</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">terms</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>  <span class="c"># clear out things for this iteration</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_simple_args</span><span class="p">(</span><span class="n">term</span><span class="p">):</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">parse_kv_args</span><span class="p">(</span><span class="n">parse_kv</span><span class="p">(</span><span class="n">term</span><span class="p">))</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span><span class="s">&quot;unknown error parsing with_sequence arguments: </span><span class="si">%r</span><span class="s">. Error was: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">term</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">sanity_check</span><span class="p">()</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stride</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">results</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">generate_sequence</span><span class="p">())</span>
+            <span class="k">except</span> <span class="n">AnsibleError</span><span class="p">:</span>
+                <span class="k">raise</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AnsibleError</span><span class="p">(</span>
+                    <span class="s">&quot;unknown error generating sequence: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">e</span>
+                <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">results</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

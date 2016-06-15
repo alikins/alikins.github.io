@@ -1,0 +1,363 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ansible.inventory.yaml &mdash; Ansible 1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Ansible 1 documentation" href="../../../index.html"/>
+        <link rel="up" title="ansible.inventory" href="../inventory.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Ansible
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="simple">
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Ansible</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+          <li><a href="../inventory.html">ansible.inventory</a> &raquo;</li>
+      
+    <li>ansible.inventory.yaml</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ansible.inventory.yaml</h1><div class="highlight"><pre>
+<span class="c"># Copyright 2016 RedHat, inc</span>
+<span class="c">#</span>
+<span class="c"># This file is part of Ansible</span>
+<span class="c">#</span>
+<span class="c"># Ansible is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c"># Ansible is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c">#############################################</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">)</span>
+<span class="n">__metaclass__</span> <span class="o">=</span> <span class="nb">type</span>
+
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="kn">from</span> <span class="nn">ansible</span> <span class="kn">import</span> <span class="n">constants</span> <span class="k">as</span> <span class="n">C</span>
+<span class="kn">from</span> <span class="nn">ansible.inventory.host</span> <span class="kn">import</span> <span class="n">Host</span>
+<span class="kn">from</span> <span class="nn">ansible.inventory.group</span> <span class="kn">import</span> <span class="n">Group</span>
+<span class="kn">from</span> <span class="nn">ansible.inventory.expand_hosts</span> <span class="kn">import</span> <span class="n">detect_range</span>
+<span class="kn">from</span> <span class="nn">ansible.inventory.expand_hosts</span> <span class="kn">import</span> <span class="n">expand_hostname_range</span>
+<span class="kn">from</span> <span class="nn">ansible.parsing.utils.addresses</span> <span class="kn">import</span> <span class="n">parse_address</span>
+<span class="kn">from</span> <span class="nn">ansible.compat.six</span> <span class="kn">import</span> <span class="n">string_types</span>
+
+<div class="viewcode-block" id="InventoryParser"><a class="viewcode-back" href="../../../rst/ansible.inventory.html#ansible.inventory.yaml.InventoryParser">[docs]</a><span class="k">class</span> <span class="nc">InventoryParser</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Takes an INI-format inventory file and builds a list of groups and subgroups</span>
+<span class="sd">    with their associated hosts and variable settings.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loader</span><span class="p">,</span> <span class="n">groups</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">DEFAULT_HOST_LIST</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_loader</span> <span class="o">=</span> <span class="n">loader</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span>
+
+        <span class="c"># Start with an empty host list and whatever groups we&#39;re passed in</span>
+        <span class="c"># (which should include the default &#39;all&#39; and &#39;ungrouped&#39; groups).</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">hosts</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">patterns</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">groups</span> <span class="o">=</span> <span class="n">groups</span>
+
+        <span class="c"># Read in the hosts, groups, and variables defined in the</span>
+        <span class="c"># inventory file.</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">load_from_file</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parse</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Populates self.groups from the given array of lines. Raises an error on</span>
+<span class="sd">        any parse failure.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_compile_patterns</span><span class="p">()</span>
+
+        <span class="c"># We expect top level keys to correspond to groups, iterate over them</span>
+        <span class="c"># to get host, vars and subgroups (which we iterate over recursivelly)</span>
+        <span class="k">for</span> <span class="n">group_name</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_parse_groups</span><span class="p">(</span><span class="n">group_name</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">group_name</span><span class="p">])</span>
+
+        <span class="c"># Finally, add all top-level groups as children of &#39;all&#39;.</span>
+        <span class="c"># We exclude ungrouped here because it was already added as a child of</span>
+        <span class="c"># &#39;all&#39; at the time it was created.</span>
+        <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">group</span><span class="o">.</span><span class="n">depth</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">group</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;all&#39;</span><span class="p">,</span> <span class="s">&#39;ungrouped&#39;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="s">&#39;all&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">add_child_group</span><span class="p">(</span><span class="n">Group</span><span class="p">(</span><span class="n">group_name</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_parse_groups</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">group_data</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">group</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">group</span><span class="p">]</span> <span class="o">=</span> <span class="n">Group</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">group</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">group_data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="c">#make sure they are dicts </span>
+            <span class="k">for</span> <span class="n">section</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;vars&#39;</span><span class="p">,</span> <span class="s">&#39;children&#39;</span><span class="p">,</span> <span class="s">&#39;hosts&#39;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">section</span> <span class="ow">in</span> <span class="n">group_data</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">group_data</span><span class="p">[</span><span class="n">section</span><span class="p">],</span> <span class="n">string_types</span><span class="p">):</span>
+                    <span class="n">group_data</span><span class="p">[</span><span class="n">section</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="n">group_data</span><span class="p">[</span><span class="n">section</span><span class="p">]:</span> <span class="bp">None</span><span class="p">}</span>
+
+            <span class="k">if</span> <span class="s">&#39;vars&#39;</span> <span class="ow">in</span> <span class="n">group_data</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">group_data</span><span class="p">[</span><span class="s">&#39;vars&#39;</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="n">var</span> <span class="o">!=</span> <span class="s">&#39;ansible_group_priority&#39;</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">group</span><span class="p">]</span><span class="o">.</span><span class="n">set_variable</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">group_data</span><span class="p">[</span><span class="s">&#39;vars&#39;</span><span class="p">][</span><span class="n">var</span><span class="p">])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">group</span><span class="p">]</span><span class="o">.</span><span class="n">set_priority</span><span class="p">(</span><span class="n">group_data</span><span class="p">[</span><span class="s">&#39;vars&#39;</span><span class="p">][</span><span class="n">var</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="s">&#39;children&#39;</span> <span class="ow">in</span> <span class="n">group_data</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">subgroup</span> <span class="ow">in</span> <span class="n">group_data</span><span class="p">[</span><span class="s">&#39;children&#39;</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_parse_groups</span><span class="p">(</span><span class="n">subgroup</span><span class="p">,</span> <span class="n">group_data</span><span class="p">[</span><span class="s">&#39;children&#39;</span><span class="p">][</span><span class="n">subgroup</span><span class="p">])</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">group</span><span class="p">]</span><span class="o">.</span><span class="n">add_child_group</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">subgroup</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="s">&#39;hosts&#39;</span> <span class="ow">in</span> <span class="n">group_data</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">host_pattern</span> <span class="ow">in</span> <span class="n">group_data</span><span class="p">[</span><span class="s">&#39;hosts&#39;</span><span class="p">]:</span>
+                    <span class="n">hosts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_host</span><span class="p">(</span><span class="n">host_pattern</span><span class="p">,</span> <span class="n">group_data</span><span class="p">[</span><span class="s">&#39;hosts&#39;</span><span class="p">][</span><span class="n">host_pattern</span><span class="p">])</span>
+                    <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hosts</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">group</span><span class="p">]</span><span class="o">.</span><span class="n">add_host</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">_parse_host</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host_pattern</span><span class="p">,</span> <span class="n">host_data</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Each host key can be a pattern, try to process it and add variables as needed</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="p">(</span><span class="n">hostnames</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expand_hostpattern</span><span class="p">(</span><span class="n">host_pattern</span><span class="p">)</span>
+        <span class="n">hosts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_Hosts</span><span class="p">(</span><span class="n">hostnames</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">host_data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">host_data</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hosts</span><span class="p">:</span>
+                    <span class="n">h</span><span class="o">.</span><span class="n">set_variable</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">host_data</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;ansible_host&#39;</span><span class="p">,</span> <span class="s">&#39;ansible_ssh_host&#39;</span><span class="p">]:</span>
+                        <span class="n">h</span><span class="o">.</span><span class="n">address</span> <span class="o">=</span> <span class="n">host_data</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">hosts</span>
+
+    <span class="k">def</span> <span class="nf">_expand_hostpattern</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hostpattern</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Takes a single host pattern and returns a list of hostnames and an</span>
+<span class="sd">        optional port number that applies to all of them.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c"># Can the given hostpattern be parsed as a host with an optional port</span>
+        <span class="c"># specification?</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span> <span class="o">=</span> <span class="n">parse_address</span><span class="p">(</span><span class="n">hostpattern</span><span class="p">,</span> <span class="n">allow_ranges</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="c"># not a recognizable host pattern</span>
+            <span class="n">pattern</span> <span class="o">=</span> <span class="n">hostpattern</span>
+            <span class="n">port</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="c"># Once we have separated the pattern, we expand it into list of one or</span>
+        <span class="c"># more hostnames, depending on whether it contains any [x:y] ranges.</span>
+
+        <span class="k">if</span> <span class="n">detect_range</span><span class="p">(</span><span class="n">pattern</span><span class="p">):</span>
+            <span class="n">hostnames</span> <span class="o">=</span> <span class="n">expand_hostname_range</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">hostnames</span> <span class="o">=</span> <span class="p">[</span><span class="n">pattern</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">hostnames</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_Hosts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hostnames</span><span class="p">,</span> <span class="n">port</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Takes a list of hostnames and a port (which may be None) and returns a</span>
+<span class="sd">        list of Hosts (without recreating anything in self.hosts).</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">hosts</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c"># Note that we decide whether or not to create a Host based solely on</span>
+        <span class="c"># the (non-)existence of its hostname in self.hosts. This means that one</span>
+        <span class="c"># cannot add both &quot;foo:22&quot; and &quot;foo:23&quot; to the inventory.</span>
+
+        <span class="k">for</span> <span class="n">hn</span> <span class="ow">in</span> <span class="n">hostnames</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">hn</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">hosts</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">hosts</span><span class="p">[</span><span class="n">hn</span><span class="p">]</span> <span class="o">=</span> <span class="n">Host</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">hn</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">)</span>
+            <span class="n">hosts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hosts</span><span class="p">[</span><span class="n">hn</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">hosts</span>
+
+<div class="viewcode-block" id="InventoryParser.get_host_variables"><a class="viewcode-back" href="../../../rst/ansible.inventory.html#ansible.inventory.yaml.InventoryParser.get_host_variables">[docs]</a>    <span class="k">def</span> <span class="nf">get_host_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{}</span></div>
+
+    <span class="k">def</span> <span class="nf">_compile_patterns</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Compiles the regular expressions required to parse the inventory and stores them in self.patterns.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">patterns</span><span class="p">[</span><span class="s">&#39;groupname&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span> <span class="s">r&#39;&#39;&#39;^[A-Za-z_][A-Za-z0-9_]*$&#39;&#39;&#39;</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Red Hat.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
