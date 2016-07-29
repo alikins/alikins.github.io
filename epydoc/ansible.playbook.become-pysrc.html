@@ -1,0 +1,759 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>ansible.playbook.become</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="ansible-module.html">Package&nbsp;ansible</a> ::
+        <a href="ansible.playbook-module.html">Package&nbsp;playbook</a> ::
+        Module&nbsp;become
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="ansible.playbook.become-pysrc.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<h1 class="epydoc">Source Code for <a href="ansible.playbook.become-module.html" onclick="show_private();">Module ansible.playbook.become</a></h1>
+<pre class="py-src">
+<a name="L1"></a><tt class="py-lineno">  1</tt>  <tt class="py-line"><tt class="py-comment"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</tt> </tt>
+<a name="L2"></a><tt class="py-lineno">  2</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L3"></a><tt class="py-lineno">  3</tt>  <tt class="py-line"><tt class="py-comment"># This file is part of Ansible</tt> </tt>
+<a name="L4"></a><tt class="py-lineno">  4</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L5"></a><tt class="py-lineno">  5</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is free software: you can redistribute it and/or modify</tt> </tt>
+<a name="L6"></a><tt class="py-lineno">  6</tt>  <tt class="py-line"><tt class="py-comment"># it under the terms of the GNU General Public License as published by</tt> </tt>
+<a name="L7"></a><tt class="py-lineno">  7</tt>  <tt class="py-line"><tt class="py-comment"># the Free Software Foundation, either version 3 of the License, or</tt> </tt>
+<a name="L8"></a><tt class="py-lineno">  8</tt>  <tt class="py-line"><tt class="py-comment"># (at your option) any later version.</tt> </tt>
+<a name="L9"></a><tt class="py-lineno">  9</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L10"></a><tt class="py-lineno"> 10</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is distributed in the hope that it will be useful,</tt> </tt>
+<a name="L11"></a><tt class="py-lineno"> 11</tt>  <tt class="py-line"><tt class="py-comment"># but WITHOUT ANY WARRANTY; without even the implied warranty of</tt> </tt>
+<a name="L12"></a><tt class="py-lineno"> 12</tt>  <tt class="py-line"><tt class="py-comment"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</tt> </tt>
+<a name="L13"></a><tt class="py-lineno"> 13</tt>  <tt class="py-line"><tt class="py-comment"># GNU General Public License for more details.</tt> </tt>
+<a name="L14"></a><tt class="py-lineno"> 14</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L15"></a><tt class="py-lineno"> 15</tt>  <tt class="py-line"><tt class="py-comment"># You should have received a copy of the GNU General Public License</tt> </tt>
+<a name="L16"></a><tt class="py-lineno"> 16</tt>  <tt class="py-line"><tt class="py-comment"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</tt> </tt>
+<a name="L17"></a><tt class="py-lineno"> 17</tt>  <tt class="py-line"> </tt>
+<a name="L18"></a><tt class="py-lineno"> 18</tt>  <tt class="py-line"><tt class="py-comment"># Make coding more python3-ish</tt> </tt>
+<a name="L19"></a><tt class="py-lineno"> 19</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">__future__</tt> <tt class="py-keyword">import</tt> <tt class="py-op">(</tt><tt class="py-name">absolute_import</tt><tt class="py-op">,</tt> <tt class="py-name">division</tt><tt class="py-op">,</tt> <tt class="py-name">print_function</tt><tt class="py-op">)</tt> </tt>
+<a name="L20"></a><tt class="py-lineno"> 20</tt>  <tt class="py-line"><tt class="py-name">__metaclass__</tt> <tt class="py-op">=</tt> <tt id="link-0" class="py-name" targets="Class type=type-class.html"><a title="type" class="py-name" href="#" onclick="return doclink('link-0', 'type', 'link-0');">type</a></tt> </tt>
+<a name="L21"></a><tt class="py-lineno"> 21</tt>  <tt class="py-line"> </tt>
+<a name="L22"></a><tt class="py-lineno"> 22</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-1" class="py-name" targets="Package ansible=ansible-module.html"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-1', 'ansible', 'link-1');">ansible</a></tt> <tt class="py-keyword">import</tt> <tt id="link-2" class="py-name" targets="Module ansible.constants=ansible.constants-module.html"><a title="ansible.constants" class="py-name" href="#" onclick="return doclink('link-2', 'constants', 'link-2');">constants</a></tt> <tt class="py-keyword">as</tt> <tt class="py-name">C</tt> </tt>
+<a name="L23"></a><tt class="py-lineno"> 23</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-3" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-3', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-4" class="py-name" targets="Package ansible.errors=ansible.errors-module.html"><a title="ansible.errors" class="py-name" href="#" onclick="return doclink('link-4', 'errors', 'link-4');">errors</a></tt> <tt class="py-keyword">import</tt> <tt id="link-5" class="py-name" targets="Class ansible.errors.AnsibleError=ansible.errors.AnsibleError-class.html"><a title="ansible.errors.AnsibleError" class="py-name" href="#" onclick="return doclink('link-5', 'AnsibleError', 'link-5');">AnsibleError</a></tt><tt class="py-op">,</tt> <tt id="link-6" class="py-name" targets="Class ansible.errors.AnsibleParserError=ansible.errors.AnsibleParserError-class.html"><a title="ansible.errors.AnsibleParserError" class="py-name" href="#" onclick="return doclink('link-6', 'AnsibleParserError', 'link-6');">AnsibleParserError</a></tt> </tt>
+<a name="L24"></a><tt class="py-lineno"> 24</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-7" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-7', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-8" class="py-name" targets="Module ansible.cli.playbook=ansible.cli.playbook-module.html,Package ansible.playbook=ansible.playbook-module.html"><a title="ansible.cli.playbook
+ansible.playbook" class="py-name" href="#" onclick="return doclink('link-8', 'playbook', 'link-8');">playbook</a></tt><tt class="py-op">.</tt><tt id="link-9" class="py-name" targets="Variable ansible.module_utils.azure_rm_common.attribute=ansible.module_utils.azure_rm_common-module.html#attribute,Variable ansible.module_utils.basic.attribute=ansible.module_utils.basic-module.html#attribute,Variable ansible.module_utils.docker_common.attribute=ansible.module_utils.docker_common-module.html#attribute,Module ansible.playbook.attribute=ansible.playbook.attribute-module.html"><a title="ansible.module_utils.azure_rm_common.attribute
+ansible.module_utils.basic.attribute
+ansible.module_utils.docker_common.attribute
+ansible.playbook.attribute" class="py-name" href="#" onclick="return doclink('link-9', 'attribute', 'link-9');">attribute</a></tt> <tt class="py-keyword">import</tt> <tt id="link-10" class="py-name" targets="Class ansible.playbook.attribute.Attribute=ansible.playbook.attribute.Attribute-class.html"><a title="ansible.playbook.attribute.Attribute" class="py-name" href="#" onclick="return doclink('link-10', 'Attribute', 'link-10');">Attribute</a></tt><tt class="py-op">,</tt> <tt id="link-11" class="py-name" targets="Class ansible.playbook.attribute.FieldAttribute=ansible.playbook.attribute.FieldAttribute-class.html"><a title="ansible.playbook.attribute.FieldAttribute" class="py-name" href="#" onclick="return doclink('link-11', 'FieldAttribute', 'link-11');">FieldAttribute</a></tt> </tt>
+<a name="L25"></a><tt class="py-lineno"> 25</tt>  <tt class="py-line"> </tt>
+<a name="L26"></a><tt class="py-lineno"> 26</tt>  <tt class="py-line"><tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L27"></a><tt class="py-lineno"> 27</tt>  <tt class="py-line">    <tt class="py-keyword">from</tt> <tt class="py-name">__main__</tt> <tt class="py-keyword">import</tt> <tt id="link-12" class="py-name" targets="Variable ansible.cli.adhoc.display=ansible.cli.adhoc-module.html#display,Variable ansible.cli.console.display=ansible.cli.console-module.html#display,Variable ansible.cli.display=ansible.cli-module.html#display,Variable ansible.cli.doc.display=ansible.cli.doc-module.html#display,Variable ansible.cli.galaxy.display=ansible.cli.galaxy-module.html#display,Variable ansible.cli.playbook.display=ansible.cli.playbook-module.html#display,Variable ansible.cli.pull.display=ansible.cli.pull-module.html#display,Variable ansible.cli.vault.display=ansible.cli.vault-module.html#display,Variable ansible.executor.module_common.display=ansible.executor.module_common-module.html#display,Variable ansible.executor.play_iterator.display=ansible.executor.play_iterator-module.html#display,Variable ansible.executor.playbook_executor.display=ansible.executor.playbook_executor-module.html#display,Variable ansible.executor.process.result.display=ansible.executor.process.result-module.html#display,Variable ansible.executor.process.worker.display=ansible.executor.process.worker-module.html#display,Variable ansible.executor.task_executor.display=ansible.executor.task_executor-module.html#display,Variable ansible.executor.task_queue_manager.display=ansible.executor.task_queue_manager-module.html#display,Variable ansible.galaxy.api.display=ansible.galaxy.api-module.html#display,Variable ansible.galaxy.login.display=ansible.galaxy.login-module.html#display,Variable ansible.galaxy.role.display=ansible.galaxy.role-module.html#display,Variable ansible.galaxy.token.display=ansible.galaxy.token-module.html#display,Variable ansible.inventory.display=ansible.inventory-module.html#display,Variable ansible.parsing.dataloader.display=ansible.parsing.dataloader-module.html#display,Variable ansible.parsing.vault.display=ansible.parsing.vault-module.html#display,Variable ansible.parsing.yaml.constructor.display=ansible.parsing.yaml.constructor-module.html#display,Variable ansible.playbook.base.display=ansible.playbook.base-module.html#display,Variable ansible.playbook.become.display=ansible.playbook.become-module.html#display,Variable ansible.playbook.display=ansible.playbook-module.html#display,Variable ansible.playbook.helpers.display=ansible.playbook.helpers-module.html#display,Variable ansible.playbook.included_file.display=ansible.playbook.included_file-module.html#display,Variable ansible.playbook.play.display=ansible.playbook.play-module.html#display,Variable ansible.playbook.play_context.display=ansible.playbook.play_context-module.html#display,Variable ansible.playbook.role.requirement.display=ansible.playbook.role.requirement-module.html#display,Variable ansible.playbook.task.display=ansible.playbook.task-module.html#display,Variable ansible.playbook.task_include.display=ansible.playbook.task_include-module.html#display,Variable ansible.plugins.action.add_host.display=ansible.plugins.action.add_host-module.html#display,Variable ansible.plugins.action.display=ansible.plugins.action-module.html#display,Variable ansible.plugins.action.package.display=ansible.plugins.action.package-module.html#display,Variable ansible.plugins.action.pause.display=ansible.plugins.action.pause-module.html#display,Variable ansible.plugins.action.win_reboot.display=ansible.plugins.action.win_reboot-module.html#display,Variable ansible.plugins.cache.base.display=ansible.plugins.cache.base-module.html#display,Variable ansible.plugins.cache.display=ansible.plugins.cache-module.html#display,Variable ansible.plugins.cache.jsonfile.display=ansible.plugins.cache.jsonfile-module.html#display,Variable ansible.plugins.connection.accelerate.display=ansible.plugins.connection.accelerate-module.html#display,Variable ansible.plugins.connection.chroot.display=ansible.plugins.connection.chroot-module.html#display,Variable ansible.plugins.connection.display=ansible.plugins.connection-module.html#display,Variable ansible.plugins.connection.docker.display=ansible.plugins.connection.docker-module.html#display,Variable ansible.plugins.connection.jail.display=ansible.plugins.connection.jail-module.html#display,Variable ansible.plugins.connection.libvirt_lxc.display=ansible.plugins.connection.libvirt_lxc-module.html#display,Variable ansible.plugins.connection.local.display=ansible.plugins.connection.local-module.html#display,Variable ansible.plugins.connection.paramiko_ssh.display=ansible.plugins.connection.paramiko_ssh-module.html#display,Variable ansible.plugins.connection.ssh.display=ansible.plugins.connection.ssh-module.html#display,Variable ansible.plugins.connection.winrm.display=ansible.plugins.connection.winrm-module.html#display,Variable ansible.plugins.connection.zone.display=ansible.plugins.connection.zone-module.html#display,Variable ansible.plugins.display=ansible.plugins-module.html#display,Variable ansible.plugins.lookup.display=ansible.plugins.lookup-module.html#display,Variable ansible.plugins.lookup.file.display=ansible.plugins.lookup.file-module.html#display,Variable ansible.plugins.lookup.template.display=ansible.plugins.lookup.template-module.html#display,Variable ansible.plugins.lookup.url.display=ansible.plugins.lookup.url-module.html#display,Variable ansible.plugins.strategy.debug.display=ansible.plugins.strategy.debug-module.html#display,Variable ansible.plugins.strategy.display=ansible.plugins.strategy-module.html#display,Variable ansible.plugins.strategy.free.display=ansible.plugins.strategy.free-module.html#display,Variable ansible.plugins.strategy.linear.display=ansible.plugins.strategy.linear-module.html#display,Variable ansible.template.display=ansible.template-module.html#display,Module ansible.utils.display=ansible.utils.display-module.html,Method ansible.utils.display.Display.display()=ansible.utils.display.Display-class.html#display,Variable ansible.utils.encrypt.display=ansible.utils.encrypt-module.html#display,Variable ansible.utils.module_docs.display=ansible.utils.module_docs-module.html#display,Variable ansible.vars.display=ansible.vars-module.html#display"><a title="ansible.cli.adhoc.display
+ansible.cli.console.display
+ansible.cli.display
+ansible.cli.doc.display
+ansible.cli.galaxy.display
+ansible.cli.playbook.display
+ansible.cli.pull.display
+ansible.cli.vault.display
+ansible.executor.module_common.display
+ansible.executor.play_iterator.display
+ansible.executor.playbook_executor.display
+ansible.executor.process.result.display
+ansible.executor.process.worker.display
+ansible.executor.task_executor.display
+ansible.executor.task_queue_manager.display
+ansible.galaxy.api.display
+ansible.galaxy.login.display
+ansible.galaxy.role.display
+ansible.galaxy.token.display
+ansible.inventory.display
+ansible.parsing.dataloader.display
+ansible.parsing.vault.display
+ansible.parsing.yaml.constructor.display
+ansible.playbook.base.display
+ansible.playbook.become.display
+ansible.playbook.display
+ansible.playbook.helpers.display
+ansible.playbook.included_file.display
+ansible.playbook.play.display
+ansible.playbook.play_context.display
+ansible.playbook.role.requirement.display
+ansible.playbook.task.display
+ansible.playbook.task_include.display
+ansible.plugins.action.add_host.display
+ansible.plugins.action.display
+ansible.plugins.action.package.display
+ansible.plugins.action.pause.display
+ansible.plugins.action.win_reboot.display
+ansible.plugins.cache.base.display
+ansible.plugins.cache.display
+ansible.plugins.cache.jsonfile.display
+ansible.plugins.connection.accelerate.display
+ansible.plugins.connection.chroot.display
+ansible.plugins.connection.display
+ansible.plugins.connection.docker.display
+ansible.plugins.connection.jail.display
+ansible.plugins.connection.libvirt_lxc.display
+ansible.plugins.connection.local.display
+ansible.plugins.connection.paramiko_ssh.display
+ansible.plugins.connection.ssh.display
+ansible.plugins.connection.winrm.display
+ansible.plugins.connection.zone.display
+ansible.plugins.display
+ansible.plugins.lookup.display
+ansible.plugins.lookup.file.display
+ansible.plugins.lookup.template.display
+ansible.plugins.lookup.url.display
+ansible.plugins.strategy.debug.display
+ansible.plugins.strategy.display
+ansible.plugins.strategy.free.display
+ansible.plugins.strategy.linear.display
+ansible.template.display
+ansible.utils.display
+ansible.utils.display.Display.display
+ansible.utils.encrypt.display
+ansible.utils.module_docs.display
+ansible.vars.display" class="py-name" href="#" onclick="return doclink('link-12', 'display', 'link-12');">display</a></tt> </tt>
+<a name="L28"></a><tt class="py-lineno"> 28</tt>  <tt class="py-line"><tt class="py-keyword">except</tt> <tt class="py-name">ImportError</tt><tt class="py-op">:</tt> </tt>
+<a name="L29"></a><tt class="py-lineno"> 29</tt>  <tt class="py-line">    <tt class="py-keyword">from</tt> <tt id="link-13" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-13', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-14" class="py-name" targets="Package ansible.parsing.utils=ansible.parsing.utils-module.html,Package ansible.utils=ansible.utils-module.html"><a title="ansible.parsing.utils
+ansible.utils" class="py-name" href="#" onclick="return doclink('link-14', 'utils', 'link-14');">utils</a></tt><tt class="py-op">.</tt><tt id="link-15" class="py-name"><a title="ansible.cli.adhoc.display
+ansible.cli.console.display
+ansible.cli.display
+ansible.cli.doc.display
+ansible.cli.galaxy.display
+ansible.cli.playbook.display
+ansible.cli.pull.display
+ansible.cli.vault.display
+ansible.executor.module_common.display
+ansible.executor.play_iterator.display
+ansible.executor.playbook_executor.display
+ansible.executor.process.result.display
+ansible.executor.process.worker.display
+ansible.executor.task_executor.display
+ansible.executor.task_queue_manager.display
+ansible.galaxy.api.display
+ansible.galaxy.login.display
+ansible.galaxy.role.display
+ansible.galaxy.token.display
+ansible.inventory.display
+ansible.parsing.dataloader.display
+ansible.parsing.vault.display
+ansible.parsing.yaml.constructor.display
+ansible.playbook.base.display
+ansible.playbook.become.display
+ansible.playbook.display
+ansible.playbook.helpers.display
+ansible.playbook.included_file.display
+ansible.playbook.play.display
+ansible.playbook.play_context.display
+ansible.playbook.role.requirement.display
+ansible.playbook.task.display
+ansible.playbook.task_include.display
+ansible.plugins.action.add_host.display
+ansible.plugins.action.display
+ansible.plugins.action.package.display
+ansible.plugins.action.pause.display
+ansible.plugins.action.win_reboot.display
+ansible.plugins.cache.base.display
+ansible.plugins.cache.display
+ansible.plugins.cache.jsonfile.display
+ansible.plugins.connection.accelerate.display
+ansible.plugins.connection.chroot.display
+ansible.plugins.connection.display
+ansible.plugins.connection.docker.display
+ansible.plugins.connection.jail.display
+ansible.plugins.connection.libvirt_lxc.display
+ansible.plugins.connection.local.display
+ansible.plugins.connection.paramiko_ssh.display
+ansible.plugins.connection.ssh.display
+ansible.plugins.connection.winrm.display
+ansible.plugins.connection.zone.display
+ansible.plugins.display
+ansible.plugins.lookup.display
+ansible.plugins.lookup.file.display
+ansible.plugins.lookup.template.display
+ansible.plugins.lookup.url.display
+ansible.plugins.strategy.debug.display
+ansible.plugins.strategy.display
+ansible.plugins.strategy.free.display
+ansible.plugins.strategy.linear.display
+ansible.template.display
+ansible.utils.display
+ansible.utils.display.Display.display
+ansible.utils.encrypt.display
+ansible.utils.module_docs.display
+ansible.vars.display" class="py-name" href="#" onclick="return doclink('link-15', 'display', 'link-12');">display</a></tt> <tt class="py-keyword">import</tt> <tt id="link-16" class="py-name" targets="Class ansible.utils.display.Display=ansible.utils.display.Display-class.html"><a title="ansible.utils.display.Display" class="py-name" href="#" onclick="return doclink('link-16', 'Display', 'link-16');">Display</a></tt> </tt>
+<a name="L30"></a><tt class="py-lineno"> 30</tt>  <tt class="py-line">    <tt id="link-17" class="py-name"><a title="ansible.cli.adhoc.display
+ansible.cli.console.display
+ansible.cli.display
+ansible.cli.doc.display
+ansible.cli.galaxy.display
+ansible.cli.playbook.display
+ansible.cli.pull.display
+ansible.cli.vault.display
+ansible.executor.module_common.display
+ansible.executor.play_iterator.display
+ansible.executor.playbook_executor.display
+ansible.executor.process.result.display
+ansible.executor.process.worker.display
+ansible.executor.task_executor.display
+ansible.executor.task_queue_manager.display
+ansible.galaxy.api.display
+ansible.galaxy.login.display
+ansible.galaxy.role.display
+ansible.galaxy.token.display
+ansible.inventory.display
+ansible.parsing.dataloader.display
+ansible.parsing.vault.display
+ansible.parsing.yaml.constructor.display
+ansible.playbook.base.display
+ansible.playbook.become.display
+ansible.playbook.display
+ansible.playbook.helpers.display
+ansible.playbook.included_file.display
+ansible.playbook.play.display
+ansible.playbook.play_context.display
+ansible.playbook.role.requirement.display
+ansible.playbook.task.display
+ansible.playbook.task_include.display
+ansible.plugins.action.add_host.display
+ansible.plugins.action.display
+ansible.plugins.action.package.display
+ansible.plugins.action.pause.display
+ansible.plugins.action.win_reboot.display
+ansible.plugins.cache.base.display
+ansible.plugins.cache.display
+ansible.plugins.cache.jsonfile.display
+ansible.plugins.connection.accelerate.display
+ansible.plugins.connection.chroot.display
+ansible.plugins.connection.display
+ansible.plugins.connection.docker.display
+ansible.plugins.connection.jail.display
+ansible.plugins.connection.libvirt_lxc.display
+ansible.plugins.connection.local.display
+ansible.plugins.connection.paramiko_ssh.display
+ansible.plugins.connection.ssh.display
+ansible.plugins.connection.winrm.display
+ansible.plugins.connection.zone.display
+ansible.plugins.display
+ansible.plugins.lookup.display
+ansible.plugins.lookup.file.display
+ansible.plugins.lookup.template.display
+ansible.plugins.lookup.url.display
+ansible.plugins.strategy.debug.display
+ansible.plugins.strategy.display
+ansible.plugins.strategy.free.display
+ansible.plugins.strategy.linear.display
+ansible.template.display
+ansible.utils.display
+ansible.utils.display.Display.display
+ansible.utils.encrypt.display
+ansible.utils.module_docs.display
+ansible.vars.display" class="py-name" href="#" onclick="return doclink('link-17', 'display', 'link-12');">display</a></tt> <tt class="py-op">=</tt> <tt id="link-18" class="py-name"><a title="ansible.utils.display.Display" class="py-name" href="#" onclick="return doclink('link-18', 'Display', 'link-16');">Display</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L31"></a><tt class="py-lineno"> 31</tt>  <tt class="py-line"> </tt>
+<a name="Become"></a><div id="Become-def"><a name="L32"></a><tt class="py-lineno"> 32</tt> <a class="py-toggle" href="#" id="Become-toggle" onclick="return toggle('Become');">-</a><tt class="py-line"><tt class="py-keyword">class</tt> <a class="py-def-name" href="ansible.playbook.become.Become-class.html">Become</a><tt class="py-op">:</tt> </tt>
+</div><div id="Become-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="Become-expanded"><a name="L33"></a><tt class="py-lineno"> 33</tt>  <tt class="py-line"> </tt>
+<a name="L34"></a><tt class="py-lineno"> 34</tt>  <tt class="py-line">    <tt class="py-comment"># Privilege escalation</tt> </tt>
+<a name="L35"></a><tt class="py-lineno"> 35</tt>  <tt class="py-line">    <tt id="link-19" class="py-name" targets="Variable ansible.playbook.become.Become._become=ansible.playbook.become.Become-class.html#_become,Variable ansible.playbook.play_context.PlayContext._become=ansible.playbook.play_context.PlayContext-class.html#_become"><a title="ansible.playbook.become.Become._become
+ansible.playbook.play_context.PlayContext._become" class="py-name" href="#" onclick="return doclink('link-19', '_become', 'link-19');">_become</a></tt>              <tt class="py-op">=</tt> <tt id="link-20" class="py-name"><a title="ansible.playbook.attribute.FieldAttribute" class="py-name" href="#" onclick="return doclink('link-20', 'FieldAttribute', 'link-11');">FieldAttribute</a></tt><tt class="py-op">(</tt><tt class="py-name">isa</tt><tt class="py-op">=</tt><tt class="py-string">'bool'</tt><tt class="py-op">)</tt> </tt>
+<a name="L36"></a><tt class="py-lineno"> 36</tt>  <tt class="py-line">    <tt id="link-21" class="py-name" targets="Variable ansible.playbook.become.Become._become_method=ansible.playbook.become.Become-class.html#_become_method,Variable ansible.playbook.play_context.PlayContext._become_method=ansible.playbook.play_context.PlayContext-class.html#_become_method"><a title="ansible.playbook.become.Become._become_method
+ansible.playbook.play_context.PlayContext._become_method" class="py-name" href="#" onclick="return doclink('link-21', '_become_method', 'link-21');">_become_method</a></tt>       <tt class="py-op">=</tt> <tt id="link-22" class="py-name"><a title="ansible.playbook.attribute.FieldAttribute" class="py-name" href="#" onclick="return doclink('link-22', 'FieldAttribute', 'link-11');">FieldAttribute</a></tt><tt class="py-op">(</tt><tt class="py-name">isa</tt><tt class="py-op">=</tt><tt class="py-string">'string'</tt><tt class="py-op">)</tt> </tt>
+<a name="L37"></a><tt class="py-lineno"> 37</tt>  <tt class="py-line">    <tt id="link-23" class="py-name" targets="Variable ansible.playbook.become.Become._become_user=ansible.playbook.become.Become-class.html#_become_user,Variable ansible.playbook.play_context.PlayContext._become_user=ansible.playbook.play_context.PlayContext-class.html#_become_user"><a title="ansible.playbook.become.Become._become_user
+ansible.playbook.play_context.PlayContext._become_user" class="py-name" href="#" onclick="return doclink('link-23', '_become_user', 'link-23');">_become_user</a></tt>         <tt class="py-op">=</tt> <tt id="link-24" class="py-name"><a title="ansible.playbook.attribute.FieldAttribute" class="py-name" href="#" onclick="return doclink('link-24', 'FieldAttribute', 'link-11');">FieldAttribute</a></tt><tt class="py-op">(</tt><tt class="py-name">isa</tt><tt class="py-op">=</tt><tt class="py-string">'string'</tt><tt class="py-op">)</tt> </tt>
+<a name="L38"></a><tt class="py-lineno"> 38</tt>  <tt class="py-line"> </tt>
+<a name="Become.__init__"></a><div id="Become.__init__-def"><a name="L39"></a><tt class="py-lineno"> 39</tt> <a class="py-toggle" href="#" id="Become.__init__-toggle" onclick="return toggle('Become.__init__');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.playbook.become.Become-class.html#__init__">__init__</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Become.__init__-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="Become.__init__-expanded"><a name="L40"></a><tt class="py-lineno"> 40</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">super</tt><tt class="py-op">(</tt><tt id="link-25" class="py-name" targets="Class ansible.playbook.become.Become=ansible.playbook.become.Become-class.html"><a title="ansible.playbook.become.Become" class="py-name" href="#" onclick="return doclink('link-25', 'Become', 'link-25');">Become</a></tt><tt class="py-op">,</tt> <tt class="py-name">self</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt id="link-26" class="py-name" targets="Method ansible.cli.CLI.__init__()=ansible.cli.CLI-class.html#__init__,Method ansible.cli.console.ConsoleCLI.__init__()=ansible.cli.console.ConsoleCLI-class.html#__init__,Method ansible.cli.doc.DocCLI.__init__()=ansible.cli.doc.DocCLI-class.html#__init__,Method ansible.cli.galaxy.GalaxyCLI.__init__()=ansible.cli.galaxy.GalaxyCLI-class.html#__init__,Method ansible.cli.vault.VaultCLI.__init__()=ansible.cli.vault.VaultCLI-class.html#__init__,Method ansible.compat.six.MovedAttribute.__init__()=ansible.compat.six.MovedAttribute-class.html#__init__,Method ansible.compat.six.MovedModule.__init__()=ansible.compat.six.MovedModule-class.html#__init__,Method ansible.compat.six._LazyDescr.__init__()=ansible.compat.six._LazyDescr-class.html#__init__,Method ansible.compat.six._LazyModule.__init__()=ansible.compat.six._LazyModule-class.html#__init__,Method ansible.compat.six._SixMetaPathImporter.__init__()=ansible.compat.six._SixMetaPathImporter-class.html#__init__,Method ansible.errors.AnsibleError.__init__()=ansible.errors.AnsibleError-class.html#__init__,Method ansible.executor.module_common.ModuleDepFinder.__init__()=ansible.executor.module_common.ModuleDepFinder-class.html#__init__,Method ansible.executor.play_iterator.HostState.__init__()=ansible.executor.play_iterator.HostState-class.html#__init__,Method ansible.executor.play_iterator.PlayIterator.__init__()=ansible.executor.play_iterator.PlayIterator-class.html#__init__,Method ansible.executor.playbook_executor.PlaybookExecutor.__init__()=ansible.executor.playbook_executor.PlaybookExecutor-class.html#__init__,Method ansible.executor.process.result.ResultProcess.__init__()=ansible.executor.process.result.ResultProcess-class.html#__init__,Method ansible.executor.process.worker.WorkerProcess.__init__()=ansible.executor.process.worker.WorkerProcess-class.html#__init__,Method ansible.executor.stats.AggregateStats.__init__()=ansible.executor.stats.AggregateStats-class.html#__init__,Method ansible.executor.task_executor.TaskExecutor.__init__()=ansible.executor.task_executor.TaskExecutor-class.html#__init__,Method ansible.executor.task_queue_manager.TaskQueueManager.__init__()=ansible.executor.task_queue_manager.TaskQueueManager-class.html#__init__,Method ansible.executor.task_result.TaskResult.__init__()=ansible.executor.task_result.TaskResult-class.html#__init__,Method ansible.galaxy.Galaxy.__init__()=ansible.galaxy.Galaxy-class.html#__init__,Method ansible.galaxy.api.GalaxyAPI.__init__()=ansible.galaxy.api.GalaxyAPI-class.html#__init__,Method ansible.galaxy.login.GalaxyLogin.__init__()=ansible.galaxy.login.GalaxyLogin-class.html#__init__,Method ansible.galaxy.role.GalaxyRole.__init__()=ansible.galaxy.role.GalaxyRole-class.html#__init__,Method ansible.galaxy.token.GalaxyToken.__init__()=ansible.galaxy.token.GalaxyToken-class.html#__init__,Method ansible.inventory.Inventory.__init__()=ansible.inventory.Inventory-class.html#__init__,Method ansible.inventory.dir.InventoryDirectory.__init__()=ansible.inventory.dir.InventoryDirectory-class.html#__init__,Method ansible.inventory.group.Group.__init__()=ansible.inventory.group.Group-class.html#__init__,Method ansible.inventory.host.Host.__init__()=ansible.inventory.host.Host-class.html#__init__,Method ansible.inventory.ini.InventoryParser.__init__()=ansible.inventory.ini.InventoryParser-class.html#__init__,Method ansible.inventory.script.InventoryScript.__init__()=ansible.inventory.script.InventoryScript-class.html#__init__,Method ansible.inventory.vars_plugins.noop.VarsModule.__init__()=ansible.inventory.vars_plugins.noop.VarsModule-class.html#__init__,Method ansible.inventory.yaml.InventoryParser.__init__()=ansible.inventory.yaml.InventoryParser-class.html#__init__,Method ansible.module_utils.asa.Cli.__init__()=ansible.module_utils.asa.Cli-class.html#__init__,Method ansible.module_utils.asa.NetworkModule.__init__()=ansible.module_utils.asa.NetworkModule-class.html#__init__,Method ansible.module_utils.azure_rm_common.AzureRMModuleBase.__init__()=ansible.module_utils.azure_rm_common.AzureRMModuleBase-class.html#__init__,Method ansible.module_utils.basic.AnsibleModule.__init__()=ansible.module_utils.basic.AnsibleModule-class.html#__init__,Method ansible.module_utils.cloudstack.AnsibleCloudStack.__init__()=ansible.module_utils.cloudstack.AnsibleCloudStack-class.html#__init__,Method ansible.module_utils.docker_common.AnsibleDockerClient.__init__()=ansible.module_utils.docker_common.AnsibleDockerClient-class.html#__init__,Method ansible.module_utils.docker_common.DockerBaseClass.__init__()=ansible.module_utils.docker_common.DockerBaseClass-class.html#__init__,Method ansible.module_utils.eos.Eapi.__init__()=ansible.module_utils.eos.Eapi-class.html#__init__,Method ansible.module_utils.facts.Distribution.__init__()=ansible.module_utils.facts.Distribution-class.html#__init__,Method ansible.module_utils.facts.Facts.__init__()=ansible.module_utils.facts.Facts-class.html#__init__,Method ansible.module_utils.ios.Restconf.__init__()=ansible.module_utils.ios.Restconf-class.html#__init__,Method ansible.module_utils.junos.Cli.__init__()=ansible.module_utils.junos.Cli-class.html#__init__,Method ansible.module_utils.junos.Netconf.__init__()=ansible.module_utils.junos.Netconf-class.html#__init__,Method ansible.module_utils.junos.NetworkModule.__init__()=ansible.module_utils.junos.NetworkModule-class.html#__init__,Method ansible.module_utils.netcfg.ConfigLine.__init__()=ansible.module_utils.netcfg.ConfigLine-class.html#__init__,Method ansible.module_utils.netcfg.NetworkConfig.__init__()=ansible.module_utils.netcfg.NetworkConfig-class.html#__init__,Method ansible.module_utils.netcmd.CommandRunner.__init__()=ansible.module_utils.netcmd.CommandRunner-class.html#__init__,Method ansible.module_utils.netcmd.Conditional.__init__()=ansible.module_utils.netcmd.Conditional-class.html#__init__,Method ansible.module_utils.netcmd.FailedConditionsError.__init__()=ansible.module_utils.netcmd.FailedConditionsError-class.html#__init__,Method ansible.module_utils.network.Cli.__init__()=ansible.module_utils.network.Cli-class.html#__init__,Method ansible.module_utils.network.Command.__init__()=ansible.module_utils.network.Command-class.html#__init__,Method ansible.module_utils.network.Config.__init__()=ansible.module_utils.network.Config-class.html#__init__,Method ansible.module_utils.network.ModuleStub.__init__()=ansible.module_utils.network.ModuleStub-class.html#__init__,Method ansible.module_utils.network.NetCli.__init__()=ansible.module_utils.network.NetCli-class.html#__init__,Method ansible.module_utils.network.NetworkError.__init__()=ansible.module_utils.network.NetworkError-class.html#__init__,Method ansible.module_utils.network.NetworkModule.__init__()=ansible.module_utils.network.NetworkModule-class.html#__init__,Method ansible.module_utils.nxos.Cli.__init__()=ansible.module_utils.nxos.Cli-class.html#__init__,Method ansible.module_utils.nxos.NetworkModule.__init__()=ansible.module_utils.nxos.NetworkModule-class.html#__init__,Method ansible.module_utils.nxos.Nxapi.__init__()=ansible.module_utils.nxos.Nxapi-class.html#__init__,Method ansible.module_utils.openswitch.Cli.__init__()=ansible.module_utils.openswitch.Cli-class.html#__init__,Method ansible.module_utils.openswitch.NetworkModule.__init__()=ansible.module_utils.openswitch.NetworkModule-class.html#__init__,Method ansible.module_utils.openswitch.Response.__init__()=ansible.module_utils.openswitch.Response-class.html#__init__,Method ansible.module_utils.openswitch.Rest.__init__()=ansible.module_utils.openswitch.Rest-class.html#__init__,Method ansible.module_utils.redhat.RegistrationBase.__init__()=ansible.module_utils.redhat.RegistrationBase-class.html#__init__,Method ansible.module_utils.redhat.Rhsm.__init__()=ansible.module_utils.redhat.Rhsm-class.html#__init__,Method ansible.module_utils.redhat.RhsmPool.__init__()=ansible.module_utils.redhat.RhsmPool-class.html#__init__,Method ansible.module_utils.redhat.RhsmPools.__init__()=ansible.module_utils.redhat.RhsmPools-class.html#__init__,Method ansible.module_utils.service.Service.__init__()=ansible.module_utils.service.Service-class.html#__init__,Method ansible.module_utils.shell.Command.__init__()=ansible.module_utils.shell.Command-class.html#__init__,Method ansible.module_utils.shell.Shell.__init__()=ansible.module_utils.shell.Shell-class.html#__init__,Method ansible.module_utils.shell.ShellError.__init__()=ansible.module_utils.shell.ShellError-class.html#__init__,Method ansible.module_utils.six.MovedAttribute.__init__()=ansible.module_utils.six.MovedAttribute-class.html#__init__,Method ansible.module_utils.six.MovedModule.__init__()=ansible.module_utils.six.MovedModule-class.html#__init__,Method ansible.module_utils.six._LazyDescr.__init__()=ansible.module_utils.six._LazyDescr-class.html#__init__,Method ansible.module_utils.urls.CustomHTTPSConnection.__init__()=ansible.module_utils.urls.CustomHTTPSConnection-class.html#__init__,Method ansible.module_utils.urls.RequestWithMethod.__init__()=ansible.module_utils.urls.RequestWithMethod-class.html#__init__,Method ansible.module_utils.urls.SSLValidationHandler.__init__()=ansible.module_utils.urls.SSLValidationHandler-class.html#__init__,Method ansible.module_utils.vca.VcaAnsibleModule.__init__()=ansible.module_utils.vca.VcaAnsibleModule-class.html#__init__,Method ansible.module_utils.vca.VcaError.__init__()=ansible.module_utils.vca.VcaError-class.html#__init__,Method ansible.parsing.dataloader.DataLoader.__init__()=ansible.parsing.dataloader.DataLoader-class.html#__init__,Method ansible.parsing.mod_args.ModuleArgsParser.__init__()=ansible.parsing.mod_args.ModuleArgsParser-class.html#__init__,Method ansible.parsing.vault.VaultAES.__init__()=ansible.parsing.vault.VaultAES-class.html#__init__,Method ansible.parsing.vault.VaultAES256.__init__()=ansible.parsing.vault.VaultAES256-class.html#__init__,Method ansible.parsing.vault.VaultEditor.__init__()=ansible.parsing.vault.VaultEditor-class.html#__init__,Method ansible.parsing.vault.VaultFile.__init__()=ansible.parsing.vault.VaultFile-class.html#__init__,Method ansible.parsing.vault.VaultLib.__init__()=ansible.parsing.vault.VaultLib-class.html#__init__,Method ansible.parsing.yaml.constructor.AnsibleConstructor.__init__()=ansible.parsing.yaml.constructor.AnsibleConstructor-class.html#__init__,Method ansible.parsing.yaml.loader.AnsibleLoader.__init__()=ansible.parsing.yaml.loader.AnsibleLoader-class.html#__init__,Method ansible.playbook.Playbook.__init__()=ansible.playbook.Playbook-class.html#__init__,Method ansible.playbook.attribute.Attribute.__init__()=ansible.playbook.attribute.Attribute-class.html#__init__,Method ansible.playbook.base.Base.__init__()=ansible.playbook.base.Base-class.html#__init__,Method ansible.playbook.become.Become.__init__()=ansible.playbook.become.Become-class.html#__init__,Method ansible.playbook.block.Block.__init__()=ansible.playbook.block.Block-class.html#__init__,Method ansible.playbook.conditional.Conditional.__init__()=ansible.playbook.conditional.Conditional-class.html#__init__,Method ansible.playbook.handler.Handler.__init__()=ansible.playbook.handler.Handler-class.html#__init__,Method ansible.playbook.included_file.IncludedFile.__init__()=ansible.playbook.included_file.IncludedFile-class.html#__init__,Method ansible.playbook.loop_control.LoopControl.__init__()=ansible.playbook.loop_control.LoopControl-class.html#__init__,Method ansible.playbook.play.Play.__init__()=ansible.playbook.play.Play-class.html#__init__,Method ansible.playbook.play_context.PlayContext.__init__()=ansible.playbook.play_context.PlayContext-class.html#__init__,Method ansible.playbook.role.Role.__init__()=ansible.playbook.role.Role-class.html#__init__,Method ansible.playbook.role.definition.RoleDefinition.__init__()=ansible.playbook.role.definition.RoleDefinition-class.html#__init__,Method ansible.playbook.role.include.RoleInclude.__init__()=ansible.playbook.role.include.RoleInclude-class.html#__init__,Method ansible.playbook.role.metadata.RoleMetadata.__init__()=ansible.playbook.role.metadata.RoleMetadata-class.html#__init__,Method ansible.playbook.role.requirement.RoleRequirement.__init__()=ansible.playbook.role.requirement.RoleRequirement-class.html#__init__,Method ansible.playbook.taggable.Taggable.__init__()=ansible.playbook.taggable.Taggable-class.html#__init__,Method ansible.playbook.task.Task.__init__()=ansible.playbook.task.Task-class.html#__init__,Method ansible.plugins.PluginLoader.__init__()=ansible.plugins.PluginLoader-class.html#__init__,Method ansible.plugins.action.ActionBase.__init__()=ansible.plugins.action.ActionBase-class.html#__init__,Method ansible.plugins.cache.FactCache.__init__()=ansible.plugins.cache.FactCache-class.html#__init__,Method ansible.plugins.cache.jsonfile.CacheModule.__init__()=ansible.plugins.cache.jsonfile.CacheModule-class.html#__init__,Method ansible.plugins.cache.memcached.CacheModule.__init__()=ansible.plugins.cache.memcached.CacheModule-class.html#__init__,Method ansible.plugins.cache.memcached.CacheModuleKeys.__init__()=ansible.plugins.cache.memcached.CacheModuleKeys-class.html#__init__,Method ansible.plugins.cache.memcached.ProxyClientPool.__init__()=ansible.plugins.cache.memcached.ProxyClientPool-class.html#__init__,Method ansible.plugins.cache.memory.CacheModule.__init__()=ansible.plugins.cache.memory.CacheModule-class.html#__init__,Method ansible.plugins.cache.redis.CacheModule.__init__()=ansible.plugins.cache.redis.CacheModule-class.html#__init__,Method ansible.plugins.callback.CallbackBase.__init__()=ansible.plugins.callback.CallbackBase-class.html#__init__,Method ansible.plugins.callback.actionable.CallbackModule.__init__()=ansible.plugins.callback.actionable.CallbackModule-class.html#__init__,Method ansible.plugins.callback.context_demo.CallbackModule.__init__()=ansible.plugins.callback.context_demo.CallbackModule-class.html#__init__,Method ansible.plugins.callback.hipchat.CallbackModule.__init__()=ansible.plugins.callback.hipchat.CallbackModule-class.html#__init__,Method ansible.plugins.callback.json.CallbackModule.__init__()=ansible.plugins.callback.json.CallbackModule-class.html#__init__,Method ansible.plugins.callback.junit.CallbackModule.__init__()=ansible.plugins.callback.junit.CallbackModule-class.html#__init__,Method ansible.plugins.callback.junit.HostData.__init__()=ansible.plugins.callback.junit.HostData-class.html#__init__,Method ansible.plugins.callback.junit.TaskData.__init__()=ansible.plugins.callback.junit.TaskData-class.html#__init__,Method ansible.plugins.callback.log_plays.CallbackModule.__init__()=ansible.plugins.callback.log_plays.CallbackModule-class.html#__init__,Method ansible.plugins.callback.logentries.CallbackModule.__init__()=ansible.plugins.callback.logentries.CallbackModule-class.html#__init__,Method ansible.plugins.callback.logentries.PlainTextSocketAppender.__init__()=ansible.plugins.callback.logentries.PlainTextSocketAppender-class.html#__init__,Method ansible.plugins.callback.osx_say.CallbackModule.__init__()=ansible.plugins.callback.osx_say.CallbackModule-class.html#__init__,Method ansible.plugins.callback.profile_tasks.CallbackModule.__init__()=ansible.plugins.callback.profile_tasks.CallbackModule-class.html#__init__,Method ansible.plugins.callback.slack.CallbackModule.__init__()=ansible.plugins.callback.slack.CallbackModule-class.html#__init__,Method ansible.plugins.callback.syslog_json.CallbackModule.__init__()=ansible.plugins.callback.syslog_json.CallbackModule-class.html#__init__,Method ansible.plugins.callback.timer.CallbackModule.__init__()=ansible.plugins.callback.timer.CallbackModule-class.html#__init__,Method ansible.plugins.callback.tree.CallbackModule.__init__()=ansible.plugins.callback.tree.CallbackModule-class.html#__init__,Method ansible.plugins.connection.ConnectionBase.__init__()=ansible.plugins.connection.ConnectionBase-class.html#__init__,Method ansible.plugins.connection.accelerate.Connection.__init__()=ansible.plugins.connection.accelerate.Connection-class.html#__init__,Method ansible.plugins.connection.chroot.Connection.__init__()=ansible.plugins.connection.chroot.Connection-class.html#__init__,Method ansible.plugins.connection.docker.Connection.__init__()=ansible.plugins.connection.docker.Connection-class.html#__init__,Method ansible.plugins.connection.funcd.Connection.__init__()=ansible.plugins.connection.funcd.Connection-class.html#__init__,Method ansible.plugins.connection.jail.Connection.__init__()=ansible.plugins.connection.jail.Connection-class.html#__init__,Method ansible.plugins.connection.libvirt_lxc.Connection.__init__()=ansible.plugins.connection.libvirt_lxc.Connection-class.html#__init__,Method ansible.plugins.connection.lxc.Connection.__init__()=ansible.plugins.connection.lxc.Connection-class.html#__init__,Method ansible.plugins.connection.lxd.Connection.__init__()=ansible.plugins.connection.lxd.Connection-class.html#__init__,Method ansible.plugins.connection.paramiko_ssh.MyAddPolicy.__init__()=ansible.plugins.connection.paramiko_ssh.MyAddPolicy-class.html#__init__,Method ansible.plugins.connection.ssh.Connection.__init__()=ansible.plugins.connection.ssh.Connection-class.html#__init__,Method ansible.plugins.connection.winrm.Connection.__init__()=ansible.plugins.connection.winrm.Connection-class.html#__init__,Method ansible.plugins.connection.zone.Connection.__init__()=ansible.plugins.connection.zone.Connection-class.html#__init__,Method ansible.plugins.lookup.LookupBase.__init__()=ansible.plugins.lookup.LookupBase-class.html#__init__,Method ansible.plugins.lookup.consul_kv.LookupModule.__init__()=ansible.plugins.lookup.consul_kv.LookupModule-class.html#__init__,Method ansible.plugins.lookup.csvfile.CSVReader.__init__()=ansible.plugins.lookup.csvfile.CSVReader-class.html#__init__,Method ansible.plugins.lookup.csvfile.CSVRecoder.__init__()=ansible.plugins.lookup.csvfile.CSVRecoder-class.html#__init__,Method ansible.plugins.lookup.etcd.Etcd.__init__()=ansible.plugins.lookup.etcd.Etcd-class.html#__init__,Method ansible.plugins.lookup.hashi_vault.HashiVault.__init__()=ansible.plugins.lookup.hashi_vault.HashiVault-class.html#__init__,Method ansible.plugins.lookup.indexed_items.LookupModule.__init__()=ansible.plugins.lookup.indexed_items.LookupModule-class.html#__init__,Method ansible.plugins.shell.ShellBase.__init__()=ansible.plugins.shell.ShellBase-class.html#__init__,Method ansible.plugins.strategy.SharedPluginLoaderObj.__init__()=ansible.plugins.strategy.SharedPluginLoaderObj-class.html#__init__,Method ansible.plugins.strategy.StrategyBase.__init__()=ansible.plugins.strategy.StrategyBase-class.html#__init__,Method ansible.plugins.strategy.debug.Debugger.__init__()=ansible.plugins.strategy.debug.Debugger-class.html#__init__,Method ansible.plugins.strategy.debug.NextAction.__init__()=ansible.plugins.strategy.debug.NextAction-class.html#__init__,Method ansible.plugins.strategy.debug.StrategyModule.__init__()=ansible.plugins.strategy.debug.StrategyModule-class.html#__init__,Method ansible.template.Templar.__init__()=ansible.template.Templar-class.html#__init__,Method ansible.template.vars.AnsibleJ2Vars.__init__()=ansible.template.vars.AnsibleJ2Vars-class.html#__init__,Method ansible.utils.display.Display.__init__()=ansible.utils.display.Display-class.html#__init__,Method ansible.vars.AnsibleInventoryVarsData.__init__()=ansible.vars.AnsibleInventoryVarsData-class.html#__init__,Method ansible.vars.VariableManager.__init__()=ansible.vars.VariableManager-class.html#__init__,Method ansible.vars.hostvars.HostVars.__init__()=ansible.vars.hostvars.HostVars-class.html#__init__"><a title="ansible.cli.CLI.__init__
+ansible.cli.console.ConsoleCLI.__init__
+ansible.cli.doc.DocCLI.__init__
+ansible.cli.galaxy.GalaxyCLI.__init__
+ansible.cli.vault.VaultCLI.__init__
+ansible.compat.six.MovedAttribute.__init__
+ansible.compat.six.MovedModule.__init__
+ansible.compat.six._LazyDescr.__init__
+ansible.compat.six._LazyModule.__init__
+ansible.compat.six._SixMetaPathImporter.__init__
+ansible.errors.AnsibleError.__init__
+ansible.executor.module_common.ModuleDepFinder.__init__
+ansible.executor.play_iterator.HostState.__init__
+ansible.executor.play_iterator.PlayIterator.__init__
+ansible.executor.playbook_executor.PlaybookExecutor.__init__
+ansible.executor.process.result.ResultProcess.__init__
+ansible.executor.process.worker.WorkerProcess.__init__
+ansible.executor.stats.AggregateStats.__init__
+ansible.executor.task_executor.TaskExecutor.__init__
+ansible.executor.task_queue_manager.TaskQueueManager.__init__
+ansible.executor.task_result.TaskResult.__init__
+ansible.galaxy.Galaxy.__init__
+ansible.galaxy.api.GalaxyAPI.__init__
+ansible.galaxy.login.GalaxyLogin.__init__
+ansible.galaxy.role.GalaxyRole.__init__
+ansible.galaxy.token.GalaxyToken.__init__
+ansible.inventory.Inventory.__init__
+ansible.inventory.dir.InventoryDirectory.__init__
+ansible.inventory.group.Group.__init__
+ansible.inventory.host.Host.__init__
+ansible.inventory.ini.InventoryParser.__init__
+ansible.inventory.script.InventoryScript.__init__
+ansible.inventory.vars_plugins.noop.VarsModule.__init__
+ansible.inventory.yaml.InventoryParser.__init__
+ansible.module_utils.asa.Cli.__init__
+ansible.module_utils.asa.NetworkModule.__init__
+ansible.module_utils.azure_rm_common.AzureRMModuleBase.__init__
+ansible.module_utils.basic.AnsibleModule.__init__
+ansible.module_utils.cloudstack.AnsibleCloudStack.__init__
+ansible.module_utils.docker_common.AnsibleDockerClient.__init__
+ansible.module_utils.docker_common.DockerBaseClass.__init__
+ansible.module_utils.eos.Eapi.__init__
+ansible.module_utils.facts.Distribution.__init__
+ansible.module_utils.facts.Facts.__init__
+ansible.module_utils.ios.Restconf.__init__
+ansible.module_utils.junos.Cli.__init__
+ansible.module_utils.junos.Netconf.__init__
+ansible.module_utils.junos.NetworkModule.__init__
+ansible.module_utils.netcfg.ConfigLine.__init__
+ansible.module_utils.netcfg.NetworkConfig.__init__
+ansible.module_utils.netcmd.CommandRunner.__init__
+ansible.module_utils.netcmd.Conditional.__init__
+ansible.module_utils.netcmd.FailedConditionsError.__init__
+ansible.module_utils.network.Cli.__init__
+ansible.module_utils.network.Command.__init__
+ansible.module_utils.network.Config.__init__
+ansible.module_utils.network.ModuleStub.__init__
+ansible.module_utils.network.NetCli.__init__
+ansible.module_utils.network.NetworkError.__init__
+ansible.module_utils.network.NetworkModule.__init__
+ansible.module_utils.nxos.Cli.__init__
+ansible.module_utils.nxos.NetworkModule.__init__
+ansible.module_utils.nxos.Nxapi.__init__
+ansible.module_utils.openswitch.Cli.__init__
+ansible.module_utils.openswitch.NetworkModule.__init__
+ansible.module_utils.openswitch.Response.__init__
+ansible.module_utils.openswitch.Rest.__init__
+ansible.module_utils.redhat.RegistrationBase.__init__
+ansible.module_utils.redhat.Rhsm.__init__
+ansible.module_utils.redhat.RhsmPool.__init__
+ansible.module_utils.redhat.RhsmPools.__init__
+ansible.module_utils.service.Service.__init__
+ansible.module_utils.shell.Command.__init__
+ansible.module_utils.shell.Shell.__init__
+ansible.module_utils.shell.ShellError.__init__
+ansible.module_utils.six.MovedAttribute.__init__
+ansible.module_utils.six.MovedModule.__init__
+ansible.module_utils.six._LazyDescr.__init__
+ansible.module_utils.urls.CustomHTTPSConnection.__init__
+ansible.module_utils.urls.RequestWithMethod.__init__
+ansible.module_utils.urls.SSLValidationHandler.__init__
+ansible.module_utils.vca.VcaAnsibleModule.__init__
+ansible.module_utils.vca.VcaError.__init__
+ansible.parsing.dataloader.DataLoader.__init__
+ansible.parsing.mod_args.ModuleArgsParser.__init__
+ansible.parsing.vault.VaultAES.__init__
+ansible.parsing.vault.VaultAES256.__init__
+ansible.parsing.vault.VaultEditor.__init__
+ansible.parsing.vault.VaultFile.__init__
+ansible.parsing.vault.VaultLib.__init__
+ansible.parsing.yaml.constructor.AnsibleConstructor.__init__
+ansible.parsing.yaml.loader.AnsibleLoader.__init__
+ansible.playbook.Playbook.__init__
+ansible.playbook.attribute.Attribute.__init__
+ansible.playbook.base.Base.__init__
+ansible.playbook.become.Become.__init__
+ansible.playbook.block.Block.__init__
+ansible.playbook.conditional.Conditional.__init__
+ansible.playbook.handler.Handler.__init__
+ansible.playbook.included_file.IncludedFile.__init__
+ansible.playbook.loop_control.LoopControl.__init__
+ansible.playbook.play.Play.__init__
+ansible.playbook.play_context.PlayContext.__init__
+ansible.playbook.role.Role.__init__
+ansible.playbook.role.definition.RoleDefinition.__init__
+ansible.playbook.role.include.RoleInclude.__init__
+ansible.playbook.role.metadata.RoleMetadata.__init__
+ansible.playbook.role.requirement.RoleRequirement.__init__
+ansible.playbook.taggable.Taggable.__init__
+ansible.playbook.task.Task.__init__
+ansible.plugins.PluginLoader.__init__
+ansible.plugins.action.ActionBase.__init__
+ansible.plugins.cache.FactCache.__init__
+ansible.plugins.cache.jsonfile.CacheModule.__init__
+ansible.plugins.cache.memcached.CacheModule.__init__
+ansible.plugins.cache.memcached.CacheModuleKeys.__init__
+ansible.plugins.cache.memcached.ProxyClientPool.__init__
+ansible.plugins.cache.memory.CacheModule.__init__
+ansible.plugins.cache.redis.CacheModule.__init__
+ansible.plugins.callback.CallbackBase.__init__
+ansible.plugins.callback.actionable.CallbackModule.__init__
+ansible.plugins.callback.context_demo.CallbackModule.__init__
+ansible.plugins.callback.hipchat.CallbackModule.__init__
+ansible.plugins.callback.json.CallbackModule.__init__
+ansible.plugins.callback.junit.CallbackModule.__init__
+ansible.plugins.callback.junit.HostData.__init__
+ansible.plugins.callback.junit.TaskData.__init__
+ansible.plugins.callback.log_plays.CallbackModule.__init__
+ansible.plugins.callback.logentries.CallbackModule.__init__
+ansible.plugins.callback.logentries.PlainTextSocketAppender.__init__
+ansible.plugins.callback.osx_say.CallbackModule.__init__
+ansible.plugins.callback.profile_tasks.CallbackModule.__init__
+ansible.plugins.callback.slack.CallbackModule.__init__
+ansible.plugins.callback.syslog_json.CallbackModule.__init__
+ansible.plugins.callback.timer.CallbackModule.__init__
+ansible.plugins.callback.tree.CallbackModule.__init__
+ansible.plugins.connection.ConnectionBase.__init__
+ansible.plugins.connection.accelerate.Connection.__init__
+ansible.plugins.connection.chroot.Connection.__init__
+ansible.plugins.connection.docker.Connection.__init__
+ansible.plugins.connection.funcd.Connection.__init__
+ansible.plugins.connection.jail.Connection.__init__
+ansible.plugins.connection.libvirt_lxc.Connection.__init__
+ansible.plugins.connection.lxc.Connection.__init__
+ansible.plugins.connection.lxd.Connection.__init__
+ansible.plugins.connection.paramiko_ssh.MyAddPolicy.__init__
+ansible.plugins.connection.ssh.Connection.__init__
+ansible.plugins.connection.winrm.Connection.__init__
+ansible.plugins.connection.zone.Connection.__init__
+ansible.plugins.lookup.LookupBase.__init__
+ansible.plugins.lookup.consul_kv.LookupModule.__init__
+ansible.plugins.lookup.csvfile.CSVReader.__init__
+ansible.plugins.lookup.csvfile.CSVRecoder.__init__
+ansible.plugins.lookup.etcd.Etcd.__init__
+ansible.plugins.lookup.hashi_vault.HashiVault.__init__
+ansible.plugins.lookup.indexed_items.LookupModule.__init__
+ansible.plugins.shell.ShellBase.__init__
+ansible.plugins.strategy.SharedPluginLoaderObj.__init__
+ansible.plugins.strategy.StrategyBase.__init__
+ansible.plugins.strategy.debug.Debugger.__init__
+ansible.plugins.strategy.debug.NextAction.__init__
+ansible.plugins.strategy.debug.StrategyModule.__init__
+ansible.template.Templar.__init__
+ansible.template.vars.AnsibleJ2Vars.__init__
+ansible.utils.display.Display.__init__
+ansible.vars.AnsibleInventoryVarsData.__init__
+ansible.vars.VariableManager.__init__
+ansible.vars.hostvars.HostVars.__init__" class="py-name" href="#" onclick="return doclink('link-26', '__init__', 'link-26');">__init__</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L41"></a><tt class="py-lineno"> 41</tt>  <tt class="py-line"> </tt>
+<a name="Become._detect_privilege_escalation_conflict"></a><div id="Become._detect_privilege_escalation_conflict-def"><a name="L42"></a><tt class="py-lineno"> 42</tt> <a class="py-toggle" href="#" id="Become._detect_privilege_escalation_conflict-toggle" onclick="return toggle('Become._detect_privilege_escalation_conflict');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.playbook.become.Become-class.html#_detect_privilege_escalation_conflict">_detect_privilege_escalation_conflict</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">ds</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Become._detect_privilege_escalation_conflict-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="Become._detect_privilege_escalation_conflict-expanded"><a name="L43"></a><tt class="py-lineno"> 43</tt>  <tt class="py-line"> </tt>
+<a name="L44"></a><tt class="py-lineno"> 44</tt>  <tt class="py-line">        <tt class="py-comment"># Fail out if user specifies conflicting privilege escalations</tt> </tt>
+<a name="L45"></a><tt class="py-lineno"> 45</tt>  <tt class="py-line">        <tt class="py-name">has_become</tt> <tt class="py-op">=</tt> <tt class="py-string">'become'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">ds</tt> <tt class="py-keyword">or</tt> <tt class="py-string">'become_user'</tt><tt class="py-keyword">in</tt> <tt class="py-name">ds</tt> </tt>
+<a name="L46"></a><tt class="py-lineno"> 46</tt>  <tt class="py-line">        <tt class="py-name">has_sudo</tt>   <tt class="py-op">=</tt> <tt class="py-string">'sudo'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">ds</tt> <tt class="py-keyword">or</tt> <tt class="py-string">'sudo_user'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">ds</tt> </tt>
+<a name="L47"></a><tt class="py-lineno"> 47</tt>  <tt class="py-line">        <tt class="py-name">has_su</tt>     <tt class="py-op">=</tt> <tt class="py-string">'su'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">ds</tt> <tt class="py-keyword">or</tt> <tt class="py-string">'su_user'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">ds</tt> </tt>
+<a name="L48"></a><tt class="py-lineno"> 48</tt>  <tt class="py-line"> </tt>
+<a name="L49"></a><tt class="py-lineno"> 49</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">has_become</tt><tt class="py-op">:</tt> </tt>
+<a name="L50"></a><tt class="py-lineno"> 50</tt>  <tt class="py-line">            <tt class="py-name">msg</tt> <tt class="py-op">=</tt> <tt class="py-string">'The become params ("become", "become_user") and'</tt> </tt>
+<a name="L51"></a><tt class="py-lineno"> 51</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-name">has_sudo</tt><tt class="py-op">:</tt> </tt>
+<a name="L52"></a><tt class="py-lineno"> 52</tt>  <tt class="py-line">                <tt class="py-keyword">raise</tt> <tt id="link-27" class="py-name"><a title="ansible.errors.AnsibleParserError" class="py-name" href="#" onclick="return doclink('link-27', 'AnsibleParserError', 'link-6');">AnsibleParserError</a></tt><tt class="py-op">(</tt><tt class="py-string">'%s sudo params ("sudo", "sudo_user") cannot be used together'</tt> <tt class="py-op">%</tt> <tt class="py-name">msg</tt><tt class="py-op">)</tt> </tt>
+<a name="L53"></a><tt class="py-lineno"> 53</tt>  <tt class="py-line">            <tt class="py-keyword">elif</tt> <tt class="py-name">has_su</tt><tt class="py-op">:</tt> </tt>
+<a name="L54"></a><tt class="py-lineno"> 54</tt>  <tt class="py-line">                <tt class="py-keyword">raise</tt> <tt id="link-28" class="py-name"><a title="ansible.errors.AnsibleParserError" class="py-name" href="#" onclick="return doclink('link-28', 'AnsibleParserError', 'link-6');">AnsibleParserError</a></tt><tt class="py-op">(</tt><tt class="py-string">'%s su params ("su", "su_user") cannot be used together'</tt> <tt class="py-op">%</tt> <tt class="py-name">msg</tt><tt class="py-op">)</tt> </tt>
+<a name="L55"></a><tt class="py-lineno"> 55</tt>  <tt class="py-line">        <tt class="py-keyword">elif</tt> <tt class="py-name">has_sudo</tt> <tt class="py-keyword">and</tt> <tt class="py-name">has_su</tt><tt class="py-op">:</tt> </tt>
+<a name="L56"></a><tt class="py-lineno"> 56</tt>  <tt class="py-line">            <tt class="py-keyword">raise</tt> <tt id="link-29" class="py-name"><a title="ansible.errors.AnsibleParserError" class="py-name" href="#" onclick="return doclink('link-29', 'AnsibleParserError', 'link-6');">AnsibleParserError</a></tt><tt class="py-op">(</tt><tt class="py-string">'sudo params ("sudo", "sudo_user") and su params ("su", "su_user") cannot be used together'</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L57"></a><tt class="py-lineno"> 57</tt>  <tt class="py-line"> </tt>
+<a name="Become._preprocess_data_become"></a><div id="Become._preprocess_data_become-def"><a name="L58"></a><tt class="py-lineno"> 58</tt> <a class="py-toggle" href="#" id="Become._preprocess_data_become-toggle" onclick="return toggle('Become._preprocess_data_become');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.playbook.become.Become-class.html#_preprocess_data_become">_preprocess_data_become</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">ds</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Become._preprocess_data_become-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="Become._preprocess_data_become-expanded"><a name="L59"></a><tt class="py-lineno"> 59</tt>  <tt class="py-line">        <tt class="py-docstring">"""Preprocess the playbook data for become attributes</tt> </tt>
+<a name="L60"></a><tt class="py-lineno"> 60</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L61"></a><tt class="py-lineno"> 61</tt>  <tt class="py-line"><tt class="py-docstring">        This is called from the Base object's preprocess_data() method which</tt> </tt>
+<a name="L62"></a><tt class="py-lineno"> 62</tt>  <tt class="py-line"><tt class="py-docstring">        in turn is called pretty much anytime any sort of playbook object</tt> </tt>
+<a name="L63"></a><tt class="py-lineno"> 63</tt>  <tt class="py-line"><tt class="py-docstring">        (plays, tasks, blocks, etc) is created.</tt> </tt>
+<a name="L64"></a><tt class="py-lineno"> 64</tt>  <tt class="py-line"><tt class="py-docstring">        """</tt> </tt>
+<a name="L65"></a><tt class="py-lineno"> 65</tt>  <tt class="py-line"> </tt>
+<a name="L66"></a><tt class="py-lineno"> 66</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-30" class="py-name" targets="Method ansible.playbook.become.Become._detect_privilege_escalation_conflict()=ansible.playbook.become.Become-class.html#_detect_privilege_escalation_conflict"><a title="ansible.playbook.become.Become._detect_privilege_escalation_conflict" class="py-name" href="#" onclick="return doclink('link-30', '_detect_privilege_escalation_conflict', 'link-30');">_detect_privilege_escalation_conflict</a></tt><tt class="py-op">(</tt><tt class="py-name">ds</tt><tt class="py-op">)</tt> </tt>
+<a name="L67"></a><tt class="py-lineno"> 67</tt>  <tt class="py-line"> </tt>
+<a name="L68"></a><tt class="py-lineno"> 68</tt>  <tt class="py-line">        <tt class="py-comment"># Privilege escalation, backwards compatibility for sudo/su</tt> </tt>
+<a name="L69"></a><tt class="py-lineno"> 69</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-string">'sudo'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">ds</tt> <tt class="py-keyword">or</tt> <tt class="py-string">'sudo_user'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">ds</tt><tt class="py-op">:</tt> </tt>
+<a name="L70"></a><tt class="py-lineno"> 70</tt>  <tt class="py-line">            <tt class="py-name">ds</tt><tt class="py-op">[</tt><tt class="py-string">'become_method'</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-string">'sudo'</tt> </tt>
+<a name="L71"></a><tt class="py-lineno"> 71</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-string">'sudo'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">ds</tt><tt class="py-op">:</tt> </tt>
+<a name="L72"></a><tt class="py-lineno"> 72</tt>  <tt class="py-line">                <tt class="py-name">ds</tt><tt class="py-op">[</tt><tt class="py-string">'become'</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-name">ds</tt><tt class="py-op">[</tt><tt class="py-string">'sudo'</tt><tt class="py-op">]</tt> </tt>
+<a name="L73"></a><tt class="py-lineno"> 73</tt>  <tt class="py-line">                <tt class="py-keyword">del</tt> <tt class="py-name">ds</tt><tt class="py-op">[</tt><tt class="py-string">'sudo'</tt><tt class="py-op">]</tt> </tt>
+<a name="L74"></a><tt class="py-lineno"> 74</tt>  <tt class="py-line"> </tt>
+<a name="L75"></a><tt class="py-lineno"> 75</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-string">'sudo_user'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">ds</tt><tt class="py-op">:</tt> </tt>
+<a name="L76"></a><tt class="py-lineno"> 76</tt>  <tt class="py-line">                <tt class="py-name">ds</tt><tt class="py-op">[</tt><tt class="py-string">'become_user'</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-name">ds</tt><tt class="py-op">[</tt><tt class="py-string">'sudo_user'</tt><tt class="py-op">]</tt> </tt>
+<a name="L77"></a><tt class="py-lineno"> 77</tt>  <tt class="py-line">                <tt class="py-keyword">del</tt> <tt class="py-name">ds</tt><tt class="py-op">[</tt><tt class="py-string">'sudo_user'</tt><tt class="py-op">]</tt> </tt>
+<a name="L78"></a><tt class="py-lineno"> 78</tt>  <tt class="py-line"> </tt>
+<a name="L79"></a><tt class="py-lineno"> 79</tt>  <tt class="py-line">            <tt id="link-31" class="py-name"><a title="ansible.cli.adhoc.display
+ansible.cli.console.display
+ansible.cli.display
+ansible.cli.doc.display
+ansible.cli.galaxy.display
+ansible.cli.playbook.display
+ansible.cli.pull.display
+ansible.cli.vault.display
+ansible.executor.module_common.display
+ansible.executor.play_iterator.display
+ansible.executor.playbook_executor.display
+ansible.executor.process.result.display
+ansible.executor.process.worker.display
+ansible.executor.task_executor.display
+ansible.executor.task_queue_manager.display
+ansible.galaxy.api.display
+ansible.galaxy.login.display
+ansible.galaxy.role.display
+ansible.galaxy.token.display
+ansible.inventory.display
+ansible.parsing.dataloader.display
+ansible.parsing.vault.display
+ansible.parsing.yaml.constructor.display
+ansible.playbook.base.display
+ansible.playbook.become.display
+ansible.playbook.display
+ansible.playbook.helpers.display
+ansible.playbook.included_file.display
+ansible.playbook.play.display
+ansible.playbook.play_context.display
+ansible.playbook.role.requirement.display
+ansible.playbook.task.display
+ansible.playbook.task_include.display
+ansible.plugins.action.add_host.display
+ansible.plugins.action.display
+ansible.plugins.action.package.display
+ansible.plugins.action.pause.display
+ansible.plugins.action.win_reboot.display
+ansible.plugins.cache.base.display
+ansible.plugins.cache.display
+ansible.plugins.cache.jsonfile.display
+ansible.plugins.connection.accelerate.display
+ansible.plugins.connection.chroot.display
+ansible.plugins.connection.display
+ansible.plugins.connection.docker.display
+ansible.plugins.connection.jail.display
+ansible.plugins.connection.libvirt_lxc.display
+ansible.plugins.connection.local.display
+ansible.plugins.connection.paramiko_ssh.display
+ansible.plugins.connection.ssh.display
+ansible.plugins.connection.winrm.display
+ansible.plugins.connection.zone.display
+ansible.plugins.display
+ansible.plugins.lookup.display
+ansible.plugins.lookup.file.display
+ansible.plugins.lookup.template.display
+ansible.plugins.lookup.url.display
+ansible.plugins.strategy.debug.display
+ansible.plugins.strategy.display
+ansible.plugins.strategy.free.display
+ansible.plugins.strategy.linear.display
+ansible.template.display
+ansible.utils.display
+ansible.utils.display.Display.display
+ansible.utils.encrypt.display
+ansible.utils.module_docs.display
+ansible.vars.display" class="py-name" href="#" onclick="return doclink('link-31', 'display', 'link-12');">display</a></tt><tt class="py-op">.</tt><tt id="link-32" class="py-name" targets="Method ansible.utils.display.Display.deprecated()=ansible.utils.display.Display-class.html#deprecated"><a title="ansible.utils.display.Display.deprecated" class="py-name" href="#" onclick="return doclink('link-32', 'deprecated', 'link-32');">deprecated</a></tt><tt class="py-op">(</tt><tt class="py-string">"Instead of sudo/sudo_user, use become/become_user and make sure become_method is 'sudo' (default)"</tt><tt class="py-op">)</tt> </tt>
+<a name="L80"></a><tt class="py-lineno"> 80</tt>  <tt class="py-line"> </tt>
+<a name="L81"></a><tt class="py-lineno"> 81</tt>  <tt class="py-line">        <tt class="py-keyword">elif</tt> <tt class="py-string">'su'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">ds</tt> <tt class="py-keyword">or</tt> <tt class="py-string">'su_user'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">ds</tt><tt class="py-op">:</tt> </tt>
+<a name="L82"></a><tt class="py-lineno"> 82</tt>  <tt class="py-line">            <tt class="py-name">ds</tt><tt class="py-op">[</tt><tt class="py-string">'become_method'</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-string">'su'</tt> </tt>
+<a name="L83"></a><tt class="py-lineno"> 83</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-string">'su'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">ds</tt><tt class="py-op">:</tt> </tt>
+<a name="L84"></a><tt class="py-lineno"> 84</tt>  <tt class="py-line">                <tt class="py-name">ds</tt><tt class="py-op">[</tt><tt class="py-string">'become'</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-name">ds</tt><tt class="py-op">[</tt><tt class="py-string">'su'</tt><tt class="py-op">]</tt> </tt>
+<a name="L85"></a><tt class="py-lineno"> 85</tt>  <tt class="py-line">                <tt class="py-keyword">del</tt> <tt class="py-name">ds</tt><tt class="py-op">[</tt><tt class="py-string">'su'</tt><tt class="py-op">]</tt> </tt>
+<a name="L86"></a><tt class="py-lineno"> 86</tt>  <tt class="py-line"> </tt>
+<a name="L87"></a><tt class="py-lineno"> 87</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-string">'su_user'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">ds</tt><tt class="py-op">:</tt> </tt>
+<a name="L88"></a><tt class="py-lineno"> 88</tt>  <tt class="py-line">                <tt class="py-name">ds</tt><tt class="py-op">[</tt><tt class="py-string">'become_user'</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-name">ds</tt><tt class="py-op">[</tt><tt class="py-string">'su_user'</tt><tt class="py-op">]</tt> </tt>
+<a name="L89"></a><tt class="py-lineno"> 89</tt>  <tt class="py-line">                <tt class="py-keyword">del</tt> <tt class="py-name">ds</tt><tt class="py-op">[</tt><tt class="py-string">'su_user'</tt><tt class="py-op">]</tt> </tt>
+<a name="L90"></a><tt class="py-lineno"> 90</tt>  <tt class="py-line"> </tt>
+<a name="L91"></a><tt class="py-lineno"> 91</tt>  <tt class="py-line">            <tt id="link-33" class="py-name"><a title="ansible.cli.adhoc.display
+ansible.cli.console.display
+ansible.cli.display
+ansible.cli.doc.display
+ansible.cli.galaxy.display
+ansible.cli.playbook.display
+ansible.cli.pull.display
+ansible.cli.vault.display
+ansible.executor.module_common.display
+ansible.executor.play_iterator.display
+ansible.executor.playbook_executor.display
+ansible.executor.process.result.display
+ansible.executor.process.worker.display
+ansible.executor.task_executor.display
+ansible.executor.task_queue_manager.display
+ansible.galaxy.api.display
+ansible.galaxy.login.display
+ansible.galaxy.role.display
+ansible.galaxy.token.display
+ansible.inventory.display
+ansible.parsing.dataloader.display
+ansible.parsing.vault.display
+ansible.parsing.yaml.constructor.display
+ansible.playbook.base.display
+ansible.playbook.become.display
+ansible.playbook.display
+ansible.playbook.helpers.display
+ansible.playbook.included_file.display
+ansible.playbook.play.display
+ansible.playbook.play_context.display
+ansible.playbook.role.requirement.display
+ansible.playbook.task.display
+ansible.playbook.task_include.display
+ansible.plugins.action.add_host.display
+ansible.plugins.action.display
+ansible.plugins.action.package.display
+ansible.plugins.action.pause.display
+ansible.plugins.action.win_reboot.display
+ansible.plugins.cache.base.display
+ansible.plugins.cache.display
+ansible.plugins.cache.jsonfile.display
+ansible.plugins.connection.accelerate.display
+ansible.plugins.connection.chroot.display
+ansible.plugins.connection.display
+ansible.plugins.connection.docker.display
+ansible.plugins.connection.jail.display
+ansible.plugins.connection.libvirt_lxc.display
+ansible.plugins.connection.local.display
+ansible.plugins.connection.paramiko_ssh.display
+ansible.plugins.connection.ssh.display
+ansible.plugins.connection.winrm.display
+ansible.plugins.connection.zone.display
+ansible.plugins.display
+ansible.plugins.lookup.display
+ansible.plugins.lookup.file.display
+ansible.plugins.lookup.template.display
+ansible.plugins.lookup.url.display
+ansible.plugins.strategy.debug.display
+ansible.plugins.strategy.display
+ansible.plugins.strategy.free.display
+ansible.plugins.strategy.linear.display
+ansible.template.display
+ansible.utils.display
+ansible.utils.display.Display.display
+ansible.utils.encrypt.display
+ansible.utils.module_docs.display
+ansible.vars.display" class="py-name" href="#" onclick="return doclink('link-33', 'display', 'link-12');">display</a></tt><tt class="py-op">.</tt><tt id="link-34" class="py-name"><a title="ansible.utils.display.Display.deprecated" class="py-name" href="#" onclick="return doclink('link-34', 'deprecated', 'link-32');">deprecated</a></tt><tt class="py-op">(</tt><tt class="py-string">"Instead of su/su_user, use become/become_user and set become_method to 'su' (default is sudo)"</tt><tt class="py-op">)</tt> </tt>
+<a name="L92"></a><tt class="py-lineno"> 92</tt>  <tt class="py-line"> </tt>
+<a name="L93"></a><tt class="py-lineno"> 93</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">ds</tt> </tt>
+</div><a name="L94"></a><tt class="py-lineno"> 94</tt>  <tt class="py-line"> </tt>
+<a name="Become.set_become_defaults"></a><div id="Become.set_become_defaults-def"><a name="L95"></a><tt class="py-lineno"> 95</tt> <a class="py-toggle" href="#" id="Become.set_become_defaults-toggle" onclick="return toggle('Become.set_become_defaults');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.playbook.become.Become-class.html#set_become_defaults">set_become_defaults</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">become</tt><tt class="py-op">,</tt> <tt class="py-param">become_method</tt><tt class="py-op">,</tt> <tt class="py-param">become_user</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Become.set_become_defaults-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="Become.set_become_defaults-expanded"><a name="L96"></a><tt class="py-lineno"> 96</tt>  <tt class="py-line">        <tt class="py-docstring">''' if we are becoming someone else, but some fields are unset,</tt> </tt>
+<a name="L97"></a><tt class="py-lineno"> 97</tt>  <tt class="py-line"><tt class="py-docstring">            make sure they're initialized to the default config values  '''</tt> </tt>
+<a name="L98"></a><tt class="py-lineno"> 98</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt id="link-35" class="py-name" targets="Module ansible.playbook.become=ansible.playbook.become-module.html"><a title="ansible.playbook.become" class="py-name" href="#" onclick="return doclink('link-35', 'become', 'link-35');">become</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L99"></a><tt class="py-lineno"> 99</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-name">become_method</tt> <tt class="py-keyword">is</tt> <tt class="py-name">None</tt><tt class="py-op">:</tt> </tt>
+<a name="L100"></a><tt class="py-lineno">100</tt>  <tt class="py-line">                <tt class="py-name">become_method</tt> <tt class="py-op">=</tt> <tt class="py-name">C</tt><tt class="py-op">.</tt><tt id="link-36" class="py-name" targets="Variable ansible.constants.DEFAULT_BECOME_METHOD=ansible.constants-module.html#DEFAULT_BECOME_METHOD"><a title="ansible.constants.DEFAULT_BECOME_METHOD" class="py-name" href="#" onclick="return doclink('link-36', 'DEFAULT_BECOME_METHOD', 'link-36');">DEFAULT_BECOME_METHOD</a></tt> </tt>
+<a name="L101"></a><tt class="py-lineno">101</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-name">become_user</tt> <tt class="py-keyword">is</tt> <tt class="py-name">None</tt><tt class="py-op">:</tt> </tt>
+<a name="L102"></a><tt class="py-lineno">102</tt>  <tt class="py-line">                <tt class="py-name">become_user</tt> <tt class="py-op">=</tt> <tt class="py-name">C</tt><tt class="py-op">.</tt><tt id="link-37" class="py-name" targets="Variable ansible.constants.DEFAULT_BECOME_USER=ansible.constants-module.html#DEFAULT_BECOME_USER"><a title="ansible.constants.DEFAULT_BECOME_USER" class="py-name" href="#" onclick="return doclink('link-37', 'DEFAULT_BECOME_USER', 'link-37');">DEFAULT_BECOME_USER</a></tt> </tt>
+</div><a name="L103"></a><tt class="py-lineno">103</tt>  <tt class="py-line"> </tt>
+<a name="Become._get_attr_become"></a><div id="Become._get_attr_become-def"><a name="L104"></a><tt class="py-lineno">104</tt> <a class="py-toggle" href="#" id="Become._get_attr_become-toggle" onclick="return toggle('Become._get_attr_become');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.playbook.become.Become-class.html#_get_attr_become">_get_attr_become</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Become._get_attr_become-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="Become._get_attr_become-expanded"><a name="L105"></a><tt class="py-lineno">105</tt>  <tt class="py-line">        <tt class="py-docstring">'''</tt> </tt>
+<a name="L106"></a><tt class="py-lineno">106</tt>  <tt class="py-line"><tt class="py-docstring">        Override for the 'become' getattr fetcher, used from Base.</tt> </tt>
+<a name="L107"></a><tt class="py-lineno">107</tt>  <tt class="py-line"><tt class="py-docstring">        '''</tt> </tt>
+<a name="L108"></a><tt class="py-lineno">108</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">hasattr</tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">,</tt> <tt class="py-string">'_get_parent_attribute'</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L109"></a><tt class="py-lineno">109</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-38" class="py-name" targets="Method ansible.playbook.block.Block._get_parent_attribute()=ansible.playbook.block.Block-class.html#_get_parent_attribute,Method ansible.playbook.task.Task._get_parent_attribute()=ansible.playbook.task.Task-class.html#_get_parent_attribute"><a title="ansible.playbook.block.Block._get_parent_attribute
+ansible.playbook.task.Task._get_parent_attribute" class="py-name" href="#" onclick="return doclink('link-38', '_get_parent_attribute', 'link-38');">_get_parent_attribute</a></tt><tt class="py-op">(</tt><tt class="py-string">'become'</tt><tt class="py-op">)</tt> </tt>
+<a name="L110"></a><tt class="py-lineno">110</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L111"></a><tt class="py-lineno">111</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_attributes</tt><tt class="py-op">[</tt><tt class="py-string">'become'</tt><tt class="py-op">]</tt> </tt>
+</div><a name="L112"></a><tt class="py-lineno">112</tt>  <tt class="py-line"> </tt>
+<a name="Become._get_attr_become_method"></a><div id="Become._get_attr_become_method-def"><a name="L113"></a><tt class="py-lineno">113</tt> <a class="py-toggle" href="#" id="Become._get_attr_become_method-toggle" onclick="return toggle('Become._get_attr_become_method');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.playbook.become.Become-class.html#_get_attr_become_method">_get_attr_become_method</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Become._get_attr_become_method-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="Become._get_attr_become_method-expanded"><a name="L114"></a><tt class="py-lineno">114</tt>  <tt class="py-line">        <tt class="py-docstring">'''</tt> </tt>
+<a name="L115"></a><tt class="py-lineno">115</tt>  <tt class="py-line"><tt class="py-docstring">        Override for the 'become_method' getattr fetcher, used from Base.</tt> </tt>
+<a name="L116"></a><tt class="py-lineno">116</tt>  <tt class="py-line"><tt class="py-docstring">        '''</tt> </tt>
+<a name="L117"></a><tt class="py-lineno">117</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">hasattr</tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">,</tt> <tt class="py-string">'_get_parent_attribute'</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L118"></a><tt class="py-lineno">118</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-39" class="py-name"><a title="ansible.playbook.block.Block._get_parent_attribute
+ansible.playbook.task.Task._get_parent_attribute" class="py-name" href="#" onclick="return doclink('link-39', '_get_parent_attribute', 'link-38');">_get_parent_attribute</a></tt><tt class="py-op">(</tt><tt class="py-string">'become_method'</tt><tt class="py-op">)</tt> </tt>
+<a name="L119"></a><tt class="py-lineno">119</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L120"></a><tt class="py-lineno">120</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_attributes</tt><tt class="py-op">[</tt><tt class="py-string">'become_method'</tt><tt class="py-op">]</tt> </tt>
+</div><a name="L121"></a><tt class="py-lineno">121</tt>  <tt class="py-line"> </tt>
+<a name="Become._get_attr_become_user"></a><div id="Become._get_attr_become_user-def"><a name="L122"></a><tt class="py-lineno">122</tt> <a class="py-toggle" href="#" id="Become._get_attr_become_user-toggle" onclick="return toggle('Become._get_attr_become_user');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.playbook.become.Become-class.html#_get_attr_become_user">_get_attr_become_user</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Become._get_attr_become_user-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="Become._get_attr_become_user-expanded"><a name="L123"></a><tt class="py-lineno">123</tt>  <tt class="py-line">        <tt class="py-docstring">'''</tt> </tt>
+<a name="L124"></a><tt class="py-lineno">124</tt>  <tt class="py-line"><tt class="py-docstring">        Override for the 'become_user' getattr fetcher, used from Base.</tt> </tt>
+<a name="L125"></a><tt class="py-lineno">125</tt>  <tt class="py-line"><tt class="py-docstring">        '''</tt> </tt>
+<a name="L126"></a><tt class="py-lineno">126</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">hasattr</tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">,</tt> <tt class="py-string">'_get_parent_attribute'</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L127"></a><tt class="py-lineno">127</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-40" class="py-name"><a title="ansible.playbook.block.Block._get_parent_attribute
+ansible.playbook.task.Task._get_parent_attribute" class="py-name" href="#" onclick="return doclink('link-40', '_get_parent_attribute', 'link-38');">_get_parent_attribute</a></tt><tt class="py-op">(</tt><tt class="py-string">'become_user'</tt><tt class="py-op">)</tt> </tt>
+<a name="L128"></a><tt class="py-lineno">128</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L129"></a><tt class="py-lineno">129</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_attributes</tt><tt class="py-op">[</tt><tt class="py-string">'become_user'</tt><tt class="py-op">]</tt> </tt>
+</div></div><a name="L130"></a><tt class="py-lineno">130</tt>  <tt class="py-line"> </tt><script type="text/javascript">
+<!--
+expandto(location.href);
+// -->
+</script>
+</pre>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Fri Jul 29 13:11:42 2016
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

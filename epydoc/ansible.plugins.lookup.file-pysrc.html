@@ -1,0 +1,508 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>ansible.plugins.lookup.file</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="ansible-module.html">Package&nbsp;ansible</a> ::
+        <a href="ansible.plugins-module.html">Package&nbsp;plugins</a> ::
+        <a href="ansible.plugins.lookup-module.html">Package&nbsp;lookup</a> ::
+        Module&nbsp;file
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="ansible.plugins.lookup.file-pysrc.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<h1 class="epydoc">Source Code for <a href="ansible.plugins.lookup.file-module.html">Module ansible.plugins.lookup.file</a></h1>
+<pre class="py-src">
+<a name="L1"></a><tt class="py-lineno"> 1</tt>  <tt class="py-line"><tt class="py-comment"># (c) 2012, Daniel Hokka Zakrisson &lt;daniel@hozac.com&gt;</tt> </tt>
+<a name="L2"></a><tt class="py-lineno"> 2</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L3"></a><tt class="py-lineno"> 3</tt>  <tt class="py-line"><tt class="py-comment"># This file is part of Ansible</tt> </tt>
+<a name="L4"></a><tt class="py-lineno"> 4</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L5"></a><tt class="py-lineno"> 5</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is free software: you can redistribute it and/or modify</tt> </tt>
+<a name="L6"></a><tt class="py-lineno"> 6</tt>  <tt class="py-line"><tt class="py-comment"># it under the terms of the GNU General Public License as published by</tt> </tt>
+<a name="L7"></a><tt class="py-lineno"> 7</tt>  <tt class="py-line"><tt class="py-comment"># the Free Software Foundation, either version 3 of the License, or</tt> </tt>
+<a name="L8"></a><tt class="py-lineno"> 8</tt>  <tt class="py-line"><tt class="py-comment"># (at your option) any later version.</tt> </tt>
+<a name="L9"></a><tt class="py-lineno"> 9</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L10"></a><tt class="py-lineno">10</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is distributed in the hope that it will be useful,</tt> </tt>
+<a name="L11"></a><tt class="py-lineno">11</tt>  <tt class="py-line"><tt class="py-comment"># but WITHOUT ANY WARRANTY; without even the implied warranty of</tt> </tt>
+<a name="L12"></a><tt class="py-lineno">12</tt>  <tt class="py-line"><tt class="py-comment"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</tt> </tt>
+<a name="L13"></a><tt class="py-lineno">13</tt>  <tt class="py-line"><tt class="py-comment"># GNU General Public License for more details.</tt> </tt>
+<a name="L14"></a><tt class="py-lineno">14</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L15"></a><tt class="py-lineno">15</tt>  <tt class="py-line"><tt class="py-comment"># You should have received a copy of the GNU General Public License</tt> </tt>
+<a name="L16"></a><tt class="py-lineno">16</tt>  <tt class="py-line"><tt class="py-comment"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</tt> </tt>
+<a name="L17"></a><tt class="py-lineno">17</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">__future__</tt> <tt class="py-keyword">import</tt> <tt class="py-op">(</tt><tt class="py-name">absolute_import</tt><tt class="py-op">,</tt> <tt class="py-name">division</tt><tt class="py-op">,</tt> <tt class="py-name">print_function</tt><tt class="py-op">)</tt> </tt>
+<a name="L18"></a><tt class="py-lineno">18</tt>  <tt class="py-line"><tt class="py-name">__metaclass__</tt> <tt class="py-op">=</tt> <tt id="link-0" class="py-name" targets="Class type=type-class.html"><a title="type" class="py-name" href="#" onclick="return doclink('link-0', 'type', 'link-0');">type</a></tt> </tt>
+<a name="L19"></a><tt class="py-lineno">19</tt>  <tt class="py-line"> </tt>
+<a name="L20"></a><tt class="py-lineno">20</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-1" class="py-name" targets="Package ansible=ansible-module.html"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-1', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-2" class="py-name" targets="Package ansible.errors=ansible.errors-module.html"><a title="ansible.errors" class="py-name" href="#" onclick="return doclink('link-2', 'errors', 'link-2');">errors</a></tt> <tt class="py-keyword">import</tt> <tt id="link-3" class="py-name" targets="Class ansible.errors.AnsibleError=ansible.errors.AnsibleError-class.html"><a title="ansible.errors.AnsibleError" class="py-name" href="#" onclick="return doclink('link-3', 'AnsibleError', 'link-3');">AnsibleError</a></tt><tt class="py-op">,</tt> <tt id="link-4" class="py-name" targets="Class ansible.errors.AnsibleParserError=ansible.errors.AnsibleParserError-class.html"><a title="ansible.errors.AnsibleParserError" class="py-name" href="#" onclick="return doclink('link-4', 'AnsibleParserError', 'link-4');">AnsibleParserError</a></tt> </tt>
+<a name="L21"></a><tt class="py-lineno">21</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-5" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-5', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-6" class="py-name" targets="Package ansible.plugins=ansible.plugins-module.html"><a title="ansible.plugins" class="py-name" href="#" onclick="return doclink('link-6', 'plugins', 'link-6');">plugins</a></tt><tt class="py-op">.</tt><tt id="link-7" class="py-name" targets="Package ansible.plugins.lookup=ansible.plugins.lookup-module.html"><a title="ansible.plugins.lookup" class="py-name" href="#" onclick="return doclink('link-7', 'lookup', 'link-7');">lookup</a></tt> <tt class="py-keyword">import</tt> <tt id="link-8" class="py-name" targets="Class ansible.plugins.lookup.LookupBase=ansible.plugins.lookup.LookupBase-class.html"><a title="ansible.plugins.lookup.LookupBase" class="py-name" href="#" onclick="return doclink('link-8', 'LookupBase', 'link-8');">LookupBase</a></tt> </tt>
+<a name="L22"></a><tt class="py-lineno">22</tt>  <tt class="py-line"> </tt>
+<a name="L23"></a><tt class="py-lineno">23</tt>  <tt class="py-line"><tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L24"></a><tt class="py-lineno">24</tt>  <tt class="py-line">    <tt class="py-keyword">from</tt> <tt class="py-name">__main__</tt> <tt class="py-keyword">import</tt> <tt id="link-9" class="py-name" targets="Variable ansible.cli.adhoc.display=ansible.cli.adhoc-module.html#display,Variable ansible.cli.console.display=ansible.cli.console-module.html#display,Variable ansible.cli.display=ansible.cli-module.html#display,Variable ansible.cli.doc.display=ansible.cli.doc-module.html#display,Variable ansible.cli.galaxy.display=ansible.cli.galaxy-module.html#display,Variable ansible.cli.playbook.display=ansible.cli.playbook-module.html#display,Variable ansible.cli.pull.display=ansible.cli.pull-module.html#display,Variable ansible.cli.vault.display=ansible.cli.vault-module.html#display,Variable ansible.executor.module_common.display=ansible.executor.module_common-module.html#display,Variable ansible.executor.play_iterator.display=ansible.executor.play_iterator-module.html#display,Variable ansible.executor.playbook_executor.display=ansible.executor.playbook_executor-module.html#display,Variable ansible.executor.process.result.display=ansible.executor.process.result-module.html#display,Variable ansible.executor.process.worker.display=ansible.executor.process.worker-module.html#display,Variable ansible.executor.task_executor.display=ansible.executor.task_executor-module.html#display,Variable ansible.executor.task_queue_manager.display=ansible.executor.task_queue_manager-module.html#display,Variable ansible.galaxy.api.display=ansible.galaxy.api-module.html#display,Variable ansible.galaxy.login.display=ansible.galaxy.login-module.html#display,Variable ansible.galaxy.role.display=ansible.galaxy.role-module.html#display,Variable ansible.galaxy.token.display=ansible.galaxy.token-module.html#display,Variable ansible.inventory.display=ansible.inventory-module.html#display,Variable ansible.parsing.dataloader.display=ansible.parsing.dataloader-module.html#display,Variable ansible.parsing.vault.display=ansible.parsing.vault-module.html#display,Variable ansible.parsing.yaml.constructor.display=ansible.parsing.yaml.constructor-module.html#display,Variable ansible.playbook.base.display=ansible.playbook.base-module.html#display,Variable ansible.playbook.become.display=ansible.playbook.become-module.html#display,Variable ansible.playbook.display=ansible.playbook-module.html#display,Variable ansible.playbook.helpers.display=ansible.playbook.helpers-module.html#display,Variable ansible.playbook.included_file.display=ansible.playbook.included_file-module.html#display,Variable ansible.playbook.play.display=ansible.playbook.play-module.html#display,Variable ansible.playbook.play_context.display=ansible.playbook.play_context-module.html#display,Variable ansible.playbook.role.requirement.display=ansible.playbook.role.requirement-module.html#display,Variable ansible.playbook.task.display=ansible.playbook.task-module.html#display,Variable ansible.playbook.task_include.display=ansible.playbook.task_include-module.html#display,Variable ansible.plugins.action.add_host.display=ansible.plugins.action.add_host-module.html#display,Variable ansible.plugins.action.display=ansible.plugins.action-module.html#display,Variable ansible.plugins.action.package.display=ansible.plugins.action.package-module.html#display,Variable ansible.plugins.action.pause.display=ansible.plugins.action.pause-module.html#display,Variable ansible.plugins.action.win_reboot.display=ansible.plugins.action.win_reboot-module.html#display,Variable ansible.plugins.cache.base.display=ansible.plugins.cache.base-module.html#display,Variable ansible.plugins.cache.display=ansible.plugins.cache-module.html#display,Variable ansible.plugins.cache.jsonfile.display=ansible.plugins.cache.jsonfile-module.html#display,Variable ansible.plugins.connection.accelerate.display=ansible.plugins.connection.accelerate-module.html#display,Variable ansible.plugins.connection.chroot.display=ansible.plugins.connection.chroot-module.html#display,Variable ansible.plugins.connection.display=ansible.plugins.connection-module.html#display,Variable ansible.plugins.connection.docker.display=ansible.plugins.connection.docker-module.html#display,Variable ansible.plugins.connection.jail.display=ansible.plugins.connection.jail-module.html#display,Variable ansible.plugins.connection.libvirt_lxc.display=ansible.plugins.connection.libvirt_lxc-module.html#display,Variable ansible.plugins.connection.local.display=ansible.plugins.connection.local-module.html#display,Variable ansible.plugins.connection.paramiko_ssh.display=ansible.plugins.connection.paramiko_ssh-module.html#display,Variable ansible.plugins.connection.ssh.display=ansible.plugins.connection.ssh-module.html#display,Variable ansible.plugins.connection.winrm.display=ansible.plugins.connection.winrm-module.html#display,Variable ansible.plugins.connection.zone.display=ansible.plugins.connection.zone-module.html#display,Variable ansible.plugins.display=ansible.plugins-module.html#display,Variable ansible.plugins.lookup.display=ansible.plugins.lookup-module.html#display,Variable ansible.plugins.lookup.file.display=ansible.plugins.lookup.file-module.html#display,Variable ansible.plugins.lookup.template.display=ansible.plugins.lookup.template-module.html#display,Variable ansible.plugins.lookup.url.display=ansible.plugins.lookup.url-module.html#display,Variable ansible.plugins.strategy.debug.display=ansible.plugins.strategy.debug-module.html#display,Variable ansible.plugins.strategy.display=ansible.plugins.strategy-module.html#display,Variable ansible.plugins.strategy.free.display=ansible.plugins.strategy.free-module.html#display,Variable ansible.plugins.strategy.linear.display=ansible.plugins.strategy.linear-module.html#display,Variable ansible.template.display=ansible.template-module.html#display,Module ansible.utils.display=ansible.utils.display-module.html,Method ansible.utils.display.Display.display()=ansible.utils.display.Display-class.html#display,Variable ansible.utils.encrypt.display=ansible.utils.encrypt-module.html#display,Variable ansible.utils.module_docs.display=ansible.utils.module_docs-module.html#display,Variable ansible.vars.display=ansible.vars-module.html#display"><a title="ansible.cli.adhoc.display
+ansible.cli.console.display
+ansible.cli.display
+ansible.cli.doc.display
+ansible.cli.galaxy.display
+ansible.cli.playbook.display
+ansible.cli.pull.display
+ansible.cli.vault.display
+ansible.executor.module_common.display
+ansible.executor.play_iterator.display
+ansible.executor.playbook_executor.display
+ansible.executor.process.result.display
+ansible.executor.process.worker.display
+ansible.executor.task_executor.display
+ansible.executor.task_queue_manager.display
+ansible.galaxy.api.display
+ansible.galaxy.login.display
+ansible.galaxy.role.display
+ansible.galaxy.token.display
+ansible.inventory.display
+ansible.parsing.dataloader.display
+ansible.parsing.vault.display
+ansible.parsing.yaml.constructor.display
+ansible.playbook.base.display
+ansible.playbook.become.display
+ansible.playbook.display
+ansible.playbook.helpers.display
+ansible.playbook.included_file.display
+ansible.playbook.play.display
+ansible.playbook.play_context.display
+ansible.playbook.role.requirement.display
+ansible.playbook.task.display
+ansible.playbook.task_include.display
+ansible.plugins.action.add_host.display
+ansible.plugins.action.display
+ansible.plugins.action.package.display
+ansible.plugins.action.pause.display
+ansible.plugins.action.win_reboot.display
+ansible.plugins.cache.base.display
+ansible.plugins.cache.display
+ansible.plugins.cache.jsonfile.display
+ansible.plugins.connection.accelerate.display
+ansible.plugins.connection.chroot.display
+ansible.plugins.connection.display
+ansible.plugins.connection.docker.display
+ansible.plugins.connection.jail.display
+ansible.plugins.connection.libvirt_lxc.display
+ansible.plugins.connection.local.display
+ansible.plugins.connection.paramiko_ssh.display
+ansible.plugins.connection.ssh.display
+ansible.plugins.connection.winrm.display
+ansible.plugins.connection.zone.display
+ansible.plugins.display
+ansible.plugins.lookup.display
+ansible.plugins.lookup.file.display
+ansible.plugins.lookup.template.display
+ansible.plugins.lookup.url.display
+ansible.plugins.strategy.debug.display
+ansible.plugins.strategy.display
+ansible.plugins.strategy.free.display
+ansible.plugins.strategy.linear.display
+ansible.template.display
+ansible.utils.display
+ansible.utils.display.Display.display
+ansible.utils.encrypt.display
+ansible.utils.module_docs.display
+ansible.vars.display" class="py-name" href="#" onclick="return doclink('link-9', 'display', 'link-9');">display</a></tt> </tt>
+<a name="L25"></a><tt class="py-lineno">25</tt>  <tt class="py-line"><tt class="py-keyword">except</tt> <tt class="py-name">ImportError</tt><tt class="py-op">:</tt> </tt>
+<a name="L26"></a><tt class="py-lineno">26</tt>  <tt class="py-line">    <tt class="py-keyword">from</tt> <tt id="link-10" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-10', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-11" class="py-name" targets="Package ansible.parsing.utils=ansible.parsing.utils-module.html,Package ansible.utils=ansible.utils-module.html"><a title="ansible.parsing.utils
+ansible.utils" class="py-name" href="#" onclick="return doclink('link-11', 'utils', 'link-11');">utils</a></tt><tt class="py-op">.</tt><tt id="link-12" class="py-name"><a title="ansible.cli.adhoc.display
+ansible.cli.console.display
+ansible.cli.display
+ansible.cli.doc.display
+ansible.cli.galaxy.display
+ansible.cli.playbook.display
+ansible.cli.pull.display
+ansible.cli.vault.display
+ansible.executor.module_common.display
+ansible.executor.play_iterator.display
+ansible.executor.playbook_executor.display
+ansible.executor.process.result.display
+ansible.executor.process.worker.display
+ansible.executor.task_executor.display
+ansible.executor.task_queue_manager.display
+ansible.galaxy.api.display
+ansible.galaxy.login.display
+ansible.galaxy.role.display
+ansible.galaxy.token.display
+ansible.inventory.display
+ansible.parsing.dataloader.display
+ansible.parsing.vault.display
+ansible.parsing.yaml.constructor.display
+ansible.playbook.base.display
+ansible.playbook.become.display
+ansible.playbook.display
+ansible.playbook.helpers.display
+ansible.playbook.included_file.display
+ansible.playbook.play.display
+ansible.playbook.play_context.display
+ansible.playbook.role.requirement.display
+ansible.playbook.task.display
+ansible.playbook.task_include.display
+ansible.plugins.action.add_host.display
+ansible.plugins.action.display
+ansible.plugins.action.package.display
+ansible.plugins.action.pause.display
+ansible.plugins.action.win_reboot.display
+ansible.plugins.cache.base.display
+ansible.plugins.cache.display
+ansible.plugins.cache.jsonfile.display
+ansible.plugins.connection.accelerate.display
+ansible.plugins.connection.chroot.display
+ansible.plugins.connection.display
+ansible.plugins.connection.docker.display
+ansible.plugins.connection.jail.display
+ansible.plugins.connection.libvirt_lxc.display
+ansible.plugins.connection.local.display
+ansible.plugins.connection.paramiko_ssh.display
+ansible.plugins.connection.ssh.display
+ansible.plugins.connection.winrm.display
+ansible.plugins.connection.zone.display
+ansible.plugins.display
+ansible.plugins.lookup.display
+ansible.plugins.lookup.file.display
+ansible.plugins.lookup.template.display
+ansible.plugins.lookup.url.display
+ansible.plugins.strategy.debug.display
+ansible.plugins.strategy.display
+ansible.plugins.strategy.free.display
+ansible.plugins.strategy.linear.display
+ansible.template.display
+ansible.utils.display
+ansible.utils.display.Display.display
+ansible.utils.encrypt.display
+ansible.utils.module_docs.display
+ansible.vars.display" class="py-name" href="#" onclick="return doclink('link-12', 'display', 'link-9');">display</a></tt> <tt class="py-keyword">import</tt> <tt id="link-13" class="py-name" targets="Class ansible.utils.display.Display=ansible.utils.display.Display-class.html"><a title="ansible.utils.display.Display" class="py-name" href="#" onclick="return doclink('link-13', 'Display', 'link-13');">Display</a></tt> </tt>
+<a name="L27"></a><tt class="py-lineno">27</tt>  <tt class="py-line">    <tt id="link-14" class="py-name"><a title="ansible.cli.adhoc.display
+ansible.cli.console.display
+ansible.cli.display
+ansible.cli.doc.display
+ansible.cli.galaxy.display
+ansible.cli.playbook.display
+ansible.cli.pull.display
+ansible.cli.vault.display
+ansible.executor.module_common.display
+ansible.executor.play_iterator.display
+ansible.executor.playbook_executor.display
+ansible.executor.process.result.display
+ansible.executor.process.worker.display
+ansible.executor.task_executor.display
+ansible.executor.task_queue_manager.display
+ansible.galaxy.api.display
+ansible.galaxy.login.display
+ansible.galaxy.role.display
+ansible.galaxy.token.display
+ansible.inventory.display
+ansible.parsing.dataloader.display
+ansible.parsing.vault.display
+ansible.parsing.yaml.constructor.display
+ansible.playbook.base.display
+ansible.playbook.become.display
+ansible.playbook.display
+ansible.playbook.helpers.display
+ansible.playbook.included_file.display
+ansible.playbook.play.display
+ansible.playbook.play_context.display
+ansible.playbook.role.requirement.display
+ansible.playbook.task.display
+ansible.playbook.task_include.display
+ansible.plugins.action.add_host.display
+ansible.plugins.action.display
+ansible.plugins.action.package.display
+ansible.plugins.action.pause.display
+ansible.plugins.action.win_reboot.display
+ansible.plugins.cache.base.display
+ansible.plugins.cache.display
+ansible.plugins.cache.jsonfile.display
+ansible.plugins.connection.accelerate.display
+ansible.plugins.connection.chroot.display
+ansible.plugins.connection.display
+ansible.plugins.connection.docker.display
+ansible.plugins.connection.jail.display
+ansible.plugins.connection.libvirt_lxc.display
+ansible.plugins.connection.local.display
+ansible.plugins.connection.paramiko_ssh.display
+ansible.plugins.connection.ssh.display
+ansible.plugins.connection.winrm.display
+ansible.plugins.connection.zone.display
+ansible.plugins.display
+ansible.plugins.lookup.display
+ansible.plugins.lookup.file.display
+ansible.plugins.lookup.template.display
+ansible.plugins.lookup.url.display
+ansible.plugins.strategy.debug.display
+ansible.plugins.strategy.display
+ansible.plugins.strategy.free.display
+ansible.plugins.strategy.linear.display
+ansible.template.display
+ansible.utils.display
+ansible.utils.display.Display.display
+ansible.utils.encrypt.display
+ansible.utils.module_docs.display
+ansible.vars.display" class="py-name" href="#" onclick="return doclink('link-14', 'display', 'link-9');">display</a></tt> <tt class="py-op">=</tt> <tt id="link-15" class="py-name"><a title="ansible.utils.display.Display" class="py-name" href="#" onclick="return doclink('link-15', 'Display', 'link-13');">Display</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L28"></a><tt class="py-lineno">28</tt>  <tt class="py-line"> </tt>
+<a name="L29"></a><tt class="py-lineno">29</tt>  <tt class="py-line"> </tt>
+<a name="LookupModule"></a><div id="LookupModule-def"><a name="L30"></a><tt class="py-lineno">30</tt> <a class="py-toggle" href="#" id="LookupModule-toggle" onclick="return toggle('LookupModule');">-</a><tt class="py-line"><tt class="py-keyword">class</tt> <a class="py-def-name" href="ansible.plugins.lookup.file.LookupModule-class.html">LookupModule</a><tt class="py-op">(</tt><tt class="py-base-class">LookupBase</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="LookupModule-collapsed" style="display:none;" pad="++" indent="++++"></div><div id="LookupModule-expanded"><a name="L31"></a><tt class="py-lineno">31</tt>  <tt class="py-line"> </tt>
+<a name="LookupModule.run"></a><div id="LookupModule.run-def"><a name="L32"></a><tt class="py-lineno">32</tt> <a class="py-toggle" href="#" id="LookupModule.run-toggle" onclick="return toggle('LookupModule.run');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.lookup.file.LookupModule-class.html#run">run</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">terms</tt><tt class="py-op">,</tt> <tt class="py-param">variables</tt><tt class="py-op">=</tt><tt class="py-name">None</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">kwargs</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="LookupModule.run-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="LookupModule.run-expanded"><a name="L33"></a><tt class="py-lineno">33</tt>  <tt class="py-line"> </tt>
+<a name="L34"></a><tt class="py-lineno">34</tt>  <tt class="py-line">        <tt class="py-name">ret</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-op">]</tt> </tt>
+<a name="L35"></a><tt class="py-lineno">35</tt>  <tt class="py-line"> </tt>
+<a name="L36"></a><tt class="py-lineno">36</tt>  <tt class="py-line">        <tt class="py-keyword">for</tt> <tt class="py-name">term</tt> <tt class="py-keyword">in</tt> <tt class="py-name">terms</tt><tt class="py-op">:</tt> </tt>
+<a name="L37"></a><tt class="py-lineno">37</tt>  <tt class="py-line">            <tt id="link-16" class="py-name"><a title="ansible.cli.adhoc.display
+ansible.cli.console.display
+ansible.cli.display
+ansible.cli.doc.display
+ansible.cli.galaxy.display
+ansible.cli.playbook.display
+ansible.cli.pull.display
+ansible.cli.vault.display
+ansible.executor.module_common.display
+ansible.executor.play_iterator.display
+ansible.executor.playbook_executor.display
+ansible.executor.process.result.display
+ansible.executor.process.worker.display
+ansible.executor.task_executor.display
+ansible.executor.task_queue_manager.display
+ansible.galaxy.api.display
+ansible.galaxy.login.display
+ansible.galaxy.role.display
+ansible.galaxy.token.display
+ansible.inventory.display
+ansible.parsing.dataloader.display
+ansible.parsing.vault.display
+ansible.parsing.yaml.constructor.display
+ansible.playbook.base.display
+ansible.playbook.become.display
+ansible.playbook.display
+ansible.playbook.helpers.display
+ansible.playbook.included_file.display
+ansible.playbook.play.display
+ansible.playbook.play_context.display
+ansible.playbook.role.requirement.display
+ansible.playbook.task.display
+ansible.playbook.task_include.display
+ansible.plugins.action.add_host.display
+ansible.plugins.action.display
+ansible.plugins.action.package.display
+ansible.plugins.action.pause.display
+ansible.plugins.action.win_reboot.display
+ansible.plugins.cache.base.display
+ansible.plugins.cache.display
+ansible.plugins.cache.jsonfile.display
+ansible.plugins.connection.accelerate.display
+ansible.plugins.connection.chroot.display
+ansible.plugins.connection.display
+ansible.plugins.connection.docker.display
+ansible.plugins.connection.jail.display
+ansible.plugins.connection.libvirt_lxc.display
+ansible.plugins.connection.local.display
+ansible.plugins.connection.paramiko_ssh.display
+ansible.plugins.connection.ssh.display
+ansible.plugins.connection.winrm.display
+ansible.plugins.connection.zone.display
+ansible.plugins.display
+ansible.plugins.lookup.display
+ansible.plugins.lookup.file.display
+ansible.plugins.lookup.template.display
+ansible.plugins.lookup.url.display
+ansible.plugins.strategy.debug.display
+ansible.plugins.strategy.display
+ansible.plugins.strategy.free.display
+ansible.plugins.strategy.linear.display
+ansible.template.display
+ansible.utils.display
+ansible.utils.display.Display.display
+ansible.utils.encrypt.display
+ansible.utils.module_docs.display
+ansible.vars.display" class="py-name" href="#" onclick="return doclink('link-16', 'display', 'link-9');">display</a></tt><tt class="py-op">.</tt><tt id="link-17" class="py-name" targets="Method ansible.module_utils.basic.AnsibleModule.debug()=ansible.module_utils.basic.AnsibleModule-class.html#debug,Module ansible.plugins.action.debug=ansible.plugins.action.debug-module.html,Module ansible.plugins.strategy.debug=ansible.plugins.strategy.debug-module.html,Method ansible.utils.display.Display.debug()=ansible.utils.display.Display-class.html#debug"><a title="ansible.module_utils.basic.AnsibleModule.debug
+ansible.plugins.action.debug
+ansible.plugins.strategy.debug
+ansible.utils.display.Display.debug" class="py-name" href="#" onclick="return doclink('link-17', 'debug', 'link-17');">debug</a></tt><tt class="py-op">(</tt><tt class="py-string">"File lookup term: %s"</tt> <tt class="py-op">%</tt> <tt class="py-name">term</tt><tt class="py-op">)</tt> </tt>
+<a name="L38"></a><tt class="py-lineno">38</tt>  <tt class="py-line"> </tt>
+<a name="L39"></a><tt class="py-lineno">39</tt>  <tt class="py-line">            <tt class="py-comment"># Find the file in the expected search path</tt> </tt>
+<a name="L40"></a><tt class="py-lineno">40</tt>  <tt class="py-line">            <tt class="py-name">lookupfile</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-18" class="py-name" targets="Method ansible.plugins.lookup.LookupBase.find_file_in_search_path()=ansible.plugins.lookup.LookupBase-class.html#find_file_in_search_path"><a title="ansible.plugins.lookup.LookupBase.find_file_in_search_path" class="py-name" href="#" onclick="return doclink('link-18', 'find_file_in_search_path', 'link-18');">find_file_in_search_path</a></tt><tt class="py-op">(</tt><tt class="py-name">variables</tt><tt class="py-op">,</tt> <tt class="py-string">'files'</tt><tt class="py-op">,</tt> <tt class="py-name">term</tt><tt class="py-op">)</tt> </tt>
+<a name="L41"></a><tt class="py-lineno">41</tt>  <tt class="py-line">            <tt id="link-19" class="py-name"><a title="ansible.cli.adhoc.display
+ansible.cli.console.display
+ansible.cli.display
+ansible.cli.doc.display
+ansible.cli.galaxy.display
+ansible.cli.playbook.display
+ansible.cli.pull.display
+ansible.cli.vault.display
+ansible.executor.module_common.display
+ansible.executor.play_iterator.display
+ansible.executor.playbook_executor.display
+ansible.executor.process.result.display
+ansible.executor.process.worker.display
+ansible.executor.task_executor.display
+ansible.executor.task_queue_manager.display
+ansible.galaxy.api.display
+ansible.galaxy.login.display
+ansible.galaxy.role.display
+ansible.galaxy.token.display
+ansible.inventory.display
+ansible.parsing.dataloader.display
+ansible.parsing.vault.display
+ansible.parsing.yaml.constructor.display
+ansible.playbook.base.display
+ansible.playbook.become.display
+ansible.playbook.display
+ansible.playbook.helpers.display
+ansible.playbook.included_file.display
+ansible.playbook.play.display
+ansible.playbook.play_context.display
+ansible.playbook.role.requirement.display
+ansible.playbook.task.display
+ansible.playbook.task_include.display
+ansible.plugins.action.add_host.display
+ansible.plugins.action.display
+ansible.plugins.action.package.display
+ansible.plugins.action.pause.display
+ansible.plugins.action.win_reboot.display
+ansible.plugins.cache.base.display
+ansible.plugins.cache.display
+ansible.plugins.cache.jsonfile.display
+ansible.plugins.connection.accelerate.display
+ansible.plugins.connection.chroot.display
+ansible.plugins.connection.display
+ansible.plugins.connection.docker.display
+ansible.plugins.connection.jail.display
+ansible.plugins.connection.libvirt_lxc.display
+ansible.plugins.connection.local.display
+ansible.plugins.connection.paramiko_ssh.display
+ansible.plugins.connection.ssh.display
+ansible.plugins.connection.winrm.display
+ansible.plugins.connection.zone.display
+ansible.plugins.display
+ansible.plugins.lookup.display
+ansible.plugins.lookup.file.display
+ansible.plugins.lookup.template.display
+ansible.plugins.lookup.url.display
+ansible.plugins.strategy.debug.display
+ansible.plugins.strategy.display
+ansible.plugins.strategy.free.display
+ansible.plugins.strategy.linear.display
+ansible.template.display
+ansible.utils.display
+ansible.utils.display.Display.display
+ansible.utils.encrypt.display
+ansible.utils.module_docs.display
+ansible.vars.display" class="py-name" href="#" onclick="return doclink('link-19', 'display', 'link-9');">display</a></tt><tt class="py-op">.</tt><tt id="link-20" class="py-name" targets="Method ansible.utils.display.Display.vvvv()=ansible.utils.display.Display-class.html#vvvv"><a title="ansible.utils.display.Display.vvvv" class="py-name" href="#" onclick="return doclink('link-20', 'vvvv', 'link-20');">vvvv</a></tt><tt class="py-op">(</tt><tt class="py-string">"File lookup using %s as file"</tt> <tt class="py-op">%</tt> <tt class="py-name">lookupfile</tt><tt class="py-op">)</tt> </tt>
+<a name="L42"></a><tt class="py-lineno">42</tt>  <tt class="py-line">            <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L43"></a><tt class="py-lineno">43</tt>  <tt class="py-line">                <tt class="py-keyword">if</tt> <tt class="py-name">lookupfile</tt><tt class="py-op">:</tt> </tt>
+<a name="L44"></a><tt class="py-lineno">44</tt>  <tt class="py-line">                    <tt class="py-name">contents</tt><tt class="py-op">,</tt> <tt class="py-name">show_data</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_loader</tt><tt class="py-op">.</tt><tt id="link-21" class="py-name" targets="Method ansible.parsing.dataloader.DataLoader._get_file_contents()=ansible.parsing.dataloader.DataLoader-class.html#_get_file_contents"><a title="ansible.parsing.dataloader.DataLoader._get_file_contents" class="py-name" href="#" onclick="return doclink('link-21', '_get_file_contents', 'link-21');">_get_file_contents</a></tt><tt class="py-op">(</tt><tt class="py-name">lookupfile</tt><tt class="py-op">)</tt> </tt>
+<a name="L45"></a><tt class="py-lineno">45</tt>  <tt class="py-line">                    <tt class="py-name">ret</tt><tt class="py-op">.</tt><tt class="py-name">append</tt><tt class="py-op">(</tt><tt class="py-name">contents</tt><tt class="py-op">.</tt><tt class="py-name">rstrip</tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L46"></a><tt class="py-lineno">46</tt>  <tt class="py-line">                <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L47"></a><tt class="py-lineno">47</tt>  <tt class="py-line">                    <tt class="py-keyword">raise</tt> <tt id="link-22" class="py-name"><a title="ansible.errors.AnsibleParserError" class="py-name" href="#" onclick="return doclink('link-22', 'AnsibleParserError', 'link-4');">AnsibleParserError</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L48"></a><tt class="py-lineno">48</tt>  <tt class="py-line">            <tt class="py-keyword">except</tt> <tt id="link-23" class="py-name"><a title="ansible.errors.AnsibleParserError" class="py-name" href="#" onclick="return doclink('link-23', 'AnsibleParserError', 'link-4');">AnsibleParserError</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L49"></a><tt class="py-lineno">49</tt>  <tt class="py-line">                <tt class="py-keyword">raise</tt> <tt id="link-24" class="py-name"><a title="ansible.errors.AnsibleError" class="py-name" href="#" onclick="return doclink('link-24', 'AnsibleError', 'link-3');">AnsibleError</a></tt><tt class="py-op">(</tt><tt class="py-string">"could not locate file in lookup: %s"</tt> <tt class="py-op">%</tt> <tt class="py-name">term</tt><tt class="py-op">)</tt> </tt>
+<a name="L50"></a><tt class="py-lineno">50</tt>  <tt class="py-line"> </tt>
+<a name="L51"></a><tt class="py-lineno">51</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">ret</tt> </tt>
+</div></div><a name="L52"></a><tt class="py-lineno">52</tt>  <tt class="py-line"> </tt><script type="text/javascript">
+<!--
+expandto(location.href);
+// -->
+</script>
+</pre>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Fri Jul 29 13:11:41 2016
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

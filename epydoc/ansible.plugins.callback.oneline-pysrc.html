@@ -1,0 +1,803 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>ansible.plugins.callback.oneline</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="ansible-module.html">Package&nbsp;ansible</a> ::
+        <a href="ansible.plugins-module.html">Package&nbsp;plugins</a> ::
+        <a href="ansible.plugins.callback-module.html">Package&nbsp;callback</a> ::
+        Module&nbsp;oneline
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="ansible.plugins.callback.oneline-pysrc.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<h1 class="epydoc">Source Code for <a href="ansible.plugins.callback.oneline-module.html">Module ansible.plugins.callback.oneline</a></h1>
+<pre class="py-src">
+<a name="L1"></a><tt class="py-lineno"> 1</tt>  <tt class="py-line"><tt class="py-comment"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</tt> </tt>
+<a name="L2"></a><tt class="py-lineno"> 2</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L3"></a><tt class="py-lineno"> 3</tt>  <tt class="py-line"><tt class="py-comment"># This file is part of Ansible</tt> </tt>
+<a name="L4"></a><tt class="py-lineno"> 4</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L5"></a><tt class="py-lineno"> 5</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is free software: you can redistribute it and/or modify</tt> </tt>
+<a name="L6"></a><tt class="py-lineno"> 6</tt>  <tt class="py-line"><tt class="py-comment"># it under the terms of the GNU General Public License as published by</tt> </tt>
+<a name="L7"></a><tt class="py-lineno"> 7</tt>  <tt class="py-line"><tt class="py-comment"># the Free Software Foundation, either version 3 of the License, or</tt> </tt>
+<a name="L8"></a><tt class="py-lineno"> 8</tt>  <tt class="py-line"><tt class="py-comment"># (at your option) any later version.</tt> </tt>
+<a name="L9"></a><tt class="py-lineno"> 9</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L10"></a><tt class="py-lineno">10</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is distributed in the hope that it will be useful,</tt> </tt>
+<a name="L11"></a><tt class="py-lineno">11</tt>  <tt class="py-line"><tt class="py-comment"># but WITHOUT ANY WARRANTY; without even the implied warranty of</tt> </tt>
+<a name="L12"></a><tt class="py-lineno">12</tt>  <tt class="py-line"><tt class="py-comment"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</tt> </tt>
+<a name="L13"></a><tt class="py-lineno">13</tt>  <tt class="py-line"><tt class="py-comment"># GNU General Public License for more details.</tt> </tt>
+<a name="L14"></a><tt class="py-lineno">14</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L15"></a><tt class="py-lineno">15</tt>  <tt class="py-line"><tt class="py-comment"># You should have received a copy of the GNU General Public License</tt> </tt>
+<a name="L16"></a><tt class="py-lineno">16</tt>  <tt class="py-line"><tt class="py-comment"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</tt> </tt>
+<a name="L17"></a><tt class="py-lineno">17</tt>  <tt class="py-line"> </tt>
+<a name="L18"></a><tt class="py-lineno">18</tt>  <tt class="py-line"><tt class="py-comment"># Make coding more python3-ish</tt> </tt>
+<a name="L19"></a><tt class="py-lineno">19</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">__future__</tt> <tt class="py-keyword">import</tt> <tt class="py-op">(</tt><tt class="py-name">absolute_import</tt><tt class="py-op">,</tt> <tt class="py-name">division</tt><tt class="py-op">,</tt> <tt class="py-name">print_function</tt><tt class="py-op">)</tt> </tt>
+<a name="L20"></a><tt class="py-lineno">20</tt>  <tt class="py-line"><tt class="py-name">__metaclass__</tt> <tt class="py-op">=</tt> <tt id="link-0" class="py-name" targets="Class type=type-class.html"><a title="type" class="py-name" href="#" onclick="return doclink('link-0', 'type', 'link-0');">type</a></tt> </tt>
+<a name="L21"></a><tt class="py-lineno">21</tt>  <tt class="py-line"> </tt>
+<a name="L22"></a><tt class="py-lineno">22</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-1" class="py-name" targets="Package ansible=ansible-module.html"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-1', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-2" class="py-name" targets="Package ansible.plugins=ansible.plugins-module.html"><a title="ansible.plugins" class="py-name" href="#" onclick="return doclink('link-2', 'plugins', 'link-2');">plugins</a></tt><tt class="py-op">.</tt><tt id="link-3" class="py-name" targets="Package ansible.plugins.callback=ansible.plugins.callback-module.html"><a title="ansible.plugins.callback" class="py-name" href="#" onclick="return doclink('link-3', 'callback', 'link-3');">callback</a></tt> <tt class="py-keyword">import</tt> <tt id="link-4" class="py-name" targets="Class ansible.plugins.callback.CallbackBase=ansible.plugins.callback.CallbackBase-class.html"><a title="ansible.plugins.callback.CallbackBase" class="py-name" href="#" onclick="return doclink('link-4', 'CallbackBase', 'link-4');">CallbackBase</a></tt> </tt>
+<a name="L23"></a><tt class="py-lineno">23</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-5" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-5', 'ansible', 'link-1');">ansible</a></tt> <tt class="py-keyword">import</tt> <tt id="link-6" class="py-name" targets="Module ansible.constants=ansible.constants-module.html"><a title="ansible.constants" class="py-name" href="#" onclick="return doclink('link-6', 'constants', 'link-6');">constants</a></tt> <tt class="py-keyword">as</tt> <tt class="py-name">C</tt> </tt>
+<a name="L24"></a><tt class="py-lineno">24</tt>  <tt class="py-line"> </tt>
+<a name="L25"></a><tt class="py-lineno">25</tt>  <tt class="py-line"> </tt>
+<a name="CallbackModule"></a><div id="CallbackModule-def"><a name="L26"></a><tt class="py-lineno">26</tt> <a class="py-toggle" href="#" id="CallbackModule-toggle" onclick="return toggle('CallbackModule');">-</a><tt class="py-line"><tt class="py-keyword">class</tt> <a class="py-def-name" href="ansible.plugins.callback.oneline.CallbackModule-class.html">CallbackModule</a><tt class="py-op">(</tt><tt class="py-base-class">CallbackBase</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CallbackModule-collapsed" style="display:none;" pad="++" indent="++++"></div><div id="CallbackModule-expanded"><a name="L27"></a><tt class="py-lineno">27</tt>  <tt class="py-line"> </tt>
+<a name="L28"></a><tt class="py-lineno">28</tt>  <tt class="py-line">    <tt class="py-docstring">'''</tt> </tt>
+<a name="L29"></a><tt class="py-lineno">29</tt>  <tt class="py-line"><tt class="py-docstring">    This is the default callback interface, which simply prints messages</tt> </tt>
+<a name="L30"></a><tt class="py-lineno">30</tt>  <tt class="py-line"><tt class="py-docstring">    to stdout when new callback events are received.</tt> </tt>
+<a name="L31"></a><tt class="py-lineno">31</tt>  <tt class="py-line"><tt class="py-docstring">    '''</tt> </tt>
+<a name="L32"></a><tt class="py-lineno">32</tt>  <tt class="py-line"> </tt>
+<a name="L33"></a><tt class="py-lineno">33</tt>  <tt class="py-line">    <tt id="link-7" class="py-name" targets="Variable ansible.plugins.callback.actionable.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.actionable.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.context_demo.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.context_demo.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.default.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.default.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.hipchat.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.hipchat.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.json.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.json.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.junit.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.junit.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.log_plays.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.log_plays.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.logentries.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.logentries.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.mail.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.mail.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.minimal.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.minimal.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.oneline.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.oneline.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.osx_say.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.osx_say.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.profile_tasks.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.profile_tasks.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.skippy.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.skippy.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.slack.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.slack.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.syslog_json.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.syslog_json.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.timer.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.timer.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.tree.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.tree.CallbackModule-class.html#CALLBACK_VERSION"><a title="ansible.plugins.callback.actionable.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.context_demo.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.default.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.hipchat.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.json.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.junit.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.log_plays.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.logentries.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.mail.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.minimal.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.oneline.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.osx_say.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.profile_tasks.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.skippy.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.slack.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.syslog_json.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.timer.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.tree.CallbackModule.CALLBACK_VERSION" class="py-name" href="#" onclick="return doclink('link-7', 'CALLBACK_VERSION', 'link-7');">CALLBACK_VERSION</a></tt> <tt class="py-op">=</tt> <tt class="py-number">2.0</tt> </tt>
+<a name="L34"></a><tt class="py-lineno">34</tt>  <tt class="py-line">    <tt id="link-8" class="py-name" targets="Variable ansible.plugins.callback.actionable.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.actionable.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.context_demo.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.context_demo.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.default.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.default.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.hipchat.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.hipchat.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.json.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.json.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.junit.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.junit.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.log_plays.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.log_plays.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.logentries.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.logentries.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.mail.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.mail.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.minimal.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.minimal.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.oneline.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.oneline.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.osx_say.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.osx_say.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.profile_tasks.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.profile_tasks.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.skippy.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.skippy.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.slack.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.slack.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.syslog_json.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.syslog_json.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.timer.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.timer.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.tree.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.tree.CallbackModule-class.html#CALLBACK_TYPE"><a title="ansible.plugins.callback.actionable.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.context_demo.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.default.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.hipchat.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.json.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.junit.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.log_plays.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.logentries.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.mail.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.minimal.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.oneline.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.osx_say.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.profile_tasks.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.skippy.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.slack.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.syslog_json.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.timer.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.tree.CallbackModule.CALLBACK_TYPE" class="py-name" href="#" onclick="return doclink('link-8', 'CALLBACK_TYPE', 'link-8');">CALLBACK_TYPE</a></tt> <tt class="py-op">=</tt> <tt class="py-string">'stdout'</tt> </tt>
+<a name="L35"></a><tt class="py-lineno">35</tt>  <tt class="py-line">    <tt id="link-9" class="py-name" targets="Variable ansible.plugins.callback.actionable.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.actionable.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.context_demo.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.context_demo.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.default.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.default.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.hipchat.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.hipchat.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.json.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.json.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.junit.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.junit.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.log_plays.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.log_plays.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.logentries.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.logentries.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.mail.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.mail.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.minimal.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.minimal.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.oneline.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.oneline.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.osx_say.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.osx_say.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.profile_tasks.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.profile_tasks.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.skippy.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.skippy.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.slack.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.slack.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.syslog_json.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.syslog_json.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.timer.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.timer.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.tree.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.tree.CallbackModule-class.html#CALLBACK_NAME"><a title="ansible.plugins.callback.actionable.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.context_demo.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.default.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.hipchat.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.json.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.junit.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.log_plays.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.logentries.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.mail.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.minimal.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.oneline.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.osx_say.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.profile_tasks.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.skippy.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.slack.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.syslog_json.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.timer.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.tree.CallbackModule.CALLBACK_NAME" class="py-name" href="#" onclick="return doclink('link-9', 'CALLBACK_NAME', 'link-9');">CALLBACK_NAME</a></tt> <tt class="py-op">=</tt> <tt class="py-string">'oneline'</tt> </tt>
+<a name="L36"></a><tt class="py-lineno">36</tt>  <tt class="py-line"> </tt>
+<a name="CallbackModule._command_generic_msg"></a><div id="CallbackModule._command_generic_msg-def"><a name="L37"></a><tt class="py-lineno">37</tt> <a class="py-toggle" href="#" id="CallbackModule._command_generic_msg-toggle" onclick="return toggle('CallbackModule._command_generic_msg');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.callback.oneline.CallbackModule-class.html#_command_generic_msg">_command_generic_msg</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">hostname</tt><tt class="py-op">,</tt> <tt class="py-param">result</tt><tt class="py-op">,</tt>  <tt class="py-param">caption</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CallbackModule._command_generic_msg-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="CallbackModule._command_generic_msg-expanded"><a name="L38"></a><tt class="py-lineno">38</tt>  <tt class="py-line">        <tt class="py-name">stdout</tt> <tt class="py-op">=</tt> <tt id="link-10" class="py-name" targets="Module ansible.executor.process.result=ansible.executor.process.result-module.html,Method ansible.module_utils.service.Service.result()=ansible.module_utils.service.Service-class.html#result"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-10', 'result', 'link-10');">result</a></tt><tt class="py-op">.</tt><tt id="link-11" class="py-name" targets="Method ansible.galaxy.token.GalaxyToken.get()=ansible.galaxy.token.GalaxyToken-class.html#get,Method ansible.module_utils.ios.Restconf.get()=ansible.module_utils.ios.Restconf-class.html#get,Method ansible.module_utils.netcfg.NetworkConfig.get()=ansible.module_utils.netcfg.NetworkConfig-class.html#get,Method ansible.module_utils.openswitch.Rest.get()=ansible.module_utils.openswitch.Rest-class.html#get,Method ansible.plugins.PluginLoader.get()=ansible.plugins.PluginLoader-class.html#get,Method ansible.plugins.cache.base.BaseCacheModule.get()=ansible.plugins.cache.base.BaseCacheModule-class.html#get,Method ansible.plugins.cache.jsonfile.CacheModule.get()=ansible.plugins.cache.jsonfile.CacheModule-class.html#get,Method ansible.plugins.cache.memcached.CacheModule.get()=ansible.plugins.cache.memcached.CacheModule-class.html#get,Method ansible.plugins.cache.memory.CacheModule.get()=ansible.plugins.cache.memory.CacheModule-class.html#get,Method ansible.plugins.cache.redis.CacheModule.get()=ansible.plugins.cache.redis.CacheModule-class.html#get,Method ansible.plugins.lookup.etcd.Etcd.get()=ansible.plugins.lookup.etcd.Etcd-class.html#get,Method ansible.plugins.lookup.hashi_vault.HashiVault.get()=ansible.plugins.lookup.hashi_vault.HashiVault-class.html#get"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-11', 'get', 'link-11');">get</a></tt><tt class="py-op">(</tt><tt class="py-string">'stdout'</tt><tt class="py-op">,</tt><tt class="py-string">''</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt id="link-12" class="py-name" targets="Method ansible.module_utils.netcfg.NetworkConfig.replace()=ansible.module_utils.netcfg.NetworkConfig-class.html#replace"><a title="ansible.module_utils.netcfg.NetworkConfig.replace" class="py-name" href="#" onclick="return doclink('link-12', 'replace', 'link-12');">replace</a></tt><tt class="py-op">(</tt><tt class="py-string">'\n'</tt><tt class="py-op">,</tt> <tt class="py-string">'\\n'</tt><tt class="py-op">)</tt> </tt>
+<a name="L39"></a><tt class="py-lineno">39</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-string">'stderr'</tt> <tt class="py-keyword">in</tt> <tt id="link-13" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-13', 'result', 'link-10');">result</a></tt> <tt class="py-keyword">and</tt> <tt id="link-14" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-14', 'result', 'link-10');">result</a></tt><tt class="py-op">[</tt><tt class="py-string">'stderr'</tt><tt class="py-op">]</tt><tt class="py-op">:</tt> </tt>
+<a name="L40"></a><tt class="py-lineno">40</tt>  <tt class="py-line">            <tt class="py-name">stderr</tt> <tt class="py-op">=</tt> <tt id="link-15" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-15', 'result', 'link-10');">result</a></tt><tt class="py-op">.</tt><tt id="link-16" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-16', 'get', 'link-11');">get</a></tt><tt class="py-op">(</tt><tt class="py-string">'stderr'</tt><tt class="py-op">,</tt><tt class="py-string">''</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt id="link-17" class="py-name"><a title="ansible.module_utils.netcfg.NetworkConfig.replace" class="py-name" href="#" onclick="return doclink('link-17', 'replace', 'link-12');">replace</a></tt><tt class="py-op">(</tt><tt class="py-string">'\n'</tt><tt class="py-op">,</tt> <tt class="py-string">'\\n'</tt><tt class="py-op">)</tt> </tt>
+<a name="L41"></a><tt class="py-lineno">41</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-string">"%s | %s | rc=%s | (stdout) %s (stderr) %s"</tt> <tt class="py-op">%</tt> <tt class="py-op">(</tt><tt class="py-name">hostname</tt><tt class="py-op">,</tt> <tt class="py-name">caption</tt><tt class="py-op">,</tt> <tt id="link-18" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-18', 'result', 'link-10');">result</a></tt><tt class="py-op">.</tt><tt id="link-19" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-19', 'get', 'link-11');">get</a></tt><tt class="py-op">(</tt><tt class="py-string">'rc'</tt><tt class="py-op">,</tt><tt class="py-number">0</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt class="py-name">stdout</tt><tt class="py-op">,</tt> <tt class="py-name">stderr</tt><tt class="py-op">)</tt> </tt>
+<a name="L42"></a><tt class="py-lineno">42</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L43"></a><tt class="py-lineno">43</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-string">"%s | %s | rc=%s | (stdout) %s"</tt> <tt class="py-op">%</tt> <tt class="py-op">(</tt><tt class="py-name">hostname</tt><tt class="py-op">,</tt> <tt class="py-name">caption</tt><tt class="py-op">,</tt> <tt id="link-20" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-20', 'result', 'link-10');">result</a></tt><tt class="py-op">.</tt><tt id="link-21" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-21', 'get', 'link-11');">get</a></tt><tt class="py-op">(</tt><tt class="py-string">'rc'</tt><tt class="py-op">,</tt><tt class="py-number">0</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt class="py-name">stdout</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L44"></a><tt class="py-lineno">44</tt>  <tt class="py-line"> </tt>
+<a name="CallbackModule.v2_runner_on_failed"></a><div id="CallbackModule.v2_runner_on_failed-def"><a name="L45"></a><tt class="py-lineno">45</tt> <a class="py-toggle" href="#" id="CallbackModule.v2_runner_on_failed-toggle" onclick="return toggle('CallbackModule.v2_runner_on_failed');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.callback.oneline.CallbackModule-class.html#v2_runner_on_failed">v2_runner_on_failed</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">result</tt><tt class="py-op">,</tt> <tt class="py-param">ignore_errors</tt><tt class="py-op">=</tt><tt class="py-name">False</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CallbackModule.v2_runner_on_failed-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="CallbackModule.v2_runner_on_failed-expanded"><a name="L46"></a><tt class="py-lineno">46</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-string">'exception'</tt> <tt class="py-keyword">in</tt> <tt id="link-22" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-22', 'result', 'link-10');">result</a></tt><tt class="py-op">.</tt><tt class="py-name">_result</tt><tt class="py-op">:</tt> </tt>
+<a name="L47"></a><tt class="py-lineno">47</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-23" class="py-name" targets="Variable ansible.plugins.cache.base.BaseCacheModule._display=ansible.plugins.cache.base.BaseCacheModule-class.html#_display"><a title="ansible.plugins.cache.base.BaseCacheModule._display" class="py-name" href="#" onclick="return doclink('link-23', '_display', 'link-23');">_display</a></tt><tt class="py-op">.</tt><tt class="py-name">verbosity</tt> <tt class="py-op">&lt;</tt> <tt class="py-number">3</tt><tt class="py-op">:</tt> </tt>
+<a name="L48"></a><tt class="py-lineno">48</tt>  <tt class="py-line">                <tt class="py-comment"># extract just the actual error message from the exception text</tt> </tt>
+<a name="L49"></a><tt class="py-lineno">49</tt>  <tt class="py-line">                <tt id="link-24" class="py-name" targets="Module ansible.compat.six.moves.urllib.error=ansible.compat.six.moves.urllib.error-module.html,Method ansible.utils.display.Display.error()=ansible.utils.display.Display-class.html#error"><a title="ansible.compat.six.moves.urllib.error
+ansible.utils.display.Display.error" class="py-name" href="#" onclick="return doclink('link-24', 'error', 'link-24');">error</a></tt> <tt class="py-op">=</tt> <tt id="link-25" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-25', 'result', 'link-10');">result</a></tt><tt class="py-op">.</tt><tt class="py-name">_result</tt><tt class="py-op">[</tt><tt class="py-string">'exception'</tt><tt class="py-op">]</tt><tt class="py-op">.</tt><tt id="link-26" class="py-name" targets="Method ansible.module_utils.shell.Shell.strip()=ansible.module_utils.shell.Shell-class.html#strip"><a title="ansible.module_utils.shell.Shell.strip" class="py-name" href="#" onclick="return doclink('link-26', 'strip', 'link-26');">strip</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt class="py-name">split</tt><tt class="py-op">(</tt><tt class="py-string">'\n'</tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-op">-</tt><tt class="py-number">1</tt><tt class="py-op">]</tt> </tt>
+<a name="L50"></a><tt class="py-lineno">50</tt>  <tt class="py-line">                <tt class="py-name">msg</tt> <tt class="py-op">=</tt> <tt class="py-string">"An exception occurred during task execution. To see the full traceback, use -vvv. The error was: %s"</tt> <tt class="py-op">%</tt> <tt id="link-27" class="py-name"><a title="ansible.compat.six.moves.urllib.error
+ansible.utils.display.Display.error" class="py-name" href="#" onclick="return doclink('link-27', 'error', 'link-24');">error</a></tt> </tt>
+<a name="L51"></a><tt class="py-lineno">51</tt>  <tt class="py-line">            <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L52"></a><tt class="py-lineno">52</tt>  <tt class="py-line">                <tt class="py-name">msg</tt> <tt class="py-op">=</tt> <tt class="py-string">"An exception occurred during task execution. The full traceback is:\n"</tt> <tt class="py-op">+</tt> <tt id="link-28" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-28', 'result', 'link-10');">result</a></tt><tt class="py-op">.</tt><tt class="py-name">_result</tt><tt class="py-op">[</tt><tt class="py-string">'exception'</tt><tt class="py-op">]</tt><tt class="py-op">.</tt><tt id="link-29" class="py-name"><a title="ansible.module_utils.netcfg.NetworkConfig.replace" class="py-name" href="#" onclick="return doclink('link-29', 'replace', 'link-12');">replace</a></tt><tt class="py-op">(</tt><tt class="py-string">'\n'</tt><tt class="py-op">,</tt><tt class="py-string">''</tt><tt class="py-op">)</tt> </tt>
+<a name="L53"></a><tt class="py-lineno">53</tt>  <tt class="py-line"> </tt>
+<a name="L54"></a><tt class="py-lineno">54</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt id="link-30" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-30', 'result', 'link-10');">result</a></tt><tt class="py-op">.</tt><tt class="py-name">_task</tt><tt class="py-op">.</tt><tt id="link-31" class="py-name" targets="Method ansible.module_utils.service.Service.action()=ansible.module_utils.service.Service-class.html#action,Package ansible.plugins.action=ansible.plugins.action-module.html"><a title="ansible.module_utils.service.Service.action
+ansible.plugins.action" class="py-name" href="#" onclick="return doclink('link-31', 'action', 'link-31');">action</a></tt> <tt class="py-keyword">in</tt> <tt class="py-name">C</tt><tt class="py-op">.</tt><tt id="link-32" class="py-name" targets="Variable ansible.constants.MODULE_NO_JSON=ansible.constants-module.html#MODULE_NO_JSON"><a title="ansible.constants.MODULE_NO_JSON" class="py-name" href="#" onclick="return doclink('link-32', 'MODULE_NO_JSON', 'link-32');">MODULE_NO_JSON</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L55"></a><tt class="py-lineno">55</tt>  <tt class="py-line">                <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-33" class="py-name"><a title="ansible.plugins.cache.base.BaseCacheModule._display" class="py-name" href="#" onclick="return doclink('link-33', '_display', 'link-23');">_display</a></tt><tt class="py-op">.</tt><tt id="link-34" class="py-name" targets="Variable ansible.cli.adhoc.display=ansible.cli.adhoc-module.html#display,Variable ansible.cli.console.display=ansible.cli.console-module.html#display,Variable ansible.cli.display=ansible.cli-module.html#display,Variable ansible.cli.doc.display=ansible.cli.doc-module.html#display,Variable ansible.cli.galaxy.display=ansible.cli.galaxy-module.html#display,Variable ansible.cli.playbook.display=ansible.cli.playbook-module.html#display,Variable ansible.cli.pull.display=ansible.cli.pull-module.html#display,Variable ansible.cli.vault.display=ansible.cli.vault-module.html#display,Variable ansible.executor.module_common.display=ansible.executor.module_common-module.html#display,Variable ansible.executor.play_iterator.display=ansible.executor.play_iterator-module.html#display,Variable ansible.executor.playbook_executor.display=ansible.executor.playbook_executor-module.html#display,Variable ansible.executor.process.result.display=ansible.executor.process.result-module.html#display,Variable ansible.executor.process.worker.display=ansible.executor.process.worker-module.html#display,Variable ansible.executor.task_executor.display=ansible.executor.task_executor-module.html#display,Variable ansible.executor.task_queue_manager.display=ansible.executor.task_queue_manager-module.html#display,Variable ansible.galaxy.api.display=ansible.galaxy.api-module.html#display,Variable ansible.galaxy.login.display=ansible.galaxy.login-module.html#display,Variable ansible.galaxy.role.display=ansible.galaxy.role-module.html#display,Variable ansible.galaxy.token.display=ansible.galaxy.token-module.html#display,Variable ansible.inventory.display=ansible.inventory-module.html#display,Variable ansible.parsing.dataloader.display=ansible.parsing.dataloader-module.html#display,Variable ansible.parsing.vault.display=ansible.parsing.vault-module.html#display,Variable ansible.parsing.yaml.constructor.display=ansible.parsing.yaml.constructor-module.html#display,Variable ansible.playbook.base.display=ansible.playbook.base-module.html#display,Variable ansible.playbook.become.display=ansible.playbook.become-module.html#display,Variable ansible.playbook.display=ansible.playbook-module.html#display,Variable ansible.playbook.helpers.display=ansible.playbook.helpers-module.html#display,Variable ansible.playbook.included_file.display=ansible.playbook.included_file-module.html#display,Variable ansible.playbook.play.display=ansible.playbook.play-module.html#display,Variable ansible.playbook.play_context.display=ansible.playbook.play_context-module.html#display,Variable ansible.playbook.role.requirement.display=ansible.playbook.role.requirement-module.html#display,Variable ansible.playbook.task.display=ansible.playbook.task-module.html#display,Variable ansible.playbook.task_include.display=ansible.playbook.task_include-module.html#display,Variable ansible.plugins.action.add_host.display=ansible.plugins.action.add_host-module.html#display,Variable ansible.plugins.action.display=ansible.plugins.action-module.html#display,Variable ansible.plugins.action.package.display=ansible.plugins.action.package-module.html#display,Variable ansible.plugins.action.pause.display=ansible.plugins.action.pause-module.html#display,Variable ansible.plugins.action.win_reboot.display=ansible.plugins.action.win_reboot-module.html#display,Variable ansible.plugins.cache.base.display=ansible.plugins.cache.base-module.html#display,Variable ansible.plugins.cache.display=ansible.plugins.cache-module.html#display,Variable ansible.plugins.cache.jsonfile.display=ansible.plugins.cache.jsonfile-module.html#display,Variable ansible.plugins.connection.accelerate.display=ansible.plugins.connection.accelerate-module.html#display,Variable ansible.plugins.connection.chroot.display=ansible.plugins.connection.chroot-module.html#display,Variable ansible.plugins.connection.display=ansible.plugins.connection-module.html#display,Variable ansible.plugins.connection.docker.display=ansible.plugins.connection.docker-module.html#display,Variable ansible.plugins.connection.jail.display=ansible.plugins.connection.jail-module.html#display,Variable ansible.plugins.connection.libvirt_lxc.display=ansible.plugins.connection.libvirt_lxc-module.html#display,Variable ansible.plugins.connection.local.display=ansible.plugins.connection.local-module.html#display,Variable ansible.plugins.connection.paramiko_ssh.display=ansible.plugins.connection.paramiko_ssh-module.html#display,Variable ansible.plugins.connection.ssh.display=ansible.plugins.connection.ssh-module.html#display,Variable ansible.plugins.connection.winrm.display=ansible.plugins.connection.winrm-module.html#display,Variable ansible.plugins.connection.zone.display=ansible.plugins.connection.zone-module.html#display,Variable ansible.plugins.display=ansible.plugins-module.html#display,Variable ansible.plugins.lookup.display=ansible.plugins.lookup-module.html#display,Variable ansible.plugins.lookup.file.display=ansible.plugins.lookup.file-module.html#display,Variable ansible.plugins.lookup.template.display=ansible.plugins.lookup.template-module.html#display,Variable ansible.plugins.lookup.url.display=ansible.plugins.lookup.url-module.html#display,Variable ansible.plugins.strategy.debug.display=ansible.plugins.strategy.debug-module.html#display,Variable ansible.plugins.strategy.display=ansible.plugins.strategy-module.html#display,Variable ansible.plugins.strategy.free.display=ansible.plugins.strategy.free-module.html#display,Variable ansible.plugins.strategy.linear.display=ansible.plugins.strategy.linear-module.html#display,Variable ansible.template.display=ansible.template-module.html#display,Module ansible.utils.display=ansible.utils.display-module.html,Method ansible.utils.display.Display.display()=ansible.utils.display.Display-class.html#display,Variable ansible.utils.encrypt.display=ansible.utils.encrypt-module.html#display,Variable ansible.utils.module_docs.display=ansible.utils.module_docs-module.html#display,Variable ansible.vars.display=ansible.vars-module.html#display"><a title="ansible.cli.adhoc.display
+ansible.cli.console.display
+ansible.cli.display
+ansible.cli.doc.display
+ansible.cli.galaxy.display
+ansible.cli.playbook.display
+ansible.cli.pull.display
+ansible.cli.vault.display
+ansible.executor.module_common.display
+ansible.executor.play_iterator.display
+ansible.executor.playbook_executor.display
+ansible.executor.process.result.display
+ansible.executor.process.worker.display
+ansible.executor.task_executor.display
+ansible.executor.task_queue_manager.display
+ansible.galaxy.api.display
+ansible.galaxy.login.display
+ansible.galaxy.role.display
+ansible.galaxy.token.display
+ansible.inventory.display
+ansible.parsing.dataloader.display
+ansible.parsing.vault.display
+ansible.parsing.yaml.constructor.display
+ansible.playbook.base.display
+ansible.playbook.become.display
+ansible.playbook.display
+ansible.playbook.helpers.display
+ansible.playbook.included_file.display
+ansible.playbook.play.display
+ansible.playbook.play_context.display
+ansible.playbook.role.requirement.display
+ansible.playbook.task.display
+ansible.playbook.task_include.display
+ansible.plugins.action.add_host.display
+ansible.plugins.action.display
+ansible.plugins.action.package.display
+ansible.plugins.action.pause.display
+ansible.plugins.action.win_reboot.display
+ansible.plugins.cache.base.display
+ansible.plugins.cache.display
+ansible.plugins.cache.jsonfile.display
+ansible.plugins.connection.accelerate.display
+ansible.plugins.connection.chroot.display
+ansible.plugins.connection.display
+ansible.plugins.connection.docker.display
+ansible.plugins.connection.jail.display
+ansible.plugins.connection.libvirt_lxc.display
+ansible.plugins.connection.local.display
+ansible.plugins.connection.paramiko_ssh.display
+ansible.plugins.connection.ssh.display
+ansible.plugins.connection.winrm.display
+ansible.plugins.connection.zone.display
+ansible.plugins.display
+ansible.plugins.lookup.display
+ansible.plugins.lookup.file.display
+ansible.plugins.lookup.template.display
+ansible.plugins.lookup.url.display
+ansible.plugins.strategy.debug.display
+ansible.plugins.strategy.display
+ansible.plugins.strategy.free.display
+ansible.plugins.strategy.linear.display
+ansible.template.display
+ansible.utils.display
+ansible.utils.display.Display.display
+ansible.utils.encrypt.display
+ansible.utils.module_docs.display
+ansible.vars.display" class="py-name" href="#" onclick="return doclink('link-34', 'display', 'link-34');">display</a></tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-35" class="py-name" targets="Method ansible.plugins.callback.minimal.CallbackModule._command_generic_msg()=ansible.plugins.callback.minimal.CallbackModule-class.html#_command_generic_msg,Method ansible.plugins.callback.oneline.CallbackModule._command_generic_msg()=ansible.plugins.callback.oneline.CallbackModule-class.html#_command_generic_msg"><a title="ansible.plugins.callback.minimal.CallbackModule._command_generic_msg
+ansible.plugins.callback.oneline.CallbackModule._command_generic_msg" class="py-name" href="#" onclick="return doclink('link-35', '_command_generic_msg', 'link-35');">_command_generic_msg</a></tt><tt class="py-op">(</tt><tt id="link-36" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-36', 'result', 'link-10');">result</a></tt><tt class="py-op">.</tt><tt class="py-name">_host</tt><tt class="py-op">.</tt><tt id="link-37" class="py-name" targets="Method ansible.inventory.group.Group.get_name()=ansible.inventory.group.Group-class.html#get_name,Method ansible.inventory.host.Host.get_name()=ansible.inventory.host.Host-class.html#get_name,Method ansible.playbook.play.Play.get_name()=ansible.playbook.play.Play-class.html#get_name,Method ansible.playbook.role.Role.get_name()=ansible.playbook.role.Role-class.html#get_name,Method ansible.playbook.task.Task.get_name()=ansible.playbook.task.Task-class.html#get_name"><a title="ansible.inventory.group.Group.get_name
+ansible.inventory.host.Host.get_name
+ansible.playbook.play.Play.get_name
+ansible.playbook.role.Role.get_name
+ansible.playbook.task.Task.get_name" class="py-name" href="#" onclick="return doclink('link-37', 'get_name', 'link-37');">get_name</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt id="link-38" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-38', 'result', 'link-10');">result</a></tt><tt class="py-op">.</tt><tt class="py-name">_result</tt><tt class="py-op">,</tt><tt class="py-string">'FAILED'</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt id="link-39" class="py-name" targets="Module ansible.utils.color=ansible.utils.color-module.html"><a title="ansible.utils.color" class="py-name" href="#" onclick="return doclink('link-39', 'color', 'link-39');">color</a></tt><tt class="py-op">=</tt><tt class="py-name">C</tt><tt class="py-op">.</tt><tt id="link-40" class="py-name" targets="Variable ansible.constants.COLOR_ERROR=ansible.constants-module.html#COLOR_ERROR"><a title="ansible.constants.COLOR_ERROR" class="py-name" href="#" onclick="return doclink('link-40', 'COLOR_ERROR', 'link-40');">COLOR_ERROR</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L56"></a><tt class="py-lineno">56</tt>  <tt class="py-line">            <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L57"></a><tt class="py-lineno">57</tt>  <tt class="py-line">                <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-41" class="py-name"><a title="ansible.plugins.cache.base.BaseCacheModule._display" class="py-name" href="#" onclick="return doclink('link-41', '_display', 'link-23');">_display</a></tt><tt class="py-op">.</tt><tt id="link-42" class="py-name"><a title="ansible.cli.adhoc.display
+ansible.cli.console.display
+ansible.cli.display
+ansible.cli.doc.display
+ansible.cli.galaxy.display
+ansible.cli.playbook.display
+ansible.cli.pull.display
+ansible.cli.vault.display
+ansible.executor.module_common.display
+ansible.executor.play_iterator.display
+ansible.executor.playbook_executor.display
+ansible.executor.process.result.display
+ansible.executor.process.worker.display
+ansible.executor.task_executor.display
+ansible.executor.task_queue_manager.display
+ansible.galaxy.api.display
+ansible.galaxy.login.display
+ansible.galaxy.role.display
+ansible.galaxy.token.display
+ansible.inventory.display
+ansible.parsing.dataloader.display
+ansible.parsing.vault.display
+ansible.parsing.yaml.constructor.display
+ansible.playbook.base.display
+ansible.playbook.become.display
+ansible.playbook.display
+ansible.playbook.helpers.display
+ansible.playbook.included_file.display
+ansible.playbook.play.display
+ansible.playbook.play_context.display
+ansible.playbook.role.requirement.display
+ansible.playbook.task.display
+ansible.playbook.task_include.display
+ansible.plugins.action.add_host.display
+ansible.plugins.action.display
+ansible.plugins.action.package.display
+ansible.plugins.action.pause.display
+ansible.plugins.action.win_reboot.display
+ansible.plugins.cache.base.display
+ansible.plugins.cache.display
+ansible.plugins.cache.jsonfile.display
+ansible.plugins.connection.accelerate.display
+ansible.plugins.connection.chroot.display
+ansible.plugins.connection.display
+ansible.plugins.connection.docker.display
+ansible.plugins.connection.jail.display
+ansible.plugins.connection.libvirt_lxc.display
+ansible.plugins.connection.local.display
+ansible.plugins.connection.paramiko_ssh.display
+ansible.plugins.connection.ssh.display
+ansible.plugins.connection.winrm.display
+ansible.plugins.connection.zone.display
+ansible.plugins.display
+ansible.plugins.lookup.display
+ansible.plugins.lookup.file.display
+ansible.plugins.lookup.template.display
+ansible.plugins.lookup.url.display
+ansible.plugins.strategy.debug.display
+ansible.plugins.strategy.display
+ansible.plugins.strategy.free.display
+ansible.plugins.strategy.linear.display
+ansible.template.display
+ansible.utils.display
+ansible.utils.display.Display.display
+ansible.utils.encrypt.display
+ansible.utils.module_docs.display
+ansible.vars.display" class="py-name" href="#" onclick="return doclink('link-42', 'display', 'link-34');">display</a></tt><tt class="py-op">(</tt><tt class="py-name">msg</tt><tt class="py-op">,</tt> <tt id="link-43" class="py-name"><a title="ansible.utils.color" class="py-name" href="#" onclick="return doclink('link-43', 'color', 'link-39');">color</a></tt><tt class="py-op">=</tt><tt class="py-name">C</tt><tt class="py-op">.</tt><tt id="link-44" class="py-name"><a title="ansible.constants.COLOR_ERROR" class="py-name" href="#" onclick="return doclink('link-44', 'COLOR_ERROR', 'link-40');">COLOR_ERROR</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L58"></a><tt class="py-lineno">58</tt>  <tt class="py-line"> </tt>
+<a name="L59"></a><tt class="py-lineno">59</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-45" class="py-name"><a title="ansible.plugins.cache.base.BaseCacheModule._display" class="py-name" href="#" onclick="return doclink('link-45', '_display', 'link-23');">_display</a></tt><tt class="py-op">.</tt><tt id="link-46" class="py-name"><a title="ansible.cli.adhoc.display
+ansible.cli.console.display
+ansible.cli.display
+ansible.cli.doc.display
+ansible.cli.galaxy.display
+ansible.cli.playbook.display
+ansible.cli.pull.display
+ansible.cli.vault.display
+ansible.executor.module_common.display
+ansible.executor.play_iterator.display
+ansible.executor.playbook_executor.display
+ansible.executor.process.result.display
+ansible.executor.process.worker.display
+ansible.executor.task_executor.display
+ansible.executor.task_queue_manager.display
+ansible.galaxy.api.display
+ansible.galaxy.login.display
+ansible.galaxy.role.display
+ansible.galaxy.token.display
+ansible.inventory.display
+ansible.parsing.dataloader.display
+ansible.parsing.vault.display
+ansible.parsing.yaml.constructor.display
+ansible.playbook.base.display
+ansible.playbook.become.display
+ansible.playbook.display
+ansible.playbook.helpers.display
+ansible.playbook.included_file.display
+ansible.playbook.play.display
+ansible.playbook.play_context.display
+ansible.playbook.role.requirement.display
+ansible.playbook.task.display
+ansible.playbook.task_include.display
+ansible.plugins.action.add_host.display
+ansible.plugins.action.display
+ansible.plugins.action.package.display
+ansible.plugins.action.pause.display
+ansible.plugins.action.win_reboot.display
+ansible.plugins.cache.base.display
+ansible.plugins.cache.display
+ansible.plugins.cache.jsonfile.display
+ansible.plugins.connection.accelerate.display
+ansible.plugins.connection.chroot.display
+ansible.plugins.connection.display
+ansible.plugins.connection.docker.display
+ansible.plugins.connection.jail.display
+ansible.plugins.connection.libvirt_lxc.display
+ansible.plugins.connection.local.display
+ansible.plugins.connection.paramiko_ssh.display
+ansible.plugins.connection.ssh.display
+ansible.plugins.connection.winrm.display
+ansible.plugins.connection.zone.display
+ansible.plugins.display
+ansible.plugins.lookup.display
+ansible.plugins.lookup.file.display
+ansible.plugins.lookup.template.display
+ansible.plugins.lookup.url.display
+ansible.plugins.strategy.debug.display
+ansible.plugins.strategy.display
+ansible.plugins.strategy.free.display
+ansible.plugins.strategy.linear.display
+ansible.template.display
+ansible.utils.display
+ansible.utils.display.Display.display
+ansible.utils.encrypt.display
+ansible.utils.module_docs.display
+ansible.vars.display" class="py-name" href="#" onclick="return doclink('link-46', 'display', 'link-34');">display</a></tt><tt class="py-op">(</tt><tt class="py-string">"%s | FAILED! =&gt; %s"</tt> <tt class="py-op">%</tt> <tt class="py-op">(</tt><tt id="link-47" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-47', 'result', 'link-10');">result</a></tt><tt class="py-op">.</tt><tt class="py-name">_host</tt><tt class="py-op">.</tt><tt id="link-48" class="py-name"><a title="ansible.inventory.group.Group.get_name
+ansible.inventory.host.Host.get_name
+ansible.playbook.play.Play.get_name
+ansible.playbook.role.Role.get_name
+ansible.playbook.task.Task.get_name" class="py-name" href="#" onclick="return doclink('link-48', 'get_name', 'link-37');">get_name</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-49" class="py-name" targets="Method ansible.plugins.callback.CallbackBase._dump_results()=ansible.plugins.callback.CallbackBase-class.html#_dump_results"><a title="ansible.plugins.callback.CallbackBase._dump_results" class="py-name" href="#" onclick="return doclink('link-49', '_dump_results', 'link-49');">_dump_results</a></tt><tt class="py-op">(</tt><tt id="link-50" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-50', 'result', 'link-10');">result</a></tt><tt class="py-op">.</tt><tt class="py-name">_result</tt><tt class="py-op">,</tt> <tt class="py-name">indent</tt><tt class="py-op">=</tt><tt class="py-number">0</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt id="link-51" class="py-name"><a title="ansible.module_utils.netcfg.NetworkConfig.replace" class="py-name" href="#" onclick="return doclink('link-51', 'replace', 'link-12');">replace</a></tt><tt class="py-op">(</tt><tt class="py-string">'\n'</tt><tt class="py-op">,</tt><tt class="py-string">''</tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt id="link-52" class="py-name"><a title="ansible.utils.color" class="py-name" href="#" onclick="return doclink('link-52', 'color', 'link-39');">color</a></tt><tt class="py-op">=</tt><tt class="py-name">C</tt><tt class="py-op">.</tt><tt id="link-53" class="py-name"><a title="ansible.constants.COLOR_ERROR" class="py-name" href="#" onclick="return doclink('link-53', 'COLOR_ERROR', 'link-40');">COLOR_ERROR</a></tt><tt class="py-op">)</tt> </tt>
+</div><a name="L60"></a><tt class="py-lineno">60</tt>  <tt class="py-line"> </tt>
+<a name="CallbackModule.v2_runner_on_ok"></a><div id="CallbackModule.v2_runner_on_ok-def"><a name="L61"></a><tt class="py-lineno">61</tt> <a class="py-toggle" href="#" id="CallbackModule.v2_runner_on_ok-toggle" onclick="return toggle('CallbackModule.v2_runner_on_ok');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.callback.oneline.CallbackModule-class.html#v2_runner_on_ok">v2_runner_on_ok</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">result</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CallbackModule.v2_runner_on_ok-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="CallbackModule.v2_runner_on_ok-expanded"><a name="L62"></a><tt class="py-lineno">62</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt id="link-54" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-54', 'result', 'link-10');">result</a></tt><tt class="py-op">.</tt><tt class="py-name">_task</tt><tt class="py-op">.</tt><tt id="link-55" class="py-name"><a title="ansible.module_utils.service.Service.action
+ansible.plugins.action" class="py-name" href="#" onclick="return doclink('link-55', 'action', 'link-31');">action</a></tt> <tt class="py-keyword">in</tt> <tt class="py-name">C</tt><tt class="py-op">.</tt><tt id="link-56" class="py-name"><a title="ansible.constants.MODULE_NO_JSON" class="py-name" href="#" onclick="return doclink('link-56', 'MODULE_NO_JSON', 'link-32');">MODULE_NO_JSON</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L63"></a><tt class="py-lineno">63</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-57" class="py-name"><a title="ansible.plugins.cache.base.BaseCacheModule._display" class="py-name" href="#" onclick="return doclink('link-57', '_display', 'link-23');">_display</a></tt><tt class="py-op">.</tt><tt id="link-58" class="py-name"><a title="ansible.cli.adhoc.display
+ansible.cli.console.display
+ansible.cli.display
+ansible.cli.doc.display
+ansible.cli.galaxy.display
+ansible.cli.playbook.display
+ansible.cli.pull.display
+ansible.cli.vault.display
+ansible.executor.module_common.display
+ansible.executor.play_iterator.display
+ansible.executor.playbook_executor.display
+ansible.executor.process.result.display
+ansible.executor.process.worker.display
+ansible.executor.task_executor.display
+ansible.executor.task_queue_manager.display
+ansible.galaxy.api.display
+ansible.galaxy.login.display
+ansible.galaxy.role.display
+ansible.galaxy.token.display
+ansible.inventory.display
+ansible.parsing.dataloader.display
+ansible.parsing.vault.display
+ansible.parsing.yaml.constructor.display
+ansible.playbook.base.display
+ansible.playbook.become.display
+ansible.playbook.display
+ansible.playbook.helpers.display
+ansible.playbook.included_file.display
+ansible.playbook.play.display
+ansible.playbook.play_context.display
+ansible.playbook.role.requirement.display
+ansible.playbook.task.display
+ansible.playbook.task_include.display
+ansible.plugins.action.add_host.display
+ansible.plugins.action.display
+ansible.plugins.action.package.display
+ansible.plugins.action.pause.display
+ansible.plugins.action.win_reboot.display
+ansible.plugins.cache.base.display
+ansible.plugins.cache.display
+ansible.plugins.cache.jsonfile.display
+ansible.plugins.connection.accelerate.display
+ansible.plugins.connection.chroot.display
+ansible.plugins.connection.display
+ansible.plugins.connection.docker.display
+ansible.plugins.connection.jail.display
+ansible.plugins.connection.libvirt_lxc.display
+ansible.plugins.connection.local.display
+ansible.plugins.connection.paramiko_ssh.display
+ansible.plugins.connection.ssh.display
+ansible.plugins.connection.winrm.display
+ansible.plugins.connection.zone.display
+ansible.plugins.display
+ansible.plugins.lookup.display
+ansible.plugins.lookup.file.display
+ansible.plugins.lookup.template.display
+ansible.plugins.lookup.url.display
+ansible.plugins.strategy.debug.display
+ansible.plugins.strategy.display
+ansible.plugins.strategy.free.display
+ansible.plugins.strategy.linear.display
+ansible.template.display
+ansible.utils.display
+ansible.utils.display.Display.display
+ansible.utils.encrypt.display
+ansible.utils.module_docs.display
+ansible.vars.display" class="py-name" href="#" onclick="return doclink('link-58', 'display', 'link-34');">display</a></tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-59" class="py-name"><a title="ansible.plugins.callback.minimal.CallbackModule._command_generic_msg
+ansible.plugins.callback.oneline.CallbackModule._command_generic_msg" class="py-name" href="#" onclick="return doclink('link-59', '_command_generic_msg', 'link-35');">_command_generic_msg</a></tt><tt class="py-op">(</tt><tt id="link-60" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-60', 'result', 'link-10');">result</a></tt><tt class="py-op">.</tt><tt class="py-name">_host</tt><tt class="py-op">.</tt><tt id="link-61" class="py-name"><a title="ansible.inventory.group.Group.get_name
+ansible.inventory.host.Host.get_name
+ansible.playbook.play.Play.get_name
+ansible.playbook.role.Role.get_name
+ansible.playbook.task.Task.get_name" class="py-name" href="#" onclick="return doclink('link-61', 'get_name', 'link-37');">get_name</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt id="link-62" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-62', 'result', 'link-10');">result</a></tt><tt class="py-op">.</tt><tt class="py-name">_result</tt><tt class="py-op">,</tt><tt class="py-string">'SUCCESS'</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt id="link-63" class="py-name"><a title="ansible.utils.color" class="py-name" href="#" onclick="return doclink('link-63', 'color', 'link-39');">color</a></tt><tt class="py-op">=</tt><tt class="py-name">C</tt><tt class="py-op">.</tt><tt id="link-64" class="py-name" targets="Variable ansible.constants.COLOR_OK=ansible.constants-module.html#COLOR_OK"><a title="ansible.constants.COLOR_OK" class="py-name" href="#" onclick="return doclink('link-64', 'COLOR_OK', 'link-64');">COLOR_OK</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L64"></a><tt class="py-lineno">64</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L65"></a><tt class="py-lineno">65</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-65" class="py-name"><a title="ansible.plugins.cache.base.BaseCacheModule._display" class="py-name" href="#" onclick="return doclink('link-65', '_display', 'link-23');">_display</a></tt><tt class="py-op">.</tt><tt id="link-66" class="py-name"><a title="ansible.cli.adhoc.display
+ansible.cli.console.display
+ansible.cli.display
+ansible.cli.doc.display
+ansible.cli.galaxy.display
+ansible.cli.playbook.display
+ansible.cli.pull.display
+ansible.cli.vault.display
+ansible.executor.module_common.display
+ansible.executor.play_iterator.display
+ansible.executor.playbook_executor.display
+ansible.executor.process.result.display
+ansible.executor.process.worker.display
+ansible.executor.task_executor.display
+ansible.executor.task_queue_manager.display
+ansible.galaxy.api.display
+ansible.galaxy.login.display
+ansible.galaxy.role.display
+ansible.galaxy.token.display
+ansible.inventory.display
+ansible.parsing.dataloader.display
+ansible.parsing.vault.display
+ansible.parsing.yaml.constructor.display
+ansible.playbook.base.display
+ansible.playbook.become.display
+ansible.playbook.display
+ansible.playbook.helpers.display
+ansible.playbook.included_file.display
+ansible.playbook.play.display
+ansible.playbook.play_context.display
+ansible.playbook.role.requirement.display
+ansible.playbook.task.display
+ansible.playbook.task_include.display
+ansible.plugins.action.add_host.display
+ansible.plugins.action.display
+ansible.plugins.action.package.display
+ansible.plugins.action.pause.display
+ansible.plugins.action.win_reboot.display
+ansible.plugins.cache.base.display
+ansible.plugins.cache.display
+ansible.plugins.cache.jsonfile.display
+ansible.plugins.connection.accelerate.display
+ansible.plugins.connection.chroot.display
+ansible.plugins.connection.display
+ansible.plugins.connection.docker.display
+ansible.plugins.connection.jail.display
+ansible.plugins.connection.libvirt_lxc.display
+ansible.plugins.connection.local.display
+ansible.plugins.connection.paramiko_ssh.display
+ansible.plugins.connection.ssh.display
+ansible.plugins.connection.winrm.display
+ansible.plugins.connection.zone.display
+ansible.plugins.display
+ansible.plugins.lookup.display
+ansible.plugins.lookup.file.display
+ansible.plugins.lookup.template.display
+ansible.plugins.lookup.url.display
+ansible.plugins.strategy.debug.display
+ansible.plugins.strategy.display
+ansible.plugins.strategy.free.display
+ansible.plugins.strategy.linear.display
+ansible.template.display
+ansible.utils.display
+ansible.utils.display.Display.display
+ansible.utils.encrypt.display
+ansible.utils.module_docs.display
+ansible.vars.display" class="py-name" href="#" onclick="return doclink('link-66', 'display', 'link-34');">display</a></tt><tt class="py-op">(</tt><tt class="py-string">"%s | SUCCESS =&gt; %s"</tt> <tt class="py-op">%</tt> <tt class="py-op">(</tt><tt id="link-67" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-67', 'result', 'link-10');">result</a></tt><tt class="py-op">.</tt><tt class="py-name">_host</tt><tt class="py-op">.</tt><tt id="link-68" class="py-name"><a title="ansible.inventory.group.Group.get_name
+ansible.inventory.host.Host.get_name
+ansible.playbook.play.Play.get_name
+ansible.playbook.role.Role.get_name
+ansible.playbook.task.Task.get_name" class="py-name" href="#" onclick="return doclink('link-68', 'get_name', 'link-37');">get_name</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-69" class="py-name"><a title="ansible.plugins.callback.CallbackBase._dump_results" class="py-name" href="#" onclick="return doclink('link-69', '_dump_results', 'link-49');">_dump_results</a></tt><tt class="py-op">(</tt><tt id="link-70" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-70', 'result', 'link-10');">result</a></tt><tt class="py-op">.</tt><tt class="py-name">_result</tt><tt class="py-op">,</tt> <tt class="py-name">indent</tt><tt class="py-op">=</tt><tt class="py-number">0</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt id="link-71" class="py-name"><a title="ansible.module_utils.netcfg.NetworkConfig.replace" class="py-name" href="#" onclick="return doclink('link-71', 'replace', 'link-12');">replace</a></tt><tt class="py-op">(</tt><tt class="py-string">'\n'</tt><tt class="py-op">,</tt><tt class="py-string">''</tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt id="link-72" class="py-name"><a title="ansible.utils.color" class="py-name" href="#" onclick="return doclink('link-72', 'color', 'link-39');">color</a></tt><tt class="py-op">=</tt><tt class="py-name">C</tt><tt class="py-op">.</tt><tt id="link-73" class="py-name"><a title="ansible.constants.COLOR_OK" class="py-name" href="#" onclick="return doclink('link-73', 'COLOR_OK', 'link-64');">COLOR_OK</a></tt><tt class="py-op">)</tt> </tt>
+</div><a name="L66"></a><tt class="py-lineno">66</tt>  <tt class="py-line"> </tt>
+<a name="L67"></a><tt class="py-lineno">67</tt>  <tt class="py-line"> </tt>
+<a name="CallbackModule.v2_runner_on_unreachable"></a><div id="CallbackModule.v2_runner_on_unreachable-def"><a name="L68"></a><tt class="py-lineno">68</tt> <a class="py-toggle" href="#" id="CallbackModule.v2_runner_on_unreachable-toggle" onclick="return toggle('CallbackModule.v2_runner_on_unreachable');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.callback.oneline.CallbackModule-class.html#v2_runner_on_unreachable">v2_runner_on_unreachable</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">result</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CallbackModule.v2_runner_on_unreachable-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="CallbackModule.v2_runner_on_unreachable-expanded"><a name="L69"></a><tt class="py-lineno">69</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-74" class="py-name"><a title="ansible.plugins.cache.base.BaseCacheModule._display" class="py-name" href="#" onclick="return doclink('link-74', '_display', 'link-23');">_display</a></tt><tt class="py-op">.</tt><tt id="link-75" class="py-name"><a title="ansible.cli.adhoc.display
+ansible.cli.console.display
+ansible.cli.display
+ansible.cli.doc.display
+ansible.cli.galaxy.display
+ansible.cli.playbook.display
+ansible.cli.pull.display
+ansible.cli.vault.display
+ansible.executor.module_common.display
+ansible.executor.play_iterator.display
+ansible.executor.playbook_executor.display
+ansible.executor.process.result.display
+ansible.executor.process.worker.display
+ansible.executor.task_executor.display
+ansible.executor.task_queue_manager.display
+ansible.galaxy.api.display
+ansible.galaxy.login.display
+ansible.galaxy.role.display
+ansible.galaxy.token.display
+ansible.inventory.display
+ansible.parsing.dataloader.display
+ansible.parsing.vault.display
+ansible.parsing.yaml.constructor.display
+ansible.playbook.base.display
+ansible.playbook.become.display
+ansible.playbook.display
+ansible.playbook.helpers.display
+ansible.playbook.included_file.display
+ansible.playbook.play.display
+ansible.playbook.play_context.display
+ansible.playbook.role.requirement.display
+ansible.playbook.task.display
+ansible.playbook.task_include.display
+ansible.plugins.action.add_host.display
+ansible.plugins.action.display
+ansible.plugins.action.package.display
+ansible.plugins.action.pause.display
+ansible.plugins.action.win_reboot.display
+ansible.plugins.cache.base.display
+ansible.plugins.cache.display
+ansible.plugins.cache.jsonfile.display
+ansible.plugins.connection.accelerate.display
+ansible.plugins.connection.chroot.display
+ansible.plugins.connection.display
+ansible.plugins.connection.docker.display
+ansible.plugins.connection.jail.display
+ansible.plugins.connection.libvirt_lxc.display
+ansible.plugins.connection.local.display
+ansible.plugins.connection.paramiko_ssh.display
+ansible.plugins.connection.ssh.display
+ansible.plugins.connection.winrm.display
+ansible.plugins.connection.zone.display
+ansible.plugins.display
+ansible.plugins.lookup.display
+ansible.plugins.lookup.file.display
+ansible.plugins.lookup.template.display
+ansible.plugins.lookup.url.display
+ansible.plugins.strategy.debug.display
+ansible.plugins.strategy.display
+ansible.plugins.strategy.free.display
+ansible.plugins.strategy.linear.display
+ansible.template.display
+ansible.utils.display
+ansible.utils.display.Display.display
+ansible.utils.encrypt.display
+ansible.utils.module_docs.display
+ansible.vars.display" class="py-name" href="#" onclick="return doclink('link-75', 'display', 'link-34');">display</a></tt><tt class="py-op">(</tt><tt class="py-string">"%s | UNREACHABLE!"</tt> <tt class="py-op">%</tt> <tt id="link-76" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-76', 'result', 'link-10');">result</a></tt><tt class="py-op">.</tt><tt class="py-name">_host</tt><tt class="py-op">.</tt><tt id="link-77" class="py-name"><a title="ansible.inventory.group.Group.get_name
+ansible.inventory.host.Host.get_name
+ansible.playbook.play.Play.get_name
+ansible.playbook.role.Role.get_name
+ansible.playbook.task.Task.get_name" class="py-name" href="#" onclick="return doclink('link-77', 'get_name', 'link-37');">get_name</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt id="link-78" class="py-name"><a title="ansible.utils.color" class="py-name" href="#" onclick="return doclink('link-78', 'color', 'link-39');">color</a></tt><tt class="py-op">=</tt><tt class="py-name">C</tt><tt class="py-op">.</tt><tt id="link-79" class="py-name" targets="Variable ansible.constants.COLOR_UNREACHABLE=ansible.constants-module.html#COLOR_UNREACHABLE"><a title="ansible.constants.COLOR_UNREACHABLE" class="py-name" href="#" onclick="return doclink('link-79', 'COLOR_UNREACHABLE', 'link-79');">COLOR_UNREACHABLE</a></tt><tt class="py-op">)</tt> </tt>
+</div><a name="L70"></a><tt class="py-lineno">70</tt>  <tt class="py-line"> </tt>
+<a name="CallbackModule.v2_runner_on_skipped"></a><div id="CallbackModule.v2_runner_on_skipped-def"><a name="L71"></a><tt class="py-lineno">71</tt> <a class="py-toggle" href="#" id="CallbackModule.v2_runner_on_skipped-toggle" onclick="return toggle('CallbackModule.v2_runner_on_skipped');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.callback.oneline.CallbackModule-class.html#v2_runner_on_skipped">v2_runner_on_skipped</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">result</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CallbackModule.v2_runner_on_skipped-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="CallbackModule.v2_runner_on_skipped-expanded"><a name="L72"></a><tt class="py-lineno">72</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-80" class="py-name"><a title="ansible.plugins.cache.base.BaseCacheModule._display" class="py-name" href="#" onclick="return doclink('link-80', '_display', 'link-23');">_display</a></tt><tt class="py-op">.</tt><tt id="link-81" class="py-name"><a title="ansible.cli.adhoc.display
+ansible.cli.console.display
+ansible.cli.display
+ansible.cli.doc.display
+ansible.cli.galaxy.display
+ansible.cli.playbook.display
+ansible.cli.pull.display
+ansible.cli.vault.display
+ansible.executor.module_common.display
+ansible.executor.play_iterator.display
+ansible.executor.playbook_executor.display
+ansible.executor.process.result.display
+ansible.executor.process.worker.display
+ansible.executor.task_executor.display
+ansible.executor.task_queue_manager.display
+ansible.galaxy.api.display
+ansible.galaxy.login.display
+ansible.galaxy.role.display
+ansible.galaxy.token.display
+ansible.inventory.display
+ansible.parsing.dataloader.display
+ansible.parsing.vault.display
+ansible.parsing.yaml.constructor.display
+ansible.playbook.base.display
+ansible.playbook.become.display
+ansible.playbook.display
+ansible.playbook.helpers.display
+ansible.playbook.included_file.display
+ansible.playbook.play.display
+ansible.playbook.play_context.display
+ansible.playbook.role.requirement.display
+ansible.playbook.task.display
+ansible.playbook.task_include.display
+ansible.plugins.action.add_host.display
+ansible.plugins.action.display
+ansible.plugins.action.package.display
+ansible.plugins.action.pause.display
+ansible.plugins.action.win_reboot.display
+ansible.plugins.cache.base.display
+ansible.plugins.cache.display
+ansible.plugins.cache.jsonfile.display
+ansible.plugins.connection.accelerate.display
+ansible.plugins.connection.chroot.display
+ansible.plugins.connection.display
+ansible.plugins.connection.docker.display
+ansible.plugins.connection.jail.display
+ansible.plugins.connection.libvirt_lxc.display
+ansible.plugins.connection.local.display
+ansible.plugins.connection.paramiko_ssh.display
+ansible.plugins.connection.ssh.display
+ansible.plugins.connection.winrm.display
+ansible.plugins.connection.zone.display
+ansible.plugins.display
+ansible.plugins.lookup.display
+ansible.plugins.lookup.file.display
+ansible.plugins.lookup.template.display
+ansible.plugins.lookup.url.display
+ansible.plugins.strategy.debug.display
+ansible.plugins.strategy.display
+ansible.plugins.strategy.free.display
+ansible.plugins.strategy.linear.display
+ansible.template.display
+ansible.utils.display
+ansible.utils.display.Display.display
+ansible.utils.encrypt.display
+ansible.utils.module_docs.display
+ansible.vars.display" class="py-name" href="#" onclick="return doclink('link-81', 'display', 'link-34');">display</a></tt><tt class="py-op">(</tt><tt class="py-string">"%s | SKIPPED"</tt> <tt class="py-op">%</tt> <tt class="py-op">(</tt><tt id="link-82" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-82', 'result', 'link-10');">result</a></tt><tt class="py-op">.</tt><tt class="py-name">_host</tt><tt class="py-op">.</tt><tt id="link-83" class="py-name"><a title="ansible.inventory.group.Group.get_name
+ansible.inventory.host.Host.get_name
+ansible.playbook.play.Play.get_name
+ansible.playbook.role.Role.get_name
+ansible.playbook.task.Task.get_name" class="py-name" href="#" onclick="return doclink('link-83', 'get_name', 'link-37');">get_name</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt id="link-84" class="py-name"><a title="ansible.utils.color" class="py-name" href="#" onclick="return doclink('link-84', 'color', 'link-39');">color</a></tt><tt class="py-op">=</tt><tt class="py-name">C</tt><tt class="py-op">.</tt><tt id="link-85" class="py-name" targets="Variable ansible.constants.COLOR_SKIP=ansible.constants-module.html#COLOR_SKIP"><a title="ansible.constants.COLOR_SKIP" class="py-name" href="#" onclick="return doclink('link-85', 'COLOR_SKIP', 'link-85');">COLOR_SKIP</a></tt><tt class="py-op">)</tt> </tt>
+</div></div><a name="L73"></a><tt class="py-lineno">73</tt>  <tt class="py-line"> </tt><script type="text/javascript">
+<!--
+expandto(location.href);
+// -->
+</script>
+</pre>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Fri Jul 29 13:11:43 2016
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

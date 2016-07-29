@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>ansible.plugins.lookup.csvfile</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="ansible-module.html">Package&nbsp;ansible</a> ::
+        <a href="ansible.plugins-module.html">Package&nbsp;plugins</a> ::
+        <a href="ansible.plugins.lookup-module.html">Package&nbsp;lookup</a> ::
+        Module&nbsp;csvfile
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="ansible.plugins.lookup.csvfile-pysrc.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<h1 class="epydoc">Source Code for <a href="ansible.plugins.lookup.csvfile-module.html">Module ansible.plugins.lookup.csvfile</a></h1>
+<pre class="py-src">
+<a name="L1"></a><tt class="py-lineno">  1</tt>  <tt class="py-line"><tt class="py-comment"># (c) 2013, Jan-Piet Mens &lt;jpmens(at)gmail.com&gt;</tt> </tt>
+<a name="L2"></a><tt class="py-lineno">  2</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L3"></a><tt class="py-lineno">  3</tt>  <tt class="py-line"><tt class="py-comment"># This file is part of Ansible</tt> </tt>
+<a name="L4"></a><tt class="py-lineno">  4</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L5"></a><tt class="py-lineno">  5</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is free software: you can redistribute it and/or modify</tt> </tt>
+<a name="L6"></a><tt class="py-lineno">  6</tt>  <tt class="py-line"><tt class="py-comment"># it under the terms of the GNU General Public License as published by</tt> </tt>
+<a name="L7"></a><tt class="py-lineno">  7</tt>  <tt class="py-line"><tt class="py-comment"># the Free Software Foundation, either version 3 of the License, or</tt> </tt>
+<a name="L8"></a><tt class="py-lineno">  8</tt>  <tt class="py-line"><tt class="py-comment"># (at your option) any later version.</tt> </tt>
+<a name="L9"></a><tt class="py-lineno">  9</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L10"></a><tt class="py-lineno"> 10</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is distributed in the hope that it will be useful,</tt> </tt>
+<a name="L11"></a><tt class="py-lineno"> 11</tt>  <tt class="py-line"><tt class="py-comment"># but WITHOUT ANY WARRANTY; without even the implied warranty of</tt> </tt>
+<a name="L12"></a><tt class="py-lineno"> 12</tt>  <tt class="py-line"><tt class="py-comment"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</tt> </tt>
+<a name="L13"></a><tt class="py-lineno"> 13</tt>  <tt class="py-line"><tt class="py-comment"># GNU General Public License for more details.</tt> </tt>
+<a name="L14"></a><tt class="py-lineno"> 14</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L15"></a><tt class="py-lineno"> 15</tt>  <tt class="py-line"><tt class="py-comment"># You should have received a copy of the GNU General Public License</tt> </tt>
+<a name="L16"></a><tt class="py-lineno"> 16</tt>  <tt class="py-line"><tt class="py-comment"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</tt> </tt>
+<a name="L17"></a><tt class="py-lineno"> 17</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">__future__</tt> <tt class="py-keyword">import</tt> <tt class="py-op">(</tt><tt class="py-name">absolute_import</tt><tt class="py-op">,</tt> <tt class="py-name">division</tt><tt class="py-op">,</tt> <tt class="py-name">print_function</tt><tt class="py-op">)</tt> </tt>
+<a name="L18"></a><tt class="py-lineno"> 18</tt>  <tt class="py-line"><tt class="py-name">__metaclass__</tt> <tt class="py-op">=</tt> <tt id="link-0" class="py-name" targets="Class type=type-class.html"><a title="type" class="py-name" href="#" onclick="return doclink('link-0', 'type', 'link-0');">type</a></tt> </tt>
+<a name="L19"></a><tt class="py-lineno"> 19</tt>  <tt class="py-line"> </tt>
+<a name="L20"></a><tt class="py-lineno"> 20</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">codecs</tt> </tt>
+<a name="L21"></a><tt class="py-lineno"> 21</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">csv</tt> </tt>
+<a name="L22"></a><tt class="py-lineno"> 22</tt>  <tt class="py-line"> </tt>
+<a name="L23"></a><tt class="py-lineno"> 23</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-1" class="py-name" targets="Package ansible=ansible-module.html"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-1', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-2" class="py-name" targets="Package ansible.errors=ansible.errors-module.html"><a title="ansible.errors" class="py-name" href="#" onclick="return doclink('link-2', 'errors', 'link-2');">errors</a></tt> <tt class="py-keyword">import</tt> <tt id="link-3" class="py-name" targets="Class ansible.errors.AnsibleError=ansible.errors.AnsibleError-class.html"><a title="ansible.errors.AnsibleError" class="py-name" href="#" onclick="return doclink('link-3', 'AnsibleError', 'link-3');">AnsibleError</a></tt> </tt>
+<a name="L24"></a><tt class="py-lineno"> 24</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-4" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-4', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-5" class="py-name" targets="Package ansible.plugins=ansible.plugins-module.html"><a title="ansible.plugins" class="py-name" href="#" onclick="return doclink('link-5', 'plugins', 'link-5');">plugins</a></tt><tt class="py-op">.</tt><tt id="link-6" class="py-name" targets="Package ansible.plugins.lookup=ansible.plugins.lookup-module.html"><a title="ansible.plugins.lookup" class="py-name" href="#" onclick="return doclink('link-6', 'lookup', 'link-6');">lookup</a></tt> <tt class="py-keyword">import</tt> <tt id="link-7" class="py-name" targets="Class ansible.plugins.lookup.LookupBase=ansible.plugins.lookup.LookupBase-class.html"><a title="ansible.plugins.lookup.LookupBase" class="py-name" href="#" onclick="return doclink('link-7', 'LookupBase', 'link-7');">LookupBase</a></tt> </tt>
+<a name="L25"></a><tt class="py-lineno"> 25</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-8" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-8', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-9" class="py-name" targets="Package ansible.parsing.utils=ansible.parsing.utils-module.html,Package ansible.utils=ansible.utils-module.html"><a title="ansible.parsing.utils
+ansible.utils" class="py-name" href="#" onclick="return doclink('link-9', 'utils', 'link-9');">utils</a></tt><tt class="py-op">.</tt><tt id="link-10" class="py-name" targets="Module ansible.utils.unicode=ansible.utils.unicode-module.html"><a title="ansible.utils.unicode" class="py-name" href="#" onclick="return doclink('link-10', 'unicode', 'link-10');">unicode</a></tt> <tt class="py-keyword">import</tt> <tt id="link-11" class="py-name" targets="Function ansible.utils.unicode.to_bytes()=ansible.utils.unicode-module.html#to_bytes"><a title="ansible.utils.unicode.to_bytes" class="py-name" href="#" onclick="return doclink('link-11', 'to_bytes', 'link-11');">to_bytes</a></tt><tt class="py-op">,</tt> <tt class="py-name">to_str</tt><tt class="py-op">,</tt> <tt id="link-12" class="py-name" targets="Function ansible.utils.unicode.to_unicode()=ansible.utils.unicode-module.html#to_unicode"><a title="ansible.utils.unicode.to_unicode" class="py-name" href="#" onclick="return doclink('link-12', 'to_unicode', 'link-12');">to_unicode</a></tt> </tt>
+<a name="L26"></a><tt class="py-lineno"> 26</tt>  <tt class="py-line"> </tt>
+<a name="CSVRecoder"></a><div id="CSVRecoder-def"><a name="L27"></a><tt class="py-lineno"> 27</tt> <a class="py-toggle" href="#" id="CSVRecoder-toggle" onclick="return toggle('CSVRecoder');">-</a><tt class="py-line"><tt class="py-keyword">class</tt> <a class="py-def-name" href="ansible.plugins.lookup.csvfile.CSVRecoder-class.html">CSVRecoder</a><tt class="py-op">:</tt> </tt>
+</div><div id="CSVRecoder-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="CSVRecoder-expanded"><a name="L28"></a><tt class="py-lineno"> 28</tt>  <tt class="py-line">    <tt class="py-docstring">"""</tt> </tt>
+<a name="L29"></a><tt class="py-lineno"> 29</tt>  <tt class="py-line"><tt class="py-docstring">    Iterator that reads an encoded stream and reencodes the input to UTF-8</tt> </tt>
+<a name="L30"></a><tt class="py-lineno"> 30</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="CSVRecoder.__init__"></a><div id="CSVRecoder.__init__-def"><a name="L31"></a><tt class="py-lineno"> 31</tt> <a class="py-toggle" href="#" id="CSVRecoder.__init__-toggle" onclick="return toggle('CSVRecoder.__init__');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.lookup.csvfile.CSVRecoder-class.html#__init__">__init__</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">f</tt><tt class="py-op">,</tt> <tt class="py-param">encoding</tt><tt class="py-op">=</tt><tt class="py-string">'utf-8'</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CSVRecoder.__init__-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CSVRecoder.__init__-expanded"><a name="L32"></a><tt class="py-lineno"> 32</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">reader</tt> <tt class="py-op">=</tt> <tt class="py-name">codecs</tt><tt class="py-op">.</tt><tt class="py-name">getreader</tt><tt class="py-op">(</tt><tt class="py-name">encoding</tt><tt class="py-op">)</tt><tt class="py-op">(</tt><tt class="py-name">f</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L33"></a><tt class="py-lineno"> 33</tt>  <tt class="py-line"> </tt>
+<a name="CSVRecoder.__iter__"></a><div id="CSVRecoder.__iter__-def"><a name="L34"></a><tt class="py-lineno"> 34</tt> <a class="py-toggle" href="#" id="CSVRecoder.__iter__-toggle" onclick="return toggle('CSVRecoder.__iter__');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.lookup.csvfile.CSVRecoder-class.html#__iter__">__iter__</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CSVRecoder.__iter__-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CSVRecoder.__iter__-expanded"><a name="L35"></a><tt class="py-lineno"> 35</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">self</tt> </tt>
+</div><a name="L36"></a><tt class="py-lineno"> 36</tt>  <tt class="py-line"> </tt>
+<a name="CSVRecoder.next"></a><div id="CSVRecoder.next-def"><a name="L37"></a><tt class="py-lineno"> 37</tt> <a class="py-toggle" href="#" id="CSVRecoder.next-toggle" onclick="return toggle('CSVRecoder.next');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.lookup.csvfile.CSVRecoder-class.html#next">next</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CSVRecoder.next-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CSVRecoder.next-expanded"><a name="L38"></a><tt class="py-lineno"> 38</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">reader</tt><tt class="py-op">.</tt><tt id="link-13" class="py-name" targets="Method ansible.compat.six.Iterator.next()=ansible.compat.six.Iterator-class.html#next,Method ansible.module_utils.six.Iterator.next()=ansible.module_utils.six.Iterator-class.html#next,Method ansible.plugins.lookup.csvfile.CSVReader.next()=ansible.plugins.lookup.csvfile.CSVReader-class.html#next,Method ansible.plugins.lookup.csvfile.CSVRecoder.next()=ansible.plugins.lookup.csvfile.CSVRecoder-class.html#next"><a title="ansible.compat.six.Iterator.next
+ansible.module_utils.six.Iterator.next
+ansible.plugins.lookup.csvfile.CSVReader.next
+ansible.plugins.lookup.csvfile.CSVRecoder.next" class="py-name" href="#" onclick="return doclink('link-13', 'next', 'link-13');">next</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt id="link-14" class="py-name" targets="Method ansible.vars.unsafe_proxy.AnsibleJSONUnsafeEncoder.encode()=ansible.vars.unsafe_proxy.AnsibleJSONUnsafeEncoder-class.html#encode"><a title="ansible.vars.unsafe_proxy.AnsibleJSONUnsafeEncoder.encode" class="py-name" href="#" onclick="return doclink('link-14', 'encode', 'link-14');">encode</a></tt><tt class="py-op">(</tt><tt class="py-string">"utf-8"</tt><tt class="py-op">)</tt> </tt>
+</div></div><a name="L39"></a><tt class="py-lineno"> 39</tt>  <tt class="py-line"> </tt>
+<a name="CSVReader"></a><div id="CSVReader-def"><a name="L40"></a><tt class="py-lineno"> 40</tt> <a class="py-toggle" href="#" id="CSVReader-toggle" onclick="return toggle('CSVReader');">-</a><tt class="py-line"><tt class="py-keyword">class</tt> <a class="py-def-name" href="ansible.plugins.lookup.csvfile.CSVReader-class.html">CSVReader</a><tt class="py-op">:</tt> </tt>
+</div><div id="CSVReader-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="CSVReader-expanded"><a name="L41"></a><tt class="py-lineno"> 41</tt>  <tt class="py-line">    <tt class="py-docstring">"""</tt> </tt>
+<a name="L42"></a><tt class="py-lineno"> 42</tt>  <tt class="py-line"><tt class="py-docstring">    A CSV reader which will iterate over lines in the CSV file "f",</tt> </tt>
+<a name="L43"></a><tt class="py-lineno"> 43</tt>  <tt class="py-line"><tt class="py-docstring">    which is encoded in the given encoding.</tt> </tt>
+<a name="L44"></a><tt class="py-lineno"> 44</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L45"></a><tt class="py-lineno"> 45</tt>  <tt class="py-line"> </tt>
+<a name="CSVReader.__init__"></a><div id="CSVReader.__init__-def"><a name="L46"></a><tt class="py-lineno"> 46</tt> <a class="py-toggle" href="#" id="CSVReader.__init__-toggle" onclick="return toggle('CSVReader.__init__');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.lookup.csvfile.CSVReader-class.html#__init__">__init__</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">f</tt><tt class="py-op">,</tt> <tt class="py-param">dialect</tt><tt class="py-op">=</tt><tt class="py-name">csv</tt><tt class="py-op">.</tt><tt class="py-name">excel</tt><tt class="py-op">,</tt> <tt class="py-param">encoding</tt><tt class="py-op">=</tt><tt class="py-string">'utf-8'</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">kwds</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CSVReader.__init__-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CSVReader.__init__-expanded"><a name="L47"></a><tt class="py-lineno"> 47</tt>  <tt class="py-line">        <tt class="py-name">f</tt> <tt class="py-op">=</tt> <tt id="link-15" class="py-name" targets="Class ansible.plugins.lookup.csvfile.CSVRecoder=ansible.plugins.lookup.csvfile.CSVRecoder-class.html"><a title="ansible.plugins.lookup.csvfile.CSVRecoder" class="py-name" href="#" onclick="return doclink('link-15', 'CSVRecoder', 'link-15');">CSVRecoder</a></tt><tt class="py-op">(</tt><tt class="py-name">f</tt><tt class="py-op">,</tt> <tt class="py-name">encoding</tt><tt class="py-op">)</tt> </tt>
+<a name="L48"></a><tt class="py-lineno"> 48</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">reader</tt> <tt class="py-op">=</tt> <tt class="py-name">csv</tt><tt class="py-op">.</tt><tt class="py-name">reader</tt><tt class="py-op">(</tt><tt class="py-name">f</tt><tt class="py-op">,</tt> <tt class="py-name">dialect</tt><tt class="py-op">=</tt><tt class="py-name">dialect</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-name">kwds</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L49"></a><tt class="py-lineno"> 49</tt>  <tt class="py-line"> </tt>
+<a name="CSVReader.next"></a><div id="CSVReader.next-def"><a name="L50"></a><tt class="py-lineno"> 50</tt> <a class="py-toggle" href="#" id="CSVReader.next-toggle" onclick="return toggle('CSVReader.next');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.lookup.csvfile.CSVReader-class.html#next">next</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CSVReader.next-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CSVReader.next-expanded"><a name="L51"></a><tt class="py-lineno"> 51</tt>  <tt class="py-line">        <tt class="py-name">row</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">reader</tt><tt class="py-op">.</tt><tt id="link-16" class="py-name"><a title="ansible.compat.six.Iterator.next
+ansible.module_utils.six.Iterator.next
+ansible.plugins.lookup.csvfile.CSVReader.next
+ansible.plugins.lookup.csvfile.CSVRecoder.next" class="py-name" href="#" onclick="return doclink('link-16', 'next', 'link-13');">next</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L52"></a><tt class="py-lineno"> 52</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-op">[</tt><tt id="link-17" class="py-name"><a title="ansible.utils.unicode.to_unicode" class="py-name" href="#" onclick="return doclink('link-17', 'to_unicode', 'link-12');">to_unicode</a></tt><tt class="py-op">(</tt><tt class="py-name">s</tt><tt class="py-op">)</tt> <tt class="py-keyword">for</tt> <tt class="py-name">s</tt> <tt class="py-keyword">in</tt> <tt class="py-name">row</tt><tt class="py-op">]</tt> </tt>
+</div><a name="L53"></a><tt class="py-lineno"> 53</tt>  <tt class="py-line"> </tt>
+<a name="CSVReader.__iter__"></a><div id="CSVReader.__iter__-def"><a name="L54"></a><tt class="py-lineno"> 54</tt> <a class="py-toggle" href="#" id="CSVReader.__iter__-toggle" onclick="return toggle('CSVReader.__iter__');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.lookup.csvfile.CSVReader-class.html#__iter__">__iter__</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CSVReader.__iter__-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CSVReader.__iter__-expanded"><a name="L55"></a><tt class="py-lineno"> 55</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">self</tt> </tt>
+</div></div><a name="L56"></a><tt class="py-lineno"> 56</tt>  <tt class="py-line"> </tt>
+<a name="LookupModule"></a><div id="LookupModule-def"><a name="L57"></a><tt class="py-lineno"> 57</tt> <a class="py-toggle" href="#" id="LookupModule-toggle" onclick="return toggle('LookupModule');">-</a><tt class="py-line"><tt class="py-keyword">class</tt> <a class="py-def-name" href="ansible.plugins.lookup.csvfile.LookupModule-class.html">LookupModule</a><tt class="py-op">(</tt><tt class="py-base-class">LookupBase</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="LookupModule-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="LookupModule-expanded"><a name="L58"></a><tt class="py-lineno"> 58</tt>  <tt class="py-line"> </tt>
+<a name="LookupModule.read_csv"></a><div id="LookupModule.read_csv-def"><a name="L59"></a><tt class="py-lineno"> 59</tt> <a class="py-toggle" href="#" id="LookupModule.read_csv-toggle" onclick="return toggle('LookupModule.read_csv');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.lookup.csvfile.LookupModule-class.html#read_csv">read_csv</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">filename</tt><tt class="py-op">,</tt> <tt class="py-param">key</tt><tt class="py-op">,</tt> <tt class="py-param">delimiter</tt><tt class="py-op">,</tt> <tt class="py-param">encoding</tt><tt class="py-op">=</tt><tt class="py-string">'utf-8'</tt><tt class="py-op">,</tt> <tt class="py-param">dflt</tt><tt class="py-op">=</tt><tt class="py-name">None</tt><tt class="py-op">,</tt> <tt class="py-param">col</tt><tt class="py-op">=</tt><tt class="py-number">1</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="LookupModule.read_csv-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="LookupModule.read_csv-expanded"><a name="L60"></a><tt class="py-lineno"> 60</tt>  <tt class="py-line"> </tt>
+<a name="L61"></a><tt class="py-lineno"> 61</tt>  <tt class="py-line">        <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L62"></a><tt class="py-lineno"> 62</tt>  <tt class="py-line">            <tt class="py-name">f</tt> <tt class="py-op">=</tt> <tt id="link-18" class="py-name" targets="Method ansible.module_utils.shell.Shell.open()=ansible.module_utils.shell.Shell-class.html#open"><a title="ansible.module_utils.shell.Shell.open" class="py-name" href="#" onclick="return doclink('link-18', 'open', 'link-18');">open</a></tt><tt class="py-op">(</tt><tt class="py-name">filename</tt><tt class="py-op">,</tt> <tt class="py-string">'r'</tt><tt class="py-op">)</tt> </tt>
+<a name="L63"></a><tt class="py-lineno"> 63</tt>  <tt class="py-line">            <tt class="py-name">creader</tt> <tt class="py-op">=</tt> <tt id="link-19" class="py-name" targets="Class ansible.plugins.lookup.csvfile.CSVReader=ansible.plugins.lookup.csvfile.CSVReader-class.html"><a title="ansible.plugins.lookup.csvfile.CSVReader" class="py-name" href="#" onclick="return doclink('link-19', 'CSVReader', 'link-19');">CSVReader</a></tt><tt class="py-op">(</tt><tt class="py-name">f</tt><tt class="py-op">,</tt> <tt class="py-name">delimiter</tt><tt class="py-op">=</tt><tt id="link-20" class="py-name"><a title="ansible.utils.unicode.to_bytes" class="py-name" href="#" onclick="return doclink('link-20', 'to_bytes', 'link-11');">to_bytes</a></tt><tt class="py-op">(</tt><tt class="py-name">delimiter</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt class="py-name">encoding</tt><tt class="py-op">=</tt><tt class="py-name">encoding</tt><tt class="py-op">)</tt> </tt>
+<a name="L64"></a><tt class="py-lineno"> 64</tt>  <tt class="py-line"> </tt>
+<a name="L65"></a><tt class="py-lineno"> 65</tt>  <tt class="py-line">            <tt class="py-keyword">for</tt> <tt class="py-name">row</tt> <tt class="py-keyword">in</tt> <tt class="py-name">creader</tt><tt class="py-op">:</tt> </tt>
+<a name="L66"></a><tt class="py-lineno"> 66</tt>  <tt class="py-line">                <tt class="py-keyword">if</tt> <tt class="py-name">row</tt><tt class="py-op">[</tt><tt class="py-number">0</tt><tt class="py-op">]</tt> <tt class="py-op">==</tt> <tt class="py-name">key</tt><tt class="py-op">:</tt> </tt>
+<a name="L67"></a><tt class="py-lineno"> 67</tt>  <tt class="py-line">                    <tt class="py-keyword">return</tt> <tt class="py-name">row</tt><tt class="py-op">[</tt><tt id="link-21" class="py-name" targets="Class int=int-class.html"><a title="int" class="py-name" href="#" onclick="return doclink('link-21', 'int', 'link-21');">int</a></tt><tt class="py-op">(</tt><tt class="py-name">col</tt><tt class="py-op">)</tt><tt class="py-op">]</tt> </tt>
+<a name="L68"></a><tt class="py-lineno"> 68</tt>  <tt class="py-line">        <tt class="py-keyword">except</tt> <tt class="py-name">Exception</tt> <tt class="py-keyword">as</tt> <tt id="link-22" class="py-name" targets="Variable ansible.plugins.lookup.consul_kv.e=ansible.plugins.lookup.consul_kv-module.html#e"><a title="ansible.plugins.lookup.consul_kv.e" class="py-name" href="#" onclick="return doclink('link-22', 'e', 'link-22');">e</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L69"></a><tt class="py-lineno"> 69</tt>  <tt class="py-line">            <tt class="py-keyword">raise</tt> <tt id="link-23" class="py-name"><a title="ansible.errors.AnsibleError" class="py-name" href="#" onclick="return doclink('link-23', 'AnsibleError', 'link-3');">AnsibleError</a></tt><tt class="py-op">(</tt><tt class="py-string">"csvfile: %s"</tt> <tt class="py-op">%</tt> <tt class="py-name">to_str</tt><tt class="py-op">(</tt><tt id="link-24" class="py-name"><a title="ansible.plugins.lookup.consul_kv.e" class="py-name" href="#" onclick="return doclink('link-24', 'e', 'link-22');">e</a></tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L70"></a><tt class="py-lineno"> 70</tt>  <tt class="py-line"> </tt>
+<a name="L71"></a><tt class="py-lineno"> 71</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">dflt</tt> </tt>
+</div><a name="L72"></a><tt class="py-lineno"> 72</tt>  <tt class="py-line"> </tt>
+<a name="LookupModule.run"></a><div id="LookupModule.run-def"><a name="L73"></a><tt class="py-lineno"> 73</tt> <a class="py-toggle" href="#" id="LookupModule.run-toggle" onclick="return toggle('LookupModule.run');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.lookup.csvfile.LookupModule-class.html#run">run</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">terms</tt><tt class="py-op">,</tt> <tt class="py-param">variables</tt><tt class="py-op">=</tt><tt class="py-name">None</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">kwargs</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="LookupModule.run-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="LookupModule.run-expanded"><a name="L74"></a><tt class="py-lineno"> 74</tt>  <tt class="py-line"> </tt>
+<a name="L75"></a><tt class="py-lineno"> 75</tt>  <tt class="py-line">        <tt class="py-name">ret</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-op">]</tt> </tt>
+<a name="L76"></a><tt class="py-lineno"> 76</tt>  <tt class="py-line"> </tt>
+<a name="L77"></a><tt class="py-lineno"> 77</tt>  <tt class="py-line">        <tt class="py-keyword">for</tt> <tt class="py-name">term</tt> <tt class="py-keyword">in</tt> <tt class="py-name">terms</tt><tt class="py-op">:</tt> </tt>
+<a name="L78"></a><tt class="py-lineno"> 78</tt>  <tt class="py-line">            <tt class="py-name">params</tt> <tt class="py-op">=</tt> <tt class="py-name">term</tt><tt class="py-op">.</tt><tt class="py-name">split</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L79"></a><tt class="py-lineno"> 79</tt>  <tt class="py-line">            <tt class="py-name">key</tt> <tt class="py-op">=</tt> <tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-number">0</tt><tt class="py-op">]</tt> </tt>
+<a name="L80"></a><tt class="py-lineno"> 80</tt>  <tt class="py-line"> </tt>
+<a name="L81"></a><tt class="py-lineno"> 81</tt>  <tt class="py-line">            <tt class="py-name">paramvals</tt> <tt class="py-op">=</tt> <tt class="py-op">{</tt> </tt>
+<a name="L82"></a><tt class="py-lineno"> 82</tt>  <tt class="py-line">                <tt class="py-string">'col'</tt> <tt class="py-op">:</tt> <tt class="py-string">"1"</tt><tt class="py-op">,</tt>          <tt class="py-comment"># column to return</tt> </tt>
+<a name="L83"></a><tt class="py-lineno"> 83</tt>  <tt class="py-line">                <tt class="py-string">'default'</tt> <tt class="py-op">:</tt> <tt class="py-name">None</tt><tt class="py-op">,</tt> </tt>
+<a name="L84"></a><tt class="py-lineno"> 84</tt>  <tt class="py-line">                <tt class="py-string">'delimiter'</tt> <tt class="py-op">:</tt> <tt class="py-string">"TAB"</tt><tt class="py-op">,</tt> </tt>
+<a name="L85"></a><tt class="py-lineno"> 85</tt>  <tt class="py-line">                <tt class="py-string">'file'</tt> <tt class="py-op">:</tt> <tt class="py-string">'ansible.csv'</tt><tt class="py-op">,</tt> </tt>
+<a name="L86"></a><tt class="py-lineno"> 86</tt>  <tt class="py-line">                <tt class="py-string">'encoding'</tt> <tt class="py-op">:</tt> <tt class="py-string">'utf-8'</tt><tt class="py-op">,</tt> </tt>
+<a name="L87"></a><tt class="py-lineno"> 87</tt>  <tt class="py-line">            <tt class="py-op">}</tt> </tt>
+<a name="L88"></a><tt class="py-lineno"> 88</tt>  <tt class="py-line"> </tt>
+<a name="L89"></a><tt class="py-lineno"> 89</tt>  <tt class="py-line">            <tt class="py-comment"># parameters specified?</tt> </tt>
+<a name="L90"></a><tt class="py-lineno"> 90</tt>  <tt class="py-line">            <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L91"></a><tt class="py-lineno"> 91</tt>  <tt class="py-line">                <tt class="py-keyword">for</tt> <tt class="py-name">param</tt> <tt class="py-keyword">in</tt> <tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-number">1</tt><tt class="py-op">:</tt><tt class="py-op">]</tt><tt class="py-op">:</tt> </tt>
+<a name="L92"></a><tt class="py-lineno"> 92</tt>  <tt class="py-line">                    <tt class="py-name">name</tt><tt class="py-op">,</tt> <tt class="py-name">value</tt> <tt class="py-op">=</tt> <tt class="py-name">param</tt><tt class="py-op">.</tt><tt class="py-name">split</tt><tt class="py-op">(</tt><tt class="py-string">'='</tt><tt class="py-op">)</tt> </tt>
+<a name="L93"></a><tt class="py-lineno"> 93</tt>  <tt class="py-line">                    <tt class="py-keyword">assert</tt><tt class="py-op">(</tt><tt class="py-name">name</tt> <tt class="py-keyword">in</tt> <tt class="py-name">paramvals</tt><tt class="py-op">)</tt> </tt>
+<a name="L94"></a><tt class="py-lineno"> 94</tt>  <tt class="py-line">                    <tt class="py-name">paramvals</tt><tt class="py-op">[</tt><tt class="py-name">name</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-name">value</tt> </tt>
+<a name="L95"></a><tt class="py-lineno"> 95</tt>  <tt class="py-line">            <tt class="py-keyword">except</tt> <tt class="py-op">(</tt><tt class="py-name">ValueError</tt><tt class="py-op">,</tt> <tt class="py-name">AssertionError</tt><tt class="py-op">)</tt> <tt class="py-keyword">as</tt> <tt id="link-25" class="py-name"><a title="ansible.plugins.lookup.consul_kv.e" class="py-name" href="#" onclick="return doclink('link-25', 'e', 'link-22');">e</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L96"></a><tt class="py-lineno"> 96</tt>  <tt class="py-line">                <tt class="py-keyword">raise</tt> <tt id="link-26" class="py-name"><a title="ansible.errors.AnsibleError" class="py-name" href="#" onclick="return doclink('link-26', 'AnsibleError', 'link-3');">AnsibleError</a></tt><tt class="py-op">(</tt><tt id="link-27" class="py-name"><a title="ansible.plugins.lookup.consul_kv.e" class="py-name" href="#" onclick="return doclink('link-27', 'e', 'link-22');">e</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L97"></a><tt class="py-lineno"> 97</tt>  <tt class="py-line"> </tt>
+<a name="L98"></a><tt class="py-lineno"> 98</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-name">paramvals</tt><tt class="py-op">[</tt><tt class="py-string">'delimiter'</tt><tt class="py-op">]</tt> <tt class="py-op">==</tt> <tt class="py-string">'TAB'</tt><tt class="py-op">:</tt> </tt>
+<a name="L99"></a><tt class="py-lineno"> 99</tt>  <tt class="py-line">                <tt class="py-name">paramvals</tt><tt class="py-op">[</tt><tt class="py-string">'delimiter'</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-string">"\t"</tt> </tt>
+<a name="L100"></a><tt class="py-lineno">100</tt>  <tt class="py-line"> </tt>
+<a name="L101"></a><tt class="py-lineno">101</tt>  <tt class="py-line">            <tt class="py-name">lookupfile</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-28" class="py-name" targets="Method ansible.plugins.lookup.LookupBase.find_file_in_search_path()=ansible.plugins.lookup.LookupBase-class.html#find_file_in_search_path"><a title="ansible.plugins.lookup.LookupBase.find_file_in_search_path" class="py-name" href="#" onclick="return doclink('link-28', 'find_file_in_search_path', 'link-28');">find_file_in_search_path</a></tt><tt class="py-op">(</tt><tt class="py-name">variables</tt><tt class="py-op">,</tt> <tt class="py-string">'files'</tt><tt class="py-op">,</tt> <tt class="py-name">paramvals</tt><tt class="py-op">[</tt><tt class="py-string">'file'</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L102"></a><tt class="py-lineno">102</tt>  <tt class="py-line">            <tt class="py-name">var</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-29" class="py-name" targets="Method ansible.plugins.lookup.csvfile.LookupModule.read_csv()=ansible.plugins.lookup.csvfile.LookupModule-class.html#read_csv"><a title="ansible.plugins.lookup.csvfile.LookupModule.read_csv" class="py-name" href="#" onclick="return doclink('link-29', 'read_csv', 'link-29');">read_csv</a></tt><tt class="py-op">(</tt><tt class="py-name">lookupfile</tt><tt class="py-op">,</tt> <tt class="py-name">key</tt><tt class="py-op">,</tt> <tt class="py-name">paramvals</tt><tt class="py-op">[</tt><tt class="py-string">'delimiter'</tt><tt class="py-op">]</tt><tt class="py-op">,</tt> <tt class="py-name">paramvals</tt><tt class="py-op">[</tt><tt class="py-string">'encoding'</tt><tt class="py-op">]</tt><tt class="py-op">,</tt> <tt class="py-name">paramvals</tt><tt class="py-op">[</tt><tt class="py-string">'default'</tt><tt class="py-op">]</tt><tt class="py-op">,</tt> <tt class="py-name">paramvals</tt><tt class="py-op">[</tt><tt class="py-string">'col'</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L103"></a><tt class="py-lineno">103</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-name">var</tt> <tt class="py-keyword">is</tt> <tt class="py-keyword">not</tt> <tt class="py-name">None</tt><tt class="py-op">:</tt> </tt>
+<a name="L104"></a><tt class="py-lineno">104</tt>  <tt class="py-line">                <tt class="py-keyword">if</tt> <tt id="link-30" class="py-name"><a title="type" class="py-name" href="#" onclick="return doclink('link-30', 'type', 'link-0');">type</a></tt><tt class="py-op">(</tt><tt class="py-name">var</tt><tt class="py-op">)</tt> <tt class="py-keyword">is</tt> <tt id="link-31" class="py-name" targets="Module ansible.plugins.lookup.list=ansible.plugins.lookup.list-module.html"><a title="ansible.plugins.lookup.list" class="py-name" href="#" onclick="return doclink('link-31', 'list', 'link-31');">list</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L105"></a><tt class="py-lineno">105</tt>  <tt class="py-line">                    <tt class="py-keyword">for</tt> <tt id="link-32" class="py-name" targets="Method ansible.utils.display.Display.v()=ansible.utils.display.Display-class.html#v"><a title="ansible.utils.display.Display.v" class="py-name" href="#" onclick="return doclink('link-32', 'v', 'link-32');">v</a></tt> <tt class="py-keyword">in</tt> <tt class="py-name">var</tt><tt class="py-op">:</tt> </tt>
+<a name="L106"></a><tt class="py-lineno">106</tt>  <tt class="py-line">                        <tt class="py-name">ret</tt><tt class="py-op">.</tt><tt class="py-name">append</tt><tt class="py-op">(</tt><tt id="link-33" class="py-name"><a title="ansible.utils.display.Display.v" class="py-name" href="#" onclick="return doclink('link-33', 'v', 'link-32');">v</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L107"></a><tt class="py-lineno">107</tt>  <tt class="py-line">                <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L108"></a><tt class="py-lineno">108</tt>  <tt class="py-line">                    <tt class="py-name">ret</tt><tt class="py-op">.</tt><tt class="py-name">append</tt><tt class="py-op">(</tt><tt class="py-name">var</tt><tt class="py-op">)</tt> </tt>
+<a name="L109"></a><tt class="py-lineno">109</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">ret</tt> </tt>
+</div></div><a name="L110"></a><tt class="py-lineno">110</tt>  <tt class="py-line"> </tt><script type="text/javascript">
+<!--
+expandto(location.href);
+// -->
+</script>
+</pre>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Fri Jul 29 13:11:40 2016
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

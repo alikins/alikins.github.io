@@ -1,0 +1,590 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>ansible.plugins.cache.memcached</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="ansible-module.html">Package&nbsp;ansible</a> ::
+        <a href="ansible.plugins-module.html">Package&nbsp;plugins</a> ::
+        <a href="ansible.plugins.cache-module.html">Package&nbsp;cache</a> ::
+        Module&nbsp;memcached
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="ansible.plugins.cache.memcached-pysrc.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<h1 class="epydoc">Source Code for <a href="ansible.plugins.cache.memcached-module.html">Module ansible.plugins.cache.memcached</a></h1>
+<pre class="py-src">
+<a name="L1"></a><tt class="py-lineno">  1</tt>  <tt class="py-line"><tt class="py-comment"># (c) 2014, Brian Coca, Josh Drake, et al</tt> </tt>
+<a name="L2"></a><tt class="py-lineno">  2</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L3"></a><tt class="py-lineno">  3</tt>  <tt class="py-line"><tt class="py-comment"># This file is part of Ansible</tt> </tt>
+<a name="L4"></a><tt class="py-lineno">  4</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L5"></a><tt class="py-lineno">  5</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is free software: you can redistribute it and/or modify</tt> </tt>
+<a name="L6"></a><tt class="py-lineno">  6</tt>  <tt class="py-line"><tt class="py-comment"># it under the terms of the GNU General Public License as published by</tt> </tt>
+<a name="L7"></a><tt class="py-lineno">  7</tt>  <tt class="py-line"><tt class="py-comment"># the Free Software Foundation, either version 3 of the License, or</tt> </tt>
+<a name="L8"></a><tt class="py-lineno">  8</tt>  <tt class="py-line"><tt class="py-comment"># (at your option) any later version.</tt> </tt>
+<a name="L9"></a><tt class="py-lineno">  9</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L10"></a><tt class="py-lineno"> 10</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is distributed in the hope that it will be useful,</tt> </tt>
+<a name="L11"></a><tt class="py-lineno"> 11</tt>  <tt class="py-line"><tt class="py-comment"># but WITHOUT ANY WARRANTY; without even the implied warranty of</tt> </tt>
+<a name="L12"></a><tt class="py-lineno"> 12</tt>  <tt class="py-line"><tt class="py-comment"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</tt> </tt>
+<a name="L13"></a><tt class="py-lineno"> 13</tt>  <tt class="py-line"><tt class="py-comment"># GNU General Public License for more details.</tt> </tt>
+<a name="L14"></a><tt class="py-lineno"> 14</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L15"></a><tt class="py-lineno"> 15</tt>  <tt class="py-line"><tt class="py-comment"># You should have received a copy of the GNU General Public License</tt> </tt>
+<a name="L16"></a><tt class="py-lineno"> 16</tt>  <tt class="py-line"><tt class="py-comment"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</tt> </tt>
+<a name="L17"></a><tt class="py-lineno"> 17</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">__future__</tt> <tt class="py-keyword">import</tt> <tt class="py-op">(</tt><tt class="py-name">absolute_import</tt><tt class="py-op">,</tt> <tt class="py-name">division</tt><tt class="py-op">,</tt> <tt class="py-name">print_function</tt><tt class="py-op">)</tt> </tt>
+<a name="L18"></a><tt class="py-lineno"> 18</tt>  <tt class="py-line"><tt class="py-name">__metaclass__</tt> <tt class="py-op">=</tt> <tt id="link-0" class="py-name" targets="Class type=type-class.html"><a title="type" class="py-name" href="#" onclick="return doclink('link-0', 'type', 'link-0');">type</a></tt> </tt>
+<a name="L19"></a><tt class="py-lineno"> 19</tt>  <tt class="py-line"> </tt>
+<a name="L20"></a><tt class="py-lineno"> 20</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">collections</tt> </tt>
+<a name="L21"></a><tt class="py-lineno"> 21</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">os</tt> </tt>
+<a name="L22"></a><tt class="py-lineno"> 22</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">sys</tt> </tt>
+<a name="L23"></a><tt class="py-lineno"> 23</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">time</tt> </tt>
+<a name="L24"></a><tt class="py-lineno"> 24</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">multiprocessing</tt> <tt class="py-keyword">import</tt> <tt class="py-name">Lock</tt> </tt>
+<a name="L25"></a><tt class="py-lineno"> 25</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">itertools</tt> <tt class="py-keyword">import</tt> <tt class="py-name">chain</tt> </tt>
+<a name="L26"></a><tt class="py-lineno"> 26</tt>  <tt class="py-line"> </tt>
+<a name="L27"></a><tt class="py-lineno"> 27</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-1" class="py-name" targets="Package ansible=ansible-module.html"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-1', 'ansible', 'link-1');">ansible</a></tt> <tt class="py-keyword">import</tt> <tt id="link-2" class="py-name" targets="Module ansible.constants=ansible.constants-module.html"><a title="ansible.constants" class="py-name" href="#" onclick="return doclink('link-2', 'constants', 'link-2');">constants</a></tt> <tt class="py-keyword">as</tt> <tt class="py-name">C</tt> </tt>
+<a name="L28"></a><tt class="py-lineno"> 28</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-3" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-3', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-4" class="py-name" targets="Package ansible.plugins=ansible.plugins-module.html"><a title="ansible.plugins" class="py-name" href="#" onclick="return doclink('link-4', 'plugins', 'link-4');">plugins</a></tt><tt class="py-op">.</tt><tt id="link-5" class="py-name" targets="Package ansible.plugins.cache=ansible.plugins.cache-module.html"><a title="ansible.plugins.cache" class="py-name" href="#" onclick="return doclink('link-5', 'cache', 'link-5');">cache</a></tt><tt class="py-op">.</tt><tt id="link-6" class="py-name" targets="Module ansible.playbook.base=ansible.playbook.base-module.html,Module ansible.plugins.cache.base=ansible.plugins.cache.base-module.html"><a title="ansible.playbook.base
+ansible.plugins.cache.base" class="py-name" href="#" onclick="return doclink('link-6', 'base', 'link-6');">base</a></tt> <tt class="py-keyword">import</tt> <tt id="link-7" class="py-name" targets="Class ansible.plugins.cache.base.BaseCacheModule=ansible.plugins.cache.base.BaseCacheModule-class.html"><a title="ansible.plugins.cache.base.BaseCacheModule" class="py-name" href="#" onclick="return doclink('link-7', 'BaseCacheModule', 'link-7');">BaseCacheModule</a></tt> </tt>
+<a name="L29"></a><tt class="py-lineno"> 29</tt>  <tt class="py-line"> </tt>
+<a name="L30"></a><tt class="py-lineno"> 30</tt>  <tt class="py-line"><tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L31"></a><tt class="py-lineno"> 31</tt>  <tt class="py-line">    <tt class="py-keyword">import</tt> <tt class="py-name">memcache</tt> </tt>
+<a name="L32"></a><tt class="py-lineno"> 32</tt>  <tt class="py-line"><tt class="py-keyword">except</tt> <tt class="py-name">ImportError</tt><tt class="py-op">:</tt> </tt>
+<a name="L33"></a><tt class="py-lineno"> 33</tt>  <tt class="py-line">    <tt class="py-keyword">print</tt><tt class="py-op">(</tt><tt class="py-string">'python-memcached is required for the memcached fact cache'</tt><tt class="py-op">)</tt> </tt>
+<a name="L34"></a><tt class="py-lineno"> 34</tt>  <tt class="py-line">    <tt class="py-name">sys</tt><tt class="py-op">.</tt><tt id="link-8" class="py-name" targets="Method ansible.module_utils.vca.VcaAnsibleModule.exit()=ansible.module_utils.vca.VcaAnsibleModule-class.html#exit"><a title="ansible.module_utils.vca.VcaAnsibleModule.exit" class="py-name" href="#" onclick="return doclink('link-8', 'exit', 'link-8');">exit</a></tt><tt class="py-op">(</tt><tt class="py-number">1</tt><tt class="py-op">)</tt> </tt>
+<a name="L35"></a><tt class="py-lineno"> 35</tt>  <tt class="py-line"> </tt>
+<a name="L36"></a><tt class="py-lineno"> 36</tt>  <tt class="py-line"> </tt>
+<a name="ProxyClientPool"></a><div id="ProxyClientPool-def"><a name="L37"></a><tt class="py-lineno"> 37</tt> <a class="py-toggle" href="#" id="ProxyClientPool-toggle" onclick="return toggle('ProxyClientPool');">-</a><tt class="py-line"><tt class="py-keyword">class</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.ProxyClientPool-class.html">ProxyClientPool</a><tt class="py-op">(</tt><tt class="py-base-class">object</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="ProxyClientPool-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="ProxyClientPool-expanded"><a name="L38"></a><tt class="py-lineno"> 38</tt>  <tt class="py-line">    <tt class="py-docstring">"""</tt> </tt>
+<a name="L39"></a><tt class="py-lineno"> 39</tt>  <tt class="py-line"><tt class="py-docstring">    Memcached connection pooling for thread/fork safety. Inspired by py-redis</tt> </tt>
+<a name="L40"></a><tt class="py-lineno"> 40</tt>  <tt class="py-line"><tt class="py-docstring">    connection pool.</tt> </tt>
+<a name="L41"></a><tt class="py-lineno"> 41</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L42"></a><tt class="py-lineno"> 42</tt>  <tt class="py-line"><tt class="py-docstring">    Available connections are maintained in a deque and released in a FIFO manner.</tt> </tt>
+<a name="L43"></a><tt class="py-lineno"> 43</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L44"></a><tt class="py-lineno"> 44</tt>  <tt class="py-line"> </tt>
+<a name="ProxyClientPool.__init__"></a><div id="ProxyClientPool.__init__-def"><a name="L45"></a><tt class="py-lineno"> 45</tt> <a class="py-toggle" href="#" id="ProxyClientPool.__init__-toggle" onclick="return toggle('ProxyClientPool.__init__');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.ProxyClientPool-class.html#__init__">__init__</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-op">*</tt><tt class="py-param">args</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">kwargs</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="ProxyClientPool.__init__-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="ProxyClientPool.__init__-expanded"><a name="L46"></a><tt class="py-lineno"> 46</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">max_connections</tt> <tt class="py-op">=</tt> <tt class="py-name">kwargs</tt><tt class="py-op">.</tt><tt class="py-name">pop</tt><tt class="py-op">(</tt><tt class="py-string">'max_connections'</tt><tt class="py-op">,</tt> <tt class="py-number">1024</tt><tt class="py-op">)</tt> </tt>
+<a name="L47"></a><tt class="py-lineno"> 47</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">connection_args</tt> <tt class="py-op">=</tt> <tt class="py-name">args</tt> </tt>
+<a name="L48"></a><tt class="py-lineno"> 48</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">connection_kwargs</tt> <tt class="py-op">=</tt> <tt class="py-name">kwargs</tt> </tt>
+<a name="L49"></a><tt class="py-lineno"> 49</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-9" class="py-name" targets="Method ansible.plugins.cache.memcached.ProxyClientPool.reset()=ansible.plugins.cache.memcached.ProxyClientPool-class.html#reset,Method ansible.plugins.lookup.sequence.LookupModule.reset()=ansible.plugins.lookup.sequence.LookupModule-class.html#reset"><a title="ansible.plugins.cache.memcached.ProxyClientPool.reset
+ansible.plugins.lookup.sequence.LookupModule.reset" class="py-name" href="#" onclick="return doclink('link-9', 'reset', 'link-9');">reset</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L50"></a><tt class="py-lineno"> 50</tt>  <tt class="py-line"> </tt>
+<a name="ProxyClientPool.reset"></a><div id="ProxyClientPool.reset-def"><a name="L51"></a><tt class="py-lineno"> 51</tt> <a class="py-toggle" href="#" id="ProxyClientPool.reset-toggle" onclick="return toggle('ProxyClientPool.reset');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.ProxyClientPool-class.html#reset">reset</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="ProxyClientPool.reset-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="ProxyClientPool.reset-expanded"><a name="L52"></a><tt class="py-lineno"> 52</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">pid</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">getpid</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L53"></a><tt class="py-lineno"> 53</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_num_connections</tt> <tt class="py-op">=</tt> <tt class="py-number">0</tt> </tt>
+<a name="L54"></a><tt class="py-lineno"> 54</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_available_connections</tt> <tt class="py-op">=</tt> <tt class="py-name">collections</tt><tt class="py-op">.</tt><tt class="py-name">deque</tt><tt class="py-op">(</tt><tt class="py-name">maxlen</tt><tt class="py-op">=</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">max_connections</tt><tt class="py-op">)</tt> </tt>
+<a name="L55"></a><tt class="py-lineno"> 55</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_locked_connections</tt> <tt class="py-op">=</tt> <tt id="link-10" class="py-name" targets="Method ansible.galaxy.token.GalaxyToken.set()=ansible.galaxy.token.GalaxyToken-class.html#set,Method ansible.plugins.cache.base.BaseCacheModule.set()=ansible.plugins.cache.base.BaseCacheModule-class.html#set,Method ansible.plugins.cache.jsonfile.CacheModule.set()=ansible.plugins.cache.jsonfile.CacheModule-class.html#set,Method ansible.plugins.cache.memcached.CacheModule.set()=ansible.plugins.cache.memcached.CacheModule-class.html#set,Method ansible.plugins.cache.memory.CacheModule.set()=ansible.plugins.cache.memory.CacheModule-class.html#set,Method ansible.plugins.cache.redis.CacheModule.set()=ansible.plugins.cache.redis.CacheModule-class.html#set"><a title="ansible.galaxy.token.GalaxyToken.set
+ansible.plugins.cache.base.BaseCacheModule.set
+ansible.plugins.cache.jsonfile.CacheModule.set
+ansible.plugins.cache.memcached.CacheModule.set
+ansible.plugins.cache.memory.CacheModule.set
+ansible.plugins.cache.redis.CacheModule.set" class="py-name" href="#" onclick="return doclink('link-10', 'set', 'link-10');">set</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L56"></a><tt class="py-lineno"> 56</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_lock</tt> <tt class="py-op">=</tt> <tt class="py-name">Lock</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L57"></a><tt class="py-lineno"> 57</tt>  <tt class="py-line"> </tt>
+<a name="ProxyClientPool._check_safe"></a><div id="ProxyClientPool._check_safe-def"><a name="L58"></a><tt class="py-lineno"> 58</tt> <a class="py-toggle" href="#" id="ProxyClientPool._check_safe-toggle" onclick="return toggle('ProxyClientPool._check_safe');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.ProxyClientPool-class.html#_check_safe">_check_safe</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="ProxyClientPool._check_safe-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="ProxyClientPool._check_safe-expanded"><a name="L59"></a><tt class="py-lineno"> 59</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">pid</tt> <tt class="py-op">!=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">getpid</tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L60"></a><tt class="py-lineno"> 60</tt>  <tt class="py-line">            <tt class="py-keyword">with</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_lock</tt><tt class="py-op">:</tt> </tt>
+<a name="L61"></a><tt class="py-lineno"> 61</tt>  <tt class="py-line">                <tt class="py-keyword">if</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">pid</tt> <tt class="py-op">==</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">getpid</tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L62"></a><tt class="py-lineno"> 62</tt>  <tt class="py-line">                    <tt class="py-comment"># bail out - another thread already acquired the lock</tt> </tt>
+<a name="L63"></a><tt class="py-lineno"> 63</tt>  <tt class="py-line">                    <tt class="py-keyword">return</tt> </tt>
+<a name="L64"></a><tt class="py-lineno"> 64</tt>  <tt class="py-line">                <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-11" class="py-name" targets="Method ansible.plugins.cache.memcached.ProxyClientPool.disconnect_all()=ansible.plugins.cache.memcached.ProxyClientPool-class.html#disconnect_all"><a title="ansible.plugins.cache.memcached.ProxyClientPool.disconnect_all" class="py-name" href="#" onclick="return doclink('link-11', 'disconnect_all', 'link-11');">disconnect_all</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L65"></a><tt class="py-lineno"> 65</tt>  <tt class="py-line">                <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-12" class="py-name"><a title="ansible.plugins.cache.memcached.ProxyClientPool.reset
+ansible.plugins.lookup.sequence.LookupModule.reset" class="py-name" href="#" onclick="return doclink('link-12', 'reset', 'link-9');">reset</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L66"></a><tt class="py-lineno"> 66</tt>  <tt class="py-line"> </tt>
+<a name="ProxyClientPool.get_connection"></a><div id="ProxyClientPool.get_connection-def"><a name="L67"></a><tt class="py-lineno"> 67</tt> <a class="py-toggle" href="#" id="ProxyClientPool.get_connection-toggle" onclick="return toggle('ProxyClientPool.get_connection');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.ProxyClientPool-class.html#get_connection">get_connection</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="ProxyClientPool.get_connection-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="ProxyClientPool.get_connection-expanded"><a name="L68"></a><tt class="py-lineno"> 68</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-13" class="py-name" targets="Method ansible.plugins.cache.memcached.ProxyClientPool._check_safe()=ansible.plugins.cache.memcached.ProxyClientPool-class.html#_check_safe"><a title="ansible.plugins.cache.memcached.ProxyClientPool._check_safe" class="py-name" href="#" onclick="return doclink('link-13', '_check_safe', 'link-13');">_check_safe</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L69"></a><tt class="py-lineno"> 69</tt>  <tt class="py-line">        <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L70"></a><tt class="py-lineno"> 70</tt>  <tt class="py-line">            <tt id="link-14" class="py-name" targets="Package ansible.plugins.connection=ansible.plugins.connection-module.html"><a title="ansible.plugins.connection" class="py-name" href="#" onclick="return doclink('link-14', 'connection', 'link-14');">connection</a></tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_available_connections</tt><tt class="py-op">.</tt><tt class="py-name">popleft</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L71"></a><tt class="py-lineno"> 71</tt>  <tt class="py-line">        <tt class="py-keyword">except</tt> <tt class="py-name">IndexError</tt><tt class="py-op">:</tt> </tt>
+<a name="L72"></a><tt class="py-lineno"> 72</tt>  <tt class="py-line">            <tt id="link-15" class="py-name"><a title="ansible.plugins.connection" class="py-name" href="#" onclick="return doclink('link-15', 'connection', 'link-14');">connection</a></tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-16" class="py-name" targets="Method ansible.plugins.cache.memcached.ProxyClientPool.create_connection()=ansible.plugins.cache.memcached.ProxyClientPool-class.html#create_connection"><a title="ansible.plugins.cache.memcached.ProxyClientPool.create_connection" class="py-name" href="#" onclick="return doclink('link-16', 'create_connection', 'link-16');">create_connection</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L73"></a><tt class="py-lineno"> 73</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_locked_connections</tt><tt class="py-op">.</tt><tt id="link-17" class="py-name" targets="Method ansible.module_utils.netcfg.NetworkConfig.add()=ansible.module_utils.netcfg.NetworkConfig-class.html#add,Method ansible.plugins.cache.memcached.CacheModuleKeys.add()=ansible.plugins.cache.memcached.CacheModuleKeys-class.html#add"><a title="ansible.module_utils.netcfg.NetworkConfig.add
+ansible.plugins.cache.memcached.CacheModuleKeys.add" class="py-name" href="#" onclick="return doclink('link-17', 'add', 'link-17');">add</a></tt><tt class="py-op">(</tt><tt id="link-18" class="py-name"><a title="ansible.plugins.connection" class="py-name" href="#" onclick="return doclink('link-18', 'connection', 'link-14');">connection</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L74"></a><tt class="py-lineno"> 74</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt id="link-19" class="py-name"><a title="ansible.plugins.connection" class="py-name" href="#" onclick="return doclink('link-19', 'connection', 'link-14');">connection</a></tt> </tt>
+</div><a name="L75"></a><tt class="py-lineno"> 75</tt>  <tt class="py-line"> </tt>
+<a name="ProxyClientPool.create_connection"></a><div id="ProxyClientPool.create_connection-def"><a name="L76"></a><tt class="py-lineno"> 76</tt> <a class="py-toggle" href="#" id="ProxyClientPool.create_connection-toggle" onclick="return toggle('ProxyClientPool.create_connection');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.ProxyClientPool-class.html#create_connection">create_connection</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="ProxyClientPool.create_connection-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="ProxyClientPool.create_connection-expanded"><a name="L77"></a><tt class="py-lineno"> 77</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_num_connections</tt> <tt class="py-op">&gt;=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">max_connections</tt><tt class="py-op">:</tt> </tt>
+<a name="L78"></a><tt class="py-lineno"> 78</tt>  <tt class="py-line">            <tt class="py-keyword">raise</tt> <tt class="py-name">RuntimeError</tt><tt class="py-op">(</tt><tt class="py-string">"Too many memcached connections"</tt><tt class="py-op">)</tt> </tt>
+<a name="L79"></a><tt class="py-lineno"> 79</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_num_connections</tt> <tt class="py-op">+=</tt> <tt class="py-number">1</tt> </tt>
+<a name="L80"></a><tt class="py-lineno"> 80</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">memcache</tt><tt class="py-op">.</tt><tt class="py-name">Client</tt><tt class="py-op">(</tt><tt class="py-op">*</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">connection_args</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">connection_kwargs</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L81"></a><tt class="py-lineno"> 81</tt>  <tt class="py-line"> </tt>
+<a name="ProxyClientPool.release_connection"></a><div id="ProxyClientPool.release_connection-def"><a name="L82"></a><tt class="py-lineno"> 82</tt> <a class="py-toggle" href="#" id="ProxyClientPool.release_connection-toggle" onclick="return toggle('ProxyClientPool.release_connection');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.ProxyClientPool-class.html#release_connection">release_connection</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">connection</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="ProxyClientPool.release_connection-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="ProxyClientPool.release_connection-expanded"><a name="L83"></a><tt class="py-lineno"> 83</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-20" class="py-name"><a title="ansible.plugins.cache.memcached.ProxyClientPool._check_safe" class="py-name" href="#" onclick="return doclink('link-20', '_check_safe', 'link-13');">_check_safe</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L84"></a><tt class="py-lineno"> 84</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_locked_connections</tt><tt class="py-op">.</tt><tt id="link-21" class="py-name" targets="Method ansible.galaxy.role.GalaxyRole.remove()=ansible.galaxy.role.GalaxyRole-class.html#remove,Method ansible.plugins.shell.ShellBase.remove()=ansible.plugins.shell.ShellBase-class.html#remove,Method ansible.plugins.shell.powershell.ShellModule.remove()=ansible.plugins.shell.powershell.ShellModule-class.html#remove"><a title="ansible.galaxy.role.GalaxyRole.remove
+ansible.plugins.shell.ShellBase.remove
+ansible.plugins.shell.powershell.ShellModule.remove" class="py-name" href="#" onclick="return doclink('link-21', 'remove', 'link-21');">remove</a></tt><tt class="py-op">(</tt><tt id="link-22" class="py-name"><a title="ansible.plugins.connection" class="py-name" href="#" onclick="return doclink('link-22', 'connection', 'link-14');">connection</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L85"></a><tt class="py-lineno"> 85</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_available_connections</tt><tt class="py-op">.</tt><tt class="py-name">append</tt><tt class="py-op">(</tt><tt id="link-23" class="py-name"><a title="ansible.plugins.connection" class="py-name" href="#" onclick="return doclink('link-23', 'connection', 'link-14');">connection</a></tt><tt class="py-op">)</tt> </tt>
+</div><a name="L86"></a><tt class="py-lineno"> 86</tt>  <tt class="py-line"> </tt>
+<a name="ProxyClientPool.disconnect_all"></a><div id="ProxyClientPool.disconnect_all-def"><a name="L87"></a><tt class="py-lineno"> 87</tt> <a class="py-toggle" href="#" id="ProxyClientPool.disconnect_all-toggle" onclick="return toggle('ProxyClientPool.disconnect_all');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.ProxyClientPool-class.html#disconnect_all">disconnect_all</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="ProxyClientPool.disconnect_all-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="ProxyClientPool.disconnect_all-expanded"><a name="L88"></a><tt class="py-lineno"> 88</tt>  <tt class="py-line">        <tt class="py-keyword">for</tt> <tt class="py-name">conn</tt> <tt class="py-keyword">in</tt> <tt class="py-name">chain</tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_available_connections</tt><tt class="py-op">,</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_locked_connections</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L89"></a><tt class="py-lineno"> 89</tt>  <tt class="py-line">            <tt class="py-name">conn</tt><tt class="py-op">.</tt><tt id="link-24" class="py-name"><a title="ansible.plugins.cache.memcached.ProxyClientPool.disconnect_all" class="py-name" href="#" onclick="return doclink('link-24', 'disconnect_all', 'link-11');">disconnect_all</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L90"></a><tt class="py-lineno"> 90</tt>  <tt class="py-line"> </tt>
+<a name="ProxyClientPool.__getattr__"></a><div id="ProxyClientPool.__getattr__-def"><a name="L91"></a><tt class="py-lineno"> 91</tt> <a class="py-toggle" href="#" id="ProxyClientPool.__getattr__-toggle" onclick="return toggle('ProxyClientPool.__getattr__');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.ProxyClientPool-class.html#__getattr__">__getattr__</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">name</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="ProxyClientPool.__getattr__-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="ProxyClientPool.__getattr__-expanded"><a name="L92"></a><tt class="py-lineno"> 92</tt>  <tt class="py-line">        <tt class="py-keyword">def</tt> <tt class="py-def-name">wrapped</tt><tt class="py-op">(</tt><tt class="py-op">*</tt><tt class="py-param">args</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">kwargs</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L93"></a><tt class="py-lineno"> 93</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-25" class="py-name" targets="Method ansible.plugins.cache.memcached.ProxyClientPool._proxy_client()=ansible.plugins.cache.memcached.ProxyClientPool-class.html#_proxy_client"><a title="ansible.plugins.cache.memcached.ProxyClientPool._proxy_client" class="py-name" href="#" onclick="return doclink('link-25', '_proxy_client', 'link-25');">_proxy_client</a></tt><tt class="py-op">(</tt><tt class="py-name">name</tt><tt class="py-op">,</tt> <tt class="py-op">*</tt><tt class="py-name">args</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-name">kwargs</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L94"></a><tt class="py-lineno"> 94</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">wrapped</tt> </tt>
+</div><a name="L95"></a><tt class="py-lineno"> 95</tt>  <tt class="py-line"> </tt>
+<a name="ProxyClientPool._proxy_client"></a><div id="ProxyClientPool._proxy_client-def"><a name="L96"></a><tt class="py-lineno"> 96</tt> <a class="py-toggle" href="#" id="ProxyClientPool._proxy_client-toggle" onclick="return toggle('ProxyClientPool._proxy_client');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.ProxyClientPool-class.html#_proxy_client">_proxy_client</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">name</tt><tt class="py-op">,</tt> <tt class="py-op">*</tt><tt class="py-param">args</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">kwargs</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="ProxyClientPool._proxy_client-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="ProxyClientPool._proxy_client-expanded"><a name="L97"></a><tt class="py-lineno"> 97</tt>  <tt class="py-line">        <tt class="py-name">conn</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-26" class="py-name" targets="Method ansible.plugins.cache.memcached.ProxyClientPool.get_connection()=ansible.plugins.cache.memcached.ProxyClientPool-class.html#get_connection"><a title="ansible.plugins.cache.memcached.ProxyClientPool.get_connection" class="py-name" href="#" onclick="return doclink('link-26', 'get_connection', 'link-26');">get_connection</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L98"></a><tt class="py-lineno"> 98</tt>  <tt class="py-line"> </tt>
+<a name="L99"></a><tt class="py-lineno"> 99</tt>  <tt class="py-line">        <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L100"></a><tt class="py-lineno">100</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">getattr</tt><tt class="py-op">(</tt><tt class="py-name">conn</tt><tt class="py-op">,</tt> <tt class="py-name">name</tt><tt class="py-op">)</tt><tt class="py-op">(</tt><tt class="py-op">*</tt><tt class="py-name">args</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-name">kwargs</tt><tt class="py-op">)</tt> </tt>
+<a name="L101"></a><tt class="py-lineno">101</tt>  <tt class="py-line">        <tt class="py-keyword">finally</tt><tt class="py-op">:</tt> </tt>
+<a name="L102"></a><tt class="py-lineno">102</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-27" class="py-name" targets="Method ansible.plugins.cache.memcached.ProxyClientPool.release_connection()=ansible.plugins.cache.memcached.ProxyClientPool-class.html#release_connection"><a title="ansible.plugins.cache.memcached.ProxyClientPool.release_connection" class="py-name" href="#" onclick="return doclink('link-27', 'release_connection', 'link-27');">release_connection</a></tt><tt class="py-op">(</tt><tt class="py-name">conn</tt><tt class="py-op">)</tt> </tt>
+</div></div><a name="L103"></a><tt class="py-lineno">103</tt>  <tt class="py-line"> </tt>
+<a name="L104"></a><tt class="py-lineno">104</tt>  <tt class="py-line"> </tt>
+<a name="CacheModuleKeys"></a><div id="CacheModuleKeys-def"><a name="L105"></a><tt class="py-lineno">105</tt> <a class="py-toggle" href="#" id="CacheModuleKeys-toggle" onclick="return toggle('CacheModuleKeys');">-</a><tt class="py-line"><tt class="py-keyword">class</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.CacheModuleKeys-class.html">CacheModuleKeys</a><tt class="py-op">(</tt><tt class="py-base-class">collections</tt><tt class="py-op">.</tt><tt class="py-base-class">MutableSet</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CacheModuleKeys-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="CacheModuleKeys-expanded"><a name="L106"></a><tt class="py-lineno">106</tt>  <tt class="py-line">    <tt class="py-docstring">"""</tt> </tt>
+<a name="L107"></a><tt class="py-lineno">107</tt>  <tt class="py-line"><tt class="py-docstring">    A set subclass that keeps track of insertion time and persists</tt> </tt>
+<a name="L108"></a><tt class="py-lineno">108</tt>  <tt class="py-line"><tt class="py-docstring">    the set in memcached.</tt> </tt>
+<a name="L109"></a><tt class="py-lineno">109</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L110"></a><tt class="py-lineno">110</tt>  <tt class="py-line">    <tt id="link-28" class="py-name" targets="Variable ansible.plugins.cache.memcached.CacheModuleKeys.PREFIX=ansible.plugins.cache.memcached.CacheModuleKeys-class.html#PREFIX"><a title="ansible.plugins.cache.memcached.CacheModuleKeys.PREFIX" class="py-name" href="#" onclick="return doclink('link-28', 'PREFIX', 'link-28');">PREFIX</a></tt> <tt class="py-op">=</tt> <tt class="py-string">'ansible_cache_keys'</tt> </tt>
+<a name="L111"></a><tt class="py-lineno">111</tt>  <tt class="py-line"> </tt>
+<a name="CacheModuleKeys.__init__"></a><div id="CacheModuleKeys.__init__-def"><a name="L112"></a><tt class="py-lineno">112</tt> <a class="py-toggle" href="#" id="CacheModuleKeys.__init__-toggle" onclick="return toggle('CacheModuleKeys.__init__');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.CacheModuleKeys-class.html#__init__">__init__</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">cache</tt><tt class="py-op">,</tt> <tt class="py-op">*</tt><tt class="py-param">args</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">kwargs</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CacheModuleKeys.__init__-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CacheModuleKeys.__init__-expanded"><a name="L113"></a><tt class="py-lineno">113</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_cache</tt> <tt class="py-op">=</tt> <tt id="link-29" class="py-name"><a title="ansible.plugins.cache" class="py-name" href="#" onclick="return doclink('link-29', 'cache', 'link-5');">cache</a></tt> </tt>
+<a name="L114"></a><tt class="py-lineno">114</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_keyset</tt> <tt class="py-op">=</tt> <tt id="link-30" class="py-name" targets="Module ansible.plugins.lookup.dict=ansible.plugins.lookup.dict-module.html"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-30', 'dict', 'link-30');">dict</a></tt><tt class="py-op">(</tt><tt class="py-op">*</tt><tt class="py-name">args</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-name">kwargs</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L115"></a><tt class="py-lineno">115</tt>  <tt class="py-line"> </tt>
+<a name="CacheModuleKeys.__contains__"></a><div id="CacheModuleKeys.__contains__-def"><a name="L116"></a><tt class="py-lineno">116</tt> <a class="py-toggle" href="#" id="CacheModuleKeys.__contains__-toggle" onclick="return toggle('CacheModuleKeys.__contains__');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.CacheModuleKeys-class.html#__contains__">__contains__</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">key</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CacheModuleKeys.__contains__-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CacheModuleKeys.__contains__-expanded"><a name="L117"></a><tt class="py-lineno">117</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">key</tt> <tt class="py-keyword">in</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_keyset</tt> </tt>
+</div><a name="L118"></a><tt class="py-lineno">118</tt>  <tt class="py-line"> </tt>
+<a name="CacheModuleKeys.__iter__"></a><div id="CacheModuleKeys.__iter__-def"><a name="L119"></a><tt class="py-lineno">119</tt> <a class="py-toggle" href="#" id="CacheModuleKeys.__iter__-toggle" onclick="return toggle('CacheModuleKeys.__iter__');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.CacheModuleKeys-class.html#__iter__">__iter__</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CacheModuleKeys.__iter__-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CacheModuleKeys.__iter__-expanded"><a name="L120"></a><tt class="py-lineno">120</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">iter</tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_keyset</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L121"></a><tt class="py-lineno">121</tt>  <tt class="py-line"> </tt>
+<a name="CacheModuleKeys.__len__"></a><div id="CacheModuleKeys.__len__-def"><a name="L122"></a><tt class="py-lineno">122</tt> <a class="py-toggle" href="#" id="CacheModuleKeys.__len__-toggle" onclick="return toggle('CacheModuleKeys.__len__');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.CacheModuleKeys-class.html#__len__">__len__</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CacheModuleKeys.__len__-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CacheModuleKeys.__len__-expanded"><a name="L123"></a><tt class="py-lineno">123</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">len</tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_keyset</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L124"></a><tt class="py-lineno">124</tt>  <tt class="py-line"> </tt>
+<a name="CacheModuleKeys.add"></a><div id="CacheModuleKeys.add-def"><a name="L125"></a><tt class="py-lineno">125</tt> <a class="py-toggle" href="#" id="CacheModuleKeys.add-toggle" onclick="return toggle('CacheModuleKeys.add');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.CacheModuleKeys-class.html#add">add</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">key</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CacheModuleKeys.add-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CacheModuleKeys.add-expanded"><a name="L126"></a><tt class="py-lineno">126</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_keyset</tt><tt class="py-op">[</tt><tt class="py-name">key</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-name">time</tt><tt class="py-op">.</tt><tt class="py-name">time</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L127"></a><tt class="py-lineno">127</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_cache</tt><tt class="py-op">.</tt><tt id="link-31" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.set
+ansible.plugins.cache.base.BaseCacheModule.set
+ansible.plugins.cache.jsonfile.CacheModule.set
+ansible.plugins.cache.memcached.CacheModule.set
+ansible.plugins.cache.memory.CacheModule.set
+ansible.plugins.cache.redis.CacheModule.set" class="py-name" href="#" onclick="return doclink('link-31', 'set', 'link-10');">set</a></tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-32" class="py-name"><a title="ansible.plugins.cache.memcached.CacheModuleKeys.PREFIX" class="py-name" href="#" onclick="return doclink('link-32', 'PREFIX', 'link-28');">PREFIX</a></tt><tt class="py-op">,</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_keyset</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L128"></a><tt class="py-lineno">128</tt>  <tt class="py-line"> </tt>
+<a name="CacheModuleKeys.discard"></a><div id="CacheModuleKeys.discard-def"><a name="L129"></a><tt class="py-lineno">129</tt> <a class="py-toggle" href="#" id="CacheModuleKeys.discard-toggle" onclick="return toggle('CacheModuleKeys.discard');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.CacheModuleKeys-class.html#discard">discard</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">key</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CacheModuleKeys.discard-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CacheModuleKeys.discard-expanded"><a name="L130"></a><tt class="py-lineno">130</tt>  <tt class="py-line">        <tt class="py-keyword">del</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_keyset</tt><tt class="py-op">[</tt><tt class="py-name">key</tt><tt class="py-op">]</tt> </tt>
+<a name="L131"></a><tt class="py-lineno">131</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_cache</tt><tt class="py-op">.</tt><tt id="link-33" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.set
+ansible.plugins.cache.base.BaseCacheModule.set
+ansible.plugins.cache.jsonfile.CacheModule.set
+ansible.plugins.cache.memcached.CacheModule.set
+ansible.plugins.cache.memory.CacheModule.set
+ansible.plugins.cache.redis.CacheModule.set" class="py-name" href="#" onclick="return doclink('link-33', 'set', 'link-10');">set</a></tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-34" class="py-name"><a title="ansible.plugins.cache.memcached.CacheModuleKeys.PREFIX" class="py-name" href="#" onclick="return doclink('link-34', 'PREFIX', 'link-28');">PREFIX</a></tt><tt class="py-op">,</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_keyset</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L132"></a><tt class="py-lineno">132</tt>  <tt class="py-line"> </tt>
+<a name="CacheModuleKeys.remove_by_timerange"></a><div id="CacheModuleKeys.remove_by_timerange-def"><a name="L133"></a><tt class="py-lineno">133</tt> <a class="py-toggle" href="#" id="CacheModuleKeys.remove_by_timerange-toggle" onclick="return toggle('CacheModuleKeys.remove_by_timerange');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.CacheModuleKeys-class.html#remove_by_timerange">remove_by_timerange</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">s_min</tt><tt class="py-op">,</tt> <tt class="py-param">s_max</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CacheModuleKeys.remove_by_timerange-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CacheModuleKeys.remove_by_timerange-expanded"><a name="L134"></a><tt class="py-lineno">134</tt>  <tt class="py-line">        <tt class="py-keyword">for</tt> <tt class="py-name">k</tt> <tt class="py-keyword">in</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_keyset</tt><tt class="py-op">.</tt><tt id="link-35" class="py-name" targets="Method ansible.plugins.cache.FactCache.keys()=ansible.plugins.cache.FactCache-class.html#keys,Method ansible.plugins.cache.base.BaseCacheModule.keys()=ansible.plugins.cache.base.BaseCacheModule-class.html#keys,Method ansible.plugins.cache.jsonfile.CacheModule.keys()=ansible.plugins.cache.jsonfile.CacheModule-class.html#keys,Method ansible.plugins.cache.memcached.CacheModule.keys()=ansible.plugins.cache.memcached.CacheModule-class.html#keys,Method ansible.plugins.cache.memory.CacheModule.keys()=ansible.plugins.cache.memory.CacheModule-class.html#keys,Method ansible.plugins.cache.redis.CacheModule.keys()=ansible.plugins.cache.redis.CacheModule-class.html#keys"><a title="ansible.plugins.cache.FactCache.keys
+ansible.plugins.cache.base.BaseCacheModule.keys
+ansible.plugins.cache.jsonfile.CacheModule.keys
+ansible.plugins.cache.memcached.CacheModule.keys
+ansible.plugins.cache.memory.CacheModule.keys
+ansible.plugins.cache.redis.CacheModule.keys" class="py-name" href="#" onclick="return doclink('link-35', 'keys', 'link-35');">keys</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L135"></a><tt class="py-lineno">135</tt>  <tt class="py-line">            <tt class="py-name">t</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_keyset</tt><tt class="py-op">[</tt><tt class="py-name">k</tt><tt class="py-op">]</tt> </tt>
+<a name="L136"></a><tt class="py-lineno">136</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-name">s_min</tt> <tt class="py-op">&lt;</tt> <tt class="py-name">t</tt> <tt class="py-op">&lt;</tt> <tt class="py-name">s_max</tt><tt class="py-op">:</tt> </tt>
+<a name="L137"></a><tt class="py-lineno">137</tt>  <tt class="py-line">                <tt class="py-keyword">del</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_keyset</tt><tt class="py-op">[</tt><tt class="py-name">k</tt><tt class="py-op">]</tt> </tt>
+<a name="L138"></a><tt class="py-lineno">138</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_cache</tt><tt class="py-op">.</tt><tt id="link-36" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.set
+ansible.plugins.cache.base.BaseCacheModule.set
+ansible.plugins.cache.jsonfile.CacheModule.set
+ansible.plugins.cache.memcached.CacheModule.set
+ansible.plugins.cache.memory.CacheModule.set
+ansible.plugins.cache.redis.CacheModule.set" class="py-name" href="#" onclick="return doclink('link-36', 'set', 'link-10');">set</a></tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-37" class="py-name"><a title="ansible.plugins.cache.memcached.CacheModuleKeys.PREFIX" class="py-name" href="#" onclick="return doclink('link-37', 'PREFIX', 'link-28');">PREFIX</a></tt><tt class="py-op">,</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_keyset</tt><tt class="py-op">)</tt> </tt>
+</div></div><a name="L139"></a><tt class="py-lineno">139</tt>  <tt class="py-line"> </tt>
+<a name="L140"></a><tt class="py-lineno">140</tt>  <tt class="py-line"> </tt>
+<a name="CacheModule"></a><div id="CacheModule-def"><a name="L141"></a><tt class="py-lineno">141</tt> <a class="py-toggle" href="#" id="CacheModule-toggle" onclick="return toggle('CacheModule');">-</a><tt class="py-line"><tt class="py-keyword">class</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.CacheModule-class.html">CacheModule</a><tt class="py-op">(</tt><tt class="py-base-class">BaseCacheModule</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CacheModule-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="CacheModule-expanded"><a name="L142"></a><tt class="py-lineno">142</tt>  <tt class="py-line"> </tt>
+<a name="CacheModule.__init__"></a><div id="CacheModule.__init__-def"><a name="L143"></a><tt class="py-lineno">143</tt> <a class="py-toggle" href="#" id="CacheModule.__init__-toggle" onclick="return toggle('CacheModule.__init__');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.CacheModule-class.html#__init__">__init__</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-op">*</tt><tt class="py-param">args</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">kwargs</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CacheModule.__init__-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CacheModule.__init__-expanded"><a name="L144"></a><tt class="py-lineno">144</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">C</tt><tt class="py-op">.</tt><tt id="link-38" class="py-name" targets="Variable ansible.constants.CACHE_PLUGIN_CONNECTION=ansible.constants-module.html#CACHE_PLUGIN_CONNECTION"><a title="ansible.constants.CACHE_PLUGIN_CONNECTION" class="py-name" href="#" onclick="return doclink('link-38', 'CACHE_PLUGIN_CONNECTION', 'link-38');">CACHE_PLUGIN_CONNECTION</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L145"></a><tt class="py-lineno">145</tt>  <tt class="py-line">            <tt id="link-39" class="py-name"><a title="ansible.plugins.connection" class="py-name" href="#" onclick="return doclink('link-39', 'connection', 'link-14');">connection</a></tt> <tt class="py-op">=</tt> <tt class="py-name">C</tt><tt class="py-op">.</tt><tt id="link-40" class="py-name"><a title="ansible.constants.CACHE_PLUGIN_CONNECTION" class="py-name" href="#" onclick="return doclink('link-40', 'CACHE_PLUGIN_CONNECTION', 'link-38');">CACHE_PLUGIN_CONNECTION</a></tt><tt class="py-op">.</tt><tt class="py-name">split</tt><tt class="py-op">(</tt><tt class="py-string">','</tt><tt class="py-op">)</tt> </tt>
+<a name="L146"></a><tt class="py-lineno">146</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L147"></a><tt class="py-lineno">147</tt>  <tt class="py-line">            <tt id="link-41" class="py-name"><a title="ansible.plugins.connection" class="py-name" href="#" onclick="return doclink('link-41', 'connection', 'link-14');">connection</a></tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-string">'127.0.0.1:11211'</tt><tt class="py-op">]</tt> </tt>
+<a name="L148"></a><tt class="py-lineno">148</tt>  <tt class="py-line"> </tt>
+<a name="L149"></a><tt class="py-lineno">149</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-42" class="py-name" targets="Variable ansible.playbook.play_context.PlayContext._timeout=ansible.playbook.play_context.PlayContext-class.html#_timeout"><a title="ansible.playbook.play_context.PlayContext._timeout" class="py-name" href="#" onclick="return doclink('link-42', '_timeout', 'link-42');">_timeout</a></tt> <tt class="py-op">=</tt> <tt class="py-name">C</tt><tt class="py-op">.</tt><tt id="link-43" class="py-name" targets="Variable ansible.constants.CACHE_PLUGIN_TIMEOUT=ansible.constants-module.html#CACHE_PLUGIN_TIMEOUT"><a title="ansible.constants.CACHE_PLUGIN_TIMEOUT" class="py-name" href="#" onclick="return doclink('link-43', 'CACHE_PLUGIN_TIMEOUT', 'link-43');">CACHE_PLUGIN_TIMEOUT</a></tt> </tt>
+<a name="L150"></a><tt class="py-lineno">150</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_prefix</tt> <tt class="py-op">=</tt> <tt class="py-name">C</tt><tt class="py-op">.</tt><tt id="link-44" class="py-name" targets="Variable ansible.constants.CACHE_PLUGIN_PREFIX=ansible.constants-module.html#CACHE_PLUGIN_PREFIX"><a title="ansible.constants.CACHE_PLUGIN_PREFIX" class="py-name" href="#" onclick="return doclink('link-44', 'CACHE_PLUGIN_PREFIX', 'link-44');">CACHE_PLUGIN_PREFIX</a></tt> </tt>
+<a name="L151"></a><tt class="py-lineno">151</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_cache</tt> <tt class="py-op">=</tt> <tt id="link-45" class="py-name" targets="Class ansible.plugins.cache.memcached.ProxyClientPool=ansible.plugins.cache.memcached.ProxyClientPool-class.html"><a title="ansible.plugins.cache.memcached.ProxyClientPool" class="py-name" href="#" onclick="return doclink('link-45', 'ProxyClientPool', 'link-45');">ProxyClientPool</a></tt><tt class="py-op">(</tt><tt id="link-46" class="py-name"><a title="ansible.plugins.connection" class="py-name" href="#" onclick="return doclink('link-46', 'connection', 'link-14');">connection</a></tt><tt class="py-op">,</tt> <tt id="link-47" class="py-name" targets="Method ansible.module_utils.basic.AnsibleModule.debug()=ansible.module_utils.basic.AnsibleModule-class.html#debug,Module ansible.plugins.action.debug=ansible.plugins.action.debug-module.html,Module ansible.plugins.strategy.debug=ansible.plugins.strategy.debug-module.html,Method ansible.utils.display.Display.debug()=ansible.utils.display.Display-class.html#debug"><a title="ansible.module_utils.basic.AnsibleModule.debug
+ansible.plugins.action.debug
+ansible.plugins.strategy.debug
+ansible.utils.display.Display.debug" class="py-name" href="#" onclick="return doclink('link-47', 'debug', 'link-47');">debug</a></tt><tt class="py-op">=</tt><tt class="py-number">0</tt><tt class="py-op">)</tt> </tt>
+<a name="L152"></a><tt class="py-lineno">152</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_keys</tt> <tt class="py-op">=</tt> <tt id="link-48" class="py-name" targets="Class ansible.plugins.cache.memcached.CacheModuleKeys=ansible.plugins.cache.memcached.CacheModuleKeys-class.html"><a title="ansible.plugins.cache.memcached.CacheModuleKeys" class="py-name" href="#" onclick="return doclink('link-48', 'CacheModuleKeys', 'link-48');">CacheModuleKeys</a></tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_cache</tt><tt class="py-op">,</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_cache</tt><tt class="py-op">.</tt><tt id="link-49" class="py-name" targets="Method ansible.galaxy.token.GalaxyToken.get()=ansible.galaxy.token.GalaxyToken-class.html#get,Method ansible.module_utils.ios.Restconf.get()=ansible.module_utils.ios.Restconf-class.html#get,Method ansible.module_utils.netcfg.NetworkConfig.get()=ansible.module_utils.netcfg.NetworkConfig-class.html#get,Method ansible.module_utils.openswitch.Rest.get()=ansible.module_utils.openswitch.Rest-class.html#get,Method ansible.plugins.PluginLoader.get()=ansible.plugins.PluginLoader-class.html#get,Method ansible.plugins.cache.base.BaseCacheModule.get()=ansible.plugins.cache.base.BaseCacheModule-class.html#get,Method ansible.plugins.cache.jsonfile.CacheModule.get()=ansible.plugins.cache.jsonfile.CacheModule-class.html#get,Method ansible.plugins.cache.memcached.CacheModule.get()=ansible.plugins.cache.memcached.CacheModule-class.html#get,Method ansible.plugins.cache.memory.CacheModule.get()=ansible.plugins.cache.memory.CacheModule-class.html#get,Method ansible.plugins.cache.redis.CacheModule.get()=ansible.plugins.cache.redis.CacheModule-class.html#get,Method ansible.plugins.lookup.etcd.Etcd.get()=ansible.plugins.lookup.etcd.Etcd-class.html#get,Method ansible.plugins.lookup.hashi_vault.HashiVault.get()=ansible.plugins.lookup.hashi_vault.HashiVault-class.html#get"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-49', 'get', 'link-49');">get</a></tt><tt class="py-op">(</tt><tt id="link-50" class="py-name"><a title="ansible.plugins.cache.memcached.CacheModuleKeys" class="py-name" href="#" onclick="return doclink('link-50', 'CacheModuleKeys', 'link-48');">CacheModuleKeys</a></tt><tt class="py-op">.</tt><tt id="link-51" class="py-name"><a title="ansible.plugins.cache.memcached.CacheModuleKeys.PREFIX" class="py-name" href="#" onclick="return doclink('link-51', 'PREFIX', 'link-28');">PREFIX</a></tt><tt class="py-op">)</tt> <tt class="py-keyword">or</tt> <tt class="py-op">[</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L153"></a><tt class="py-lineno">153</tt>  <tt class="py-line"> </tt>
+<a name="CacheModule._make_key"></a><div id="CacheModule._make_key-def"><a name="L154"></a><tt class="py-lineno">154</tt> <a class="py-toggle" href="#" id="CacheModule._make_key-toggle" onclick="return toggle('CacheModule._make_key');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.CacheModule-class.html#_make_key">_make_key</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">key</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CacheModule._make_key-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CacheModule._make_key-expanded"><a name="L155"></a><tt class="py-lineno">155</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-string">"{0}{1}"</tt><tt class="py-op">.</tt><tt class="py-name">format</tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_prefix</tt><tt class="py-op">,</tt> <tt class="py-name">key</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L156"></a><tt class="py-lineno">156</tt>  <tt class="py-line"> </tt>
+<a name="CacheModule._expire_keys"></a><div id="CacheModule._expire_keys-def"><a name="L157"></a><tt class="py-lineno">157</tt> <a class="py-toggle" href="#" id="CacheModule._expire_keys-toggle" onclick="return toggle('CacheModule._expire_keys');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.CacheModule-class.html#_expire_keys">_expire_keys</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CacheModule._expire_keys-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CacheModule._expire_keys-expanded"><a name="L158"></a><tt class="py-lineno">158</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-52" class="py-name"><a title="ansible.playbook.play_context.PlayContext._timeout" class="py-name" href="#" onclick="return doclink('link-52', '_timeout', 'link-42');">_timeout</a></tt> <tt class="py-op">&gt;</tt> <tt class="py-number">0</tt><tt class="py-op">:</tt> </tt>
+<a name="L159"></a><tt class="py-lineno">159</tt>  <tt class="py-line">            <tt class="py-name">expiry_age</tt> <tt class="py-op">=</tt> <tt class="py-name">time</tt><tt class="py-op">.</tt><tt class="py-name">time</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> <tt class="py-op">-</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-53" class="py-name"><a title="ansible.playbook.play_context.PlayContext._timeout" class="py-name" href="#" onclick="return doclink('link-53', '_timeout', 'link-42');">_timeout</a></tt> </tt>
+<a name="L160"></a><tt class="py-lineno">160</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_keys</tt><tt class="py-op">.</tt><tt id="link-54" class="py-name" targets="Method ansible.plugins.cache.memcached.CacheModuleKeys.remove_by_timerange()=ansible.plugins.cache.memcached.CacheModuleKeys-class.html#remove_by_timerange"><a title="ansible.plugins.cache.memcached.CacheModuleKeys.remove_by_timerange" class="py-name" href="#" onclick="return doclink('link-54', 'remove_by_timerange', 'link-54');">remove_by_timerange</a></tt><tt class="py-op">(</tt><tt class="py-number">0</tt><tt class="py-op">,</tt> <tt class="py-name">expiry_age</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L161"></a><tt class="py-lineno">161</tt>  <tt class="py-line"> </tt>
+<a name="CacheModule.get"></a><div id="CacheModule.get-def"><a name="L162"></a><tt class="py-lineno">162</tt> <a class="py-toggle" href="#" id="CacheModule.get-toggle" onclick="return toggle('CacheModule.get');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.CacheModule-class.html#get">get</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">key</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CacheModule.get-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CacheModule.get-expanded"><a name="L163"></a><tt class="py-lineno">163</tt>  <tt class="py-line">        <tt class="py-name">value</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_cache</tt><tt class="py-op">.</tt><tt id="link-55" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-55', 'get', 'link-49');">get</a></tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-56" class="py-name" targets="Method ansible.plugins.cache.memcached.CacheModule._make_key()=ansible.plugins.cache.memcached.CacheModule-class.html#_make_key,Method ansible.plugins.cache.redis.CacheModule._make_key()=ansible.plugins.cache.redis.CacheModule-class.html#_make_key"><a title="ansible.plugins.cache.memcached.CacheModule._make_key
+ansible.plugins.cache.redis.CacheModule._make_key" class="py-name" href="#" onclick="return doclink('link-56', '_make_key', 'link-56');">_make_key</a></tt><tt class="py-op">(</tt><tt class="py-name">key</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L164"></a><tt class="py-lineno">164</tt>  <tt class="py-line">        <tt class="py-comment"># guard against the key not being removed from the keyset;</tt> </tt>
+<a name="L165"></a><tt class="py-lineno">165</tt>  <tt class="py-line">        <tt class="py-comment"># this could happen in cases where the timeout value is changed</tt> </tt>
+<a name="L166"></a><tt class="py-lineno">166</tt>  <tt class="py-line">        <tt class="py-comment"># between invocations</tt> </tt>
+<a name="L167"></a><tt class="py-lineno">167</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">value</tt> <tt class="py-keyword">is</tt> <tt class="py-name">None</tt><tt class="py-op">:</tt> </tt>
+<a name="L168"></a><tt class="py-lineno">168</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-57" class="py-name" targets="Method ansible.module_utils.ios.Restconf.delete()=ansible.module_utils.ios.Restconf-class.html#delete,Method ansible.module_utils.openswitch.Rest.delete()=ansible.module_utils.openswitch.Rest-class.html#delete,Method ansible.plugins.cache.base.BaseCacheModule.delete()=ansible.plugins.cache.base.BaseCacheModule-class.html#delete,Method ansible.plugins.cache.jsonfile.CacheModule.delete()=ansible.plugins.cache.jsonfile.CacheModule-class.html#delete,Method ansible.plugins.cache.memcached.CacheModule.delete()=ansible.plugins.cache.memcached.CacheModule-class.html#delete,Method ansible.plugins.cache.memory.CacheModule.delete()=ansible.plugins.cache.memory.CacheModule-class.html#delete,Method ansible.plugins.cache.redis.CacheModule.delete()=ansible.plugins.cache.redis.CacheModule-class.html#delete"><a title="ansible.module_utils.ios.Restconf.delete
+ansible.module_utils.openswitch.Rest.delete
+ansible.plugins.cache.base.BaseCacheModule.delete
+ansible.plugins.cache.jsonfile.CacheModule.delete
+ansible.plugins.cache.memcached.CacheModule.delete
+ansible.plugins.cache.memory.CacheModule.delete
+ansible.plugins.cache.redis.CacheModule.delete" class="py-name" href="#" onclick="return doclink('link-57', 'delete', 'link-57');">delete</a></tt><tt class="py-op">(</tt><tt class="py-name">key</tt><tt class="py-op">)</tt> </tt>
+<a name="L169"></a><tt class="py-lineno">169</tt>  <tt class="py-line">            <tt class="py-keyword">raise</tt> <tt class="py-name">KeyError</tt> </tt>
+<a name="L170"></a><tt class="py-lineno">170</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">value</tt> </tt>
+</div><a name="L171"></a><tt class="py-lineno">171</tt>  <tt class="py-line"> </tt>
+<a name="CacheModule.set"></a><div id="CacheModule.set-def"><a name="L172"></a><tt class="py-lineno">172</tt> <a class="py-toggle" href="#" id="CacheModule.set-toggle" onclick="return toggle('CacheModule.set');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.CacheModule-class.html#set">set</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">key</tt><tt class="py-op">,</tt> <tt class="py-param">value</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CacheModule.set-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CacheModule.set-expanded"><a name="L173"></a><tt class="py-lineno">173</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_cache</tt><tt class="py-op">.</tt><tt id="link-58" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.set
+ansible.plugins.cache.base.BaseCacheModule.set
+ansible.plugins.cache.jsonfile.CacheModule.set
+ansible.plugins.cache.memcached.CacheModule.set
+ansible.plugins.cache.memory.CacheModule.set
+ansible.plugins.cache.redis.CacheModule.set" class="py-name" href="#" onclick="return doclink('link-58', 'set', 'link-10');">set</a></tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-59" class="py-name"><a title="ansible.plugins.cache.memcached.CacheModule._make_key
+ansible.plugins.cache.redis.CacheModule._make_key" class="py-name" href="#" onclick="return doclink('link-59', '_make_key', 'link-56');">_make_key</a></tt><tt class="py-op">(</tt><tt class="py-name">key</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt class="py-name">value</tt><tt class="py-op">,</tt> <tt class="py-name">time</tt><tt class="py-op">=</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-60" class="py-name"><a title="ansible.playbook.play_context.PlayContext._timeout" class="py-name" href="#" onclick="return doclink('link-60', '_timeout', 'link-42');">_timeout</a></tt><tt class="py-op">,</tt> <tt class="py-name">min_compress_len</tt><tt class="py-op">=</tt><tt class="py-number">1</tt><tt class="py-op">)</tt> </tt>
+<a name="L174"></a><tt class="py-lineno">174</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_keys</tt><tt class="py-op">.</tt><tt id="link-61" class="py-name"><a title="ansible.module_utils.netcfg.NetworkConfig.add
+ansible.plugins.cache.memcached.CacheModuleKeys.add" class="py-name" href="#" onclick="return doclink('link-61', 'add', 'link-17');">add</a></tt><tt class="py-op">(</tt><tt class="py-name">key</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L175"></a><tt class="py-lineno">175</tt>  <tt class="py-line"> </tt>
+<a name="CacheModule.keys"></a><div id="CacheModule.keys-def"><a name="L176"></a><tt class="py-lineno">176</tt> <a class="py-toggle" href="#" id="CacheModule.keys-toggle" onclick="return toggle('CacheModule.keys');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.CacheModule-class.html#keys">keys</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CacheModule.keys-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CacheModule.keys-expanded"><a name="L177"></a><tt class="py-lineno">177</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-62" class="py-name" targets="Method ansible.plugins.cache.memcached.CacheModule._expire_keys()=ansible.plugins.cache.memcached.CacheModule-class.html#_expire_keys,Method ansible.plugins.cache.redis.CacheModule._expire_keys()=ansible.plugins.cache.redis.CacheModule-class.html#_expire_keys"><a title="ansible.plugins.cache.memcached.CacheModule._expire_keys
+ansible.plugins.cache.redis.CacheModule._expire_keys" class="py-name" href="#" onclick="return doclink('link-62', '_expire_keys', 'link-62');">_expire_keys</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L178"></a><tt class="py-lineno">178</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt id="link-63" class="py-name" targets="Module ansible.plugins.lookup.list=ansible.plugins.lookup.list-module.html"><a title="ansible.plugins.lookup.list" class="py-name" href="#" onclick="return doclink('link-63', 'list', 'link-63');">list</a></tt><tt class="py-op">(</tt><tt class="py-name">iter</tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_keys</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L179"></a><tt class="py-lineno">179</tt>  <tt class="py-line"> </tt>
+<a name="CacheModule.contains"></a><div id="CacheModule.contains-def"><a name="L180"></a><tt class="py-lineno">180</tt> <a class="py-toggle" href="#" id="CacheModule.contains-toggle" onclick="return toggle('CacheModule.contains');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.CacheModule-class.html#contains">contains</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">key</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CacheModule.contains-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CacheModule.contains-expanded"><a name="L181"></a><tt class="py-lineno">181</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-64" class="py-name"><a title="ansible.plugins.cache.memcached.CacheModule._expire_keys
+ansible.plugins.cache.redis.CacheModule._expire_keys" class="py-name" href="#" onclick="return doclink('link-64', '_expire_keys', 'link-62');">_expire_keys</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L182"></a><tt class="py-lineno">182</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">key</tt> <tt class="py-keyword">in</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_keys</tt> </tt>
+</div><a name="L183"></a><tt class="py-lineno">183</tt>  <tt class="py-line"> </tt>
+<a name="CacheModule.delete"></a><div id="CacheModule.delete-def"><a name="L184"></a><tt class="py-lineno">184</tt> <a class="py-toggle" href="#" id="CacheModule.delete-toggle" onclick="return toggle('CacheModule.delete');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.CacheModule-class.html#delete">delete</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">key</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CacheModule.delete-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CacheModule.delete-expanded"><a name="L185"></a><tt class="py-lineno">185</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_cache</tt><tt class="py-op">.</tt><tt id="link-65" class="py-name"><a title="ansible.module_utils.ios.Restconf.delete
+ansible.module_utils.openswitch.Rest.delete
+ansible.plugins.cache.base.BaseCacheModule.delete
+ansible.plugins.cache.jsonfile.CacheModule.delete
+ansible.plugins.cache.memcached.CacheModule.delete
+ansible.plugins.cache.memory.CacheModule.delete
+ansible.plugins.cache.redis.CacheModule.delete" class="py-name" href="#" onclick="return doclink('link-65', 'delete', 'link-57');">delete</a></tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-66" class="py-name"><a title="ansible.plugins.cache.memcached.CacheModule._make_key
+ansible.plugins.cache.redis.CacheModule._make_key" class="py-name" href="#" onclick="return doclink('link-66', '_make_key', 'link-56');">_make_key</a></tt><tt class="py-op">(</tt><tt class="py-name">key</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L186"></a><tt class="py-lineno">186</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_keys</tt><tt class="py-op">.</tt><tt id="link-67" class="py-name" targets="Method ansible.plugins.cache.memcached.CacheModuleKeys.discard()=ansible.plugins.cache.memcached.CacheModuleKeys-class.html#discard"><a title="ansible.plugins.cache.memcached.CacheModuleKeys.discard" class="py-name" href="#" onclick="return doclink('link-67', 'discard', 'link-67');">discard</a></tt><tt class="py-op">(</tt><tt class="py-name">key</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L187"></a><tt class="py-lineno">187</tt>  <tt class="py-line"> </tt>
+<a name="CacheModule.flush"></a><div id="CacheModule.flush-def"><a name="L188"></a><tt class="py-lineno">188</tt> <a class="py-toggle" href="#" id="CacheModule.flush-toggle" onclick="return toggle('CacheModule.flush');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.CacheModule-class.html#flush">flush</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CacheModule.flush-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CacheModule.flush-expanded"><a name="L189"></a><tt class="py-lineno">189</tt>  <tt class="py-line">        <tt class="py-keyword">for</tt> <tt class="py-name">key</tt> <tt class="py-keyword">in</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-68" class="py-name"><a title="ansible.plugins.cache.FactCache.keys
+ansible.plugins.cache.base.BaseCacheModule.keys
+ansible.plugins.cache.jsonfile.CacheModule.keys
+ansible.plugins.cache.memcached.CacheModule.keys
+ansible.plugins.cache.memory.CacheModule.keys
+ansible.plugins.cache.redis.CacheModule.keys" class="py-name" href="#" onclick="return doclink('link-68', 'keys', 'link-35');">keys</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L190"></a><tt class="py-lineno">190</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-69" class="py-name"><a title="ansible.module_utils.ios.Restconf.delete
+ansible.module_utils.openswitch.Rest.delete
+ansible.plugins.cache.base.BaseCacheModule.delete
+ansible.plugins.cache.jsonfile.CacheModule.delete
+ansible.plugins.cache.memcached.CacheModule.delete
+ansible.plugins.cache.memory.CacheModule.delete
+ansible.plugins.cache.redis.CacheModule.delete" class="py-name" href="#" onclick="return doclink('link-69', 'delete', 'link-57');">delete</a></tt><tt class="py-op">(</tt><tt class="py-name">key</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L191"></a><tt class="py-lineno">191</tt>  <tt class="py-line"> </tt>
+<a name="CacheModule.copy"></a><div id="CacheModule.copy-def"><a name="L192"></a><tt class="py-lineno">192</tt> <a class="py-toggle" href="#" id="CacheModule.copy-toggle" onclick="return toggle('CacheModule.copy');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.CacheModule-class.html#copy">copy</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CacheModule.copy-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CacheModule.copy-expanded"><a name="L193"></a><tt class="py-lineno">193</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_keys</tt><tt class="py-op">.</tt><tt id="link-70" class="py-name" targets="Method ansible.executor.play_iterator.HostState.copy()=ansible.executor.play_iterator.HostState-class.html#copy,Method ansible.playbook.base.Base.copy()=ansible.playbook.base.Base-class.html#copy,Method ansible.playbook.block.Block.copy()=ansible.playbook.block.Block-class.html#copy,Method ansible.playbook.play.Play.copy()=ansible.playbook.play.Play-class.html#copy,Method ansible.playbook.task.Task.copy()=ansible.playbook.task.Task-class.html#copy,Module ansible.plugins.action.copy=ansible.plugins.action.copy-module.html,Method ansible.plugins.cache.FactCache.copy()=ansible.plugins.cache.FactCache-class.html#copy,Method ansible.plugins.cache.base.BaseCacheModule.copy()=ansible.plugins.cache.base.BaseCacheModule-class.html#copy,Method ansible.plugins.cache.jsonfile.CacheModule.copy()=ansible.plugins.cache.jsonfile.CacheModule-class.html#copy,Method ansible.plugins.cache.memcached.CacheModule.copy()=ansible.plugins.cache.memcached.CacheModule-class.html#copy,Method ansible.plugins.cache.memory.CacheModule.copy()=ansible.plugins.cache.memory.CacheModule-class.html#copy,Method ansible.plugins.cache.redis.CacheModule.copy()=ansible.plugins.cache.redis.CacheModule-class.html#copy"><a title="ansible.executor.play_iterator.HostState.copy
+ansible.playbook.base.Base.copy
+ansible.playbook.block.Block.copy
+ansible.playbook.play.Play.copy
+ansible.playbook.task.Task.copy
+ansible.plugins.action.copy
+ansible.plugins.cache.FactCache.copy
+ansible.plugins.cache.base.BaseCacheModule.copy
+ansible.plugins.cache.jsonfile.CacheModule.copy
+ansible.plugins.cache.memcached.CacheModule.copy
+ansible.plugins.cache.memory.CacheModule.copy
+ansible.plugins.cache.redis.CacheModule.copy" class="py-name" href="#" onclick="return doclink('link-70', 'copy', 'link-70');">copy</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L194"></a><tt class="py-lineno">194</tt>  <tt class="py-line"> </tt>
+<a name="CacheModule.__getstate__"></a><div id="CacheModule.__getstate__-def"><a name="L195"></a><tt class="py-lineno">195</tt> <a class="py-toggle" href="#" id="CacheModule.__getstate__-toggle" onclick="return toggle('CacheModule.__getstate__');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.CacheModule-class.html#__getstate__">__getstate__</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CacheModule.__getstate__-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CacheModule.__getstate__-expanded"><a name="L196"></a><tt class="py-lineno">196</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt id="link-71" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-71', 'dict', 'link-30');">dict</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L197"></a><tt class="py-lineno">197</tt>  <tt class="py-line"> </tt>
+<a name="CacheModule.__setstate__"></a><div id="CacheModule.__setstate__-def"><a name="L198"></a><tt class="py-lineno">198</tt> <a class="py-toggle" href="#" id="CacheModule.__setstate__-toggle" onclick="return toggle('CacheModule.__setstate__');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.cache.memcached.CacheModule-class.html#__setstate__">__setstate__</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">data</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CacheModule.__setstate__-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="CacheModule.__setstate__-expanded"><a name="L199"></a><tt class="py-lineno">199</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-72" class="py-name" targets="Method ansible.cli.CLI.__init__()=ansible.cli.CLI-class.html#__init__,Method ansible.cli.console.ConsoleCLI.__init__()=ansible.cli.console.ConsoleCLI-class.html#__init__,Method ansible.cli.doc.DocCLI.__init__()=ansible.cli.doc.DocCLI-class.html#__init__,Method ansible.cli.galaxy.GalaxyCLI.__init__()=ansible.cli.galaxy.GalaxyCLI-class.html#__init__,Method ansible.cli.vault.VaultCLI.__init__()=ansible.cli.vault.VaultCLI-class.html#__init__,Method ansible.compat.six.MovedAttribute.__init__()=ansible.compat.six.MovedAttribute-class.html#__init__,Method ansible.compat.six.MovedModule.__init__()=ansible.compat.six.MovedModule-class.html#__init__,Method ansible.compat.six._LazyDescr.__init__()=ansible.compat.six._LazyDescr-class.html#__init__,Method ansible.compat.six._LazyModule.__init__()=ansible.compat.six._LazyModule-class.html#__init__,Method ansible.compat.six._SixMetaPathImporter.__init__()=ansible.compat.six._SixMetaPathImporter-class.html#__init__,Method ansible.errors.AnsibleError.__init__()=ansible.errors.AnsibleError-class.html#__init__,Method ansible.executor.module_common.ModuleDepFinder.__init__()=ansible.executor.module_common.ModuleDepFinder-class.html#__init__,Method ansible.executor.play_iterator.HostState.__init__()=ansible.executor.play_iterator.HostState-class.html#__init__,Method ansible.executor.play_iterator.PlayIterator.__init__()=ansible.executor.play_iterator.PlayIterator-class.html#__init__,Method ansible.executor.playbook_executor.PlaybookExecutor.__init__()=ansible.executor.playbook_executor.PlaybookExecutor-class.html#__init__,Method ansible.executor.process.result.ResultProcess.__init__()=ansible.executor.process.result.ResultProcess-class.html#__init__,Method ansible.executor.process.worker.WorkerProcess.__init__()=ansible.executor.process.worker.WorkerProcess-class.html#__init__,Method ansible.executor.stats.AggregateStats.__init__()=ansible.executor.stats.AggregateStats-class.html#__init__,Method ansible.executor.task_executor.TaskExecutor.__init__()=ansible.executor.task_executor.TaskExecutor-class.html#__init__,Method ansible.executor.task_queue_manager.TaskQueueManager.__init__()=ansible.executor.task_queue_manager.TaskQueueManager-class.html#__init__,Method ansible.executor.task_result.TaskResult.__init__()=ansible.executor.task_result.TaskResult-class.html#__init__,Method ansible.galaxy.Galaxy.__init__()=ansible.galaxy.Galaxy-class.html#__init__,Method ansible.galaxy.api.GalaxyAPI.__init__()=ansible.galaxy.api.GalaxyAPI-class.html#__init__,Method ansible.galaxy.login.GalaxyLogin.__init__()=ansible.galaxy.login.GalaxyLogin-class.html#__init__,Method ansible.galaxy.role.GalaxyRole.__init__()=ansible.galaxy.role.GalaxyRole-class.html#__init__,Method ansible.galaxy.token.GalaxyToken.__init__()=ansible.galaxy.token.GalaxyToken-class.html#__init__,Method ansible.inventory.Inventory.__init__()=ansible.inventory.Inventory-class.html#__init__,Method ansible.inventory.dir.InventoryDirectory.__init__()=ansible.inventory.dir.InventoryDirectory-class.html#__init__,Method ansible.inventory.group.Group.__init__()=ansible.inventory.group.Group-class.html#__init__,Method ansible.inventory.host.Host.__init__()=ansible.inventory.host.Host-class.html#__init__,Method ansible.inventory.ini.InventoryParser.__init__()=ansible.inventory.ini.InventoryParser-class.html#__init__,Method ansible.inventory.script.InventoryScript.__init__()=ansible.inventory.script.InventoryScript-class.html#__init__,Method ansible.inventory.vars_plugins.noop.VarsModule.__init__()=ansible.inventory.vars_plugins.noop.VarsModule-class.html#__init__,Method ansible.inventory.yaml.InventoryParser.__init__()=ansible.inventory.yaml.InventoryParser-class.html#__init__,Method ansible.module_utils.asa.Cli.__init__()=ansible.module_utils.asa.Cli-class.html#__init__,Method ansible.module_utils.asa.NetworkModule.__init__()=ansible.module_utils.asa.NetworkModule-class.html#__init__,Method ansible.module_utils.azure_rm_common.AzureRMModuleBase.__init__()=ansible.module_utils.azure_rm_common.AzureRMModuleBase-class.html#__init__,Method ansible.module_utils.basic.AnsibleModule.__init__()=ansible.module_utils.basic.AnsibleModule-class.html#__init__,Method ansible.module_utils.cloudstack.AnsibleCloudStack.__init__()=ansible.module_utils.cloudstack.AnsibleCloudStack-class.html#__init__,Method ansible.module_utils.docker_common.AnsibleDockerClient.__init__()=ansible.module_utils.docker_common.AnsibleDockerClient-class.html#__init__,Method ansible.module_utils.docker_common.DockerBaseClass.__init__()=ansible.module_utils.docker_common.DockerBaseClass-class.html#__init__,Method ansible.module_utils.eos.Eapi.__init__()=ansible.module_utils.eos.Eapi-class.html#__init__,Method ansible.module_utils.facts.Distribution.__init__()=ansible.module_utils.facts.Distribution-class.html#__init__,Method ansible.module_utils.facts.Facts.__init__()=ansible.module_utils.facts.Facts-class.html#__init__,Method ansible.module_utils.ios.Restconf.__init__()=ansible.module_utils.ios.Restconf-class.html#__init__,Method ansible.module_utils.junos.Cli.__init__()=ansible.module_utils.junos.Cli-class.html#__init__,Method ansible.module_utils.junos.Netconf.__init__()=ansible.module_utils.junos.Netconf-class.html#__init__,Method ansible.module_utils.junos.NetworkModule.__init__()=ansible.module_utils.junos.NetworkModule-class.html#__init__,Method ansible.module_utils.netcfg.ConfigLine.__init__()=ansible.module_utils.netcfg.ConfigLine-class.html#__init__,Method ansible.module_utils.netcfg.NetworkConfig.__init__()=ansible.module_utils.netcfg.NetworkConfig-class.html#__init__,Method ansible.module_utils.netcmd.CommandRunner.__init__()=ansible.module_utils.netcmd.CommandRunner-class.html#__init__,Method ansible.module_utils.netcmd.Conditional.__init__()=ansible.module_utils.netcmd.Conditional-class.html#__init__,Method ansible.module_utils.netcmd.FailedConditionsError.__init__()=ansible.module_utils.netcmd.FailedConditionsError-class.html#__init__,Method ansible.module_utils.network.Cli.__init__()=ansible.module_utils.network.Cli-class.html#__init__,Method ansible.module_utils.network.Command.__init__()=ansible.module_utils.network.Command-class.html#__init__,Method ansible.module_utils.network.Config.__init__()=ansible.module_utils.network.Config-class.html#__init__,Method ansible.module_utils.network.ModuleStub.__init__()=ansible.module_utils.network.ModuleStub-class.html#__init__,Method ansible.module_utils.network.NetCli.__init__()=ansible.module_utils.network.NetCli-class.html#__init__,Method ansible.module_utils.network.NetworkError.__init__()=ansible.module_utils.network.NetworkError-class.html#__init__,Method ansible.module_utils.network.NetworkModule.__init__()=ansible.module_utils.network.NetworkModule-class.html#__init__,Method ansible.module_utils.nxos.Cli.__init__()=ansible.module_utils.nxos.Cli-class.html#__init__,Method ansible.module_utils.nxos.NetworkModule.__init__()=ansible.module_utils.nxos.NetworkModule-class.html#__init__,Method ansible.module_utils.nxos.Nxapi.__init__()=ansible.module_utils.nxos.Nxapi-class.html#__init__,Method ansible.module_utils.openswitch.Cli.__init__()=ansible.module_utils.openswitch.Cli-class.html#__init__,Method ansible.module_utils.openswitch.NetworkModule.__init__()=ansible.module_utils.openswitch.NetworkModule-class.html#__init__,Method ansible.module_utils.openswitch.Response.__init__()=ansible.module_utils.openswitch.Response-class.html#__init__,Method ansible.module_utils.openswitch.Rest.__init__()=ansible.module_utils.openswitch.Rest-class.html#__init__,Method ansible.module_utils.redhat.RegistrationBase.__init__()=ansible.module_utils.redhat.RegistrationBase-class.html#__init__,Method ansible.module_utils.redhat.Rhsm.__init__()=ansible.module_utils.redhat.Rhsm-class.html#__init__,Method ansible.module_utils.redhat.RhsmPool.__init__()=ansible.module_utils.redhat.RhsmPool-class.html#__init__,Method ansible.module_utils.redhat.RhsmPools.__init__()=ansible.module_utils.redhat.RhsmPools-class.html#__init__,Method ansible.module_utils.service.Service.__init__()=ansible.module_utils.service.Service-class.html#__init__,Method ansible.module_utils.shell.Command.__init__()=ansible.module_utils.shell.Command-class.html#__init__,Method ansible.module_utils.shell.Shell.__init__()=ansible.module_utils.shell.Shell-class.html#__init__,Method ansible.module_utils.shell.ShellError.__init__()=ansible.module_utils.shell.ShellError-class.html#__init__,Method ansible.module_utils.six.MovedAttribute.__init__()=ansible.module_utils.six.MovedAttribute-class.html#__init__,Method ansible.module_utils.six.MovedModule.__init__()=ansible.module_utils.six.MovedModule-class.html#__init__,Method ansible.module_utils.six._LazyDescr.__init__()=ansible.module_utils.six._LazyDescr-class.html#__init__,Method ansible.module_utils.urls.CustomHTTPSConnection.__init__()=ansible.module_utils.urls.CustomHTTPSConnection-class.html#__init__,Method ansible.module_utils.urls.RequestWithMethod.__init__()=ansible.module_utils.urls.RequestWithMethod-class.html#__init__,Method ansible.module_utils.urls.SSLValidationHandler.__init__()=ansible.module_utils.urls.SSLValidationHandler-class.html#__init__,Method ansible.module_utils.vca.VcaAnsibleModule.__init__()=ansible.module_utils.vca.VcaAnsibleModule-class.html#__init__,Method ansible.module_utils.vca.VcaError.__init__()=ansible.module_utils.vca.VcaError-class.html#__init__,Method ansible.parsing.dataloader.DataLoader.__init__()=ansible.parsing.dataloader.DataLoader-class.html#__init__,Method ansible.parsing.mod_args.ModuleArgsParser.__init__()=ansible.parsing.mod_args.ModuleArgsParser-class.html#__init__,Method ansible.parsing.vault.VaultAES.__init__()=ansible.parsing.vault.VaultAES-class.html#__init__,Method ansible.parsing.vault.VaultAES256.__init__()=ansible.parsing.vault.VaultAES256-class.html#__init__,Method ansible.parsing.vault.VaultEditor.__init__()=ansible.parsing.vault.VaultEditor-class.html#__init__,Method ansible.parsing.vault.VaultFile.__init__()=ansible.parsing.vault.VaultFile-class.html#__init__,Method ansible.parsing.vault.VaultLib.__init__()=ansible.parsing.vault.VaultLib-class.html#__init__,Method ansible.parsing.yaml.constructor.AnsibleConstructor.__init__()=ansible.parsing.yaml.constructor.AnsibleConstructor-class.html#__init__,Method ansible.parsing.yaml.loader.AnsibleLoader.__init__()=ansible.parsing.yaml.loader.AnsibleLoader-class.html#__init__,Method ansible.playbook.Playbook.__init__()=ansible.playbook.Playbook-class.html#__init__,Method ansible.playbook.attribute.Attribute.__init__()=ansible.playbook.attribute.Attribute-class.html#__init__,Method ansible.playbook.base.Base.__init__()=ansible.playbook.base.Base-class.html#__init__,Method ansible.playbook.become.Become.__init__()=ansible.playbook.become.Become-class.html#__init__,Method ansible.playbook.block.Block.__init__()=ansible.playbook.block.Block-class.html#__init__,Method ansible.playbook.conditional.Conditional.__init__()=ansible.playbook.conditional.Conditional-class.html#__init__,Method ansible.playbook.handler.Handler.__init__()=ansible.playbook.handler.Handler-class.html#__init__,Method ansible.playbook.included_file.IncludedFile.__init__()=ansible.playbook.included_file.IncludedFile-class.html#__init__,Method ansible.playbook.loop_control.LoopControl.__init__()=ansible.playbook.loop_control.LoopControl-class.html#__init__,Method ansible.playbook.play.Play.__init__()=ansible.playbook.play.Play-class.html#__init__,Method ansible.playbook.play_context.PlayContext.__init__()=ansible.playbook.play_context.PlayContext-class.html#__init__,Method ansible.playbook.role.Role.__init__()=ansible.playbook.role.Role-class.html#__init__,Method ansible.playbook.role.definition.RoleDefinition.__init__()=ansible.playbook.role.definition.RoleDefinition-class.html#__init__,Method ansible.playbook.role.include.RoleInclude.__init__()=ansible.playbook.role.include.RoleInclude-class.html#__init__,Method ansible.playbook.role.metadata.RoleMetadata.__init__()=ansible.playbook.role.metadata.RoleMetadata-class.html#__init__,Method ansible.playbook.role.requirement.RoleRequirement.__init__()=ansible.playbook.role.requirement.RoleRequirement-class.html#__init__,Method ansible.playbook.taggable.Taggable.__init__()=ansible.playbook.taggable.Taggable-class.html#__init__,Method ansible.playbook.task.Task.__init__()=ansible.playbook.task.Task-class.html#__init__,Method ansible.plugins.PluginLoader.__init__()=ansible.plugins.PluginLoader-class.html#__init__,Method ansible.plugins.action.ActionBase.__init__()=ansible.plugins.action.ActionBase-class.html#__init__,Method ansible.plugins.cache.FactCache.__init__()=ansible.plugins.cache.FactCache-class.html#__init__,Method ansible.plugins.cache.jsonfile.CacheModule.__init__()=ansible.plugins.cache.jsonfile.CacheModule-class.html#__init__,Method ansible.plugins.cache.memcached.CacheModule.__init__()=ansible.plugins.cache.memcached.CacheModule-class.html#__init__,Method ansible.plugins.cache.memcached.CacheModuleKeys.__init__()=ansible.plugins.cache.memcached.CacheModuleKeys-class.html#__init__,Method ansible.plugins.cache.memcached.ProxyClientPool.__init__()=ansible.plugins.cache.memcached.ProxyClientPool-class.html#__init__,Method ansible.plugins.cache.memory.CacheModule.__init__()=ansible.plugins.cache.memory.CacheModule-class.html#__init__,Method ansible.plugins.cache.redis.CacheModule.__init__()=ansible.plugins.cache.redis.CacheModule-class.html#__init__,Method ansible.plugins.callback.CallbackBase.__init__()=ansible.plugins.callback.CallbackBase-class.html#__init__,Method ansible.plugins.callback.actionable.CallbackModule.__init__()=ansible.plugins.callback.actionable.CallbackModule-class.html#__init__,Method ansible.plugins.callback.context_demo.CallbackModule.__init__()=ansible.plugins.callback.context_demo.CallbackModule-class.html#__init__,Method ansible.plugins.callback.hipchat.CallbackModule.__init__()=ansible.plugins.callback.hipchat.CallbackModule-class.html#__init__,Method ansible.plugins.callback.json.CallbackModule.__init__()=ansible.plugins.callback.json.CallbackModule-class.html#__init__,Method ansible.plugins.callback.junit.CallbackModule.__init__()=ansible.plugins.callback.junit.CallbackModule-class.html#__init__,Method ansible.plugins.callback.junit.HostData.__init__()=ansible.plugins.callback.junit.HostData-class.html#__init__,Method ansible.plugins.callback.junit.TaskData.__init__()=ansible.plugins.callback.junit.TaskData-class.html#__init__,Method ansible.plugins.callback.log_plays.CallbackModule.__init__()=ansible.plugins.callback.log_plays.CallbackModule-class.html#__init__,Method ansible.plugins.callback.logentries.CallbackModule.__init__()=ansible.plugins.callback.logentries.CallbackModule-class.html#__init__,Method ansible.plugins.callback.logentries.PlainTextSocketAppender.__init__()=ansible.plugins.callback.logentries.PlainTextSocketAppender-class.html#__init__,Method ansible.plugins.callback.osx_say.CallbackModule.__init__()=ansible.plugins.callback.osx_say.CallbackModule-class.html#__init__,Method ansible.plugins.callback.profile_tasks.CallbackModule.__init__()=ansible.plugins.callback.profile_tasks.CallbackModule-class.html#__init__,Method ansible.plugins.callback.slack.CallbackModule.__init__()=ansible.plugins.callback.slack.CallbackModule-class.html#__init__,Method ansible.plugins.callback.syslog_json.CallbackModule.__init__()=ansible.plugins.callback.syslog_json.CallbackModule-class.html#__init__,Method ansible.plugins.callback.timer.CallbackModule.__init__()=ansible.plugins.callback.timer.CallbackModule-class.html#__init__,Method ansible.plugins.callback.tree.CallbackModule.__init__()=ansible.plugins.callback.tree.CallbackModule-class.html#__init__,Method ansible.plugins.connection.ConnectionBase.__init__()=ansible.plugins.connection.ConnectionBase-class.html#__init__,Method ansible.plugins.connection.accelerate.Connection.__init__()=ansible.plugins.connection.accelerate.Connection-class.html#__init__,Method ansible.plugins.connection.chroot.Connection.__init__()=ansible.plugins.connection.chroot.Connection-class.html#__init__,Method ansible.plugins.connection.docker.Connection.__init__()=ansible.plugins.connection.docker.Connection-class.html#__init__,Method ansible.plugins.connection.funcd.Connection.__init__()=ansible.plugins.connection.funcd.Connection-class.html#__init__,Method ansible.plugins.connection.jail.Connection.__init__()=ansible.plugins.connection.jail.Connection-class.html#__init__,Method ansible.plugins.connection.libvirt_lxc.Connection.__init__()=ansible.plugins.connection.libvirt_lxc.Connection-class.html#__init__,Method ansible.plugins.connection.lxc.Connection.__init__()=ansible.plugins.connection.lxc.Connection-class.html#__init__,Method ansible.plugins.connection.lxd.Connection.__init__()=ansible.plugins.connection.lxd.Connection-class.html#__init__,Method ansible.plugins.connection.paramiko_ssh.MyAddPolicy.__init__()=ansible.plugins.connection.paramiko_ssh.MyAddPolicy-class.html#__init__,Method ansible.plugins.connection.ssh.Connection.__init__()=ansible.plugins.connection.ssh.Connection-class.html#__init__,Method ansible.plugins.connection.winrm.Connection.__init__()=ansible.plugins.connection.winrm.Connection-class.html#__init__,Method ansible.plugins.connection.zone.Connection.__init__()=ansible.plugins.connection.zone.Connection-class.html#__init__,Method ansible.plugins.lookup.LookupBase.__init__()=ansible.plugins.lookup.LookupBase-class.html#__init__,Method ansible.plugins.lookup.consul_kv.LookupModule.__init__()=ansible.plugins.lookup.consul_kv.LookupModule-class.html#__init__,Method ansible.plugins.lookup.csvfile.CSVReader.__init__()=ansible.plugins.lookup.csvfile.CSVReader-class.html#__init__,Method ansible.plugins.lookup.csvfile.CSVRecoder.__init__()=ansible.plugins.lookup.csvfile.CSVRecoder-class.html#__init__,Method ansible.plugins.lookup.etcd.Etcd.__init__()=ansible.plugins.lookup.etcd.Etcd-class.html#__init__,Method ansible.plugins.lookup.hashi_vault.HashiVault.__init__()=ansible.plugins.lookup.hashi_vault.HashiVault-class.html#__init__,Method ansible.plugins.lookup.indexed_items.LookupModule.__init__()=ansible.plugins.lookup.indexed_items.LookupModule-class.html#__init__,Method ansible.plugins.shell.ShellBase.__init__()=ansible.plugins.shell.ShellBase-class.html#__init__,Method ansible.plugins.strategy.SharedPluginLoaderObj.__init__()=ansible.plugins.strategy.SharedPluginLoaderObj-class.html#__init__,Method ansible.plugins.strategy.StrategyBase.__init__()=ansible.plugins.strategy.StrategyBase-class.html#__init__,Method ansible.plugins.strategy.debug.Debugger.__init__()=ansible.plugins.strategy.debug.Debugger-class.html#__init__,Method ansible.plugins.strategy.debug.NextAction.__init__()=ansible.plugins.strategy.debug.NextAction-class.html#__init__,Method ansible.plugins.strategy.debug.StrategyModule.__init__()=ansible.plugins.strategy.debug.StrategyModule-class.html#__init__,Method ansible.template.Templar.__init__()=ansible.template.Templar-class.html#__init__,Method ansible.template.vars.AnsibleJ2Vars.__init__()=ansible.template.vars.AnsibleJ2Vars-class.html#__init__,Method ansible.utils.display.Display.__init__()=ansible.utils.display.Display-class.html#__init__,Method ansible.vars.AnsibleInventoryVarsData.__init__()=ansible.vars.AnsibleInventoryVarsData-class.html#__init__,Method ansible.vars.VariableManager.__init__()=ansible.vars.VariableManager-class.html#__init__,Method ansible.vars.hostvars.HostVars.__init__()=ansible.vars.hostvars.HostVars-class.html#__init__"><a title="ansible.cli.CLI.__init__
+ansible.cli.console.ConsoleCLI.__init__
+ansible.cli.doc.DocCLI.__init__
+ansible.cli.galaxy.GalaxyCLI.__init__
+ansible.cli.vault.VaultCLI.__init__
+ansible.compat.six.MovedAttribute.__init__
+ansible.compat.six.MovedModule.__init__
+ansible.compat.six._LazyDescr.__init__
+ansible.compat.six._LazyModule.__init__
+ansible.compat.six._SixMetaPathImporter.__init__
+ansible.errors.AnsibleError.__init__
+ansible.executor.module_common.ModuleDepFinder.__init__
+ansible.executor.play_iterator.HostState.__init__
+ansible.executor.play_iterator.PlayIterator.__init__
+ansible.executor.playbook_executor.PlaybookExecutor.__init__
+ansible.executor.process.result.ResultProcess.__init__
+ansible.executor.process.worker.WorkerProcess.__init__
+ansible.executor.stats.AggregateStats.__init__
+ansible.executor.task_executor.TaskExecutor.__init__
+ansible.executor.task_queue_manager.TaskQueueManager.__init__
+ansible.executor.task_result.TaskResult.__init__
+ansible.galaxy.Galaxy.__init__
+ansible.galaxy.api.GalaxyAPI.__init__
+ansible.galaxy.login.GalaxyLogin.__init__
+ansible.galaxy.role.GalaxyRole.__init__
+ansible.galaxy.token.GalaxyToken.__init__
+ansible.inventory.Inventory.__init__
+ansible.inventory.dir.InventoryDirectory.__init__
+ansible.inventory.group.Group.__init__
+ansible.inventory.host.Host.__init__
+ansible.inventory.ini.InventoryParser.__init__
+ansible.inventory.script.InventoryScript.__init__
+ansible.inventory.vars_plugins.noop.VarsModule.__init__
+ansible.inventory.yaml.InventoryParser.__init__
+ansible.module_utils.asa.Cli.__init__
+ansible.module_utils.asa.NetworkModule.__init__
+ansible.module_utils.azure_rm_common.AzureRMModuleBase.__init__
+ansible.module_utils.basic.AnsibleModule.__init__
+ansible.module_utils.cloudstack.AnsibleCloudStack.__init__
+ansible.module_utils.docker_common.AnsibleDockerClient.__init__
+ansible.module_utils.docker_common.DockerBaseClass.__init__
+ansible.module_utils.eos.Eapi.__init__
+ansible.module_utils.facts.Distribution.__init__
+ansible.module_utils.facts.Facts.__init__
+ansible.module_utils.ios.Restconf.__init__
+ansible.module_utils.junos.Cli.__init__
+ansible.module_utils.junos.Netconf.__init__
+ansible.module_utils.junos.NetworkModule.__init__
+ansible.module_utils.netcfg.ConfigLine.__init__
+ansible.module_utils.netcfg.NetworkConfig.__init__
+ansible.module_utils.netcmd.CommandRunner.__init__
+ansible.module_utils.netcmd.Conditional.__init__
+ansible.module_utils.netcmd.FailedConditionsError.__init__
+ansible.module_utils.network.Cli.__init__
+ansible.module_utils.network.Command.__init__
+ansible.module_utils.network.Config.__init__
+ansible.module_utils.network.ModuleStub.__init__
+ansible.module_utils.network.NetCli.__init__
+ansible.module_utils.network.NetworkError.__init__
+ansible.module_utils.network.NetworkModule.__init__
+ansible.module_utils.nxos.Cli.__init__
+ansible.module_utils.nxos.NetworkModule.__init__
+ansible.module_utils.nxos.Nxapi.__init__
+ansible.module_utils.openswitch.Cli.__init__
+ansible.module_utils.openswitch.NetworkModule.__init__
+ansible.module_utils.openswitch.Response.__init__
+ansible.module_utils.openswitch.Rest.__init__
+ansible.module_utils.redhat.RegistrationBase.__init__
+ansible.module_utils.redhat.Rhsm.__init__
+ansible.module_utils.redhat.RhsmPool.__init__
+ansible.module_utils.redhat.RhsmPools.__init__
+ansible.module_utils.service.Service.__init__
+ansible.module_utils.shell.Command.__init__
+ansible.module_utils.shell.Shell.__init__
+ansible.module_utils.shell.ShellError.__init__
+ansible.module_utils.six.MovedAttribute.__init__
+ansible.module_utils.six.MovedModule.__init__
+ansible.module_utils.six._LazyDescr.__init__
+ansible.module_utils.urls.CustomHTTPSConnection.__init__
+ansible.module_utils.urls.RequestWithMethod.__init__
+ansible.module_utils.urls.SSLValidationHandler.__init__
+ansible.module_utils.vca.VcaAnsibleModule.__init__
+ansible.module_utils.vca.VcaError.__init__
+ansible.parsing.dataloader.DataLoader.__init__
+ansible.parsing.mod_args.ModuleArgsParser.__init__
+ansible.parsing.vault.VaultAES.__init__
+ansible.parsing.vault.VaultAES256.__init__
+ansible.parsing.vault.VaultEditor.__init__
+ansible.parsing.vault.VaultFile.__init__
+ansible.parsing.vault.VaultLib.__init__
+ansible.parsing.yaml.constructor.AnsibleConstructor.__init__
+ansible.parsing.yaml.loader.AnsibleLoader.__init__
+ansible.playbook.Playbook.__init__
+ansible.playbook.attribute.Attribute.__init__
+ansible.playbook.base.Base.__init__
+ansible.playbook.become.Become.__init__
+ansible.playbook.block.Block.__init__
+ansible.playbook.conditional.Conditional.__init__
+ansible.playbook.handler.Handler.__init__
+ansible.playbook.included_file.IncludedFile.__init__
+ansible.playbook.loop_control.LoopControl.__init__
+ansible.playbook.play.Play.__init__
+ansible.playbook.play_context.PlayContext.__init__
+ansible.playbook.role.Role.__init__
+ansible.playbook.role.definition.RoleDefinition.__init__
+ansible.playbook.role.include.RoleInclude.__init__
+ansible.playbook.role.metadata.RoleMetadata.__init__
+ansible.playbook.role.requirement.RoleRequirement.__init__
+ansible.playbook.taggable.Taggable.__init__
+ansible.playbook.task.Task.__init__
+ansible.plugins.PluginLoader.__init__
+ansible.plugins.action.ActionBase.__init__
+ansible.plugins.cache.FactCache.__init__
+ansible.plugins.cache.jsonfile.CacheModule.__init__
+ansible.plugins.cache.memcached.CacheModule.__init__
+ansible.plugins.cache.memcached.CacheModuleKeys.__init__
+ansible.plugins.cache.memcached.ProxyClientPool.__init__
+ansible.plugins.cache.memory.CacheModule.__init__
+ansible.plugins.cache.redis.CacheModule.__init__
+ansible.plugins.callback.CallbackBase.__init__
+ansible.plugins.callback.actionable.CallbackModule.__init__
+ansible.plugins.callback.context_demo.CallbackModule.__init__
+ansible.plugins.callback.hipchat.CallbackModule.__init__
+ansible.plugins.callback.json.CallbackModule.__init__
+ansible.plugins.callback.junit.CallbackModule.__init__
+ansible.plugins.callback.junit.HostData.__init__
+ansible.plugins.callback.junit.TaskData.__init__
+ansible.plugins.callback.log_plays.CallbackModule.__init__
+ansible.plugins.callback.logentries.CallbackModule.__init__
+ansible.plugins.callback.logentries.PlainTextSocketAppender.__init__
+ansible.plugins.callback.osx_say.CallbackModule.__init__
+ansible.plugins.callback.profile_tasks.CallbackModule.__init__
+ansible.plugins.callback.slack.CallbackModule.__init__
+ansible.plugins.callback.syslog_json.CallbackModule.__init__
+ansible.plugins.callback.timer.CallbackModule.__init__
+ansible.plugins.callback.tree.CallbackModule.__init__
+ansible.plugins.connection.ConnectionBase.__init__
+ansible.plugins.connection.accelerate.Connection.__init__
+ansible.plugins.connection.chroot.Connection.__init__
+ansible.plugins.connection.docker.Connection.__init__
+ansible.plugins.connection.funcd.Connection.__init__
+ansible.plugins.connection.jail.Connection.__init__
+ansible.plugins.connection.libvirt_lxc.Connection.__init__
+ansible.plugins.connection.lxc.Connection.__init__
+ansible.plugins.connection.lxd.Connection.__init__
+ansible.plugins.connection.paramiko_ssh.MyAddPolicy.__init__
+ansible.plugins.connection.ssh.Connection.__init__
+ansible.plugins.connection.winrm.Connection.__init__
+ansible.plugins.connection.zone.Connection.__init__
+ansible.plugins.lookup.LookupBase.__init__
+ansible.plugins.lookup.consul_kv.LookupModule.__init__
+ansible.plugins.lookup.csvfile.CSVReader.__init__
+ansible.plugins.lookup.csvfile.CSVRecoder.__init__
+ansible.plugins.lookup.etcd.Etcd.__init__
+ansible.plugins.lookup.hashi_vault.HashiVault.__init__
+ansible.plugins.lookup.indexed_items.LookupModule.__init__
+ansible.plugins.shell.ShellBase.__init__
+ansible.plugins.strategy.SharedPluginLoaderObj.__init__
+ansible.plugins.strategy.StrategyBase.__init__
+ansible.plugins.strategy.debug.Debugger.__init__
+ansible.plugins.strategy.debug.NextAction.__init__
+ansible.plugins.strategy.debug.StrategyModule.__init__
+ansible.template.Templar.__init__
+ansible.template.vars.AnsibleJ2Vars.__init__
+ansible.utils.display.Display.__init__
+ansible.vars.AnsibleInventoryVarsData.__init__
+ansible.vars.VariableManager.__init__
+ansible.vars.hostvars.HostVars.__init__" class="py-name" href="#" onclick="return doclink('link-72', '__init__', 'link-72');">__init__</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+</div></div><a name="L200"></a><tt class="py-lineno">200</tt>  <tt class="py-line"> </tt><script type="text/javascript">
+<!--
+expandto(location.href);
+// -->
+</script>
+</pre>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Fri Jul 29 13:11:39 2016
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

@@ -1,0 +1,438 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>ansible.module_utils.vmware</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="ansible-module.html">Package&nbsp;ansible</a> ::
+        <a href="ansible.module_utils-module.html">Package&nbsp;module_utils</a> ::
+        Module&nbsp;vmware
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="ansible.module_utils.vmware-pysrc.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<h1 class="epydoc">Source Code for <a href="ansible.module_utils.vmware-module.html">Module ansible.module_utils.vmware</a></h1>
+<pre class="py-src">
+<a name="L1"></a><tt class="py-lineno">  1</tt>  <tt class="py-line"><tt class="py-comment"># -*- coding: utf-8 -*-</tt> </tt>
+<a name="L2"></a><tt class="py-lineno">  2</tt>  <tt class="py-line"> </tt>
+<a name="L3"></a><tt class="py-lineno">  3</tt>  <tt class="py-line"><tt class="py-comment"># (c) 2015, Joseph Callen &lt;jcallen () csc.com&gt;</tt> </tt>
+<a name="L4"></a><tt class="py-lineno">  4</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L5"></a><tt class="py-lineno">  5</tt>  <tt class="py-line"><tt class="py-comment"># This file is part of Ansible</tt> </tt>
+<a name="L6"></a><tt class="py-lineno">  6</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L7"></a><tt class="py-lineno">  7</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is free software: you can redistribute it and/or modify</tt> </tt>
+<a name="L8"></a><tt class="py-lineno">  8</tt>  <tt class="py-line"><tt class="py-comment"># it under the terms of the GNU General Public License as published by</tt> </tt>
+<a name="L9"></a><tt class="py-lineno">  9</tt>  <tt class="py-line"><tt class="py-comment"># the Free Software Foundation, either version 3 of the License, or</tt> </tt>
+<a name="L10"></a><tt class="py-lineno"> 10</tt>  <tt class="py-line"><tt class="py-comment"># (at your option) any later version.</tt> </tt>
+<a name="L11"></a><tt class="py-lineno"> 11</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L12"></a><tt class="py-lineno"> 12</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is distributed in the hope that it will be useful,</tt> </tt>
+<a name="L13"></a><tt class="py-lineno"> 13</tt>  <tt class="py-line"><tt class="py-comment"># but WITHOUT ANY WARRANTY; without even the implied warranty of</tt> </tt>
+<a name="L14"></a><tt class="py-lineno"> 14</tt>  <tt class="py-line"><tt class="py-comment"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</tt> </tt>
+<a name="L15"></a><tt class="py-lineno"> 15</tt>  <tt class="py-line"><tt class="py-comment"># GNU General Public License for more details.</tt> </tt>
+<a name="L16"></a><tt class="py-lineno"> 16</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L17"></a><tt class="py-lineno"> 17</tt>  <tt class="py-line"><tt class="py-comment"># You should have received a copy of the GNU General Public License</tt> </tt>
+<a name="L18"></a><tt class="py-lineno"> 18</tt>  <tt class="py-line"><tt class="py-comment"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</tt> </tt>
+<a name="L19"></a><tt class="py-lineno"> 19</tt>  <tt class="py-line"> </tt>
+<a name="L20"></a><tt class="py-lineno"> 20</tt>  <tt class="py-line"> </tt>
+<a name="L21"></a><tt class="py-lineno"> 21</tt>  <tt class="py-line"><tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L22"></a><tt class="py-lineno"> 22</tt>  <tt class="py-line">    <tt class="py-keyword">import</tt> <tt class="py-name">atexit</tt> </tt>
+<a name="L23"></a><tt class="py-lineno"> 23</tt>  <tt class="py-line">    <tt class="py-keyword">import</tt> <tt class="py-name">time</tt> </tt>
+<a name="L24"></a><tt class="py-lineno"> 24</tt>  <tt class="py-line">    <tt class="py-keyword">import</tt> <tt class="py-name">ssl</tt> </tt>
+<a name="L25"></a><tt class="py-lineno"> 25</tt>  <tt class="py-line">    <tt class="py-comment"># requests is required for exception handling of the ConnectionError</tt> </tt>
+<a name="L26"></a><tt class="py-lineno"> 26</tt>  <tt class="py-line">    <tt class="py-keyword">import</tt> <tt class="py-name">requests</tt> </tt>
+<a name="L27"></a><tt class="py-lineno"> 27</tt>  <tt class="py-line">    <tt class="py-keyword">from</tt> <tt class="py-name">pyVim</tt> <tt class="py-keyword">import</tt> <tt id="link-0" class="py-name" targets="Method ansible.module_utils.asa.Cli.connect()=ansible.module_utils.asa.Cli-class.html#connect,Method ansible.module_utils.asa.NetworkModule.connect()=ansible.module_utils.asa.NetworkModule-class.html#connect,Method ansible.module_utils.eos.Cli.connect()=ansible.module_utils.eos.Cli-class.html#connect,Method ansible.module_utils.eos.Eapi.connect()=ansible.module_utils.eos.Eapi-class.html#connect,Method ansible.module_utils.ios.Cli.connect()=ansible.module_utils.ios.Cli-class.html#connect,Method ansible.module_utils.ios.Restconf.connect()=ansible.module_utils.ios.Restconf-class.html#connect,Method ansible.module_utils.iosxr.Cli.connect()=ansible.module_utils.iosxr.Cli-class.html#connect,Method ansible.module_utils.junos.Cli.connect()=ansible.module_utils.junos.Cli-class.html#connect,Method ansible.module_utils.junos.Netconf.connect()=ansible.module_utils.junos.Netconf-class.html#connect,Method ansible.module_utils.junos.NetworkModule.connect()=ansible.module_utils.junos.NetworkModule-class.html#connect,Method ansible.module_utils.network.NetCli.connect()=ansible.module_utils.network.NetCli-class.html#connect,Method ansible.module_utils.network.NetworkModule.connect()=ansible.module_utils.network.NetworkModule-class.html#connect,Method ansible.module_utils.nxos.Cli.connect()=ansible.module_utils.nxos.Cli-class.html#connect,Method ansible.module_utils.nxos.NetworkModule.connect()=ansible.module_utils.nxos.NetworkModule-class.html#connect,Method ansible.module_utils.nxos.Nxapi.connect()=ansible.module_utils.nxos.Nxapi-class.html#connect,Method ansible.module_utils.openswitch.Cli.connect()=ansible.module_utils.openswitch.Cli-class.html#connect,Method ansible.module_utils.openswitch.NetworkModule.connect()=ansible.module_utils.openswitch.NetworkModule-class.html#connect,Method ansible.module_utils.openswitch.Rest.connect()=ansible.module_utils.openswitch.Rest-class.html#connect,Method ansible.module_utils.urls.CustomHTTPSConnection.connect()=ansible.module_utils.urls.CustomHTTPSConnection-class.html#connect,Method ansible.module_utils.vyos.Cli.connect()=ansible.module_utils.vyos.Cli-class.html#connect,Method ansible.plugins.connection.funcd.Connection.connect()=ansible.plugins.connection.funcd.Connection-class.html#connect"><a title="ansible.module_utils.asa.Cli.connect
+ansible.module_utils.asa.NetworkModule.connect
+ansible.module_utils.eos.Cli.connect
+ansible.module_utils.eos.Eapi.connect
+ansible.module_utils.ios.Cli.connect
+ansible.module_utils.ios.Restconf.connect
+ansible.module_utils.iosxr.Cli.connect
+ansible.module_utils.junos.Cli.connect
+ansible.module_utils.junos.Netconf.connect
+ansible.module_utils.junos.NetworkModule.connect
+ansible.module_utils.network.NetCli.connect
+ansible.module_utils.network.NetworkModule.connect
+ansible.module_utils.nxos.Cli.connect
+ansible.module_utils.nxos.NetworkModule.connect
+ansible.module_utils.nxos.Nxapi.connect
+ansible.module_utils.openswitch.Cli.connect
+ansible.module_utils.openswitch.NetworkModule.connect
+ansible.module_utils.openswitch.Rest.connect
+ansible.module_utils.urls.CustomHTTPSConnection.connect
+ansible.module_utils.vyos.Cli.connect
+ansible.plugins.connection.funcd.Connection.connect" class="py-name" href="#" onclick="return doclink('link-0', 'connect', 'link-0');">connect</a></tt> </tt>
+<a name="L28"></a><tt class="py-lineno"> 28</tt>  <tt class="py-line">    <tt class="py-keyword">from</tt> <tt class="py-name">pyVmomi</tt> <tt class="py-keyword">import</tt> <tt class="py-name">vim</tt> </tt>
+<a name="L29"></a><tt class="py-lineno"> 29</tt>  <tt class="py-line">    <tt id="link-1" class="py-name" targets="Variable ansible.module_utils.vmware.HAS_PYVMOMI=ansible.module_utils.vmware-module.html#HAS_PYVMOMI"><a title="ansible.module_utils.vmware.HAS_PYVMOMI" class="py-name" href="#" onclick="return doclink('link-1', 'HAS_PYVMOMI', 'link-1');">HAS_PYVMOMI</a></tt> <tt class="py-op">=</tt> <tt class="py-name">True</tt> </tt>
+<a name="L30"></a><tt class="py-lineno"> 30</tt>  <tt class="py-line"><tt class="py-keyword">except</tt> <tt class="py-name">ImportError</tt><tt class="py-op">:</tt> </tt>
+<a name="L31"></a><tt class="py-lineno"> 31</tt>  <tt class="py-line">    <tt id="link-2" class="py-name"><a title="ansible.module_utils.vmware.HAS_PYVMOMI" class="py-name" href="#" onclick="return doclink('link-2', 'HAS_PYVMOMI', 'link-1');">HAS_PYVMOMI</a></tt> <tt class="py-op">=</tt> <tt class="py-name">False</tt> </tt>
+<a name="L32"></a><tt class="py-lineno"> 32</tt>  <tt class="py-line"> </tt>
+<a name="L33"></a><tt class="py-lineno"> 33</tt>  <tt class="py-line"> </tt>
+<a name="TaskError"></a><div id="TaskError-def"><a name="L34"></a><tt class="py-lineno"> 34</tt> <a class="py-toggle" href="#" id="TaskError-toggle" onclick="return toggle('TaskError');">-</a><tt class="py-line"><tt class="py-keyword">class</tt> <a class="py-def-name" href="ansible.module_utils.vmware.TaskError-class.html">TaskError</a><tt class="py-op">(</tt><tt class="py-base-class">Exception</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="TaskError-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="TaskError-expanded"><a name="L35"></a><tt class="py-lineno"> 35</tt>  <tt class="py-line">    <tt class="py-keyword">pass</tt> </tt>
+</div><a name="L36"></a><tt class="py-lineno"> 36</tt>  <tt class="py-line"> </tt>
+<a name="L37"></a><tt class="py-lineno"> 37</tt>  <tt class="py-line"> </tt>
+<a name="wait_for_task"></a><div id="wait_for_task-def"><a name="L38"></a><tt class="py-lineno"> 38</tt> <a class="py-toggle" href="#" id="wait_for_task-toggle" onclick="return toggle('wait_for_task');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vmware-module.html#wait_for_task">wait_for_task</a><tt class="py-op">(</tt><tt class="py-param">task</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="wait_for_task-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="wait_for_task-expanded"><a name="L39"></a><tt class="py-lineno"> 39</tt>  <tt class="py-line"> </tt>
+<a name="L40"></a><tt class="py-lineno"> 40</tt>  <tt class="py-line">    <tt class="py-keyword">while</tt> <tt class="py-name">True</tt><tt class="py-op">:</tt> </tt>
+<a name="L41"></a><tt class="py-lineno"> 41</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt id="link-3" class="py-name" targets="Module ansible.playbook.task=ansible.playbook.task-module.html"><a title="ansible.playbook.task" class="py-name" href="#" onclick="return doclink('link-3', 'task', 'link-3');">task</a></tt><tt class="py-op">.</tt><tt class="py-name">info</tt><tt class="py-op">.</tt><tt class="py-name">state</tt> <tt class="py-op">==</tt> <tt class="py-name">vim</tt><tt class="py-op">.</tt><tt class="py-name">TaskInfo</tt><tt class="py-op">.</tt><tt class="py-name">State</tt><tt class="py-op">.</tt><tt id="link-4" class="py-name" targets="Function ansible.plugins.test.core.success()=ansible.plugins.test.core-module.html#success"><a title="ansible.plugins.test.core.success" class="py-name" href="#" onclick="return doclink('link-4', 'success', 'link-4');">success</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L42"></a><tt class="py-lineno"> 42</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">True</tt><tt class="py-op">,</tt> <tt id="link-5" class="py-name"><a title="ansible.playbook.task" class="py-name" href="#" onclick="return doclink('link-5', 'task', 'link-3');">task</a></tt><tt class="py-op">.</tt><tt class="py-name">info</tt><tt class="py-op">.</tt><tt id="link-6" class="py-name" targets="Module ansible.executor.process.result=ansible.executor.process.result-module.html,Method ansible.module_utils.service.Service.result()=ansible.module_utils.service.Service-class.html#result"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-6', 'result', 'link-6');">result</a></tt> </tt>
+<a name="L43"></a><tt class="py-lineno"> 43</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt id="link-7" class="py-name"><a title="ansible.playbook.task" class="py-name" href="#" onclick="return doclink('link-7', 'task', 'link-3');">task</a></tt><tt class="py-op">.</tt><tt class="py-name">info</tt><tt class="py-op">.</tt><tt class="py-name">state</tt> <tt class="py-op">==</tt> <tt class="py-name">vim</tt><tt class="py-op">.</tt><tt class="py-name">TaskInfo</tt><tt class="py-op">.</tt><tt class="py-name">State</tt><tt class="py-op">.</tt><tt id="link-8" class="py-name" targets="Module ansible.compat.six.moves.urllib.error=ansible.compat.six.moves.urllib.error-module.html,Method ansible.utils.display.Display.error()=ansible.utils.display.Display-class.html#error"><a title="ansible.compat.six.moves.urllib.error
+ansible.utils.display.Display.error" class="py-name" href="#" onclick="return doclink('link-8', 'error', 'link-8');">error</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L44"></a><tt class="py-lineno"> 44</tt>  <tt class="py-line">            <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L45"></a><tt class="py-lineno"> 45</tt>  <tt class="py-line">                <tt class="py-keyword">raise</tt> <tt id="link-9" class="py-name" targets="Class ansible.module_utils.vmware.TaskError=ansible.module_utils.vmware.TaskError-class.html"><a title="ansible.module_utils.vmware.TaskError" class="py-name" href="#" onclick="return doclink('link-9', 'TaskError', 'link-9');">TaskError</a></tt><tt class="py-op">(</tt><tt id="link-10" class="py-name"><a title="ansible.playbook.task" class="py-name" href="#" onclick="return doclink('link-10', 'task', 'link-3');">task</a></tt><tt class="py-op">.</tt><tt class="py-name">info</tt><tt class="py-op">.</tt><tt id="link-11" class="py-name"><a title="ansible.compat.six.moves.urllib.error
+ansible.utils.display.Display.error" class="py-name" href="#" onclick="return doclink('link-11', 'error', 'link-8');">error</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L46"></a><tt class="py-lineno"> 46</tt>  <tt class="py-line">            <tt class="py-keyword">except</tt> <tt class="py-name">AttributeError</tt><tt class="py-op">:</tt> </tt>
+<a name="L47"></a><tt class="py-lineno"> 47</tt>  <tt class="py-line">                <tt class="py-keyword">raise</tt> <tt id="link-12" class="py-name"><a title="ansible.module_utils.vmware.TaskError" class="py-name" href="#" onclick="return doclink('link-12', 'TaskError', 'link-9');">TaskError</a></tt><tt class="py-op">(</tt><tt class="py-string">"An unknown error has occurred"</tt><tt class="py-op">)</tt> </tt>
+<a name="L48"></a><tt class="py-lineno"> 48</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt id="link-13" class="py-name"><a title="ansible.playbook.task" class="py-name" href="#" onclick="return doclink('link-13', 'task', 'link-3');">task</a></tt><tt class="py-op">.</tt><tt class="py-name">info</tt><tt class="py-op">.</tt><tt class="py-name">state</tt> <tt class="py-op">==</tt> <tt class="py-name">vim</tt><tt class="py-op">.</tt><tt class="py-name">TaskInfo</tt><tt class="py-op">.</tt><tt class="py-name">State</tt><tt class="py-op">.</tt><tt class="py-name">running</tt><tt class="py-op">:</tt> </tt>
+<a name="L49"></a><tt class="py-lineno"> 49</tt>  <tt class="py-line">            <tt class="py-name">time</tt><tt class="py-op">.</tt><tt class="py-name">sleep</tt><tt class="py-op">(</tt><tt class="py-number">15</tt><tt class="py-op">)</tt> </tt>
+<a name="L50"></a><tt class="py-lineno"> 50</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt id="link-14" class="py-name"><a title="ansible.playbook.task" class="py-name" href="#" onclick="return doclink('link-14', 'task', 'link-3');">task</a></tt><tt class="py-op">.</tt><tt class="py-name">info</tt><tt class="py-op">.</tt><tt class="py-name">state</tt> <tt class="py-op">==</tt> <tt class="py-name">vim</tt><tt class="py-op">.</tt><tt class="py-name">TaskInfo</tt><tt class="py-op">.</tt><tt class="py-name">State</tt><tt class="py-op">.</tt><tt class="py-name">queued</tt><tt class="py-op">:</tt> </tt>
+<a name="L51"></a><tt class="py-lineno"> 51</tt>  <tt class="py-line">            <tt class="py-name">time</tt><tt class="py-op">.</tt><tt class="py-name">sleep</tt><tt class="py-op">(</tt><tt class="py-number">15</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L52"></a><tt class="py-lineno"> 52</tt>  <tt class="py-line"> </tt>
+<a name="L53"></a><tt class="py-lineno"> 53</tt>  <tt class="py-line"> </tt>
+<a name="find_dvspg_by_name"></a><div id="find_dvspg_by_name-def"><a name="L54"></a><tt class="py-lineno"> 54</tt> <a class="py-toggle" href="#" id="find_dvspg_by_name-toggle" onclick="return toggle('find_dvspg_by_name');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vmware-module.html#find_dvspg_by_name">find_dvspg_by_name</a><tt class="py-op">(</tt><tt class="py-param">dv_switch</tt><tt class="py-op">,</tt> <tt class="py-param">portgroup_name</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="find_dvspg_by_name-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="find_dvspg_by_name-expanded"><a name="L55"></a><tt class="py-lineno"> 55</tt>  <tt class="py-line"> </tt>
+<a name="L56"></a><tt class="py-lineno"> 56</tt>  <tt class="py-line">    <tt class="py-name">portgroups</tt> <tt class="py-op">=</tt> <tt class="py-name">dv_switch</tt><tt class="py-op">.</tt><tt class="py-name">portgroup</tt> </tt>
+<a name="L57"></a><tt class="py-lineno"> 57</tt>  <tt class="py-line"> </tt>
+<a name="L58"></a><tt class="py-lineno"> 58</tt>  <tt class="py-line">    <tt class="py-keyword">for</tt> <tt class="py-name">pg</tt> <tt class="py-keyword">in</tt> <tt class="py-name">portgroups</tt><tt class="py-op">:</tt> </tt>
+<a name="L59"></a><tt class="py-lineno"> 59</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">pg</tt><tt class="py-op">.</tt><tt class="py-name">name</tt> <tt class="py-op">==</tt> <tt class="py-name">portgroup_name</tt><tt class="py-op">:</tt> </tt>
+<a name="L60"></a><tt class="py-lineno"> 60</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">pg</tt> </tt>
+<a name="L61"></a><tt class="py-lineno"> 61</tt>  <tt class="py-line"> </tt>
+<a name="L62"></a><tt class="py-lineno"> 62</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">None</tt> </tt>
+</div><a name="L63"></a><tt class="py-lineno"> 63</tt>  <tt class="py-line"> </tt>
+<a name="find_entity_child_by_path"></a><div id="find_entity_child_by_path-def"><a name="L64"></a><tt class="py-lineno"> 64</tt> <a class="py-toggle" href="#" id="find_entity_child_by_path-toggle" onclick="return toggle('find_entity_child_by_path');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vmware-module.html#find_entity_child_by_path">find_entity_child_by_path</a><tt class="py-op">(</tt><tt class="py-param">content</tt><tt class="py-op">,</tt> <tt class="py-param">entityRootFolder</tt><tt class="py-op">,</tt> <tt class="py-param">path</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="find_entity_child_by_path-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="find_entity_child_by_path-expanded"><a name="L65"></a><tt class="py-lineno"> 65</tt>  <tt class="py-line"> </tt>
+<a name="L66"></a><tt class="py-lineno"> 66</tt>  <tt class="py-line">    <tt class="py-name">entity</tt> <tt class="py-op">=</tt> <tt class="py-name">entityRootFolder</tt> </tt>
+<a name="L67"></a><tt class="py-lineno"> 67</tt>  <tt class="py-line">    <tt class="py-name">searchIndex</tt> <tt class="py-op">=</tt> <tt class="py-name">content</tt><tt class="py-op">.</tt><tt class="py-name">searchIndex</tt> </tt>
+<a name="L68"></a><tt class="py-lineno"> 68</tt>  <tt class="py-line">    <tt class="py-name">paths</tt> <tt class="py-op">=</tt> <tt id="link-15" class="py-name" targets="Variable ansible.utils.display.path=ansible.utils.display-module.html#path,Module ansible.utils.path=ansible.utils.path-module.html"><a title="ansible.utils.display.path
+ansible.utils.path" class="py-name" href="#" onclick="return doclink('link-15', 'path', 'link-15');">path</a></tt><tt class="py-op">.</tt><tt class="py-name">split</tt><tt class="py-op">(</tt><tt class="py-string">"/"</tt><tt class="py-op">)</tt> </tt>
+<a name="L69"></a><tt class="py-lineno"> 69</tt>  <tt class="py-line">    <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L70"></a><tt class="py-lineno"> 70</tt>  <tt class="py-line">        <tt class="py-keyword">for</tt> <tt id="link-16" class="py-name"><a title="ansible.utils.display.path
+ansible.utils.path" class="py-name" href="#" onclick="return doclink('link-16', 'path', 'link-15');">path</a></tt> <tt class="py-keyword">in</tt> <tt class="py-name">paths</tt><tt class="py-op">:</tt> </tt>
+<a name="L71"></a><tt class="py-lineno"> 71</tt>  <tt class="py-line">            <tt class="py-name">entity</tt> <tt class="py-op">=</tt> <tt class="py-name">searchIndex</tt><tt class="py-op">.</tt><tt class="py-name">FindChild</tt> <tt class="py-op">(</tt><tt class="py-name">entity</tt><tt class="py-op">,</tt> <tt id="link-17" class="py-name"><a title="ansible.utils.display.path
+ansible.utils.path" class="py-name" href="#" onclick="return doclink('link-17', 'path', 'link-15');">path</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L72"></a><tt class="py-lineno"> 72</tt>  <tt class="py-line"> </tt>
+<a name="L73"></a><tt class="py-lineno"> 73</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">entity</tt><tt class="py-op">.</tt><tt class="py-name">name</tt> <tt class="py-op">==</tt> <tt class="py-name">paths</tt><tt class="py-op">[</tt><tt class="py-op">-</tt><tt class="py-number">1</tt><tt class="py-op">]</tt><tt class="py-op">:</tt> </tt>
+<a name="L74"></a><tt class="py-lineno"> 74</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">entity</tt> </tt>
+<a name="L75"></a><tt class="py-lineno"> 75</tt>  <tt class="py-line">    <tt class="py-keyword">except</tt><tt class="py-op">:</tt> </tt>
+<a name="L76"></a><tt class="py-lineno"> 76</tt>  <tt class="py-line">        <tt class="py-keyword">pass</tt> </tt>
+<a name="L77"></a><tt class="py-lineno"> 77</tt>  <tt class="py-line"> </tt>
+<a name="L78"></a><tt class="py-lineno"> 78</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">None</tt> </tt>
+</div><a name="L79"></a><tt class="py-lineno"> 79</tt>  <tt class="py-line"> </tt>
+<a name="L80"></a><tt class="py-lineno"> 80</tt>  <tt class="py-line"> </tt>
+<a name="L81"></a><tt class="py-lineno"> 81</tt>  <tt class="py-line"><tt class="py-comment"># Maintain for legacy, or remove with 2.1 ?</tt> </tt>
+<a name="L82"></a><tt class="py-lineno"> 82</tt>  <tt class="py-line"><tt class="py-comment"># Should be replaced with find_cluster_by_name</tt> </tt>
+<a name="find_cluster_by_name_datacenter"></a><div id="find_cluster_by_name_datacenter-def"><a name="L83"></a><tt class="py-lineno"> 83</tt> <a class="py-toggle" href="#" id="find_cluster_by_name_datacenter-toggle" onclick="return toggle('find_cluster_by_name_datacenter');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vmware-module.html#find_cluster_by_name_datacenter">find_cluster_by_name_datacenter</a><tt class="py-op">(</tt><tt class="py-param">datacenter</tt><tt class="py-op">,</tt> <tt class="py-param">cluster_name</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="find_cluster_by_name_datacenter-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="find_cluster_by_name_datacenter-expanded"><a name="L84"></a><tt class="py-lineno"> 84</tt>  <tt class="py-line"> </tt>
+<a name="L85"></a><tt class="py-lineno"> 85</tt>  <tt class="py-line">    <tt class="py-name">host_folder</tt> <tt class="py-op">=</tt> <tt class="py-name">datacenter</tt><tt class="py-op">.</tt><tt class="py-name">hostFolder</tt> </tt>
+<a name="L86"></a><tt class="py-lineno"> 86</tt>  <tt class="py-line">    <tt class="py-keyword">for</tt> <tt class="py-name">folder</tt> <tt class="py-keyword">in</tt> <tt class="py-name">host_folder</tt><tt class="py-op">.</tt><tt class="py-name">childEntity</tt><tt class="py-op">:</tt> </tt>
+<a name="L87"></a><tt class="py-lineno"> 87</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">folder</tt><tt class="py-op">.</tt><tt class="py-name">name</tt> <tt class="py-op">==</tt> <tt class="py-name">cluster_name</tt><tt class="py-op">:</tt> </tt>
+<a name="L88"></a><tt class="py-lineno"> 88</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">folder</tt> </tt>
+<a name="L89"></a><tt class="py-lineno"> 89</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">None</tt> </tt>
+</div><a name="L90"></a><tt class="py-lineno"> 90</tt>  <tt class="py-line"> </tt>
+<a name="find_cluster_by_name"></a><div id="find_cluster_by_name-def"><a name="L91"></a><tt class="py-lineno"> 91</tt> <a class="py-toggle" href="#" id="find_cluster_by_name-toggle" onclick="return toggle('find_cluster_by_name');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vmware-module.html#find_cluster_by_name">find_cluster_by_name</a><tt class="py-op">(</tt><tt class="py-param">content</tt><tt class="py-op">,</tt> <tt class="py-param">cluster_name</tt><tt class="py-op">,</tt> <tt class="py-param">datacenter</tt><tt class="py-op">=</tt><tt class="py-name">None</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="find_cluster_by_name-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="find_cluster_by_name-expanded"><a name="L92"></a><tt class="py-lineno"> 92</tt>  <tt class="py-line"> </tt>
+<a name="L93"></a><tt class="py-lineno"> 93</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">datacenter</tt><tt class="py-op">:</tt> </tt>
+<a name="L94"></a><tt class="py-lineno"> 94</tt>  <tt class="py-line">        <tt class="py-name">folder</tt> <tt class="py-op">=</tt> <tt class="py-name">datacenter</tt><tt class="py-op">.</tt><tt class="py-name">hostFolder</tt> </tt>
+<a name="L95"></a><tt class="py-lineno"> 95</tt>  <tt class="py-line">    <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L96"></a><tt class="py-lineno"> 96</tt>  <tt class="py-line">        <tt class="py-name">folder</tt> <tt class="py-op">=</tt> <tt class="py-name">content</tt><tt class="py-op">.</tt><tt class="py-name">rootFolder</tt> </tt>
+<a name="L97"></a><tt class="py-lineno"> 97</tt>  <tt class="py-line"> </tt>
+<a name="L98"></a><tt class="py-lineno"> 98</tt>  <tt class="py-line">    <tt class="py-name">clusters</tt> <tt class="py-op">=</tt> <tt id="link-18" class="py-name" targets="Function ansible.module_utils.vmware.get_all_objs()=ansible.module_utils.vmware-module.html#get_all_objs"><a title="ansible.module_utils.vmware.get_all_objs" class="py-name" href="#" onclick="return doclink('link-18', 'get_all_objs', 'link-18');">get_all_objs</a></tt><tt class="py-op">(</tt><tt class="py-name">content</tt><tt class="py-op">,</tt> <tt class="py-op">[</tt><tt class="py-name">vim</tt><tt class="py-op">.</tt><tt class="py-name">ClusterComputeResource</tt><tt class="py-op">]</tt><tt class="py-op">,</tt> <tt class="py-name">folder</tt><tt class="py-op">)</tt> </tt>
+<a name="L99"></a><tt class="py-lineno"> 99</tt>  <tt class="py-line">    <tt class="py-keyword">for</tt> <tt class="py-name">cluster</tt> <tt class="py-keyword">in</tt> <tt class="py-name">clusters</tt><tt class="py-op">:</tt> </tt>
+<a name="L100"></a><tt class="py-lineno">100</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">cluster</tt><tt class="py-op">.</tt><tt class="py-name">name</tt> <tt class="py-op">==</tt> <tt class="py-name">cluster_name</tt><tt class="py-op">:</tt> </tt>
+<a name="L101"></a><tt class="py-lineno">101</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">cluster</tt> </tt>
+<a name="L102"></a><tt class="py-lineno">102</tt>  <tt class="py-line"> </tt>
+<a name="L103"></a><tt class="py-lineno">103</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">None</tt> </tt>
+</div><a name="L104"></a><tt class="py-lineno">104</tt>  <tt class="py-line"> </tt>
+<a name="find_datacenter_by_name"></a><div id="find_datacenter_by_name-def"><a name="L105"></a><tt class="py-lineno">105</tt> <a class="py-toggle" href="#" id="find_datacenter_by_name-toggle" onclick="return toggle('find_datacenter_by_name');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vmware-module.html#find_datacenter_by_name">find_datacenter_by_name</a><tt class="py-op">(</tt><tt class="py-param">content</tt><tt class="py-op">,</tt> <tt class="py-param">datacenter_name</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="find_datacenter_by_name-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="find_datacenter_by_name-expanded"><a name="L106"></a><tt class="py-lineno">106</tt>  <tt class="py-line"> </tt>
+<a name="L107"></a><tt class="py-lineno">107</tt>  <tt class="py-line">    <tt class="py-name">datacenters</tt> <tt class="py-op">=</tt> <tt id="link-19" class="py-name"><a title="ansible.module_utils.vmware.get_all_objs" class="py-name" href="#" onclick="return doclink('link-19', 'get_all_objs', 'link-18');">get_all_objs</a></tt><tt class="py-op">(</tt><tt class="py-name">content</tt><tt class="py-op">,</tt> <tt class="py-op">[</tt><tt class="py-name">vim</tt><tt class="py-op">.</tt><tt class="py-name">Datacenter</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L108"></a><tt class="py-lineno">108</tt>  <tt class="py-line">    <tt class="py-keyword">for</tt> <tt class="py-name">dc</tt> <tt class="py-keyword">in</tt> <tt class="py-name">datacenters</tt><tt class="py-op">:</tt> </tt>
+<a name="L109"></a><tt class="py-lineno">109</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">dc</tt><tt class="py-op">.</tt><tt class="py-name">name</tt> <tt class="py-op">==</tt> <tt class="py-name">datacenter_name</tt><tt class="py-op">:</tt> </tt>
+<a name="L110"></a><tt class="py-lineno">110</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">dc</tt> </tt>
+<a name="L111"></a><tt class="py-lineno">111</tt>  <tt class="py-line"> </tt>
+<a name="L112"></a><tt class="py-lineno">112</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">None</tt> </tt>
+</div><a name="L113"></a><tt class="py-lineno">113</tt>  <tt class="py-line"> </tt>
+<a name="L114"></a><tt class="py-lineno">114</tt>  <tt class="py-line"> </tt>
+<a name="find_dvs_by_name"></a><div id="find_dvs_by_name-def"><a name="L115"></a><tt class="py-lineno">115</tt> <a class="py-toggle" href="#" id="find_dvs_by_name-toggle" onclick="return toggle('find_dvs_by_name');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vmware-module.html#find_dvs_by_name">find_dvs_by_name</a><tt class="py-op">(</tt><tt class="py-param">content</tt><tt class="py-op">,</tt> <tt class="py-param">switch_name</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="find_dvs_by_name-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="find_dvs_by_name-expanded"><a name="L116"></a><tt class="py-lineno">116</tt>  <tt class="py-line"> </tt>
+<a name="L117"></a><tt class="py-lineno">117</tt>  <tt class="py-line">    <tt class="py-name">vmware_distributed_switches</tt> <tt class="py-op">=</tt> <tt id="link-20" class="py-name"><a title="ansible.module_utils.vmware.get_all_objs" class="py-name" href="#" onclick="return doclink('link-20', 'get_all_objs', 'link-18');">get_all_objs</a></tt><tt class="py-op">(</tt><tt class="py-name">content</tt><tt class="py-op">,</tt> <tt class="py-op">[</tt><tt class="py-name">vim</tt><tt class="py-op">.</tt><tt class="py-name">dvs</tt><tt class="py-op">.</tt><tt class="py-name">VmwareDistributedVirtualSwitch</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L118"></a><tt class="py-lineno">118</tt>  <tt class="py-line">    <tt class="py-keyword">for</tt> <tt class="py-name">dvs</tt> <tt class="py-keyword">in</tt> <tt class="py-name">vmware_distributed_switches</tt><tt class="py-op">:</tt> </tt>
+<a name="L119"></a><tt class="py-lineno">119</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">dvs</tt><tt class="py-op">.</tt><tt class="py-name">name</tt> <tt class="py-op">==</tt> <tt class="py-name">switch_name</tt><tt class="py-op">:</tt> </tt>
+<a name="L120"></a><tt class="py-lineno">120</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">dvs</tt> </tt>
+<a name="L121"></a><tt class="py-lineno">121</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">None</tt> </tt>
+</div><a name="L122"></a><tt class="py-lineno">122</tt>  <tt class="py-line"> </tt>
+<a name="L123"></a><tt class="py-lineno">123</tt>  <tt class="py-line"> </tt>
+<a name="find_hostsystem_by_name"></a><div id="find_hostsystem_by_name-def"><a name="L124"></a><tt class="py-lineno">124</tt> <a class="py-toggle" href="#" id="find_hostsystem_by_name-toggle" onclick="return toggle('find_hostsystem_by_name');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vmware-module.html#find_hostsystem_by_name">find_hostsystem_by_name</a><tt class="py-op">(</tt><tt class="py-param">content</tt><tt class="py-op">,</tt> <tt class="py-param">hostname</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="find_hostsystem_by_name-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="find_hostsystem_by_name-expanded"><a name="L125"></a><tt class="py-lineno">125</tt>  <tt class="py-line"> </tt>
+<a name="L126"></a><tt class="py-lineno">126</tt>  <tt class="py-line">    <tt class="py-name">host_system</tt> <tt class="py-op">=</tt> <tt id="link-21" class="py-name"><a title="ansible.module_utils.vmware.get_all_objs" class="py-name" href="#" onclick="return doclink('link-21', 'get_all_objs', 'link-18');">get_all_objs</a></tt><tt class="py-op">(</tt><tt class="py-name">content</tt><tt class="py-op">,</tt> <tt class="py-op">[</tt><tt class="py-name">vim</tt><tt class="py-op">.</tt><tt class="py-name">HostSystem</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L127"></a><tt class="py-lineno">127</tt>  <tt class="py-line">    <tt class="py-keyword">for</tt> <tt id="link-22" class="py-name" targets="Module ansible.inventory.host=ansible.inventory.host-module.html"><a title="ansible.inventory.host" class="py-name" href="#" onclick="return doclink('link-22', 'host', 'link-22');">host</a></tt> <tt class="py-keyword">in</tt> <tt class="py-name">host_system</tt><tt class="py-op">:</tt> </tt>
+<a name="L128"></a><tt class="py-lineno">128</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt id="link-23" class="py-name"><a title="ansible.inventory.host" class="py-name" href="#" onclick="return doclink('link-23', 'host', 'link-22');">host</a></tt><tt class="py-op">.</tt><tt class="py-name">name</tt> <tt class="py-op">==</tt> <tt class="py-name">hostname</tt><tt class="py-op">:</tt> </tt>
+<a name="L129"></a><tt class="py-lineno">129</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt id="link-24" class="py-name"><a title="ansible.inventory.host" class="py-name" href="#" onclick="return doclink('link-24', 'host', 'link-22');">host</a></tt> </tt>
+<a name="L130"></a><tt class="py-lineno">130</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">None</tt> </tt>
+</div><a name="L131"></a><tt class="py-lineno">131</tt>  <tt class="py-line"> </tt>
+<a name="find_vm_by_id"></a><div id="find_vm_by_id-def"><a name="L132"></a><tt class="py-lineno">132</tt> <a class="py-toggle" href="#" id="find_vm_by_id-toggle" onclick="return toggle('find_vm_by_id');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vmware-module.html#find_vm_by_id">find_vm_by_id</a><tt class="py-op">(</tt><tt class="py-param">content</tt><tt class="py-op">,</tt> <tt class="py-param">vm_id</tt><tt class="py-op">,</tt> <tt class="py-param">vm_id_type</tt><tt class="py-op">=</tt><tt class="py-string">"vm_name"</tt><tt class="py-op">,</tt> <tt class="py-param">datacenter</tt><tt class="py-op">=</tt><tt class="py-name">None</tt><tt class="py-op">,</tt> <tt class="py-param">cluster</tt><tt class="py-op">=</tt><tt class="py-name">None</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="find_vm_by_id-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="find_vm_by_id-expanded"><a name="L133"></a><tt class="py-lineno">133</tt>  <tt class="py-line">    <tt class="py-docstring">""" UUID is unique to a VM, every other id returns the first match. """</tt> </tt>
+<a name="L134"></a><tt class="py-lineno">134</tt>  <tt class="py-line">    <tt class="py-name">si</tt> <tt class="py-op">=</tt> <tt class="py-name">content</tt><tt class="py-op">.</tt><tt class="py-name">searchIndex</tt> </tt>
+<a name="L135"></a><tt class="py-lineno">135</tt>  <tt class="py-line">    <tt class="py-name">vm</tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L136"></a><tt class="py-lineno">136</tt>  <tt class="py-line"> </tt>
+<a name="L137"></a><tt class="py-lineno">137</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">vm_id_type</tt> <tt class="py-op">==</tt> <tt class="py-string">'dns_name'</tt><tt class="py-op">:</tt> </tt>
+<a name="L138"></a><tt class="py-lineno">138</tt>  <tt class="py-line">        <tt class="py-name">vm</tt> <tt class="py-op">=</tt> <tt class="py-name">si</tt><tt class="py-op">.</tt><tt class="py-name">FindByDnsName</tt><tt class="py-op">(</tt><tt class="py-name">datacenter</tt><tt class="py-op">=</tt><tt class="py-name">datacenter</tt><tt class="py-op">,</tt> <tt class="py-name">dnsName</tt><tt class="py-op">=</tt><tt class="py-name">vm_id</tt><tt class="py-op">,</tt> <tt class="py-name">vmSearch</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">)</tt> </tt>
+<a name="L139"></a><tt class="py-lineno">139</tt>  <tt class="py-line">    <tt class="py-keyword">elif</tt> <tt class="py-name">vm_id_type</tt> <tt class="py-op">==</tt> <tt class="py-string">'inventory_path'</tt><tt class="py-op">:</tt> </tt>
+<a name="L140"></a><tt class="py-lineno">140</tt>  <tt class="py-line">        <tt class="py-name">vm</tt> <tt class="py-op">=</tt> <tt class="py-name">si</tt><tt class="py-op">.</tt><tt class="py-name">FindByInventoryPath</tt><tt class="py-op">(</tt><tt class="py-name">inventoryPath</tt><tt class="py-op">=</tt><tt class="py-name">vm_id</tt><tt class="py-op">)</tt> </tt>
+<a name="L141"></a><tt class="py-lineno">141</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt id="link-25" class="py-name" targets="Class type=type-class.html"><a title="type" class="py-name" href="#" onclick="return doclink('link-25', 'type', 'link-25');">type</a></tt><tt class="py-op">(</tt><tt class="py-name">vm</tt><tt class="py-op">)</tt> <tt class="py-op">!=</tt> <tt id="link-26" class="py-name"><a title="type" class="py-name" href="#" onclick="return doclink('link-26', 'type', 'link-25');">type</a></tt><tt class="py-op">(</tt><tt class="py-name">vim</tt><tt class="py-op">.</tt><tt class="py-name">VirtualMachine</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L142"></a><tt class="py-lineno">142</tt>  <tt class="py-line">            <tt class="py-name">vm</tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L143"></a><tt class="py-lineno">143</tt>  <tt class="py-line">    <tt class="py-keyword">elif</tt> <tt class="py-name">vm_id_type</tt> <tt class="py-op">==</tt> <tt class="py-string">'uuid'</tt><tt class="py-op">:</tt> </tt>
+<a name="L144"></a><tt class="py-lineno">144</tt>  <tt class="py-line">        <tt class="py-name">vm</tt> <tt class="py-op">=</tt> <tt class="py-name">si</tt><tt class="py-op">.</tt><tt class="py-name">FindByUuid</tt><tt class="py-op">(</tt><tt class="py-name">datacenter</tt><tt class="py-op">=</tt><tt class="py-name">datacenter</tt><tt class="py-op">,</tt> <tt class="py-name">instanceUuid</tt><tt class="py-op">=</tt><tt class="py-name">vm_id</tt><tt class="py-op">,</tt> <tt class="py-name">vmSearch</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">)</tt> </tt>
+<a name="L145"></a><tt class="py-lineno">145</tt>  <tt class="py-line">    <tt class="py-keyword">elif</tt> <tt class="py-name">vm_id_type</tt> <tt class="py-op">==</tt> <tt class="py-string">'ip'</tt><tt class="py-op">:</tt> </tt>
+<a name="L146"></a><tt class="py-lineno">146</tt>  <tt class="py-line">        <tt class="py-name">vm</tt> <tt class="py-op">=</tt> <tt class="py-name">si</tt><tt class="py-op">.</tt><tt class="py-name">FindByIp</tt><tt class="py-op">(</tt><tt class="py-name">datacenter</tt><tt class="py-op">=</tt><tt class="py-name">datacenter</tt><tt class="py-op">,</tt> <tt class="py-name">ip</tt><tt class="py-op">=</tt><tt class="py-name">vm_id</tt><tt class="py-op">,</tt> <tt class="py-name">vmSearch</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">)</tt> </tt>
+<a name="L147"></a><tt class="py-lineno">147</tt>  <tt class="py-line">    <tt class="py-keyword">elif</tt> <tt class="py-name">vm_id_type</tt> <tt class="py-op">==</tt> <tt class="py-string">'vm_name'</tt><tt class="py-op">:</tt> </tt>
+<a name="L148"></a><tt class="py-lineno">148</tt>  <tt class="py-line">        <tt class="py-name">folder</tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L149"></a><tt class="py-lineno">149</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">cluster</tt><tt class="py-op">:</tt> </tt>
+<a name="L150"></a><tt class="py-lineno">150</tt>  <tt class="py-line">            <tt class="py-name">folder</tt> <tt class="py-op">=</tt> <tt class="py-name">cluster</tt> </tt>
+<a name="L151"></a><tt class="py-lineno">151</tt>  <tt class="py-line">        <tt class="py-keyword">elif</tt> <tt class="py-name">datacenter</tt><tt class="py-op">:</tt> </tt>
+<a name="L152"></a><tt class="py-lineno">152</tt>  <tt class="py-line">            <tt class="py-name">folder</tt> <tt class="py-op">=</tt> <tt class="py-name">datacenter</tt><tt class="py-op">.</tt><tt class="py-name">hostFolder</tt> </tt>
+<a name="L153"></a><tt class="py-lineno">153</tt>  <tt class="py-line">        <tt class="py-name">vm</tt> <tt class="py-op">=</tt> <tt id="link-27" class="py-name" targets="Function ansible.module_utils.vmware.find_vm_by_name()=ansible.module_utils.vmware-module.html#find_vm_by_name"><a title="ansible.module_utils.vmware.find_vm_by_name" class="py-name" href="#" onclick="return doclink('link-27', 'find_vm_by_name', 'link-27');">find_vm_by_name</a></tt><tt class="py-op">(</tt><tt class="py-name">content</tt><tt class="py-op">,</tt> <tt class="py-name">vm_id</tt><tt class="py-op">,</tt> <tt class="py-name">folder</tt><tt class="py-op">)</tt> </tt>
+<a name="L154"></a><tt class="py-lineno">154</tt>  <tt class="py-line"> </tt>
+<a name="L155"></a><tt class="py-lineno">155</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">vm</tt> </tt>
+</div><a name="L156"></a><tt class="py-lineno">156</tt>  <tt class="py-line"> </tt>
+<a name="L157"></a><tt class="py-lineno">157</tt>  <tt class="py-line"> </tt>
+<a name="find_vm_by_name"></a><div id="find_vm_by_name-def"><a name="L158"></a><tt class="py-lineno">158</tt> <a class="py-toggle" href="#" id="find_vm_by_name-toggle" onclick="return toggle('find_vm_by_name');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vmware-module.html#find_vm_by_name">find_vm_by_name</a><tt class="py-op">(</tt><tt class="py-param">content</tt><tt class="py-op">,</tt> <tt class="py-param">vm_name</tt><tt class="py-op">,</tt> <tt class="py-param">folder</tt><tt class="py-op">=</tt><tt class="py-name">None</tt><tt class="py-op">,</tt> <tt class="py-param">recurse</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="find_vm_by_name-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="find_vm_by_name-expanded"><a name="L159"></a><tt class="py-lineno">159</tt>  <tt class="py-line"> </tt>
+<a name="L160"></a><tt class="py-lineno">160</tt>  <tt class="py-line">    <tt class="py-name">vms</tt> <tt class="py-op">=</tt> <tt id="link-28" class="py-name"><a title="ansible.module_utils.vmware.get_all_objs" class="py-name" href="#" onclick="return doclink('link-28', 'get_all_objs', 'link-18');">get_all_objs</a></tt><tt class="py-op">(</tt><tt class="py-name">content</tt><tt class="py-op">,</tt> <tt class="py-op">[</tt><tt class="py-name">vim</tt><tt class="py-op">.</tt><tt class="py-name">VirtualMachine</tt><tt class="py-op">]</tt><tt class="py-op">,</tt> <tt class="py-name">folder</tt><tt class="py-op">,</tt> <tt class="py-name">recurse</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">)</tt> </tt>
+<a name="L161"></a><tt class="py-lineno">161</tt>  <tt class="py-line">    <tt class="py-keyword">for</tt> <tt class="py-name">vm</tt> <tt class="py-keyword">in</tt> <tt class="py-name">vms</tt><tt class="py-op">:</tt> </tt>
+<a name="L162"></a><tt class="py-lineno">162</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">vm</tt><tt class="py-op">.</tt><tt class="py-name">name</tt> <tt class="py-op">==</tt> <tt class="py-name">vm_name</tt><tt class="py-op">:</tt> </tt>
+<a name="L163"></a><tt class="py-lineno">163</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">vm</tt> </tt>
+<a name="L164"></a><tt class="py-lineno">164</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">None</tt> </tt>
+</div><a name="L165"></a><tt class="py-lineno">165</tt>  <tt class="py-line"> </tt>
+<a name="L166"></a><tt class="py-lineno">166</tt>  <tt class="py-line"> </tt>
+<a name="find_host_portgroup_by_name"></a><div id="find_host_portgroup_by_name-def"><a name="L167"></a><tt class="py-lineno">167</tt> <a class="py-toggle" href="#" id="find_host_portgroup_by_name-toggle" onclick="return toggle('find_host_portgroup_by_name');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vmware-module.html#find_host_portgroup_by_name">find_host_portgroup_by_name</a><tt class="py-op">(</tt><tt class="py-param">host</tt><tt class="py-op">,</tt> <tt class="py-param">portgroup_name</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="find_host_portgroup_by_name-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="find_host_portgroup_by_name-expanded"><a name="L168"></a><tt class="py-lineno">168</tt>  <tt class="py-line"> </tt>
+<a name="L169"></a><tt class="py-lineno">169</tt>  <tt class="py-line">    <tt class="py-keyword">for</tt> <tt class="py-name">portgroup</tt> <tt class="py-keyword">in</tt> <tt id="link-29" class="py-name"><a title="ansible.inventory.host" class="py-name" href="#" onclick="return doclink('link-29', 'host', 'link-22');">host</a></tt><tt class="py-op">.</tt><tt id="link-30" class="py-name" targets="Package ansible.config=ansible.config-module.html,Variable ansible.module_utils.asa.NetworkModule.config=ansible.module_utils.asa.NetworkModule-class.html#config,Variable ansible.module_utils.network.NetworkModule.config=ansible.module_utils.network.NetworkModule-class.html#config,Variable ansible.module_utils.nxos.NetworkModule.config=ansible.module_utils.nxos.NetworkModule-class.html#config,Variable ansible.module_utils.openswitch.NetworkModule.config=ansible.module_utils.openswitch.NetworkModule-class.html#config"><a title="ansible.config
+ansible.module_utils.asa.NetworkModule.config
+ansible.module_utils.network.NetworkModule.config
+ansible.module_utils.nxos.NetworkModule.config
+ansible.module_utils.openswitch.NetworkModule.config" class="py-name" href="#" onclick="return doclink('link-30', 'config', 'link-30');">config</a></tt><tt class="py-op">.</tt><tt id="link-31" class="py-name" targets="Module ansible.module_utils.network=ansible.module_utils.network-module.html"><a title="ansible.module_utils.network" class="py-name" href="#" onclick="return doclink('link-31', 'network', 'link-31');">network</a></tt><tt class="py-op">.</tt><tt class="py-name">portgroup</tt><tt class="py-op">:</tt> </tt>
+<a name="L170"></a><tt class="py-lineno">170</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">portgroup</tt><tt class="py-op">.</tt><tt id="link-32" class="py-name" targets="Variable ansible.galaxy.role.GalaxyRole.spec=ansible.galaxy.role.GalaxyRole-class.html#spec"><a title="ansible.galaxy.role.GalaxyRole.spec" class="py-name" href="#" onclick="return doclink('link-32', 'spec', 'link-32');">spec</a></tt><tt class="py-op">.</tt><tt class="py-name">name</tt> <tt class="py-op">==</tt> <tt class="py-name">portgroup_name</tt><tt class="py-op">:</tt> </tt>
+<a name="L171"></a><tt class="py-lineno">171</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">portgroup</tt> </tt>
+<a name="L172"></a><tt class="py-lineno">172</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">None</tt> </tt>
+</div><a name="L173"></a><tt class="py-lineno">173</tt>  <tt class="py-line"> </tt>
+<a name="L174"></a><tt class="py-lineno">174</tt>  <tt class="py-line"> </tt>
+<a name="vmware_argument_spec"></a><div id="vmware_argument_spec-def"><a name="L175"></a><tt class="py-lineno">175</tt> <a class="py-toggle" href="#" id="vmware_argument_spec-toggle" onclick="return toggle('vmware_argument_spec');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vmware-module.html#vmware_argument_spec">vmware_argument_spec</a><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="vmware_argument_spec-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="vmware_argument_spec-expanded"><a name="L176"></a><tt class="py-lineno">176</tt>  <tt class="py-line"> </tt>
+<a name="L177"></a><tt class="py-lineno">177</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt id="link-33" class="py-name" targets="Module ansible.plugins.lookup.dict=ansible.plugins.lookup.dict-module.html"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-33', 'dict', 'link-33');">dict</a></tt><tt class="py-op">(</tt> </tt>
+<a name="L178"></a><tt class="py-lineno">178</tt>  <tt class="py-line">        <tt class="py-name">hostname</tt><tt class="py-op">=</tt><tt id="link-34" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-34', 'dict', 'link-33');">dict</a></tt><tt class="py-op">(</tt><tt id="link-35" class="py-name"><a title="type" class="py-name" href="#" onclick="return doclink('link-35', 'type', 'link-25');">type</a></tt><tt class="py-op">=</tt><tt class="py-string">'str'</tt><tt class="py-op">,</tt> <tt class="py-name">required</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L179"></a><tt class="py-lineno">179</tt>  <tt class="py-line">        <tt class="py-name">username</tt><tt class="py-op">=</tt><tt id="link-36" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-36', 'dict', 'link-33');">dict</a></tt><tt class="py-op">(</tt><tt id="link-37" class="py-name"><a title="type" class="py-name" href="#" onclick="return doclink('link-37', 'type', 'link-25');">type</a></tt><tt class="py-op">=</tt><tt class="py-string">'str'</tt><tt class="py-op">,</tt> <tt class="py-name">aliases</tt><tt class="py-op">=</tt><tt class="py-op">[</tt><tt class="py-string">'user'</tt><tt class="py-op">,</tt> <tt class="py-string">'admin'</tt><tt class="py-op">]</tt><tt class="py-op">,</tt> <tt class="py-name">required</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L180"></a><tt class="py-lineno">180</tt>  <tt class="py-line">        <tt id="link-38" class="py-name" targets="Module ansible.plugins.lookup.password=ansible.plugins.lookup.password-module.html"><a title="ansible.plugins.lookup.password" class="py-name" href="#" onclick="return doclink('link-38', 'password', 'link-38');">password</a></tt><tt class="py-op">=</tt><tt id="link-39" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-39', 'dict', 'link-33');">dict</a></tt><tt class="py-op">(</tt><tt id="link-40" class="py-name"><a title="type" class="py-name" href="#" onclick="return doclink('link-40', 'type', 'link-25');">type</a></tt><tt class="py-op">=</tt><tt class="py-string">'str'</tt><tt class="py-op">,</tt> <tt class="py-name">aliases</tt><tt class="py-op">=</tt><tt class="py-op">[</tt><tt class="py-string">'pass'</tt><tt class="py-op">,</tt> <tt class="py-string">'pwd'</tt><tt class="py-op">]</tt><tt class="py-op">,</tt> <tt class="py-name">required</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">,</tt> <tt class="py-name">no_log</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L181"></a><tt class="py-lineno">181</tt>  <tt class="py-line">        <tt id="link-41" class="py-name" targets="Variable ansible.galaxy.api.GalaxyAPI.validate_certs=ansible.galaxy.api.GalaxyAPI-class.html#validate_certs"><a title="ansible.galaxy.api.GalaxyAPI.validate_certs" class="py-name" href="#" onclick="return doclink('link-41', 'validate_certs', 'link-41');">validate_certs</a></tt><tt class="py-op">=</tt><tt id="link-42" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-42', 'dict', 'link-33');">dict</a></tt><tt class="py-op">(</tt><tt id="link-43" class="py-name"><a title="type" class="py-name" href="#" onclick="return doclink('link-43', 'type', 'link-25');">type</a></tt><tt class="py-op">=</tt><tt class="py-string">'bool'</tt><tt class="py-op">,</tt> <tt class="py-name">required</tt><tt class="py-op">=</tt><tt class="py-name">False</tt><tt class="py-op">,</tt> <tt id="link-44" class="py-name" targets="Method ansible.cli.console.ConsoleCLI.default()=ansible.cli.console.ConsoleCLI-class.html#default,Module ansible.plugins.callback.default=ansible.plugins.callback.default-module.html,Method ansible.plugins.filter.core.AnsibleJSONEncoder.default()=ansible.plugins.filter.core.AnsibleJSONEncoder-class.html#default,Method ansible.plugins.strategy.debug.Debugger.default()=ansible.plugins.strategy.debug.Debugger-class.html#default"><a title="ansible.cli.console.ConsoleCLI.default
+ansible.plugins.callback.default
+ansible.plugins.filter.core.AnsibleJSONEncoder.default
+ansible.plugins.strategy.debug.Debugger.default" class="py-name" href="#" onclick="return doclink('link-44', 'default', 'link-44');">default</a></tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L182"></a><tt class="py-lineno">182</tt>  <tt class="py-line">    <tt class="py-op">)</tt> </tt>
+</div><a name="L183"></a><tt class="py-lineno">183</tt>  <tt class="py-line"> </tt>
+<a name="L184"></a><tt class="py-lineno">184</tt>  <tt class="py-line"> </tt>
+<a name="connect_to_api"></a><div id="connect_to_api-def"><a name="L185"></a><tt class="py-lineno">185</tt> <a class="py-toggle" href="#" id="connect_to_api-toggle" onclick="return toggle('connect_to_api');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vmware-module.html#connect_to_api">connect_to_api</a><tt class="py-op">(</tt><tt class="py-param">module</tt><tt class="py-op">,</tt> <tt class="py-param">disconnect_atexit</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="connect_to_api-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="connect_to_api-expanded"><a name="L186"></a><tt class="py-lineno">186</tt>  <tt class="py-line"> </tt>
+<a name="L187"></a><tt class="py-lineno">187</tt>  <tt class="py-line">    <tt class="py-name">hostname</tt> <tt class="py-op">=</tt> <tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'hostname'</tt><tt class="py-op">]</tt> </tt>
+<a name="L188"></a><tt class="py-lineno">188</tt>  <tt class="py-line">    <tt class="py-name">username</tt> <tt class="py-op">=</tt> <tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'username'</tt><tt class="py-op">]</tt> </tt>
+<a name="L189"></a><tt class="py-lineno">189</tt>  <tt class="py-line">    <tt id="link-45" class="py-name"><a title="ansible.plugins.lookup.password" class="py-name" href="#" onclick="return doclink('link-45', 'password', 'link-38');">password</a></tt> <tt class="py-op">=</tt> <tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'password'</tt><tt class="py-op">]</tt> </tt>
+<a name="L190"></a><tt class="py-lineno">190</tt>  <tt class="py-line">    <tt id="link-46" class="py-name"><a title="ansible.galaxy.api.GalaxyAPI.validate_certs" class="py-name" href="#" onclick="return doclink('link-46', 'validate_certs', 'link-41');">validate_certs</a></tt> <tt class="py-op">=</tt> <tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'validate_certs'</tt><tt class="py-op">]</tt> </tt>
+<a name="L191"></a><tt class="py-lineno">191</tt>  <tt class="py-line"> </tt>
+<a name="L192"></a><tt class="py-lineno">192</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt id="link-47" class="py-name"><a title="ansible.galaxy.api.GalaxyAPI.validate_certs" class="py-name" href="#" onclick="return doclink('link-47', 'validate_certs', 'link-41');">validate_certs</a></tt> <tt class="py-keyword">and</tt> <tt class="py-keyword">not</tt> <tt class="py-name">hasattr</tt><tt class="py-op">(</tt><tt class="py-name">ssl</tt><tt class="py-op">,</tt> <tt class="py-string">'SSLContext'</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L193"></a><tt class="py-lineno">193</tt>  <tt class="py-line">        <tt class="py-name">module</tt><tt class="py-op">.</tt><tt id="link-48" class="py-name" targets="Method ansible.module_utils.basic.AnsibleModule.fail_json()=ansible.module_utils.basic.AnsibleModule-class.html#fail_json"><a title="ansible.module_utils.basic.AnsibleModule.fail_json" class="py-name" href="#" onclick="return doclink('link-48', 'fail_json', 'link-48');">fail_json</a></tt><tt class="py-op">(</tt><tt class="py-name">msg</tt><tt class="py-op">=</tt><tt class="py-string">'pyVim does not support changing verification mode with python &lt; 2.7.9. Either update python or or use validate_certs=false'</tt><tt class="py-op">)</tt> </tt>
+<a name="L194"></a><tt class="py-lineno">194</tt>  <tt class="py-line"> </tt>
+<a name="L195"></a><tt class="py-lineno">195</tt>  <tt class="py-line">    <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L196"></a><tt class="py-lineno">196</tt>  <tt class="py-line">        <tt class="py-name">service_instance</tt> <tt class="py-op">=</tt> <tt id="link-49" class="py-name"><a title="ansible.module_utils.asa.Cli.connect
+ansible.module_utils.asa.NetworkModule.connect
+ansible.module_utils.eos.Cli.connect
+ansible.module_utils.eos.Eapi.connect
+ansible.module_utils.ios.Cli.connect
+ansible.module_utils.ios.Restconf.connect
+ansible.module_utils.iosxr.Cli.connect
+ansible.module_utils.junos.Cli.connect
+ansible.module_utils.junos.Netconf.connect
+ansible.module_utils.junos.NetworkModule.connect
+ansible.module_utils.network.NetCli.connect
+ansible.module_utils.network.NetworkModule.connect
+ansible.module_utils.nxos.Cli.connect
+ansible.module_utils.nxos.NetworkModule.connect
+ansible.module_utils.nxos.Nxapi.connect
+ansible.module_utils.openswitch.Cli.connect
+ansible.module_utils.openswitch.NetworkModule.connect
+ansible.module_utils.openswitch.Rest.connect
+ansible.module_utils.urls.CustomHTTPSConnection.connect
+ansible.module_utils.vyos.Cli.connect
+ansible.plugins.connection.funcd.Connection.connect" class="py-name" href="#" onclick="return doclink('link-49', 'connect', 'link-0');">connect</a></tt><tt class="py-op">.</tt><tt class="py-name">SmartConnect</tt><tt class="py-op">(</tt><tt id="link-50" class="py-name"><a title="ansible.inventory.host" class="py-name" href="#" onclick="return doclink('link-50', 'host', 'link-22');">host</a></tt><tt class="py-op">=</tt><tt class="py-name">hostname</tt><tt class="py-op">,</tt> <tt id="link-51" class="py-name" targets="Variable ansible.utils.display.user=ansible.utils.display-module.html#user"><a title="ansible.utils.display.user" class="py-name" href="#" onclick="return doclink('link-51', 'user', 'link-51');">user</a></tt><tt class="py-op">=</tt><tt class="py-name">username</tt><tt class="py-op">,</tt> <tt class="py-name">pwd</tt><tt class="py-op">=</tt><tt id="link-52" class="py-name"><a title="ansible.plugins.lookup.password" class="py-name" href="#" onclick="return doclink('link-52', 'password', 'link-38');">password</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L197"></a><tt class="py-lineno">197</tt>  <tt class="py-line">    <tt class="py-keyword">except</tt> <tt class="py-name">vim</tt><tt class="py-op">.</tt><tt class="py-name">fault</tt><tt class="py-op">.</tt><tt class="py-name">InvalidLogin</tt> <tt class="py-keyword">as</tt> <tt class="py-name">invalid_login</tt><tt class="py-op">:</tt> </tt>
+<a name="L198"></a><tt class="py-lineno">198</tt>  <tt class="py-line">        <tt class="py-name">module</tt><tt class="py-op">.</tt><tt id="link-53" class="py-name"><a title="ansible.module_utils.basic.AnsibleModule.fail_json" class="py-name" href="#" onclick="return doclink('link-53', 'fail_json', 'link-48');">fail_json</a></tt><tt class="py-op">(</tt><tt class="py-name">msg</tt><tt class="py-op">=</tt><tt class="py-name">invalid_login</tt><tt class="py-op">.</tt><tt class="py-name">msg</tt><tt class="py-op">,</tt> <tt class="py-name">apierror</tt><tt class="py-op">=</tt><tt id="link-54" class="py-name" targets="Class str=str-class.html"><a title="str" class="py-name" href="#" onclick="return doclink('link-54', 'str', 'link-54');">str</a></tt><tt class="py-op">(</tt><tt class="py-name">invalid_login</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L199"></a><tt class="py-lineno">199</tt>  <tt class="py-line">    <tt class="py-keyword">except</tt> <tt class="py-op">(</tt><tt class="py-name">requests</tt><tt class="py-op">.</tt><tt id="link-55" class="py-name" targets="Class ansible.module_utils.urls.ConnectionError=ansible.module_utils.urls.ConnectionError-class.html"><a title="ansible.module_utils.urls.ConnectionError" class="py-name" href="#" onclick="return doclink('link-55', 'ConnectionError', 'link-55');">ConnectionError</a></tt><tt class="py-op">,</tt> <tt class="py-name">ssl</tt><tt class="py-op">.</tt><tt class="py-name">SSLError</tt><tt class="py-op">)</tt> <tt class="py-keyword">as</tt> <tt class="py-name">connection_error</tt><tt class="py-op">:</tt> </tt>
+<a name="L200"></a><tt class="py-lineno">200</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-string">'[SSL: CERTIFICATE_VERIFY_FAILED]'</tt> <tt class="py-keyword">in</tt> <tt id="link-56" class="py-name"><a title="str" class="py-name" href="#" onclick="return doclink('link-56', 'str', 'link-54');">str</a></tt><tt class="py-op">(</tt><tt class="py-name">connection_error</tt><tt class="py-op">)</tt> <tt class="py-keyword">and</tt> <tt class="py-keyword">not</tt> <tt id="link-57" class="py-name"><a title="ansible.galaxy.api.GalaxyAPI.validate_certs" class="py-name" href="#" onclick="return doclink('link-57', 'validate_certs', 'link-41');">validate_certs</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L201"></a><tt class="py-lineno">201</tt>  <tt class="py-line">            <tt class="py-name">context</tt> <tt class="py-op">=</tt> <tt class="py-name">ssl</tt><tt class="py-op">.</tt><tt class="py-name">SSLContext</tt><tt class="py-op">(</tt><tt class="py-name">ssl</tt><tt class="py-op">.</tt><tt class="py-name">PROTOCOL_SSLv23</tt><tt class="py-op">)</tt> </tt>
+<a name="L202"></a><tt class="py-lineno">202</tt>  <tt class="py-line">            <tt class="py-name">context</tt><tt class="py-op">.</tt><tt class="py-name">verify_mode</tt> <tt class="py-op">=</tt> <tt class="py-name">ssl</tt><tt class="py-op">.</tt><tt class="py-name">CERT_NONE</tt> </tt>
+<a name="L203"></a><tt class="py-lineno">203</tt>  <tt class="py-line">            <tt class="py-name">service_instance</tt> <tt class="py-op">=</tt> <tt id="link-58" class="py-name"><a title="ansible.module_utils.asa.Cli.connect
+ansible.module_utils.asa.NetworkModule.connect
+ansible.module_utils.eos.Cli.connect
+ansible.module_utils.eos.Eapi.connect
+ansible.module_utils.ios.Cli.connect
+ansible.module_utils.ios.Restconf.connect
+ansible.module_utils.iosxr.Cli.connect
+ansible.module_utils.junos.Cli.connect
+ansible.module_utils.junos.Netconf.connect
+ansible.module_utils.junos.NetworkModule.connect
+ansible.module_utils.network.NetCli.connect
+ansible.module_utils.network.NetworkModule.connect
+ansible.module_utils.nxos.Cli.connect
+ansible.module_utils.nxos.NetworkModule.connect
+ansible.module_utils.nxos.Nxapi.connect
+ansible.module_utils.openswitch.Cli.connect
+ansible.module_utils.openswitch.NetworkModule.connect
+ansible.module_utils.openswitch.Rest.connect
+ansible.module_utils.urls.CustomHTTPSConnection.connect
+ansible.module_utils.vyos.Cli.connect
+ansible.plugins.connection.funcd.Connection.connect" class="py-name" href="#" onclick="return doclink('link-58', 'connect', 'link-0');">connect</a></tt><tt class="py-op">.</tt><tt class="py-name">SmartConnect</tt><tt class="py-op">(</tt><tt id="link-59" class="py-name"><a title="ansible.inventory.host" class="py-name" href="#" onclick="return doclink('link-59', 'host', 'link-22');">host</a></tt><tt class="py-op">=</tt><tt class="py-name">hostname</tt><tt class="py-op">,</tt> <tt id="link-60" class="py-name"><a title="ansible.utils.display.user" class="py-name" href="#" onclick="return doclink('link-60', 'user', 'link-51');">user</a></tt><tt class="py-op">=</tt><tt class="py-name">username</tt><tt class="py-op">,</tt> <tt class="py-name">pwd</tt><tt class="py-op">=</tt><tt id="link-61" class="py-name"><a title="ansible.plugins.lookup.password" class="py-name" href="#" onclick="return doclink('link-61', 'password', 'link-38');">password</a></tt><tt class="py-op">,</tt> <tt class="py-name">sslContext</tt><tt class="py-op">=</tt><tt class="py-name">context</tt><tt class="py-op">)</tt> </tt>
+<a name="L204"></a><tt class="py-lineno">204</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L205"></a><tt class="py-lineno">205</tt>  <tt class="py-line">            <tt class="py-name">module</tt><tt class="py-op">.</tt><tt id="link-62" class="py-name"><a title="ansible.module_utils.basic.AnsibleModule.fail_json" class="py-name" href="#" onclick="return doclink('link-62', 'fail_json', 'link-48');">fail_json</a></tt><tt class="py-op">(</tt><tt class="py-name">msg</tt><tt class="py-op">=</tt><tt class="py-string">"Unable to connect to vCenter or ESXi API on TCP/443."</tt><tt class="py-op">,</tt> <tt class="py-name">apierror</tt><tt class="py-op">=</tt><tt id="link-63" class="py-name"><a title="str" class="py-name" href="#" onclick="return doclink('link-63', 'str', 'link-54');">str</a></tt><tt class="py-op">(</tt><tt class="py-name">connection_error</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L206"></a><tt class="py-lineno">206</tt>  <tt class="py-line"> </tt>
+<a name="L207"></a><tt class="py-lineno">207</tt>  <tt class="py-line">    <tt class="py-comment"># Disabling atexit should be used in special cases only.</tt> </tt>
+<a name="L208"></a><tt class="py-lineno">208</tt>  <tt class="py-line">    <tt class="py-comment"># Such as IP change of the ESXi host which removes the connection anyway.</tt> </tt>
+<a name="L209"></a><tt class="py-lineno">209</tt>  <tt class="py-line">    <tt class="py-comment"># Also removal significantly speeds up the return of the module</tt> </tt>
+<a name="L210"></a><tt class="py-lineno">210</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">disconnect_atexit</tt><tt class="py-op">:</tt> </tt>
+<a name="L211"></a><tt class="py-lineno">211</tt>  <tt class="py-line">        <tt class="py-name">atexit</tt><tt class="py-op">.</tt><tt id="link-64" class="py-name" targets="Method ansible.module_utils.redhat.RegistrationBase.register()=ansible.module_utils.redhat.RegistrationBase-class.html#register,Method ansible.module_utils.redhat.Rhsm.register()=ansible.module_utils.redhat.Rhsm-class.html#register"><a title="ansible.module_utils.redhat.RegistrationBase.register
+ansible.module_utils.redhat.Rhsm.register" class="py-name" href="#" onclick="return doclink('link-64', 'register', 'link-64');">register</a></tt><tt class="py-op">(</tt><tt id="link-65" class="py-name"><a title="ansible.module_utils.asa.Cli.connect
+ansible.module_utils.asa.NetworkModule.connect
+ansible.module_utils.eos.Cli.connect
+ansible.module_utils.eos.Eapi.connect
+ansible.module_utils.ios.Cli.connect
+ansible.module_utils.ios.Restconf.connect
+ansible.module_utils.iosxr.Cli.connect
+ansible.module_utils.junos.Cli.connect
+ansible.module_utils.junos.Netconf.connect
+ansible.module_utils.junos.NetworkModule.connect
+ansible.module_utils.network.NetCli.connect
+ansible.module_utils.network.NetworkModule.connect
+ansible.module_utils.nxos.Cli.connect
+ansible.module_utils.nxos.NetworkModule.connect
+ansible.module_utils.nxos.Nxapi.connect
+ansible.module_utils.openswitch.Cli.connect
+ansible.module_utils.openswitch.NetworkModule.connect
+ansible.module_utils.openswitch.Rest.connect
+ansible.module_utils.urls.CustomHTTPSConnection.connect
+ansible.module_utils.vyos.Cli.connect
+ansible.plugins.connection.funcd.Connection.connect" class="py-name" href="#" onclick="return doclink('link-65', 'connect', 'link-0');">connect</a></tt><tt class="py-op">.</tt><tt class="py-name">Disconnect</tt><tt class="py-op">,</tt> <tt class="py-name">service_instance</tt><tt class="py-op">)</tt> </tt>
+<a name="L212"></a><tt class="py-lineno">212</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">service_instance</tt><tt class="py-op">.</tt><tt class="py-name">RetrieveContent</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L213"></a><tt class="py-lineno">213</tt>  <tt class="py-line"> </tt>
+<a name="get_all_objs"></a><div id="get_all_objs-def"><a name="L214"></a><tt class="py-lineno">214</tt> <a class="py-toggle" href="#" id="get_all_objs-toggle" onclick="return toggle('get_all_objs');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vmware-module.html#get_all_objs">get_all_objs</a><tt class="py-op">(</tt><tt class="py-param">content</tt><tt class="py-op">,</tt> <tt class="py-param">vimtype</tt><tt class="py-op">,</tt> <tt class="py-param">folder</tt><tt class="py-op">=</tt><tt class="py-name">None</tt><tt class="py-op">,</tt> <tt class="py-param">recurse</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="get_all_objs-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="get_all_objs-expanded"><a name="L215"></a><tt class="py-lineno">215</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">folder</tt><tt class="py-op">:</tt> </tt>
+<a name="L216"></a><tt class="py-lineno">216</tt>  <tt class="py-line">      <tt class="py-name">folder</tt> <tt class="py-op">=</tt> <tt class="py-name">content</tt><tt class="py-op">.</tt><tt class="py-name">rootFolder</tt> </tt>
+<a name="L217"></a><tt class="py-lineno">217</tt>  <tt class="py-line"> </tt>
+<a name="L218"></a><tt class="py-lineno">218</tt>  <tt class="py-line">    <tt class="py-name">obj</tt> <tt class="py-op">=</tt> <tt class="py-op">{</tt><tt class="py-op">}</tt> </tt>
+<a name="L219"></a><tt class="py-lineno">219</tt>  <tt class="py-line">    <tt class="py-name">container</tt> <tt class="py-op">=</tt> <tt class="py-name">content</tt><tt class="py-op">.</tt><tt class="py-name">viewManager</tt><tt class="py-op">.</tt><tt class="py-name">CreateContainerView</tt><tt class="py-op">(</tt><tt class="py-name">folder</tt><tt class="py-op">,</tt> <tt class="py-name">vimtype</tt><tt class="py-op">,</tt> <tt class="py-name">recurse</tt><tt class="py-op">)</tt> </tt>
+<a name="L220"></a><tt class="py-lineno">220</tt>  <tt class="py-line">    <tt class="py-keyword">for</tt> <tt class="py-name">managed_object_ref</tt> <tt class="py-keyword">in</tt> <tt class="py-name">container</tt><tt class="py-op">.</tt><tt class="py-name">view</tt><tt class="py-op">:</tt> </tt>
+<a name="L221"></a><tt class="py-lineno">221</tt>  <tt class="py-line">        <tt class="py-name">obj</tt><tt class="py-op">.</tt><tt id="link-66" class="py-name" targets="Method ansible.plugins.cache.FactCache.update()=ansible.plugins.cache.FactCache-class.html#update"><a title="ansible.plugins.cache.FactCache.update" class="py-name" href="#" onclick="return doclink('link-66', 'update', 'link-66');">update</a></tt><tt class="py-op">(</tt><tt class="py-op">{</tt><tt class="py-name">managed_object_ref</tt><tt class="py-op">:</tt> <tt class="py-name">managed_object_ref</tt><tt class="py-op">.</tt><tt class="py-name">name</tt><tt class="py-op">}</tt><tt class="py-op">)</tt> </tt>
+<a name="L222"></a><tt class="py-lineno">222</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">obj</tt> </tt>
+</div><a name="L223"></a><tt class="py-lineno">223</tt>  <tt class="py-line"> </tt><script type="text/javascript">
+<!--
+expandto(location.href);
+// -->
+</script>
+</pre>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Fri Jul 29 13:11:40 2016
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

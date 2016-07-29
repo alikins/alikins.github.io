@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>ansible.plugins.filter.mathstuff</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="ansible-module.html">Package&nbsp;ansible</a> ::
+        <a href="ansible.plugins-module.html">Package&nbsp;plugins</a> ::
+        <a href="ansible.plugins.filter-module.html">Package&nbsp;filter</a> ::
+        Module&nbsp;mathstuff
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="ansible.plugins.filter.mathstuff-pysrc.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<h1 class="epydoc">Source Code for <a href="ansible.plugins.filter.mathstuff-module.html">Module ansible.plugins.filter.mathstuff</a></h1>
+<pre class="py-src">
+<a name="L1"></a><tt class="py-lineno">  1</tt>  <tt class="py-line"><tt class="py-comment"># (c) 2014, Brian Coca &lt;bcoca@ansible.com&gt;</tt> </tt>
+<a name="L2"></a><tt class="py-lineno">  2</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L3"></a><tt class="py-lineno">  3</tt>  <tt class="py-line"><tt class="py-comment"># This file is part of Ansible</tt> </tt>
+<a name="L4"></a><tt class="py-lineno">  4</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L5"></a><tt class="py-lineno">  5</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is free software: you can redistribute it and/or modify</tt> </tt>
+<a name="L6"></a><tt class="py-lineno">  6</tt>  <tt class="py-line"><tt class="py-comment"># it under the terms of the GNU General Public License as published by</tt> </tt>
+<a name="L7"></a><tt class="py-lineno">  7</tt>  <tt class="py-line"><tt class="py-comment"># the Free Software Foundation, either version 3 of the License, or</tt> </tt>
+<a name="L8"></a><tt class="py-lineno">  8</tt>  <tt class="py-line"><tt class="py-comment"># (at your option) any later version.</tt> </tt>
+<a name="L9"></a><tt class="py-lineno">  9</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L10"></a><tt class="py-lineno"> 10</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is distributed in the hope that it will be useful,</tt> </tt>
+<a name="L11"></a><tt class="py-lineno"> 11</tt>  <tt class="py-line"><tt class="py-comment"># but WITHOUT ANY WARRANTY; without even the implied warranty of</tt> </tt>
+<a name="L12"></a><tt class="py-lineno"> 12</tt>  <tt class="py-line"><tt class="py-comment"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</tt> </tt>
+<a name="L13"></a><tt class="py-lineno"> 13</tt>  <tt class="py-line"><tt class="py-comment"># GNU General Public License for more details.</tt> </tt>
+<a name="L14"></a><tt class="py-lineno"> 14</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L15"></a><tt class="py-lineno"> 15</tt>  <tt class="py-line"><tt class="py-comment"># You should have received a copy of the GNU General Public License</tt> </tt>
+<a name="L16"></a><tt class="py-lineno"> 16</tt>  <tt class="py-line"><tt class="py-comment"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</tt> </tt>
+<a name="L17"></a><tt class="py-lineno"> 17</tt>  <tt class="py-line"> </tt>
+<a name="L18"></a><tt class="py-lineno"> 18</tt>  <tt class="py-line"><tt class="py-comment"># Make coding more python3-ish</tt> </tt>
+<a name="L19"></a><tt class="py-lineno"> 19</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">__future__</tt> <tt class="py-keyword">import</tt> <tt class="py-op">(</tt><tt class="py-name">absolute_import</tt><tt class="py-op">,</tt> <tt class="py-name">division</tt><tt class="py-op">,</tt> <tt class="py-name">print_function</tt><tt class="py-op">)</tt> </tt>
+<a name="L20"></a><tt class="py-lineno"> 20</tt>  <tt class="py-line"><tt class="py-name">__metaclass__</tt> <tt class="py-op">=</tt> <tt id="link-0" class="py-name" targets="Class type=type-class.html"><a title="type" class="py-name" href="#" onclick="return doclink('link-0', 'type', 'link-0');">type</a></tt> </tt>
+<a name="L21"></a><tt class="py-lineno"> 21</tt>  <tt class="py-line"> </tt>
+<a name="L22"></a><tt class="py-lineno"> 22</tt>  <tt class="py-line"> </tt>
+<a name="L23"></a><tt class="py-lineno"> 23</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">math</tt> </tt>
+<a name="L24"></a><tt class="py-lineno"> 24</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">collections</tt> </tt>
+<a name="L25"></a><tt class="py-lineno"> 25</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-1" class="py-name" targets="Package ansible=ansible-module.html"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-1', 'ansible', 'link-1');">ansible</a></tt> <tt class="py-keyword">import</tt> <tt id="link-2" class="py-name" targets="Package ansible.errors=ansible.errors-module.html"><a title="ansible.errors" class="py-name" href="#" onclick="return doclink('link-2', 'errors', 'link-2');">errors</a></tt> </tt>
+<a name="L26"></a><tt class="py-lineno"> 26</tt>  <tt class="py-line"> </tt>
+<a name="unique"></a><div id="unique-def"><a name="L27"></a><tt class="py-lineno"> 27</tt> <a class="py-toggle" href="#" id="unique-toggle" onclick="return toggle('unique');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.filter.mathstuff-module.html#unique">unique</a><tt class="py-op">(</tt><tt class="py-param">a</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="unique-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="unique-expanded"><a name="L28"></a><tt class="py-lineno"> 28</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">isinstance</tt><tt class="py-op">(</tt><tt class="py-name">a</tt><tt class="py-op">,</tt><tt class="py-name">collections</tt><tt class="py-op">.</tt><tt class="py-name">Hashable</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L29"></a><tt class="py-lineno"> 29</tt>  <tt class="py-line">        <tt class="py-name">c</tt> <tt class="py-op">=</tt> <tt id="link-3" class="py-name" targets="Method ansible.galaxy.token.GalaxyToken.set()=ansible.galaxy.token.GalaxyToken-class.html#set,Method ansible.plugins.cache.base.BaseCacheModule.set()=ansible.plugins.cache.base.BaseCacheModule-class.html#set,Method ansible.plugins.cache.jsonfile.CacheModule.set()=ansible.plugins.cache.jsonfile.CacheModule-class.html#set,Method ansible.plugins.cache.memcached.CacheModule.set()=ansible.plugins.cache.memcached.CacheModule-class.html#set,Method ansible.plugins.cache.memory.CacheModule.set()=ansible.plugins.cache.memory.CacheModule-class.html#set,Method ansible.plugins.cache.redis.CacheModule.set()=ansible.plugins.cache.redis.CacheModule-class.html#set"><a title="ansible.galaxy.token.GalaxyToken.set
+ansible.plugins.cache.base.BaseCacheModule.set
+ansible.plugins.cache.jsonfile.CacheModule.set
+ansible.plugins.cache.memcached.CacheModule.set
+ansible.plugins.cache.memory.CacheModule.set
+ansible.plugins.cache.redis.CacheModule.set" class="py-name" href="#" onclick="return doclink('link-3', 'set', 'link-3');">set</a></tt><tt class="py-op">(</tt><tt class="py-name">a</tt><tt class="py-op">)</tt> </tt>
+<a name="L30"></a><tt class="py-lineno"> 30</tt>  <tt class="py-line">    <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L31"></a><tt class="py-lineno"> 31</tt>  <tt class="py-line">        <tt class="py-name">c</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-op">]</tt> </tt>
+<a name="L32"></a><tt class="py-lineno"> 32</tt>  <tt class="py-line">        <tt class="py-keyword">for</tt> <tt class="py-name">x</tt> <tt class="py-keyword">in</tt> <tt class="py-name">a</tt><tt class="py-op">:</tt> </tt>
+<a name="L33"></a><tt class="py-lineno"> 33</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-name">x</tt> <tt class="py-keyword">not</tt> <tt class="py-keyword">in</tt> <tt class="py-name">c</tt><tt class="py-op">:</tt> </tt>
+<a name="L34"></a><tt class="py-lineno"> 34</tt>  <tt class="py-line">                <tt class="py-name">c</tt><tt class="py-op">.</tt><tt class="py-name">append</tt><tt class="py-op">(</tt><tt class="py-name">x</tt><tt class="py-op">)</tt> </tt>
+<a name="L35"></a><tt class="py-lineno"> 35</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">c</tt> </tt>
+</div><a name="L36"></a><tt class="py-lineno"> 36</tt>  <tt class="py-line"> </tt>
+<a name="intersect"></a><div id="intersect-def"><a name="L37"></a><tt class="py-lineno"> 37</tt> <a class="py-toggle" href="#" id="intersect-toggle" onclick="return toggle('intersect');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.filter.mathstuff-module.html#intersect">intersect</a><tt class="py-op">(</tt><tt class="py-param">a</tt><tt class="py-op">,</tt> <tt class="py-param">b</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="intersect-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="intersect-expanded"><a name="L38"></a><tt class="py-lineno"> 38</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">isinstance</tt><tt class="py-op">(</tt><tt class="py-name">a</tt><tt class="py-op">,</tt><tt class="py-name">collections</tt><tt class="py-op">.</tt><tt class="py-name">Hashable</tt><tt class="py-op">)</tt> <tt class="py-keyword">and</tt> <tt class="py-name">isinstance</tt><tt class="py-op">(</tt><tt id="link-4" class="py-name" targets="Function ansible.compat.six.b()=ansible.compat.six-module.html#b,Function ansible.module_utils.six.b()=ansible.module_utils.six-module.html#b"><a title="ansible.compat.six.b
+ansible.module_utils.six.b" class="py-name" href="#" onclick="return doclink('link-4', 'b', 'link-4');">b</a></tt><tt class="py-op">,</tt><tt class="py-name">collections</tt><tt class="py-op">.</tt><tt class="py-name">Hashable</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L39"></a><tt class="py-lineno"> 39</tt>  <tt class="py-line">        <tt class="py-name">c</tt> <tt class="py-op">=</tt> <tt id="link-5" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.set
+ansible.plugins.cache.base.BaseCacheModule.set
+ansible.plugins.cache.jsonfile.CacheModule.set
+ansible.plugins.cache.memcached.CacheModule.set
+ansible.plugins.cache.memory.CacheModule.set
+ansible.plugins.cache.redis.CacheModule.set" class="py-name" href="#" onclick="return doclink('link-5', 'set', 'link-3');">set</a></tt><tt class="py-op">(</tt><tt class="py-name">a</tt><tt class="py-op">)</tt> <tt class="py-op">&amp;</tt> <tt id="link-6" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.set
+ansible.plugins.cache.base.BaseCacheModule.set
+ansible.plugins.cache.jsonfile.CacheModule.set
+ansible.plugins.cache.memcached.CacheModule.set
+ansible.plugins.cache.memory.CacheModule.set
+ansible.plugins.cache.redis.CacheModule.set" class="py-name" href="#" onclick="return doclink('link-6', 'set', 'link-3');">set</a></tt><tt class="py-op">(</tt><tt id="link-7" class="py-name"><a title="ansible.compat.six.b
+ansible.module_utils.six.b" class="py-name" href="#" onclick="return doclink('link-7', 'b', 'link-4');">b</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L40"></a><tt class="py-lineno"> 40</tt>  <tt class="py-line">    <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L41"></a><tt class="py-lineno"> 41</tt>  <tt class="py-line">        <tt class="py-name">c</tt> <tt class="py-op">=</tt> <tt id="link-8" class="py-name" targets="Function ansible.plugins.filter.mathstuff.unique()=ansible.plugins.filter.mathstuff-module.html#unique"><a title="ansible.plugins.filter.mathstuff.unique" class="py-name" href="#" onclick="return doclink('link-8', 'unique', 'link-8');">unique</a></tt><tt class="py-op">(</tt><tt id="link-9" class="py-name" targets="Method ansible.module_utils.redhat.RhsmPools.filter()=ansible.module_utils.redhat.RhsmPools-class.html#filter,Method ansible.module_utils.six._MovedItems.filter()=ansible.module_utils.six._MovedItems-class.html#filter,Package ansible.plugins.filter=ansible.plugins.filter-module.html"><a title="ansible.module_utils.redhat.RhsmPools.filter
+ansible.module_utils.six._MovedItems.filter
+ansible.plugins.filter" class="py-name" href="#" onclick="return doclink('link-9', 'filter', 'link-9');">filter</a></tt><tt class="py-op">(</tt><tt class="py-keyword">lambda</tt> <tt class="py-name">x</tt><tt class="py-op">:</tt> <tt class="py-name">x</tt> <tt class="py-keyword">in</tt> <tt id="link-10" class="py-name"><a title="ansible.compat.six.b
+ansible.module_utils.six.b" class="py-name" href="#" onclick="return doclink('link-10', 'b', 'link-4');">b</a></tt><tt class="py-op">,</tt> <tt class="py-name">a</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L42"></a><tt class="py-lineno"> 42</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">c</tt> </tt>
+</div><a name="L43"></a><tt class="py-lineno"> 43</tt>  <tt class="py-line"> </tt>
+<a name="difference"></a><div id="difference-def"><a name="L44"></a><tt class="py-lineno"> 44</tt> <a class="py-toggle" href="#" id="difference-toggle" onclick="return toggle('difference');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.filter.mathstuff-module.html#difference">difference</a><tt class="py-op">(</tt><tt class="py-param">a</tt><tt class="py-op">,</tt> <tt class="py-param">b</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="difference-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="difference-expanded"><a name="L45"></a><tt class="py-lineno"> 45</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">isinstance</tt><tt class="py-op">(</tt><tt class="py-name">a</tt><tt class="py-op">,</tt><tt class="py-name">collections</tt><tt class="py-op">.</tt><tt class="py-name">Hashable</tt><tt class="py-op">)</tt> <tt class="py-keyword">and</tt> <tt class="py-name">isinstance</tt><tt class="py-op">(</tt><tt id="link-11" class="py-name"><a title="ansible.compat.six.b
+ansible.module_utils.six.b" class="py-name" href="#" onclick="return doclink('link-11', 'b', 'link-4');">b</a></tt><tt class="py-op">,</tt><tt class="py-name">collections</tt><tt class="py-op">.</tt><tt class="py-name">Hashable</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L46"></a><tt class="py-lineno"> 46</tt>  <tt class="py-line">        <tt class="py-name">c</tt> <tt class="py-op">=</tt> <tt id="link-12" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.set
+ansible.plugins.cache.base.BaseCacheModule.set
+ansible.plugins.cache.jsonfile.CacheModule.set
+ansible.plugins.cache.memcached.CacheModule.set
+ansible.plugins.cache.memory.CacheModule.set
+ansible.plugins.cache.redis.CacheModule.set" class="py-name" href="#" onclick="return doclink('link-12', 'set', 'link-3');">set</a></tt><tt class="py-op">(</tt><tt class="py-name">a</tt><tt class="py-op">)</tt> <tt class="py-op">-</tt> <tt id="link-13" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.set
+ansible.plugins.cache.base.BaseCacheModule.set
+ansible.plugins.cache.jsonfile.CacheModule.set
+ansible.plugins.cache.memcached.CacheModule.set
+ansible.plugins.cache.memory.CacheModule.set
+ansible.plugins.cache.redis.CacheModule.set" class="py-name" href="#" onclick="return doclink('link-13', 'set', 'link-3');">set</a></tt><tt class="py-op">(</tt><tt id="link-14" class="py-name"><a title="ansible.compat.six.b
+ansible.module_utils.six.b" class="py-name" href="#" onclick="return doclink('link-14', 'b', 'link-4');">b</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L47"></a><tt class="py-lineno"> 47</tt>  <tt class="py-line">    <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L48"></a><tt class="py-lineno"> 48</tt>  <tt class="py-line">        <tt class="py-name">c</tt> <tt class="py-op">=</tt> <tt id="link-15" class="py-name"><a title="ansible.plugins.filter.mathstuff.unique" class="py-name" href="#" onclick="return doclink('link-15', 'unique', 'link-8');">unique</a></tt><tt class="py-op">(</tt><tt id="link-16" class="py-name"><a title="ansible.module_utils.redhat.RhsmPools.filter
+ansible.module_utils.six._MovedItems.filter
+ansible.plugins.filter" class="py-name" href="#" onclick="return doclink('link-16', 'filter', 'link-9');">filter</a></tt><tt class="py-op">(</tt><tt class="py-keyword">lambda</tt> <tt class="py-name">x</tt><tt class="py-op">:</tt> <tt class="py-name">x</tt> <tt class="py-keyword">not</tt> <tt class="py-keyword">in</tt> <tt id="link-17" class="py-name"><a title="ansible.compat.six.b
+ansible.module_utils.six.b" class="py-name" href="#" onclick="return doclink('link-17', 'b', 'link-4');">b</a></tt><tt class="py-op">,</tt> <tt class="py-name">a</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L49"></a><tt class="py-lineno"> 49</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">c</tt> </tt>
+</div><a name="L50"></a><tt class="py-lineno"> 50</tt>  <tt class="py-line"> </tt>
+<a name="symmetric_difference"></a><div id="symmetric_difference-def"><a name="L51"></a><tt class="py-lineno"> 51</tt> <a class="py-toggle" href="#" id="symmetric_difference-toggle" onclick="return toggle('symmetric_difference');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.filter.mathstuff-module.html#symmetric_difference">symmetric_difference</a><tt class="py-op">(</tt><tt class="py-param">a</tt><tt class="py-op">,</tt> <tt class="py-param">b</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="symmetric_difference-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="symmetric_difference-expanded"><a name="L52"></a><tt class="py-lineno"> 52</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">isinstance</tt><tt class="py-op">(</tt><tt class="py-name">a</tt><tt class="py-op">,</tt><tt class="py-name">collections</tt><tt class="py-op">.</tt><tt class="py-name">Hashable</tt><tt class="py-op">)</tt> <tt class="py-keyword">and</tt> <tt class="py-name">isinstance</tt><tt class="py-op">(</tt><tt id="link-18" class="py-name"><a title="ansible.compat.six.b
+ansible.module_utils.six.b" class="py-name" href="#" onclick="return doclink('link-18', 'b', 'link-4');">b</a></tt><tt class="py-op">,</tt><tt class="py-name">collections</tt><tt class="py-op">.</tt><tt class="py-name">Hashable</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L53"></a><tt class="py-lineno"> 53</tt>  <tt class="py-line">        <tt class="py-name">c</tt> <tt class="py-op">=</tt> <tt id="link-19" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.set
+ansible.plugins.cache.base.BaseCacheModule.set
+ansible.plugins.cache.jsonfile.CacheModule.set
+ansible.plugins.cache.memcached.CacheModule.set
+ansible.plugins.cache.memory.CacheModule.set
+ansible.plugins.cache.redis.CacheModule.set" class="py-name" href="#" onclick="return doclink('link-19', 'set', 'link-3');">set</a></tt><tt class="py-op">(</tt><tt class="py-name">a</tt><tt class="py-op">)</tt> <tt class="py-op">^</tt> <tt id="link-20" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.set
+ansible.plugins.cache.base.BaseCacheModule.set
+ansible.plugins.cache.jsonfile.CacheModule.set
+ansible.plugins.cache.memcached.CacheModule.set
+ansible.plugins.cache.memory.CacheModule.set
+ansible.plugins.cache.redis.CacheModule.set" class="py-name" href="#" onclick="return doclink('link-20', 'set', 'link-3');">set</a></tt><tt class="py-op">(</tt><tt id="link-21" class="py-name"><a title="ansible.compat.six.b
+ansible.module_utils.six.b" class="py-name" href="#" onclick="return doclink('link-21', 'b', 'link-4');">b</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L54"></a><tt class="py-lineno"> 54</tt>  <tt class="py-line">    <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L55"></a><tt class="py-lineno"> 55</tt>  <tt class="py-line">        <tt class="py-name">c</tt> <tt class="py-op">=</tt> <tt id="link-22" class="py-name"><a title="ansible.plugins.filter.mathstuff.unique" class="py-name" href="#" onclick="return doclink('link-22', 'unique', 'link-8');">unique</a></tt><tt class="py-op">(</tt><tt id="link-23" class="py-name"><a title="ansible.module_utils.redhat.RhsmPools.filter
+ansible.module_utils.six._MovedItems.filter
+ansible.plugins.filter" class="py-name" href="#" onclick="return doclink('link-23', 'filter', 'link-9');">filter</a></tt><tt class="py-op">(</tt><tt class="py-keyword">lambda</tt> <tt class="py-name">x</tt><tt class="py-op">:</tt> <tt class="py-name">x</tt> <tt class="py-keyword">not</tt> <tt class="py-keyword">in</tt> <tt id="link-24" class="py-name" targets="Function ansible.plugins.filter.mathstuff.intersect()=ansible.plugins.filter.mathstuff-module.html#intersect"><a title="ansible.plugins.filter.mathstuff.intersect" class="py-name" href="#" onclick="return doclink('link-24', 'intersect', 'link-24');">intersect</a></tt><tt class="py-op">(</tt><tt class="py-name">a</tt><tt class="py-op">,</tt><tt id="link-25" class="py-name"><a title="ansible.compat.six.b
+ansible.module_utils.six.b" class="py-name" href="#" onclick="return doclink('link-25', 'b', 'link-4');">b</a></tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt id="link-26" class="py-name" targets="Function ansible.plugins.filter.mathstuff.union()=ansible.plugins.filter.mathstuff-module.html#union"><a title="ansible.plugins.filter.mathstuff.union" class="py-name" href="#" onclick="return doclink('link-26', 'union', 'link-26');">union</a></tt><tt class="py-op">(</tt><tt class="py-name">a</tt><tt class="py-op">,</tt><tt id="link-27" class="py-name"><a title="ansible.compat.six.b
+ansible.module_utils.six.b" class="py-name" href="#" onclick="return doclink('link-27', 'b', 'link-4');">b</a></tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L56"></a><tt class="py-lineno"> 56</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">c</tt> </tt>
+</div><a name="L57"></a><tt class="py-lineno"> 57</tt>  <tt class="py-line"> </tt>
+<a name="union"></a><div id="union-def"><a name="L58"></a><tt class="py-lineno"> 58</tt> <a class="py-toggle" href="#" id="union-toggle" onclick="return toggle('union');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.filter.mathstuff-module.html#union">union</a><tt class="py-op">(</tt><tt class="py-param">a</tt><tt class="py-op">,</tt> <tt class="py-param">b</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="union-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="union-expanded"><a name="L59"></a><tt class="py-lineno"> 59</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">isinstance</tt><tt class="py-op">(</tt><tt class="py-name">a</tt><tt class="py-op">,</tt><tt class="py-name">collections</tt><tt class="py-op">.</tt><tt class="py-name">Hashable</tt><tt class="py-op">)</tt> <tt class="py-keyword">and</tt> <tt class="py-name">isinstance</tt><tt class="py-op">(</tt><tt id="link-28" class="py-name"><a title="ansible.compat.six.b
+ansible.module_utils.six.b" class="py-name" href="#" onclick="return doclink('link-28', 'b', 'link-4');">b</a></tt><tt class="py-op">,</tt><tt class="py-name">collections</tt><tt class="py-op">.</tt><tt class="py-name">Hashable</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L60"></a><tt class="py-lineno"> 60</tt>  <tt class="py-line">        <tt class="py-name">c</tt> <tt class="py-op">=</tt> <tt id="link-29" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.set
+ansible.plugins.cache.base.BaseCacheModule.set
+ansible.plugins.cache.jsonfile.CacheModule.set
+ansible.plugins.cache.memcached.CacheModule.set
+ansible.plugins.cache.memory.CacheModule.set
+ansible.plugins.cache.redis.CacheModule.set" class="py-name" href="#" onclick="return doclink('link-29', 'set', 'link-3');">set</a></tt><tt class="py-op">(</tt><tt class="py-name">a</tt><tt class="py-op">)</tt> <tt class="py-op">|</tt> <tt id="link-30" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.set
+ansible.plugins.cache.base.BaseCacheModule.set
+ansible.plugins.cache.jsonfile.CacheModule.set
+ansible.plugins.cache.memcached.CacheModule.set
+ansible.plugins.cache.memory.CacheModule.set
+ansible.plugins.cache.redis.CacheModule.set" class="py-name" href="#" onclick="return doclink('link-30', 'set', 'link-3');">set</a></tt><tt class="py-op">(</tt><tt id="link-31" class="py-name"><a title="ansible.compat.six.b
+ansible.module_utils.six.b" class="py-name" href="#" onclick="return doclink('link-31', 'b', 'link-4');">b</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L61"></a><tt class="py-lineno"> 61</tt>  <tt class="py-line">    <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L62"></a><tt class="py-lineno"> 62</tt>  <tt class="py-line">        <tt class="py-name">c</tt> <tt class="py-op">=</tt> <tt id="link-32" class="py-name"><a title="ansible.plugins.filter.mathstuff.unique" class="py-name" href="#" onclick="return doclink('link-32', 'unique', 'link-8');">unique</a></tt><tt class="py-op">(</tt><tt class="py-name">a</tt> <tt class="py-op">+</tt> <tt id="link-33" class="py-name"><a title="ansible.compat.six.b
+ansible.module_utils.six.b" class="py-name" href="#" onclick="return doclink('link-33', 'b', 'link-4');">b</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L63"></a><tt class="py-lineno"> 63</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">c</tt> </tt>
+</div><a name="L64"></a><tt class="py-lineno"> 64</tt>  <tt class="py-line"> </tt>
+<a name="min"></a><div id="min-def"><a name="L65"></a><tt class="py-lineno"> 65</tt> <a class="py-toggle" href="#" id="min-toggle" onclick="return toggle('min');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.filter.mathstuff-module.html#min">min</a><tt class="py-op">(</tt><tt class="py-param">a</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="min-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="min-expanded"><a name="L66"></a><tt class="py-lineno"> 66</tt>  <tt class="py-line">    <tt class="py-name">_min</tt> <tt class="py-op">=</tt> <tt class="py-name">__builtins__</tt><tt class="py-op">.</tt><tt id="link-34" class="py-name" targets="Method ansible.galaxy.token.GalaxyToken.get()=ansible.galaxy.token.GalaxyToken-class.html#get,Method ansible.module_utils.ios.Restconf.get()=ansible.module_utils.ios.Restconf-class.html#get,Method ansible.module_utils.netcfg.NetworkConfig.get()=ansible.module_utils.netcfg.NetworkConfig-class.html#get,Method ansible.module_utils.openswitch.Rest.get()=ansible.module_utils.openswitch.Rest-class.html#get,Method ansible.plugins.PluginLoader.get()=ansible.plugins.PluginLoader-class.html#get,Method ansible.plugins.cache.base.BaseCacheModule.get()=ansible.plugins.cache.base.BaseCacheModule-class.html#get,Method ansible.plugins.cache.jsonfile.CacheModule.get()=ansible.plugins.cache.jsonfile.CacheModule-class.html#get,Method ansible.plugins.cache.memcached.CacheModule.get()=ansible.plugins.cache.memcached.CacheModule-class.html#get,Method ansible.plugins.cache.memory.CacheModule.get()=ansible.plugins.cache.memory.CacheModule-class.html#get,Method ansible.plugins.cache.redis.CacheModule.get()=ansible.plugins.cache.redis.CacheModule-class.html#get,Method ansible.plugins.lookup.etcd.Etcd.get()=ansible.plugins.lookup.etcd.Etcd-class.html#get,Method ansible.plugins.lookup.hashi_vault.HashiVault.get()=ansible.plugins.lookup.hashi_vault.HashiVault-class.html#get"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-34', 'get', 'link-34');">get</a></tt><tt class="py-op">(</tt><tt class="py-string">'min'</tt><tt class="py-op">)</tt> </tt>
+<a name="L67"></a><tt class="py-lineno"> 67</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">_min</tt><tt class="py-op">(</tt><tt class="py-name">a</tt><tt class="py-op">)</tt><tt class="py-op">;</tt> </tt>
+</div><a name="L68"></a><tt class="py-lineno"> 68</tt>  <tt class="py-line"> </tt>
+<a name="max"></a><div id="max-def"><a name="L69"></a><tt class="py-lineno"> 69</tt> <a class="py-toggle" href="#" id="max-toggle" onclick="return toggle('max');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.filter.mathstuff-module.html#max">max</a><tt class="py-op">(</tt><tt class="py-param">a</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="max-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="max-expanded"><a name="L70"></a><tt class="py-lineno"> 70</tt>  <tt class="py-line">    <tt class="py-name">_max</tt> <tt class="py-op">=</tt> <tt class="py-name">__builtins__</tt><tt class="py-op">.</tt><tt id="link-35" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-35', 'get', 'link-34');">get</a></tt><tt class="py-op">(</tt><tt class="py-string">'max'</tt><tt class="py-op">)</tt> </tt>
+<a name="L71"></a><tt class="py-lineno"> 71</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">_max</tt><tt class="py-op">(</tt><tt class="py-name">a</tt><tt class="py-op">)</tt><tt class="py-op">;</tt> </tt>
+</div><a name="L72"></a><tt class="py-lineno"> 72</tt>  <tt class="py-line"> </tt>
+<a name="L73"></a><tt class="py-lineno"> 73</tt>  <tt class="py-line"> </tt>
+<a name="logarithm"></a><div id="logarithm-def"><a name="L74"></a><tt class="py-lineno"> 74</tt> <a class="py-toggle" href="#" id="logarithm-toggle" onclick="return toggle('logarithm');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.filter.mathstuff-module.html#logarithm">logarithm</a><tt class="py-op">(</tt><tt class="py-param">x</tt><tt class="py-op">,</tt> <tt class="py-param">base</tt><tt class="py-op">=</tt><tt class="py-name">math</tt><tt class="py-op">.</tt><tt id="link-36" class="py-name" targets="Variable ansible.plugins.lookup.consul_kv.e=ansible.plugins.lookup.consul_kv-module.html#e"><a title="ansible.plugins.lookup.consul_kv.e" class="py-name" href="#" onclick="return doclink('link-36', 'e', 'link-36');">e</a></tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="logarithm-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="logarithm-expanded"><a name="L75"></a><tt class="py-lineno"> 75</tt>  <tt class="py-line">    <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L76"></a><tt class="py-lineno"> 76</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt id="link-37" class="py-name" targets="Module ansible.playbook.base=ansible.playbook.base-module.html,Module ansible.plugins.cache.base=ansible.plugins.cache.base-module.html"><a title="ansible.playbook.base
+ansible.plugins.cache.base" class="py-name" href="#" onclick="return doclink('link-37', 'base', 'link-37');">base</a></tt> <tt class="py-op">==</tt> <tt class="py-number">10</tt><tt class="py-op">:</tt> </tt>
+<a name="L77"></a><tt class="py-lineno"> 77</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">math</tt><tt class="py-op">.</tt><tt class="py-name">log10</tt><tt class="py-op">(</tt><tt class="py-name">x</tt><tt class="py-op">)</tt> </tt>
+<a name="L78"></a><tt class="py-lineno"> 78</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L79"></a><tt class="py-lineno"> 79</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">math</tt><tt class="py-op">.</tt><tt id="link-38" class="py-name" targets="Method ansible.module_utils.azure_rm_common.AzureRMModuleBase.log()=ansible.module_utils.azure_rm_common.AzureRMModuleBase-class.html#log,Method ansible.module_utils.basic.AnsibleModule.log()=ansible.module_utils.basic.AnsibleModule-class.html#log,Method ansible.module_utils.docker_common.AnsibleDockerClient.log()=ansible.module_utils.docker_common.AnsibleDockerClient-class.html#log,Method ansible.module_utils.docker_common.DockerBaseClass.log()=ansible.module_utils.docker_common.DockerBaseClass-class.html#log,Method ansible.plugins.callback.log_plays.CallbackModule.log()=ansible.plugins.callback.log_plays.CallbackModule-class.html#log"><a title="ansible.module_utils.azure_rm_common.AzureRMModuleBase.log
+ansible.module_utils.basic.AnsibleModule.log
+ansible.module_utils.docker_common.AnsibleDockerClient.log
+ansible.module_utils.docker_common.DockerBaseClass.log
+ansible.plugins.callback.log_plays.CallbackModule.log" class="py-name" href="#" onclick="return doclink('link-38', 'log', 'link-38');">log</a></tt><tt class="py-op">(</tt><tt class="py-name">x</tt><tt class="py-op">,</tt> <tt id="link-39" class="py-name"><a title="ansible.playbook.base
+ansible.plugins.cache.base" class="py-name" href="#" onclick="return doclink('link-39', 'base', 'link-37');">base</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L80"></a><tt class="py-lineno"> 80</tt>  <tt class="py-line">    <tt class="py-keyword">except</tt> <tt class="py-name">TypeError</tt> <tt class="py-keyword">as</tt> <tt id="link-40" class="py-name"><a title="ansible.plugins.lookup.consul_kv.e" class="py-name" href="#" onclick="return doclink('link-40', 'e', 'link-36');">e</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L81"></a><tt class="py-lineno"> 81</tt>  <tt class="py-line">        <tt class="py-keyword">raise</tt> <tt id="link-41" class="py-name"><a title="ansible.errors" class="py-name" href="#" onclick="return doclink('link-41', 'errors', 'link-2');">errors</a></tt><tt class="py-op">.</tt><tt id="link-42" class="py-name" targets="Class ansible.errors.AnsibleFilterError=ansible.errors.AnsibleFilterError-class.html"><a title="ansible.errors.AnsibleFilterError" class="py-name" href="#" onclick="return doclink('link-42', 'AnsibleFilterError', 'link-42');">AnsibleFilterError</a></tt><tt class="py-op">(</tt><tt class="py-string">'log() can only be used on numbers: %s'</tt> <tt class="py-op">%</tt> <tt id="link-43" class="py-name" targets="Class str=str-class.html"><a title="str" class="py-name" href="#" onclick="return doclink('link-43', 'str', 'link-43');">str</a></tt><tt class="py-op">(</tt><tt id="link-44" class="py-name"><a title="ansible.plugins.lookup.consul_kv.e" class="py-name" href="#" onclick="return doclink('link-44', 'e', 'link-36');">e</a></tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L82"></a><tt class="py-lineno"> 82</tt>  <tt class="py-line"> </tt>
+<a name="L83"></a><tt class="py-lineno"> 83</tt>  <tt class="py-line"> </tt>
+<a name="power"></a><div id="power-def"><a name="L84"></a><tt class="py-lineno"> 84</tt> <a class="py-toggle" href="#" id="power-toggle" onclick="return toggle('power');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.filter.mathstuff-module.html#power">power</a><tt class="py-op">(</tt><tt class="py-param">x</tt><tt class="py-op">,</tt> <tt class="py-param">y</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="power-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="power-expanded"><a name="L85"></a><tt class="py-lineno"> 85</tt>  <tt class="py-line">    <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L86"></a><tt class="py-lineno"> 86</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">math</tt><tt class="py-op">.</tt><tt class="py-name">pow</tt><tt class="py-op">(</tt><tt class="py-name">x</tt><tt class="py-op">,</tt> <tt class="py-name">y</tt><tt class="py-op">)</tt> </tt>
+<a name="L87"></a><tt class="py-lineno"> 87</tt>  <tt class="py-line">    <tt class="py-keyword">except</tt> <tt class="py-name">TypeError</tt> <tt class="py-keyword">as</tt> <tt id="link-45" class="py-name"><a title="ansible.plugins.lookup.consul_kv.e" class="py-name" href="#" onclick="return doclink('link-45', 'e', 'link-36');">e</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L88"></a><tt class="py-lineno"> 88</tt>  <tt class="py-line">        <tt class="py-keyword">raise</tt> <tt id="link-46" class="py-name"><a title="ansible.errors" class="py-name" href="#" onclick="return doclink('link-46', 'errors', 'link-2');">errors</a></tt><tt class="py-op">.</tt><tt id="link-47" class="py-name"><a title="ansible.errors.AnsibleFilterError" class="py-name" href="#" onclick="return doclink('link-47', 'AnsibleFilterError', 'link-42');">AnsibleFilterError</a></tt><tt class="py-op">(</tt><tt class="py-string">'pow() can only be used on numbers: %s'</tt> <tt class="py-op">%</tt> <tt id="link-48" class="py-name"><a title="str" class="py-name" href="#" onclick="return doclink('link-48', 'str', 'link-43');">str</a></tt><tt class="py-op">(</tt><tt id="link-49" class="py-name"><a title="ansible.plugins.lookup.consul_kv.e" class="py-name" href="#" onclick="return doclink('link-49', 'e', 'link-36');">e</a></tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L89"></a><tt class="py-lineno"> 89</tt>  <tt class="py-line"> </tt>
+<a name="L90"></a><tt class="py-lineno"> 90</tt>  <tt class="py-line"> </tt>
+<a name="inversepower"></a><div id="inversepower-def"><a name="L91"></a><tt class="py-lineno"> 91</tt> <a class="py-toggle" href="#" id="inversepower-toggle" onclick="return toggle('inversepower');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.filter.mathstuff-module.html#inversepower">inversepower</a><tt class="py-op">(</tt><tt class="py-param">x</tt><tt class="py-op">,</tt> <tt class="py-param">base</tt><tt class="py-op">=</tt><tt class="py-number">2</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="inversepower-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="inversepower-expanded"><a name="L92"></a><tt class="py-lineno"> 92</tt>  <tt class="py-line">    <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L93"></a><tt class="py-lineno"> 93</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt id="link-50" class="py-name"><a title="ansible.playbook.base
+ansible.plugins.cache.base" class="py-name" href="#" onclick="return doclink('link-50', 'base', 'link-37');">base</a></tt> <tt class="py-op">==</tt> <tt class="py-number">2</tt><tt class="py-op">:</tt> </tt>
+<a name="L94"></a><tt class="py-lineno"> 94</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">math</tt><tt class="py-op">.</tt><tt class="py-name">sqrt</tt><tt class="py-op">(</tt><tt class="py-name">x</tt><tt class="py-op">)</tt> </tt>
+<a name="L95"></a><tt class="py-lineno"> 95</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L96"></a><tt class="py-lineno"> 96</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">math</tt><tt class="py-op">.</tt><tt class="py-name">pow</tt><tt class="py-op">(</tt><tt class="py-name">x</tt><tt class="py-op">,</tt> <tt class="py-number">1.0</tt><tt class="py-op">/</tt><tt class="py-name">float</tt><tt class="py-op">(</tt><tt id="link-51" class="py-name"><a title="ansible.playbook.base
+ansible.plugins.cache.base" class="py-name" href="#" onclick="return doclink('link-51', 'base', 'link-37');">base</a></tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L97"></a><tt class="py-lineno"> 97</tt>  <tt class="py-line">    <tt class="py-keyword">except</tt> <tt class="py-name">TypeError</tt> <tt class="py-keyword">as</tt> <tt id="link-52" class="py-name"><a title="ansible.plugins.lookup.consul_kv.e" class="py-name" href="#" onclick="return doclink('link-52', 'e', 'link-36');">e</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L98"></a><tt class="py-lineno"> 98</tt>  <tt class="py-line">        <tt class="py-keyword">raise</tt> <tt id="link-53" class="py-name"><a title="ansible.errors" class="py-name" href="#" onclick="return doclink('link-53', 'errors', 'link-2');">errors</a></tt><tt class="py-op">.</tt><tt id="link-54" class="py-name"><a title="ansible.errors.AnsibleFilterError" class="py-name" href="#" onclick="return doclink('link-54', 'AnsibleFilterError', 'link-42');">AnsibleFilterError</a></tt><tt class="py-op">(</tt><tt class="py-string">'root() can only be used on numbers: %s'</tt> <tt class="py-op">%</tt> <tt id="link-55" class="py-name"><a title="str" class="py-name" href="#" onclick="return doclink('link-55', 'str', 'link-43');">str</a></tt><tt class="py-op">(</tt><tt id="link-56" class="py-name"><a title="ansible.plugins.lookup.consul_kv.e" class="py-name" href="#" onclick="return doclink('link-56', 'e', 'link-36');">e</a></tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L99"></a><tt class="py-lineno"> 99</tt>  <tt class="py-line"> </tt>
+<a name="L100"></a><tt class="py-lineno">100</tt>  <tt class="py-line"> </tt>
+<a name="human_readable"></a><div id="human_readable-def"><a name="L101"></a><tt class="py-lineno">101</tt> <a class="py-toggle" href="#" id="human_readable-toggle" onclick="return toggle('human_readable');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.filter.mathstuff-module.html#human_readable">human_readable</a><tt class="py-op">(</tt><tt class="py-param">size</tt><tt class="py-op">,</tt> <tt class="py-param">isbits</tt><tt class="py-op">=</tt><tt class="py-name">False</tt><tt class="py-op">,</tt> <tt class="py-param">unit</tt><tt class="py-op">=</tt><tt class="py-name">None</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="human_readable-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="human_readable-expanded"><a name="L102"></a><tt class="py-lineno">102</tt>  <tt class="py-line"> </tt>
+<a name="L103"></a><tt class="py-lineno">103</tt>  <tt class="py-line">    <tt id="link-57" class="py-name"><a title="ansible.playbook.base
+ansible.plugins.cache.base" class="py-name" href="#" onclick="return doclink('link-57', 'base', 'link-37');">base</a></tt> <tt class="py-op">=</tt> <tt class="py-string">'bits'</tt> <tt class="py-keyword">if</tt> <tt class="py-name">isbits</tt> <tt class="py-keyword">else</tt> <tt class="py-string">'Bytes'</tt> </tt>
+<a name="L104"></a><tt class="py-lineno">104</tt>  <tt class="py-line">    <tt class="py-name">suffix</tt> <tt class="py-op">=</tt> <tt class="py-string">''</tt> </tt>
+<a name="L105"></a><tt class="py-lineno">105</tt>  <tt class="py-line"> </tt>
+<a name="L106"></a><tt class="py-lineno">106</tt>  <tt class="py-line">    <tt class="py-name">ranges</tt> <tt class="py-op">=</tt> <tt class="py-op">(</tt> </tt>
+<a name="L107"></a><tt class="py-lineno">107</tt>  <tt class="py-line">            <tt class="py-op">(</tt><tt class="py-number">1</tt><tt class="py-op">&lt;&lt;</tt><tt class="py-number">70</tt><tt class="py-op">,</tt> <tt class="py-string">'Z'</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L108"></a><tt class="py-lineno">108</tt>  <tt class="py-line">            <tt class="py-op">(</tt><tt class="py-number">1</tt><tt class="py-op">&lt;&lt;</tt><tt class="py-number">60</tt><tt class="py-op">,</tt> <tt class="py-string">'E'</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L109"></a><tt class="py-lineno">109</tt>  <tt class="py-line">            <tt class="py-op">(</tt><tt class="py-number">1</tt><tt class="py-op">&lt;&lt;</tt><tt class="py-number">50</tt><tt class="py-op">,</tt> <tt class="py-string">'P'</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L110"></a><tt class="py-lineno">110</tt>  <tt class="py-line">            <tt class="py-op">(</tt><tt class="py-number">1</tt><tt class="py-op">&lt;&lt;</tt><tt class="py-number">40</tt><tt class="py-op">,</tt> <tt class="py-string">'T'</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L111"></a><tt class="py-lineno">111</tt>  <tt class="py-line">            <tt class="py-op">(</tt><tt class="py-number">1</tt><tt class="py-op">&lt;&lt;</tt><tt class="py-number">30</tt><tt class="py-op">,</tt> <tt class="py-string">'G'</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L112"></a><tt class="py-lineno">112</tt>  <tt class="py-line">            <tt class="py-op">(</tt><tt class="py-number">1</tt><tt class="py-op">&lt;&lt;</tt><tt class="py-number">20</tt><tt class="py-op">,</tt> <tt class="py-string">'M'</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L113"></a><tt class="py-lineno">113</tt>  <tt class="py-line">            <tt class="py-op">(</tt><tt class="py-number">1</tt><tt class="py-op">&lt;&lt;</tt><tt class="py-number">10</tt><tt class="py-op">,</tt> <tt class="py-string">'K'</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L114"></a><tt class="py-lineno">114</tt>  <tt class="py-line">            <tt class="py-op">(</tt><tt class="py-number">1</tt><tt class="py-op">,</tt> <tt id="link-58" class="py-name"><a title="ansible.playbook.base
+ansible.plugins.cache.base" class="py-name" href="#" onclick="return doclink('link-58', 'base', 'link-37');">base</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L115"></a><tt class="py-lineno">115</tt>  <tt class="py-line">        <tt class="py-op">)</tt> </tt>
+<a name="L116"></a><tt class="py-lineno">116</tt>  <tt class="py-line"> </tt>
+<a name="L117"></a><tt class="py-lineno">117</tt>  <tt class="py-line">    <tt class="py-keyword">for</tt> <tt class="py-name">limit</tt><tt class="py-op">,</tt> <tt class="py-name">suffix</tt> <tt class="py-keyword">in</tt> <tt class="py-name">ranges</tt><tt class="py-op">:</tt> </tt>
+<a name="L118"></a><tt class="py-lineno">118</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-op">(</tt><tt class="py-name">unit</tt> <tt class="py-keyword">is</tt> <tt class="py-name">None</tt> <tt class="py-keyword">and</tt> <tt class="py-name">size</tt> <tt class="py-op">&gt;=</tt> <tt class="py-name">limit</tt><tt class="py-op">)</tt> <tt class="py-keyword">or</tt> \ </tt>
+<a name="L119"></a><tt class="py-lineno">119</tt>  <tt class="py-line">            <tt class="py-name">unit</tt> <tt class="py-keyword">is</tt> <tt class="py-keyword">not</tt> <tt class="py-name">None</tt> <tt class="py-keyword">and</tt> <tt class="py-name">unit</tt><tt class="py-op">.</tt><tt class="py-name">upper</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> <tt class="py-op">==</tt> <tt class="py-name">suffix</tt><tt class="py-op">:</tt> </tt>
+<a name="L120"></a><tt class="py-lineno">120</tt>  <tt class="py-line">            <tt class="py-keyword">break</tt> </tt>
+<a name="L121"></a><tt class="py-lineno">121</tt>  <tt class="py-line"> </tt>
+<a name="L122"></a><tt class="py-lineno">122</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">limit</tt> <tt class="py-op">!=</tt> <tt class="py-number">1</tt><tt class="py-op">:</tt> </tt>
+<a name="L123"></a><tt class="py-lineno">123</tt>  <tt class="py-line">        <tt class="py-name">suffix</tt> <tt class="py-op">+=</tt> <tt id="link-59" class="py-name"><a title="ansible.playbook.base
+ansible.plugins.cache.base" class="py-name" href="#" onclick="return doclink('link-59', 'base', 'link-37');">base</a></tt><tt class="py-op">[</tt><tt class="py-number">0</tt><tt class="py-op">]</tt> </tt>
+<a name="L124"></a><tt class="py-lineno">124</tt>  <tt class="py-line"> </tt>
+<a name="L125"></a><tt class="py-lineno">125</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-string">'%.2f %s'</tt> <tt class="py-op">%</tt> <tt class="py-op">(</tt><tt class="py-name">float</tt><tt class="py-op">(</tt><tt class="py-name">size</tt><tt class="py-op">)</tt><tt class="py-op">/</tt> <tt class="py-name">limit</tt><tt class="py-op">,</tt> <tt class="py-name">suffix</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L126"></a><tt class="py-lineno">126</tt>  <tt class="py-line"> </tt>
+<a name="FilterModule"></a><div id="FilterModule-def"><a name="L127"></a><tt class="py-lineno">127</tt> <a class="py-toggle" href="#" id="FilterModule-toggle" onclick="return toggle('FilterModule');">-</a><tt class="py-line"><tt class="py-keyword">class</tt> <a class="py-def-name" href="ansible.plugins.filter.mathstuff.FilterModule-class.html">FilterModule</a><tt class="py-op">(</tt><tt class="py-base-class">object</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="FilterModule-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="FilterModule-expanded"><a name="L128"></a><tt class="py-lineno">128</tt>  <tt class="py-line">    <tt class="py-docstring">''' Ansible math jinja2 filters '''</tt> </tt>
+<a name="L129"></a><tt class="py-lineno">129</tt>  <tt class="py-line"> </tt>
+<a name="FilterModule.filters"></a><div id="FilterModule.filters-def"><a name="L130"></a><tt class="py-lineno">130</tt> <a class="py-toggle" href="#" id="FilterModule.filters-toggle" onclick="return toggle('FilterModule.filters');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.filter.mathstuff.FilterModule-class.html#filters">filters</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="FilterModule.filters-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="FilterModule.filters-expanded"><a name="L131"></a><tt class="py-lineno">131</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-op">{</tt> </tt>
+<a name="L132"></a><tt class="py-lineno">132</tt>  <tt class="py-line">            <tt class="py-comment"># general math</tt> </tt>
+<a name="L133"></a><tt class="py-lineno">133</tt>  <tt class="py-line">            <tt class="py-string">'min'</tt> <tt class="py-op">:</tt> <tt id="link-60" class="py-name" targets="Function ansible.plugins.filter.mathstuff.min()=ansible.plugins.filter.mathstuff-module.html#min"><a title="ansible.plugins.filter.mathstuff.min" class="py-name" href="#" onclick="return doclink('link-60', 'min', 'link-60');">min</a></tt><tt class="py-op">,</tt> </tt>
+<a name="L134"></a><tt class="py-lineno">134</tt>  <tt class="py-line">            <tt class="py-string">'max'</tt> <tt class="py-op">:</tt> <tt id="link-61" class="py-name" targets="Function ansible.plugins.filter.mathstuff.max()=ansible.plugins.filter.mathstuff-module.html#max"><a title="ansible.plugins.filter.mathstuff.max" class="py-name" href="#" onclick="return doclink('link-61', 'max', 'link-61');">max</a></tt><tt class="py-op">,</tt> </tt>
+<a name="L135"></a><tt class="py-lineno">135</tt>  <tt class="py-line"> </tt>
+<a name="L136"></a><tt class="py-lineno">136</tt>  <tt class="py-line">            <tt class="py-comment"># exponents and logarithms</tt> </tt>
+<a name="L137"></a><tt class="py-lineno">137</tt>  <tt class="py-line">            <tt class="py-string">'log'</tt><tt class="py-op">:</tt> <tt id="link-62" class="py-name" targets="Function ansible.plugins.filter.mathstuff.logarithm()=ansible.plugins.filter.mathstuff-module.html#logarithm"><a title="ansible.plugins.filter.mathstuff.logarithm" class="py-name" href="#" onclick="return doclink('link-62', 'logarithm', 'link-62');">logarithm</a></tt><tt class="py-op">,</tt> </tt>
+<a name="L138"></a><tt class="py-lineno">138</tt>  <tt class="py-line">            <tt class="py-string">'pow'</tt><tt class="py-op">:</tt> <tt id="link-63" class="py-name" targets="Function ansible.plugins.filter.mathstuff.power()=ansible.plugins.filter.mathstuff-module.html#power"><a title="ansible.plugins.filter.mathstuff.power" class="py-name" href="#" onclick="return doclink('link-63', 'power', 'link-63');">power</a></tt><tt class="py-op">,</tt> </tt>
+<a name="L139"></a><tt class="py-lineno">139</tt>  <tt class="py-line">            <tt class="py-string">'root'</tt><tt class="py-op">:</tt> <tt id="link-64" class="py-name" targets="Function ansible.plugins.filter.mathstuff.inversepower()=ansible.plugins.filter.mathstuff-module.html#inversepower"><a title="ansible.plugins.filter.mathstuff.inversepower" class="py-name" href="#" onclick="return doclink('link-64', 'inversepower', 'link-64');">inversepower</a></tt><tt class="py-op">,</tt> </tt>
+<a name="L140"></a><tt class="py-lineno">140</tt>  <tt class="py-line"> </tt>
+<a name="L141"></a><tt class="py-lineno">141</tt>  <tt class="py-line">            <tt class="py-comment"># set theory</tt> </tt>
+<a name="L142"></a><tt class="py-lineno">142</tt>  <tt class="py-line">            <tt class="py-string">'unique'</tt> <tt class="py-op">:</tt> <tt id="link-65" class="py-name"><a title="ansible.plugins.filter.mathstuff.unique" class="py-name" href="#" onclick="return doclink('link-65', 'unique', 'link-8');">unique</a></tt><tt class="py-op">,</tt> </tt>
+<a name="L143"></a><tt class="py-lineno">143</tt>  <tt class="py-line">            <tt class="py-string">'intersect'</tt><tt class="py-op">:</tt> <tt id="link-66" class="py-name"><a title="ansible.plugins.filter.mathstuff.intersect" class="py-name" href="#" onclick="return doclink('link-66', 'intersect', 'link-24');">intersect</a></tt><tt class="py-op">,</tt> </tt>
+<a name="L144"></a><tt class="py-lineno">144</tt>  <tt class="py-line">            <tt class="py-string">'difference'</tt><tt class="py-op">:</tt> <tt id="link-67" class="py-name" targets="Method ansible.module_utils.netcfg.NetworkConfig.difference()=ansible.module_utils.netcfg.NetworkConfig-class.html#difference,Function ansible.plugins.filter.mathstuff.difference()=ansible.plugins.filter.mathstuff-module.html#difference"><a title="ansible.module_utils.netcfg.NetworkConfig.difference
+ansible.plugins.filter.mathstuff.difference" class="py-name" href="#" onclick="return doclink('link-67', 'difference', 'link-67');">difference</a></tt><tt class="py-op">,</tt> </tt>
+<a name="L145"></a><tt class="py-lineno">145</tt>  <tt class="py-line">            <tt class="py-string">'symmetric_difference'</tt><tt class="py-op">:</tt> <tt id="link-68" class="py-name" targets="Function ansible.plugins.filter.mathstuff.symmetric_difference()=ansible.plugins.filter.mathstuff-module.html#symmetric_difference"><a title="ansible.plugins.filter.mathstuff.symmetric_difference" class="py-name" href="#" onclick="return doclink('link-68', 'symmetric_difference', 'link-68');">symmetric_difference</a></tt><tt class="py-op">,</tt> </tt>
+<a name="L146"></a><tt class="py-lineno">146</tt>  <tt class="py-line">            <tt class="py-string">'union'</tt><tt class="py-op">:</tt> <tt id="link-69" class="py-name"><a title="ansible.plugins.filter.mathstuff.union" class="py-name" href="#" onclick="return doclink('link-69', 'union', 'link-26');">union</a></tt><tt class="py-op">,</tt> </tt>
+<a name="L147"></a><tt class="py-lineno">147</tt>  <tt class="py-line"> </tt>
+<a name="L148"></a><tt class="py-lineno">148</tt>  <tt class="py-line">            <tt class="py-comment"># computer theory</tt> </tt>
+<a name="L149"></a><tt class="py-lineno">149</tt>  <tt class="py-line">            <tt class="py-string">'human_readable'</tt> <tt class="py-op">:</tt> <tt id="link-70" class="py-name" targets="Function ansible.plugins.filter.mathstuff.human_readable()=ansible.plugins.filter.mathstuff-module.html#human_readable"><a title="ansible.plugins.filter.mathstuff.human_readable" class="py-name" href="#" onclick="return doclink('link-70', 'human_readable', 'link-70');">human_readable</a></tt><tt class="py-op">,</tt> </tt>
+<a name="L150"></a><tt class="py-lineno">150</tt>  <tt class="py-line"> </tt>
+<a name="L151"></a><tt class="py-lineno">151</tt>  <tt class="py-line">        <tt class="py-op">}</tt> </tt>
+</div></div><a name="L152"></a><tt class="py-lineno">152</tt>  <tt class="py-line"> </tt><script type="text/javascript">
+<!--
+expandto(location.href);
+// -->
+</script>
+</pre>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Fri Jul 29 13:11:39 2016
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

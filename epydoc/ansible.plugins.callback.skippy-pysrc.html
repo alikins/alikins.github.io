@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>ansible.plugins.callback.skippy</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="ansible-module.html">Package&nbsp;ansible</a> ::
+        <a href="ansible.plugins-module.html">Package&nbsp;plugins</a> ::
+        <a href="ansible.plugins.callback-module.html">Package&nbsp;callback</a> ::
+        Module&nbsp;skippy
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="ansible.plugins.callback.skippy-pysrc.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<h1 class="epydoc">Source Code for <a href="ansible.plugins.callback.skippy-module.html">Module ansible.plugins.callback.skippy</a></h1>
+<pre class="py-src">
+<a name="L1"></a><tt class="py-lineno"> 1</tt>  <tt class="py-line"><tt class="py-comment"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</tt> </tt>
+<a name="L2"></a><tt class="py-lineno"> 2</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L3"></a><tt class="py-lineno"> 3</tt>  <tt class="py-line"><tt class="py-comment"># This file is part of Ansible</tt> </tt>
+<a name="L4"></a><tt class="py-lineno"> 4</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L5"></a><tt class="py-lineno"> 5</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is free software: you can redistribute it and/or modify</tt> </tt>
+<a name="L6"></a><tt class="py-lineno"> 6</tt>  <tt class="py-line"><tt class="py-comment"># it under the terms of the GNU General Public License as published by</tt> </tt>
+<a name="L7"></a><tt class="py-lineno"> 7</tt>  <tt class="py-line"><tt class="py-comment"># the Free Software Foundation, either version 3 of the License, or</tt> </tt>
+<a name="L8"></a><tt class="py-lineno"> 8</tt>  <tt class="py-line"><tt class="py-comment"># (at your option) any later version.</tt> </tt>
+<a name="L9"></a><tt class="py-lineno"> 9</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L10"></a><tt class="py-lineno">10</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is distributed in the hope that it will be useful,</tt> </tt>
+<a name="L11"></a><tt class="py-lineno">11</tt>  <tt class="py-line"><tt class="py-comment"># but WITHOUT ANY WARRANTY; without even the implied warranty of</tt> </tt>
+<a name="L12"></a><tt class="py-lineno">12</tt>  <tt class="py-line"><tt class="py-comment"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</tt> </tt>
+<a name="L13"></a><tt class="py-lineno">13</tt>  <tt class="py-line"><tt class="py-comment"># GNU General Public License for more details.</tt> </tt>
+<a name="L14"></a><tt class="py-lineno">14</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L15"></a><tt class="py-lineno">15</tt>  <tt class="py-line"><tt class="py-comment"># You should have received a copy of the GNU General Public License</tt> </tt>
+<a name="L16"></a><tt class="py-lineno">16</tt>  <tt class="py-line"><tt class="py-comment"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</tt> </tt>
+<a name="L17"></a><tt class="py-lineno">17</tt>  <tt class="py-line"> </tt>
+<a name="L18"></a><tt class="py-lineno">18</tt>  <tt class="py-line"><tt class="py-comment"># Make coding more python3-ish</tt> </tt>
+<a name="L19"></a><tt class="py-lineno">19</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">__future__</tt> <tt class="py-keyword">import</tt> <tt class="py-op">(</tt><tt class="py-name">absolute_import</tt><tt class="py-op">,</tt> <tt class="py-name">division</tt><tt class="py-op">,</tt> <tt class="py-name">print_function</tt><tt class="py-op">)</tt> </tt>
+<a name="L20"></a><tt class="py-lineno">20</tt>  <tt class="py-line"><tt class="py-name">__metaclass__</tt> <tt class="py-op">=</tt> <tt id="link-0" class="py-name" targets="Class type=type-class.html"><a title="type" class="py-name" href="#" onclick="return doclink('link-0', 'type', 'link-0');">type</a></tt> </tt>
+<a name="L21"></a><tt class="py-lineno">21</tt>  <tt class="py-line"> </tt>
+<a name="L22"></a><tt class="py-lineno">22</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-1" class="py-name" targets="Package ansible=ansible-module.html"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-1', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-2" class="py-name" targets="Package ansible.plugins=ansible.plugins-module.html"><a title="ansible.plugins" class="py-name" href="#" onclick="return doclink('link-2', 'plugins', 'link-2');">plugins</a></tt><tt class="py-op">.</tt><tt id="link-3" class="py-name" targets="Package ansible.plugins.callback=ansible.plugins.callback-module.html"><a title="ansible.plugins.callback" class="py-name" href="#" onclick="return doclink('link-3', 'callback', 'link-3');">callback</a></tt><tt class="py-op">.</tt><tt id="link-4" class="py-name" targets="Method ansible.cli.console.ConsoleCLI.default()=ansible.cli.console.ConsoleCLI-class.html#default,Module ansible.plugins.callback.default=ansible.plugins.callback.default-module.html,Method ansible.plugins.filter.core.AnsibleJSONEncoder.default()=ansible.plugins.filter.core.AnsibleJSONEncoder-class.html#default,Method ansible.plugins.strategy.debug.Debugger.default()=ansible.plugins.strategy.debug.Debugger-class.html#default"><a title="ansible.cli.console.ConsoleCLI.default
+ansible.plugins.callback.default
+ansible.plugins.filter.core.AnsibleJSONEncoder.default
+ansible.plugins.strategy.debug.Debugger.default" class="py-name" href="#" onclick="return doclink('link-4', 'default', 'link-4');">default</a></tt> <tt class="py-keyword">import</tt> <tt id="link-5" class="py-name" targets="Class ansible.plugins.callback.actionable.CallbackModule=ansible.plugins.callback.actionable.CallbackModule-class.html,Class ansible.plugins.callback.context_demo.CallbackModule=ansible.plugins.callback.context_demo.CallbackModule-class.html,Class ansible.plugins.callback.default.CallbackModule=ansible.plugins.callback.default.CallbackModule-class.html,Class ansible.plugins.callback.hipchat.CallbackModule=ansible.plugins.callback.hipchat.CallbackModule-class.html,Class ansible.plugins.callback.json.CallbackModule=ansible.plugins.callback.json.CallbackModule-class.html,Class ansible.plugins.callback.junit.CallbackModule=ansible.plugins.callback.junit.CallbackModule-class.html,Class ansible.plugins.callback.log_plays.CallbackModule=ansible.plugins.callback.log_plays.CallbackModule-class.html,Class ansible.plugins.callback.logentries.CallbackModule=ansible.plugins.callback.logentries.CallbackModule-class.html,Class ansible.plugins.callback.mail.CallbackModule=ansible.plugins.callback.mail.CallbackModule-class.html,Class ansible.plugins.callback.minimal.CallbackModule=ansible.plugins.callback.minimal.CallbackModule-class.html,Class ansible.plugins.callback.oneline.CallbackModule=ansible.plugins.callback.oneline.CallbackModule-class.html,Class ansible.plugins.callback.osx_say.CallbackModule=ansible.plugins.callback.osx_say.CallbackModule-class.html,Class ansible.plugins.callback.profile_tasks.CallbackModule=ansible.plugins.callback.profile_tasks.CallbackModule-class.html,Class ansible.plugins.callback.skippy.CallbackModule=ansible.plugins.callback.skippy.CallbackModule-class.html,Class ansible.plugins.callback.slack.CallbackModule=ansible.plugins.callback.slack.CallbackModule-class.html,Class ansible.plugins.callback.syslog_json.CallbackModule=ansible.plugins.callback.syslog_json.CallbackModule-class.html,Class ansible.plugins.callback.timer.CallbackModule=ansible.plugins.callback.timer.CallbackModule-class.html,Class ansible.plugins.callback.tree.CallbackModule=ansible.plugins.callback.tree.CallbackModule-class.html"><a title="ansible.plugins.callback.actionable.CallbackModule
+ansible.plugins.callback.context_demo.CallbackModule
+ansible.plugins.callback.default.CallbackModule
+ansible.plugins.callback.hipchat.CallbackModule
+ansible.plugins.callback.json.CallbackModule
+ansible.plugins.callback.junit.CallbackModule
+ansible.plugins.callback.log_plays.CallbackModule
+ansible.plugins.callback.logentries.CallbackModule
+ansible.plugins.callback.mail.CallbackModule
+ansible.plugins.callback.minimal.CallbackModule
+ansible.plugins.callback.oneline.CallbackModule
+ansible.plugins.callback.osx_say.CallbackModule
+ansible.plugins.callback.profile_tasks.CallbackModule
+ansible.plugins.callback.skippy.CallbackModule
+ansible.plugins.callback.slack.CallbackModule
+ansible.plugins.callback.syslog_json.CallbackModule
+ansible.plugins.callback.timer.CallbackModule
+ansible.plugins.callback.tree.CallbackModule" class="py-name" href="#" onclick="return doclink('link-5', 'CallbackModule', 'link-5');">CallbackModule</a></tt> <tt class="py-keyword">as</tt> <tt class="py-name">CallbackModule_default</tt> </tt>
+<a name="L23"></a><tt class="py-lineno">23</tt>  <tt class="py-line"> </tt>
+<a name="CallbackModule"></a><div id="CallbackModule-def"><a name="L24"></a><tt class="py-lineno">24</tt> <a class="py-toggle" href="#" id="CallbackModule-toggle" onclick="return toggle('CallbackModule');">-</a><tt class="py-line"><tt class="py-keyword">class</tt> <a class="py-def-name" href="ansible.plugins.callback.skippy.CallbackModule-class.html">CallbackModule</a><tt class="py-op">(</tt><tt class="py-base-class">CallbackModule_default</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CallbackModule-collapsed" style="display:none;" pad="++" indent="++++"></div><div id="CallbackModule-expanded"><a name="L25"></a><tt class="py-lineno">25</tt>  <tt class="py-line"> </tt>
+<a name="L26"></a><tt class="py-lineno">26</tt>  <tt class="py-line">    <tt class="py-docstring">'''</tt> </tt>
+<a name="L27"></a><tt class="py-lineno">27</tt>  <tt class="py-line"><tt class="py-docstring">    This is the default callback interface, which simply prints messages</tt> </tt>
+<a name="L28"></a><tt class="py-lineno">28</tt>  <tt class="py-line"><tt class="py-docstring">    to stdout when new callback events are received.</tt> </tt>
+<a name="L29"></a><tt class="py-lineno">29</tt>  <tt class="py-line"><tt class="py-docstring">    '''</tt> </tt>
+<a name="L30"></a><tt class="py-lineno">30</tt>  <tt class="py-line"> </tt>
+<a name="L31"></a><tt class="py-lineno">31</tt>  <tt class="py-line">    <tt id="link-6" class="py-name" targets="Variable ansible.plugins.callback.actionable.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.actionable.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.context_demo.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.context_demo.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.default.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.default.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.hipchat.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.hipchat.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.json.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.json.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.junit.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.junit.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.log_plays.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.log_plays.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.logentries.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.logentries.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.mail.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.mail.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.minimal.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.minimal.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.oneline.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.oneline.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.osx_say.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.osx_say.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.profile_tasks.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.profile_tasks.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.skippy.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.skippy.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.slack.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.slack.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.syslog_json.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.syslog_json.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.timer.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.timer.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.tree.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.tree.CallbackModule-class.html#CALLBACK_VERSION"><a title="ansible.plugins.callback.actionable.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.context_demo.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.default.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.hipchat.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.json.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.junit.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.log_plays.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.logentries.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.mail.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.minimal.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.oneline.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.osx_say.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.profile_tasks.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.skippy.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.slack.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.syslog_json.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.timer.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.tree.CallbackModule.CALLBACK_VERSION" class="py-name" href="#" onclick="return doclink('link-6', 'CALLBACK_VERSION', 'link-6');">CALLBACK_VERSION</a></tt> <tt class="py-op">=</tt> <tt class="py-number">2.0</tt> </tt>
+<a name="L32"></a><tt class="py-lineno">32</tt>  <tt class="py-line">    <tt id="link-7" class="py-name" targets="Variable ansible.plugins.callback.actionable.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.actionable.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.context_demo.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.context_demo.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.default.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.default.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.hipchat.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.hipchat.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.json.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.json.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.junit.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.junit.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.log_plays.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.log_plays.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.logentries.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.logentries.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.mail.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.mail.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.minimal.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.minimal.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.oneline.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.oneline.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.osx_say.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.osx_say.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.profile_tasks.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.profile_tasks.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.skippy.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.skippy.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.slack.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.slack.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.syslog_json.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.syslog_json.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.timer.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.timer.CallbackModule-class.html#CALLBACK_TYPE,Variable ansible.plugins.callback.tree.CallbackModule.CALLBACK_TYPE=ansible.plugins.callback.tree.CallbackModule-class.html#CALLBACK_TYPE"><a title="ansible.plugins.callback.actionable.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.context_demo.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.default.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.hipchat.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.json.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.junit.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.log_plays.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.logentries.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.mail.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.minimal.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.oneline.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.osx_say.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.profile_tasks.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.skippy.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.slack.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.syslog_json.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.timer.CallbackModule.CALLBACK_TYPE
+ansible.plugins.callback.tree.CallbackModule.CALLBACK_TYPE" class="py-name" href="#" onclick="return doclink('link-7', 'CALLBACK_TYPE', 'link-7');">CALLBACK_TYPE</a></tt> <tt class="py-op">=</tt> <tt class="py-string">'stdout'</tt> </tt>
+<a name="L33"></a><tt class="py-lineno">33</tt>  <tt class="py-line">    <tt id="link-8" class="py-name" targets="Variable ansible.plugins.callback.actionable.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.actionable.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.context_demo.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.context_demo.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.default.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.default.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.hipchat.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.hipchat.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.json.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.json.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.junit.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.junit.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.log_plays.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.log_plays.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.logentries.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.logentries.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.mail.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.mail.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.minimal.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.minimal.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.oneline.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.oneline.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.osx_say.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.osx_say.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.profile_tasks.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.profile_tasks.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.skippy.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.skippy.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.slack.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.slack.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.syslog_json.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.syslog_json.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.timer.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.timer.CallbackModule-class.html#CALLBACK_NAME,Variable ansible.plugins.callback.tree.CallbackModule.CALLBACK_NAME=ansible.plugins.callback.tree.CallbackModule-class.html#CALLBACK_NAME"><a title="ansible.plugins.callback.actionable.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.context_demo.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.default.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.hipchat.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.json.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.junit.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.log_plays.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.logentries.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.mail.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.minimal.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.oneline.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.osx_say.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.profile_tasks.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.skippy.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.slack.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.syslog_json.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.timer.CallbackModule.CALLBACK_NAME
+ansible.plugins.callback.tree.CallbackModule.CALLBACK_NAME" class="py-name" href="#" onclick="return doclink('link-8', 'CALLBACK_NAME', 'link-8');">CALLBACK_NAME</a></tt> <tt class="py-op">=</tt> <tt class="py-string">'skippy'</tt> </tt>
+<a name="L34"></a><tt class="py-lineno">34</tt>  <tt class="py-line"> </tt>
+<a name="CallbackModule.v2_runner_on_skipped"></a><div id="CallbackModule.v2_runner_on_skipped-def"><a name="L35"></a><tt class="py-lineno">35</tt> <a class="py-toggle" href="#" id="CallbackModule.v2_runner_on_skipped-toggle" onclick="return toggle('CallbackModule.v2_runner_on_skipped');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.callback.skippy.CallbackModule-class.html#v2_runner_on_skipped">v2_runner_on_skipped</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">result</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CallbackModule.v2_runner_on_skipped-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="CallbackModule.v2_runner_on_skipped-expanded"><a name="L36"></a><tt class="py-lineno">36</tt>  <tt class="py-line">        <tt class="py-keyword">pass</tt> </tt>
+</div><a name="L37"></a><tt class="py-lineno">37</tt>  <tt class="py-line"> </tt>
+<a name="CallbackModule.v2_runner_item_on_skipped"></a><div id="CallbackModule.v2_runner_item_on_skipped-def"><a name="L38"></a><tt class="py-lineno">38</tt> <a class="py-toggle" href="#" id="CallbackModule.v2_runner_item_on_skipped-toggle" onclick="return toggle('CallbackModule.v2_runner_item_on_skipped');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.plugins.callback.skippy.CallbackModule-class.html#v2_runner_item_on_skipped">v2_runner_item_on_skipped</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">result</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="CallbackModule.v2_runner_item_on_skipped-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="CallbackModule.v2_runner_item_on_skipped-expanded"><a name="L39"></a><tt class="py-lineno">39</tt>  <tt class="py-line">        <tt class="py-keyword">pass</tt> </tt>
+</div></div><a name="L40"></a><tt class="py-lineno">40</tt>  <tt class="py-line"> </tt><script type="text/javascript">
+<!--
+expandto(location.href);
+// -->
+</script>
+</pre>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Fri Jul 29 13:11:41 2016
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

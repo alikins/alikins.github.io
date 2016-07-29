@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>ansible.module_utils.iosxr</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="ansible-module.html">Package&nbsp;ansible</a> ::
+        <a href="ansible.module_utils-module.html">Package&nbsp;module_utils</a> ::
+        Module&nbsp;iosxr
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="ansible.module_utils.iosxr-pysrc.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<h1 class="epydoc">Source Code for <a href="ansible.module_utils.iosxr-module.html">Module ansible.module_utils.iosxr</a></h1>
+<pre class="py-src">
+<a name="L1"></a><tt class="py-lineno"> 1</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L2"></a><tt class="py-lineno"> 2</tt>  <tt class="py-line"><tt class="py-comment"># (c) 2015 Peter Sprygada, &lt;psprygada@ansible.com&gt;</tt> </tt>
+<a name="L3"></a><tt class="py-lineno"> 3</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L4"></a><tt class="py-lineno"> 4</tt>  <tt class="py-line"><tt class="py-comment"># This file is part of Ansible</tt> </tt>
+<a name="L5"></a><tt class="py-lineno"> 5</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L6"></a><tt class="py-lineno"> 6</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is free software: you can redistribute it and/or modify</tt> </tt>
+<a name="L7"></a><tt class="py-lineno"> 7</tt>  <tt class="py-line"><tt class="py-comment"># it under the terms of the GNU General Public License as published by</tt> </tt>
+<a name="L8"></a><tt class="py-lineno"> 8</tt>  <tt class="py-line"><tt class="py-comment"># the Free Software Foundation, either version 3 of the License, or</tt> </tt>
+<a name="L9"></a><tt class="py-lineno"> 9</tt>  <tt class="py-line"><tt class="py-comment"># (at your option) any later version.</tt> </tt>
+<a name="L10"></a><tt class="py-lineno">10</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L11"></a><tt class="py-lineno">11</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is distributed in the hope that it will be useful,</tt> </tt>
+<a name="L12"></a><tt class="py-lineno">12</tt>  <tt class="py-line"><tt class="py-comment"># but WITHOUT ANY WARRANTY; without even the implied warranty of</tt> </tt>
+<a name="L13"></a><tt class="py-lineno">13</tt>  <tt class="py-line"><tt class="py-comment"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</tt> </tt>
+<a name="L14"></a><tt class="py-lineno">14</tt>  <tt class="py-line"><tt class="py-comment"># GNU General Public License for more details.</tt> </tt>
+<a name="L15"></a><tt class="py-lineno">15</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L16"></a><tt class="py-lineno">16</tt>  <tt class="py-line"><tt class="py-comment"># You should have received a copy of the GNU General Public License</tt> </tt>
+<a name="L17"></a><tt class="py-lineno">17</tt>  <tt class="py-line"><tt class="py-comment"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</tt> </tt>
+<a name="L18"></a><tt class="py-lineno">18</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L19"></a><tt class="py-lineno">19</tt>  <tt class="py-line"> </tt>
+<a name="L20"></a><tt class="py-lineno">20</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">re</tt> </tt>
+<a name="L21"></a><tt class="py-lineno">21</tt>  <tt class="py-line"> </tt>
+<a name="L22"></a><tt class="py-lineno">22</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-0" class="py-name" targets="Package ansible=ansible-module.html"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-0', 'ansible', 'link-0');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-1" class="py-name" targets="Package ansible.module_utils=ansible.module_utils-module.html"><a title="ansible.module_utils" class="py-name" href="#" onclick="return doclink('link-1', 'module_utils', 'link-1');">module_utils</a></tt><tt class="py-op">.</tt><tt id="link-2" class="py-name" targets="Module ansible.module_utils.network=ansible.module_utils.network-module.html"><a title="ansible.module_utils.network" class="py-name" href="#" onclick="return doclink('link-2', 'network', 'link-2');">network</a></tt> <tt class="py-keyword">import</tt> <tt id="link-3" class="py-name" targets="Class ansible.module_utils.network.Command=ansible.module_utils.network.Command-class.html,Class ansible.module_utils.shell.Command=ansible.module_utils.shell.Command-class.html"><a title="ansible.module_utils.network.Command
+ansible.module_utils.shell.Command" class="py-name" href="#" onclick="return doclink('link-3', 'Command', 'link-3');">Command</a></tt><tt class="py-op">,</tt> <tt id="link-4" class="py-name" targets="Class ansible.module_utils.network.NetCli=ansible.module_utils.network.NetCli-class.html"><a title="ansible.module_utils.network.NetCli" class="py-name" href="#" onclick="return doclink('link-4', 'NetCli', 'link-4');">NetCli</a></tt><tt class="py-op">,</tt> <tt id="link-5" class="py-name" targets="Class ansible.module_utils.network.NetworkError=ansible.module_utils.network.NetworkError-class.html"><a title="ansible.module_utils.network.NetworkError" class="py-name" href="#" onclick="return doclink('link-5', 'NetworkError', 'link-5');">NetworkError</a></tt><tt class="py-op">,</tt> <tt id="link-6" class="py-name" targets="Function ansible.module_utils.asa.get_module()=ansible.module_utils.asa-module.html#get_module,Function ansible.module_utils.junos.get_module()=ansible.module_utils.junos-module.html#get_module,Function ansible.module_utils.network.get_module()=ansible.module_utils.network-module.html#get_module,Function ansible.module_utils.nxos.get_module()=ansible.module_utils.nxos-module.html#get_module,Function ansible.module_utils.openswitch.get_module()=ansible.module_utils.openswitch-module.html#get_module"><a title="ansible.module_utils.asa.get_module
+ansible.module_utils.junos.get_module
+ansible.module_utils.network.get_module
+ansible.module_utils.nxos.get_module
+ansible.module_utils.openswitch.get_module" class="py-name" href="#" onclick="return doclink('link-6', 'get_module', 'link-6');">get_module</a></tt> </tt>
+<a name="L23"></a><tt class="py-lineno">23</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-7" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-7', 'ansible', 'link-0');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-8" class="py-name"><a title="ansible.module_utils" class="py-name" href="#" onclick="return doclink('link-8', 'module_utils', 'link-1');">module_utils</a></tt><tt class="py-op">.</tt><tt id="link-9" class="py-name"><a title="ansible.module_utils.network" class="py-name" href="#" onclick="return doclink('link-9', 'network', 'link-2');">network</a></tt> <tt class="py-keyword">import</tt> <tt id="link-10" class="py-name" targets="Function ansible.module_utils.network.register_transport()=ansible.module_utils.network-module.html#register_transport"><a title="ansible.module_utils.network.register_transport" class="py-name" href="#" onclick="return doclink('link-10', 'register_transport', 'link-10');">register_transport</a></tt><tt class="py-op">,</tt> <tt id="link-11" class="py-name" targets="Function ansible.module_utils.asa.to_list()=ansible.module_utils.asa-module.html#to_list,Function ansible.module_utils.junos.to_list()=ansible.module_utils.junos-module.html#to_list,Function ansible.module_utils.network.to_list()=ansible.module_utils.network-module.html#to_list,Function ansible.module_utils.nxos.to_list()=ansible.module_utils.nxos-module.html#to_list,Function ansible.module_utils.openswitch.to_list()=ansible.module_utils.openswitch-module.html#to_list,Function ansible.module_utils.shell.to_list()=ansible.module_utils.shell-module.html#to_list"><a title="ansible.module_utils.asa.to_list
+ansible.module_utils.junos.to_list
+ansible.module_utils.network.to_list
+ansible.module_utils.nxos.to_list
+ansible.module_utils.openswitch.to_list
+ansible.module_utils.shell.to_list" class="py-name" href="#" onclick="return doclink('link-11', 'to_list', 'link-11');">to_list</a></tt> </tt>
+<a name="L24"></a><tt class="py-lineno">24</tt>  <tt class="py-line"> </tt>
+<a name="Cli"></a><div id="Cli-def"><a name="L25"></a><tt class="py-lineno">25</tt> <a class="py-toggle" href="#" id="Cli-toggle" onclick="return toggle('Cli');">-</a><tt class="py-line"><tt class="py-keyword">class</tt> <a class="py-def-name" href="ansible.module_utils.iosxr.Cli-class.html">Cli</a><tt class="py-op">(</tt><tt class="py-base-class">NetCli</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Cli-collapsed" style="display:none;" pad="++" indent="++++"></div><div id="Cli-expanded"><a name="L26"></a><tt class="py-lineno">26</tt>  <tt class="py-line">    <tt id="link-12" class="py-name" targets="Variable ansible.module_utils.asa.CLI_PROMPTS_RE=ansible.module_utils.asa-module.html#CLI_PROMPTS_RE,Variable ansible.module_utils.eos.Cli.CLI_PROMPTS_RE=ansible.module_utils.eos.Cli-class.html#CLI_PROMPTS_RE,Variable ansible.module_utils.ios.Cli.CLI_PROMPTS_RE=ansible.module_utils.ios.Cli-class.html#CLI_PROMPTS_RE,Variable ansible.module_utils.iosxr.Cli.CLI_PROMPTS_RE=ansible.module_utils.iosxr.Cli-class.html#CLI_PROMPTS_RE,Variable ansible.module_utils.nxos.CLI_PROMPTS_RE=ansible.module_utils.nxos-module.html#CLI_PROMPTS_RE,Variable ansible.module_utils.shell.CLI_PROMPTS_RE=ansible.module_utils.shell-module.html#CLI_PROMPTS_RE,Variable ansible.module_utils.vyos.Cli.CLI_PROMPTS_RE=ansible.module_utils.vyos.Cli-class.html#CLI_PROMPTS_RE"><a title="ansible.module_utils.asa.CLI_PROMPTS_RE
+ansible.module_utils.eos.Cli.CLI_PROMPTS_RE
+ansible.module_utils.ios.Cli.CLI_PROMPTS_RE
+ansible.module_utils.iosxr.Cli.CLI_PROMPTS_RE
+ansible.module_utils.nxos.CLI_PROMPTS_RE
+ansible.module_utils.shell.CLI_PROMPTS_RE
+ansible.module_utils.vyos.Cli.CLI_PROMPTS_RE" class="py-name" href="#" onclick="return doclink('link-12', 'CLI_PROMPTS_RE', 'link-12');">CLI_PROMPTS_RE</a></tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt> </tt>
+<a name="L27"></a><tt class="py-lineno">27</tt>  <tt class="py-line">        <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-13" class="py-name" targets="Method ansible.playbook.play.Play.compile()=ansible.playbook.play.Play-class.html#compile,Method ansible.playbook.role.Role.compile()=ansible.playbook.role.Role-class.html#compile"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-13', 'compile', 'link-13');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"[\r\n]?[\w+\-\.:\/\[\]]+(?:\([^\)]+\)){,3}(?:&gt;|#) ?$"</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L28"></a><tt class="py-lineno">28</tt>  <tt class="py-line">        <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-14" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-14', 'compile', 'link-13');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"\[\w+\@[\w\-\.]+(?: [^\]])\] ?[&gt;#\$] ?$"</tt><tt class="py-op">)</tt> </tt>
+<a name="L29"></a><tt class="py-lineno">29</tt>  <tt class="py-line">    <tt class="py-op">]</tt> </tt>
+<a name="L30"></a><tt class="py-lineno">30</tt>  <tt class="py-line"> </tt>
+<a name="L31"></a><tt class="py-lineno">31</tt>  <tt class="py-line">    <tt id="link-15" class="py-name" targets="Variable ansible.module_utils.asa.CLI_ERRORS_RE=ansible.module_utils.asa-module.html#CLI_ERRORS_RE,Variable ansible.module_utils.eos.Cli.CLI_ERRORS_RE=ansible.module_utils.eos.Cli-class.html#CLI_ERRORS_RE,Variable ansible.module_utils.ios.Cli.CLI_ERRORS_RE=ansible.module_utils.ios.Cli-class.html#CLI_ERRORS_RE,Variable ansible.module_utils.iosxr.Cli.CLI_ERRORS_RE=ansible.module_utils.iosxr.Cli-class.html#CLI_ERRORS_RE,Variable ansible.module_utils.nxos.CLI_ERRORS_RE=ansible.module_utils.nxos-module.html#CLI_ERRORS_RE,Variable ansible.module_utils.shell.CLI_ERRORS_RE=ansible.module_utils.shell-module.html#CLI_ERRORS_RE,Variable ansible.module_utils.vyos.Cli.CLI_ERRORS_RE=ansible.module_utils.vyos.Cli-class.html#CLI_ERRORS_RE"><a title="ansible.module_utils.asa.CLI_ERRORS_RE
+ansible.module_utils.eos.Cli.CLI_ERRORS_RE
+ansible.module_utils.ios.Cli.CLI_ERRORS_RE
+ansible.module_utils.iosxr.Cli.CLI_ERRORS_RE
+ansible.module_utils.nxos.CLI_ERRORS_RE
+ansible.module_utils.shell.CLI_ERRORS_RE
+ansible.module_utils.vyos.Cli.CLI_ERRORS_RE" class="py-name" href="#" onclick="return doclink('link-15', 'CLI_ERRORS_RE', 'link-15');">CLI_ERRORS_RE</a></tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt> </tt>
+<a name="L32"></a><tt class="py-lineno">32</tt>  <tt class="py-line">        <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-16" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-16', 'compile', 'link-13');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"% ?Error"</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L33"></a><tt class="py-lineno">33</tt>  <tt class="py-line">        <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-17" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-17', 'compile', 'link-13');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"% ?Bad secret"</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L34"></a><tt class="py-lineno">34</tt>  <tt class="py-line">        <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-18" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-18', 'compile', 'link-13');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"invalid input"</tt><tt class="py-op">,</tt> <tt class="py-name">re</tt><tt class="py-op">.</tt><tt class="py-name">I</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L35"></a><tt class="py-lineno">35</tt>  <tt class="py-line">        <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-19" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-19', 'compile', 'link-13');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"(?:incomplete|ambiguous) command"</tt><tt class="py-op">,</tt> <tt class="py-name">re</tt><tt class="py-op">.</tt><tt class="py-name">I</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L36"></a><tt class="py-lineno">36</tt>  <tt class="py-line">        <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-20" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-20', 'compile', 'link-13');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"connection timed out"</tt><tt class="py-op">,</tt> <tt class="py-name">re</tt><tt class="py-op">.</tt><tt class="py-name">I</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L37"></a><tt class="py-lineno">37</tt>  <tt class="py-line">        <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-21" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-21', 'compile', 'link-13');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"[^\r\n]+ not found"</tt><tt class="py-op">,</tt> <tt class="py-name">re</tt><tt class="py-op">.</tt><tt class="py-name">I</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L38"></a><tt class="py-lineno">38</tt>  <tt class="py-line">        <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-22" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-22', 'compile', 'link-13');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"'[^']' +returned error code: ?\d+"</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L39"></a><tt class="py-lineno">39</tt>  <tt class="py-line">    <tt class="py-op">]</tt> </tt>
+<a name="L40"></a><tt class="py-lineno">40</tt>  <tt class="py-line"> </tt>
+<a name="L41"></a><tt class="py-lineno">41</tt>  <tt class="py-line">    <tt id="link-23" class="py-name" targets="Variable ansible.module_utils.asa.NET_PASSWD_RE=ansible.module_utils.asa-module.html#NET_PASSWD_RE,Variable ansible.module_utils.eos.Cli.NET_PASSWD_RE=ansible.module_utils.eos.Cli-class.html#NET_PASSWD_RE,Variable ansible.module_utils.ios.Cli.NET_PASSWD_RE=ansible.module_utils.ios.Cli-class.html#NET_PASSWD_RE,Variable ansible.module_utils.iosxr.Cli.NET_PASSWD_RE=ansible.module_utils.iosxr.Cli-class.html#NET_PASSWD_RE,Variable ansible.module_utils.nxos.NET_PASSWD_RE=ansible.module_utils.nxos-module.html#NET_PASSWD_RE,Variable ansible.module_utils.openswitch.NET_PASSWD_RE=ansible.module_utils.openswitch-module.html#NET_PASSWD_RE"><a title="ansible.module_utils.asa.NET_PASSWD_RE
+ansible.module_utils.eos.Cli.NET_PASSWD_RE
+ansible.module_utils.ios.Cli.NET_PASSWD_RE
+ansible.module_utils.iosxr.Cli.NET_PASSWD_RE
+ansible.module_utils.nxos.NET_PASSWD_RE
+ansible.module_utils.openswitch.NET_PASSWD_RE" class="py-name" href="#" onclick="return doclink('link-23', 'NET_PASSWD_RE', 'link-23');">NET_PASSWD_RE</a></tt> <tt class="py-op">=</tt> <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-24" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-24', 'compile', 'link-13');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"[\r\n]?password: $"</tt><tt class="py-op">,</tt> <tt class="py-name">re</tt><tt class="py-op">.</tt><tt class="py-name">I</tt><tt class="py-op">)</tt> </tt>
+<a name="L42"></a><tt class="py-lineno">42</tt>  <tt class="py-line"> </tt>
+<a name="Cli.connect"></a><div id="Cli.connect-def"><a name="L43"></a><tt class="py-lineno">43</tt> <a class="py-toggle" href="#" id="Cli.connect-toggle" onclick="return toggle('Cli.connect');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.iosxr.Cli-class.html#connect">connect</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">params</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">kwargs</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Cli.connect-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="Cli.connect-expanded"><a name="L44"></a><tt class="py-lineno">44</tt>  <tt class="py-line">        <tt class="py-name">super</tt><tt class="py-op">(</tt><tt id="link-25" class="py-name" targets="Class ansible.module_utils.asa.Cli=ansible.module_utils.asa.Cli-class.html,Class ansible.module_utils.eos.Cli=ansible.module_utils.eos.Cli-class.html,Class ansible.module_utils.ios.Cli=ansible.module_utils.ios.Cli-class.html,Class ansible.module_utils.iosxr.Cli=ansible.module_utils.iosxr.Cli-class.html,Class ansible.module_utils.junos.Cli=ansible.module_utils.junos.Cli-class.html,Class ansible.module_utils.network.Cli=ansible.module_utils.network.Cli-class.html,Class ansible.module_utils.nxos.Cli=ansible.module_utils.nxos.Cli-class.html,Class ansible.module_utils.openswitch.Cli=ansible.module_utils.openswitch.Cli-class.html,Class ansible.module_utils.vyos.Cli=ansible.module_utils.vyos.Cli-class.html"><a title="ansible.module_utils.asa.Cli
+ansible.module_utils.eos.Cli
+ansible.module_utils.ios.Cli
+ansible.module_utils.iosxr.Cli
+ansible.module_utils.junos.Cli
+ansible.module_utils.network.Cli
+ansible.module_utils.nxos.Cli
+ansible.module_utils.openswitch.Cli
+ansible.module_utils.vyos.Cli" class="py-name" href="#" onclick="return doclink('link-25', 'Cli', 'link-25');">Cli</a></tt><tt class="py-op">,</tt> <tt class="py-name">self</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt id="link-26" class="py-name" targets="Method ansible.module_utils.asa.Cli.connect()=ansible.module_utils.asa.Cli-class.html#connect,Method ansible.module_utils.asa.NetworkModule.connect()=ansible.module_utils.asa.NetworkModule-class.html#connect,Method ansible.module_utils.eos.Cli.connect()=ansible.module_utils.eos.Cli-class.html#connect,Method ansible.module_utils.eos.Eapi.connect()=ansible.module_utils.eos.Eapi-class.html#connect,Method ansible.module_utils.ios.Cli.connect()=ansible.module_utils.ios.Cli-class.html#connect,Method ansible.module_utils.ios.Restconf.connect()=ansible.module_utils.ios.Restconf-class.html#connect,Method ansible.module_utils.iosxr.Cli.connect()=ansible.module_utils.iosxr.Cli-class.html#connect,Method ansible.module_utils.junos.Cli.connect()=ansible.module_utils.junos.Cli-class.html#connect,Method ansible.module_utils.junos.Netconf.connect()=ansible.module_utils.junos.Netconf-class.html#connect,Method ansible.module_utils.junos.NetworkModule.connect()=ansible.module_utils.junos.NetworkModule-class.html#connect,Method ansible.module_utils.network.NetCli.connect()=ansible.module_utils.network.NetCli-class.html#connect,Method ansible.module_utils.network.NetworkModule.connect()=ansible.module_utils.network.NetworkModule-class.html#connect,Method ansible.module_utils.nxos.Cli.connect()=ansible.module_utils.nxos.Cli-class.html#connect,Method ansible.module_utils.nxos.NetworkModule.connect()=ansible.module_utils.nxos.NetworkModule-class.html#connect,Method ansible.module_utils.nxos.Nxapi.connect()=ansible.module_utils.nxos.Nxapi-class.html#connect,Method ansible.module_utils.openswitch.Cli.connect()=ansible.module_utils.openswitch.Cli-class.html#connect,Method ansible.module_utils.openswitch.NetworkModule.connect()=ansible.module_utils.openswitch.NetworkModule-class.html#connect,Method ansible.module_utils.openswitch.Rest.connect()=ansible.module_utils.openswitch.Rest-class.html#connect,Method ansible.module_utils.urls.CustomHTTPSConnection.connect()=ansible.module_utils.urls.CustomHTTPSConnection-class.html#connect,Method ansible.module_utils.vyos.Cli.connect()=ansible.module_utils.vyos.Cli-class.html#connect,Method ansible.plugins.connection.funcd.Connection.connect()=ansible.plugins.connection.funcd.Connection-class.html#connect"><a title="ansible.module_utils.asa.Cli.connect
+ansible.module_utils.asa.NetworkModule.connect
+ansible.module_utils.eos.Cli.connect
+ansible.module_utils.eos.Eapi.connect
+ansible.module_utils.ios.Cli.connect
+ansible.module_utils.ios.Restconf.connect
+ansible.module_utils.iosxr.Cli.connect
+ansible.module_utils.junos.Cli.connect
+ansible.module_utils.junos.Netconf.connect
+ansible.module_utils.junos.NetworkModule.connect
+ansible.module_utils.network.NetCli.connect
+ansible.module_utils.network.NetworkModule.connect
+ansible.module_utils.nxos.Cli.connect
+ansible.module_utils.nxos.NetworkModule.connect
+ansible.module_utils.nxos.Nxapi.connect
+ansible.module_utils.openswitch.Cli.connect
+ansible.module_utils.openswitch.NetworkModule.connect
+ansible.module_utils.openswitch.Rest.connect
+ansible.module_utils.urls.CustomHTTPSConnection.connect
+ansible.module_utils.vyos.Cli.connect
+ansible.plugins.connection.funcd.Connection.connect" class="py-name" href="#" onclick="return doclink('link-26', 'connect', 'link-26');">connect</a></tt><tt class="py-op">(</tt><tt class="py-name">params</tt><tt class="py-op">,</tt> <tt class="py-name">kickstart</tt><tt class="py-op">=</tt><tt class="py-name">False</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-name">kwargs</tt><tt class="py-op">)</tt> </tt>
+<a name="L45"></a><tt class="py-lineno">45</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-27" class="py-name" targets="Module ansible.module_utils.shell=ansible.module_utils.shell-module.html,Package ansible.plugins.shell=ansible.plugins.shell-module.html"><a title="ansible.module_utils.shell
+ansible.plugins.shell" class="py-name" href="#" onclick="return doclink('link-27', 'shell', 'link-27');">shell</a></tt><tt class="py-op">.</tt><tt id="link-28" class="py-name" targets="Method ansible.module_utils.asa.Cli.send()=ansible.module_utils.asa.Cli-class.html#send,Method ansible.module_utils.nxos.Cli.send()=ansible.module_utils.nxos.Cli-class.html#send,Method ansible.module_utils.nxos.Nxapi.send()=ansible.module_utils.nxos.Nxapi-class.html#send,Method ansible.module_utils.openswitch.Cli.send()=ansible.module_utils.openswitch.Cli-class.html#send,Method ansible.module_utils.openswitch.Rest.send()=ansible.module_utils.openswitch.Rest-class.html#send,Method ansible.module_utils.shell.Shell.send()=ansible.module_utils.shell.Shell-class.html#send"><a title="ansible.module_utils.asa.Cli.send
+ansible.module_utils.nxos.Cli.send
+ansible.module_utils.nxos.Nxapi.send
+ansible.module_utils.openswitch.Cli.send
+ansible.module_utils.openswitch.Rest.send
+ansible.module_utils.shell.Shell.send" class="py-name" href="#" onclick="return doclink('link-28', 'send', 'link-28');">send</a></tt><tt class="py-op">(</tt><tt class="py-string">'terminal length 0'</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L46"></a><tt class="py-lineno">46</tt>  <tt class="py-line"> </tt>
+<a name="L47"></a><tt class="py-lineno">47</tt>  <tt class="py-line">    <tt class="py-comment">### implementation of network.Cli ###</tt> </tt>
+<a name="L48"></a><tt class="py-lineno">48</tt>  <tt class="py-line"> </tt>
+<a name="Cli.configure"></a><div id="Cli.configure-def"><a name="L49"></a><tt class="py-lineno">49</tt> <a class="py-toggle" href="#" id="Cli.configure-toggle" onclick="return toggle('Cli.configure');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.iosxr.Cli-class.html#configure">configure</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">commands</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">kwargs</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Cli.configure-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="Cli.configure-expanded"><a name="L50"></a><tt class="py-lineno">50</tt>  <tt class="py-line">        <tt class="py-name">cmds</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-string">'configure'</tt><tt class="py-op">]</tt> </tt>
+<a name="L51"></a><tt class="py-lineno">51</tt>  <tt class="py-line">        <tt class="py-name">cmds</tt><tt class="py-op">.</tt><tt class="py-name">extend</tt><tt class="py-op">(</tt><tt id="link-29" class="py-name"><a title="ansible.module_utils.asa.to_list
+ansible.module_utils.junos.to_list
+ansible.module_utils.network.to_list
+ansible.module_utils.nxos.to_list
+ansible.module_utils.openswitch.to_list
+ansible.module_utils.shell.to_list" class="py-name" href="#" onclick="return doclink('link-29', 'to_list', 'link-11');">to_list</a></tt><tt class="py-op">(</tt><tt class="py-name">commands</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L52"></a><tt class="py-lineno">52</tt>  <tt class="py-line">        <tt class="py-name">cmds</tt><tt class="py-op">.</tt><tt class="py-name">append</tt><tt class="py-op">(</tt><tt class="py-string">'end'</tt><tt class="py-op">)</tt> </tt>
+<a name="L53"></a><tt class="py-lineno">53</tt>  <tt class="py-line"> </tt>
+<a name="L54"></a><tt class="py-lineno">54</tt>  <tt class="py-line">        <tt class="py-name">responses</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-30" class="py-name" targets="Method ansible.cli.CLI.execute()=ansible.cli.CLI-class.html#execute,Method ansible.module_utils.asa.NetworkModule.execute()=ansible.module_utils.asa.NetworkModule-class.html#execute,Method ansible.module_utils.eos.Eapi.execute()=ansible.module_utils.eos.Eapi-class.html#execute,Method ansible.module_utils.ios.Restconf.execute()=ansible.module_utils.ios.Restconf-class.html#execute,Method ansible.module_utils.network.NetCli.execute()=ansible.module_utils.network.NetCli-class.html#execute,Method ansible.module_utils.nxos.NetworkModule.execute()=ansible.module_utils.nxos.NetworkModule-class.html#execute,Method ansible.module_utils.openswitch.NetworkModule.execute()=ansible.module_utils.openswitch.NetworkModule-class.html#execute,Method ansible.plugins.strategy.debug.Debugger.execute()=ansible.plugins.strategy.debug.Debugger-class.html#execute"><a title="ansible.cli.CLI.execute
+ansible.module_utils.asa.NetworkModule.execute
+ansible.module_utils.eos.Eapi.execute
+ansible.module_utils.ios.Restconf.execute
+ansible.module_utils.network.NetCli.execute
+ansible.module_utils.nxos.NetworkModule.execute
+ansible.module_utils.openswitch.NetworkModule.execute
+ansible.plugins.strategy.debug.Debugger.execute" class="py-name" href="#" onclick="return doclink('link-30', 'execute', 'link-30');">execute</a></tt><tt class="py-op">(</tt><tt class="py-name">cmds</tt><tt class="py-op">)</tt> </tt>
+<a name="L55"></a><tt class="py-lineno">55</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">responses</tt><tt class="py-op">[</tt><tt class="py-number">1</tt><tt class="py-op">:</tt><tt class="py-op">-</tt><tt class="py-number">1</tt><tt class="py-op">]</tt> </tt>
+</div><a name="L56"></a><tt class="py-lineno">56</tt>  <tt class="py-line"> </tt>
+<a name="Cli.get_config"></a><div id="Cli.get_config-def"><a name="L57"></a><tt class="py-lineno">57</tt> <a class="py-toggle" href="#" id="Cli.get_config-toggle" onclick="return toggle('Cli.get_config');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.iosxr.Cli-class.html#get_config">get_config</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">params</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">kwargs</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Cli.get_config-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="Cli.get_config-expanded"><a name="L58"></a><tt class="py-lineno">58</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-31" class="py-name" targets="Method ansible.module_utils.eos.Cli.run_commands()=ansible.module_utils.eos.Cli-class.html#run_commands,Method ansible.module_utils.eos.Eapi.run_commands()=ansible.module_utils.eos.Eapi-class.html#run_commands,Method ansible.module_utils.ios.Cli.run_commands()=ansible.module_utils.ios.Cli-class.html#run_commands,Method ansible.module_utils.ios.Restconf.run_commands()=ansible.module_utils.ios.Restconf-class.html#run_commands,Method ansible.module_utils.iosxr.Cli.run_commands()=ansible.module_utils.iosxr.Cli-class.html#run_commands,Method ansible.module_utils.junos.Cli.run_commands()=ansible.module_utils.junos.Cli-class.html#run_commands,Method ansible.module_utils.junos.Netconf.run_commands()=ansible.module_utils.junos.Netconf-class.html#run_commands,Method ansible.module_utils.junos.NetworkModule.run_commands()=ansible.module_utils.junos.NetworkModule-class.html#run_commands,Method ansible.module_utils.netcmd.CommandRunner.run_commands()=ansible.module_utils.netcmd.CommandRunner-class.html#run_commands,Method ansible.module_utils.network.Cli.run_commands()=ansible.module_utils.network.Cli-class.html#run_commands,Method ansible.module_utils.vyos.Cli.run_commands()=ansible.module_utils.vyos.Cli-class.html#run_commands"><a title="ansible.module_utils.eos.Cli.run_commands
+ansible.module_utils.eos.Eapi.run_commands
+ansible.module_utils.ios.Cli.run_commands
+ansible.module_utils.ios.Restconf.run_commands
+ansible.module_utils.iosxr.Cli.run_commands
+ansible.module_utils.junos.Cli.run_commands
+ansible.module_utils.junos.Netconf.run_commands
+ansible.module_utils.junos.NetworkModule.run_commands
+ansible.module_utils.netcmd.CommandRunner.run_commands
+ansible.module_utils.network.Cli.run_commands
+ansible.module_utils.vyos.Cli.run_commands" class="py-name" href="#" onclick="return doclink('link-31', 'run_commands', 'link-31');">run_commands</a></tt><tt class="py-op">(</tt><tt class="py-string">'show running-config'</tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-number">0</tt><tt class="py-op">]</tt> </tt>
+</div><a name="L59"></a><tt class="py-lineno">59</tt>  <tt class="py-line"> </tt>
+<a name="Cli.load_config"></a><div id="Cli.load_config-def"><a name="L60"></a><tt class="py-lineno">60</tt> <a class="py-toggle" href="#" id="Cli.load_config-toggle" onclick="return toggle('Cli.load_config');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.iosxr.Cli-class.html#load_config">load_config</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">commands</tt><tt class="py-op">,</tt> <tt class="py-param">commit</tt><tt class="py-op">=</tt><tt class="py-name">False</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">kwargs</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Cli.load_config-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="Cli.load_config-expanded"><a name="L61"></a><tt class="py-lineno">61</tt>  <tt class="py-line">        <tt class="py-keyword">raise</tt> <tt class="py-name">NotImplementedError</tt> </tt>
+</div><a name="L62"></a><tt class="py-lineno">62</tt>  <tt class="py-line"> </tt>
+<a name="Cli.replace_config"></a><div id="Cli.replace_config-def"><a name="L63"></a><tt class="py-lineno">63</tt> <a class="py-toggle" href="#" id="Cli.replace_config-toggle" onclick="return toggle('Cli.replace_config');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.iosxr.Cli-class.html#replace_config">replace_config</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">commands</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">kwargs</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Cli.replace_config-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="Cli.replace_config-expanded"><a name="L64"></a><tt class="py-lineno">64</tt>  <tt class="py-line">        <tt class="py-keyword">raise</tt> <tt class="py-name">NotImplementedError</tt> </tt>
+</div><a name="L65"></a><tt class="py-lineno">65</tt>  <tt class="py-line"> </tt>
+<a name="Cli.commit_config"></a><div id="Cli.commit_config-def"><a name="L66"></a><tt class="py-lineno">66</tt> <a class="py-toggle" href="#" id="Cli.commit_config-toggle" onclick="return toggle('Cli.commit_config');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.iosxr.Cli-class.html#commit_config">commit_config</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">kwargs</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Cli.commit_config-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="Cli.commit_config-expanded"><a name="L67"></a><tt class="py-lineno">67</tt>  <tt class="py-line">        <tt class="py-name">command</tt> <tt class="py-op">=</tt> <tt class="py-string">'commit'</tt> </tt>
+<a name="L68"></a><tt class="py-lineno">68</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-32" class="py-name"><a title="ansible.module_utils.eos.Cli.run_commands
+ansible.module_utils.eos.Eapi.run_commands
+ansible.module_utils.ios.Cli.run_commands
+ansible.module_utils.ios.Restconf.run_commands
+ansible.module_utils.iosxr.Cli.run_commands
+ansible.module_utils.junos.Cli.run_commands
+ansible.module_utils.junos.Netconf.run_commands
+ansible.module_utils.junos.NetworkModule.run_commands
+ansible.module_utils.netcmd.CommandRunner.run_commands
+ansible.module_utils.network.Cli.run_commands
+ansible.module_utils.vyos.Cli.run_commands" class="py-name" href="#" onclick="return doclink('link-32', 'run_commands', 'link-31');">run_commands</a></tt><tt class="py-op">(</tt><tt class="py-op">[</tt><tt class="py-name">command</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L69"></a><tt class="py-lineno">69</tt>  <tt class="py-line"> </tt>
+<a name="Cli.abort_config"></a><div id="Cli.abort_config-def"><a name="L70"></a><tt class="py-lineno">70</tt> <a class="py-toggle" href="#" id="Cli.abort_config-toggle" onclick="return toggle('Cli.abort_config');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.iosxr.Cli-class.html#abort_config">abort_config</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">kwargs</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Cli.abort_config-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="Cli.abort_config-expanded"><a name="L71"></a><tt class="py-lineno">71</tt>  <tt class="py-line">        <tt class="py-name">command</tt> <tt class="py-op">=</tt> <tt class="py-string">'abort'</tt> </tt>
+<a name="L72"></a><tt class="py-lineno">72</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-33" class="py-name"><a title="ansible.module_utils.eos.Cli.run_commands
+ansible.module_utils.eos.Eapi.run_commands
+ansible.module_utils.ios.Cli.run_commands
+ansible.module_utils.ios.Restconf.run_commands
+ansible.module_utils.iosxr.Cli.run_commands
+ansible.module_utils.junos.Cli.run_commands
+ansible.module_utils.junos.Netconf.run_commands
+ansible.module_utils.junos.NetworkModule.run_commands
+ansible.module_utils.netcmd.CommandRunner.run_commands
+ansible.module_utils.network.Cli.run_commands
+ansible.module_utils.vyos.Cli.run_commands" class="py-name" href="#" onclick="return doclink('link-33', 'run_commands', 'link-31');">run_commands</a></tt><tt class="py-op">(</tt><tt class="py-op">[</tt><tt class="py-name">command</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L73"></a><tt class="py-lineno">73</tt>  <tt class="py-line"> </tt>
+<a name="Cli.run_commands"></a><div id="Cli.run_commands-def"><a name="L74"></a><tt class="py-lineno">74</tt> <a class="py-toggle" href="#" id="Cli.run_commands-toggle" onclick="return toggle('Cli.run_commands');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.iosxr.Cli-class.html#run_commands">run_commands</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">commands</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Cli.run_commands-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="Cli.run_commands-expanded"><a name="L75"></a><tt class="py-lineno">75</tt>  <tt class="py-line">        <tt class="py-name">cmds</tt> <tt class="py-op">=</tt> <tt id="link-34" class="py-name"><a title="ansible.module_utils.asa.to_list
+ansible.module_utils.junos.to_list
+ansible.module_utils.network.to_list
+ansible.module_utils.nxos.to_list
+ansible.module_utils.openswitch.to_list
+ansible.module_utils.shell.to_list" class="py-name" href="#" onclick="return doclink('link-34', 'to_list', 'link-11');">to_list</a></tt><tt class="py-op">(</tt><tt class="py-name">commands</tt><tt class="py-op">)</tt> </tt>
+<a name="L76"></a><tt class="py-lineno">76</tt>  <tt class="py-line">        <tt class="py-name">responses</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-35" class="py-name"><a title="ansible.cli.CLI.execute
+ansible.module_utils.asa.NetworkModule.execute
+ansible.module_utils.eos.Eapi.execute
+ansible.module_utils.ios.Restconf.execute
+ansible.module_utils.network.NetCli.execute
+ansible.module_utils.nxos.NetworkModule.execute
+ansible.module_utils.openswitch.NetworkModule.execute
+ansible.plugins.strategy.debug.Debugger.execute" class="py-name" href="#" onclick="return doclink('link-35', 'execute', 'link-30');">execute</a></tt><tt class="py-op">(</tt><tt class="py-name">cmds</tt><tt class="py-op">)</tt> </tt>
+<a name="L77"></a><tt class="py-lineno">77</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">responses</tt> </tt>
+</div></div><a name="L78"></a><tt class="py-lineno">78</tt>  <tt class="py-line"><tt id="link-36" class="py-name"><a title="ansible.module_utils.asa.Cli
+ansible.module_utils.eos.Cli
+ansible.module_utils.ios.Cli
+ansible.module_utils.iosxr.Cli
+ansible.module_utils.junos.Cli
+ansible.module_utils.network.Cli
+ansible.module_utils.nxos.Cli
+ansible.module_utils.openswitch.Cli
+ansible.module_utils.vyos.Cli" class="py-name" href="#" onclick="return doclink('link-36', 'Cli', 'link-25');">Cli</a></tt> <tt class="py-op">=</tt> <tt id="link-37" class="py-name"><a title="ansible.module_utils.network.register_transport" class="py-name" href="#" onclick="return doclink('link-37', 'register_transport', 'link-10');">register_transport</a></tt><tt class="py-op">(</tt><tt class="py-string">'cli'</tt><tt class="py-op">,</tt> <tt id="link-38" class="py-name" targets="Method ansible.cli.console.ConsoleCLI.default()=ansible.cli.console.ConsoleCLI-class.html#default,Module ansible.plugins.callback.default=ansible.plugins.callback.default-module.html,Method ansible.plugins.filter.core.AnsibleJSONEncoder.default()=ansible.plugins.filter.core.AnsibleJSONEncoder-class.html#default,Method ansible.plugins.strategy.debug.Debugger.default()=ansible.plugins.strategy.debug.Debugger-class.html#default"><a title="ansible.cli.console.ConsoleCLI.default
+ansible.plugins.callback.default
+ansible.plugins.filter.core.AnsibleJSONEncoder.default
+ansible.plugins.strategy.debug.Debugger.default" class="py-name" href="#" onclick="return doclink('link-38', 'default', 'link-38');">default</a></tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">)</tt><tt class="py-op">(</tt><tt id="link-39" class="py-name"><a title="ansible.module_utils.asa.Cli
+ansible.module_utils.eos.Cli
+ansible.module_utils.ios.Cli
+ansible.module_utils.iosxr.Cli
+ansible.module_utils.junos.Cli
+ansible.module_utils.network.Cli
+ansible.module_utils.nxos.Cli
+ansible.module_utils.openswitch.Cli
+ansible.module_utils.vyos.Cli" class="py-name" href="#" onclick="return doclink('link-39', 'Cli', 'link-25');">Cli</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L79"></a><tt class="py-lineno">79</tt>  <tt class="py-line"> </tt><script type="text/javascript">
+<!--
+expandto(location.href);
+// -->
+</script>
+</pre>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Fri Jul 29 13:11:40 2016
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

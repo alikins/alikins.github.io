@@ -1,0 +1,606 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>ansible.module_utils.vyos</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="ansible-module.html">Package&nbsp;ansible</a> ::
+        <a href="ansible.module_utils-module.html">Package&nbsp;module_utils</a> ::
+        Module&nbsp;vyos
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="ansible.module_utils.vyos-pysrc.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<h1 class="epydoc">Source Code for <a href="ansible.module_utils.vyos-module.html">Module ansible.module_utils.vyos</a></h1>
+<pre class="py-src">
+<a name="L1"></a><tt class="py-lineno">  1</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L2"></a><tt class="py-lineno">  2</tt>  <tt class="py-line"><tt class="py-comment"># (c) 2015 Peter Sprygada, &lt;psprygada@ansible.com&gt;</tt> </tt>
+<a name="L3"></a><tt class="py-lineno">  3</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L4"></a><tt class="py-lineno">  4</tt>  <tt class="py-line"><tt class="py-comment"># This file is part of Ansible</tt> </tt>
+<a name="L5"></a><tt class="py-lineno">  5</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L6"></a><tt class="py-lineno">  6</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is free software: you can redistribute it and/or modify</tt> </tt>
+<a name="L7"></a><tt class="py-lineno">  7</tt>  <tt class="py-line"><tt class="py-comment"># it under the terms of the GNU General Public License as published by</tt> </tt>
+<a name="L8"></a><tt class="py-lineno">  8</tt>  <tt class="py-line"><tt class="py-comment"># the Free Software Foundation, either version 3 of the License, or</tt> </tt>
+<a name="L9"></a><tt class="py-lineno">  9</tt>  <tt class="py-line"><tt class="py-comment"># (at your option) any later version.</tt> </tt>
+<a name="L10"></a><tt class="py-lineno"> 10</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L11"></a><tt class="py-lineno"> 11</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is distributed in the hope that it will be useful,</tt> </tt>
+<a name="L12"></a><tt class="py-lineno"> 12</tt>  <tt class="py-line"><tt class="py-comment"># but WITHOUT ANY WARRANTY; without even the implied warranty of</tt> </tt>
+<a name="L13"></a><tt class="py-lineno"> 13</tt>  <tt class="py-line"><tt class="py-comment"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</tt> </tt>
+<a name="L14"></a><tt class="py-lineno"> 14</tt>  <tt class="py-line"><tt class="py-comment"># GNU General Public License for more details.</tt> </tt>
+<a name="L15"></a><tt class="py-lineno"> 15</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L16"></a><tt class="py-lineno"> 16</tt>  <tt class="py-line"><tt class="py-comment"># You should have received a copy of the GNU General Public License</tt> </tt>
+<a name="L17"></a><tt class="py-lineno"> 17</tt>  <tt class="py-line"><tt class="py-comment"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</tt> </tt>
+<a name="L18"></a><tt class="py-lineno"> 18</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L19"></a><tt class="py-lineno"> 19</tt>  <tt class="py-line"> </tt>
+<a name="L20"></a><tt class="py-lineno"> 20</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">itertools</tt> </tt>
+<a name="L21"></a><tt class="py-lineno"> 21</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">re</tt> </tt>
+<a name="L22"></a><tt class="py-lineno"> 22</tt>  <tt class="py-line"> </tt>
+<a name="L23"></a><tt class="py-lineno"> 23</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-0" class="py-name" targets="Package ansible=ansible-module.html"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-0', 'ansible', 'link-0');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-1" class="py-name" targets="Package ansible.module_utils=ansible.module_utils-module.html"><a title="ansible.module_utils" class="py-name" href="#" onclick="return doclink('link-1', 'module_utils', 'link-1');">module_utils</a></tt><tt class="py-op">.</tt><tt id="link-2" class="py-name" targets="Module ansible.module_utils.network=ansible.module_utils.network-module.html"><a title="ansible.module_utils.network" class="py-name" href="#" onclick="return doclink('link-2', 'network', 'link-2');">network</a></tt> <tt class="py-keyword">import</tt> <tt id="link-3" class="py-name" targets="Class ansible.module_utils.asa.NetworkModule=ansible.module_utils.asa.NetworkModule-class.html,Class ansible.module_utils.junos.NetworkModule=ansible.module_utils.junos.NetworkModule-class.html,Class ansible.module_utils.network.NetworkModule=ansible.module_utils.network.NetworkModule-class.html,Class ansible.module_utils.nxos.NetworkModule=ansible.module_utils.nxos.NetworkModule-class.html,Class ansible.module_utils.openswitch.NetworkModule=ansible.module_utils.openswitch.NetworkModule-class.html"><a title="ansible.module_utils.asa.NetworkModule
+ansible.module_utils.junos.NetworkModule
+ansible.module_utils.network.NetworkModule
+ansible.module_utils.nxos.NetworkModule
+ansible.module_utils.openswitch.NetworkModule" class="py-name" href="#" onclick="return doclink('link-3', 'NetworkModule', 'link-3');">NetworkModule</a></tt><tt class="py-op">,</tt> <tt id="link-4" class="py-name" targets="Class ansible.module_utils.network.NetworkError=ansible.module_utils.network.NetworkError-class.html"><a title="ansible.module_utils.network.NetworkError" class="py-name" href="#" onclick="return doclink('link-4', 'NetworkError', 'link-4');">NetworkError</a></tt> </tt>
+<a name="L24"></a><tt class="py-lineno"> 24</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-5" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-5', 'ansible', 'link-0');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-6" class="py-name"><a title="ansible.module_utils" class="py-name" href="#" onclick="return doclink('link-6', 'module_utils', 'link-1');">module_utils</a></tt><tt class="py-op">.</tt><tt id="link-7" class="py-name"><a title="ansible.module_utils.network" class="py-name" href="#" onclick="return doclink('link-7', 'network', 'link-2');">network</a></tt> <tt class="py-keyword">import</tt> <tt id="link-8" class="py-name" targets="Function ansible.module_utils.network.register_transport()=ansible.module_utils.network-module.html#register_transport"><a title="ansible.module_utils.network.register_transport" class="py-name" href="#" onclick="return doclink('link-8', 'register_transport', 'link-8');">register_transport</a></tt><tt class="py-op">,</tt> <tt id="link-9" class="py-name" targets="Function ansible.module_utils.asa.to_list()=ansible.module_utils.asa-module.html#to_list,Function ansible.module_utils.junos.to_list()=ansible.module_utils.junos-module.html#to_list,Function ansible.module_utils.network.to_list()=ansible.module_utils.network-module.html#to_list,Function ansible.module_utils.nxos.to_list()=ansible.module_utils.nxos-module.html#to_list,Function ansible.module_utils.openswitch.to_list()=ansible.module_utils.openswitch-module.html#to_list,Function ansible.module_utils.shell.to_list()=ansible.module_utils.shell-module.html#to_list"><a title="ansible.module_utils.asa.to_list
+ansible.module_utils.junos.to_list
+ansible.module_utils.network.to_list
+ansible.module_utils.nxos.to_list
+ansible.module_utils.openswitch.to_list
+ansible.module_utils.shell.to_list" class="py-name" href="#" onclick="return doclink('link-9', 'to_list', 'link-9');">to_list</a></tt><tt class="py-op">,</tt> <tt id="link-10" class="py-name" targets="Function ansible.module_utils.pycompat24.get_exception()=ansible.module_utils.pycompat24-module.html#get_exception"><a title="ansible.module_utils.pycompat24.get_exception" class="py-name" href="#" onclick="return doclink('link-10', 'get_exception', 'link-10');">get_exception</a></tt> </tt>
+<a name="L25"></a><tt class="py-lineno"> 25</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-11" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-11', 'ansible', 'link-0');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-12" class="py-name"><a title="ansible.module_utils" class="py-name" href="#" onclick="return doclink('link-12', 'module_utils', 'link-1');">module_utils</a></tt><tt class="py-op">.</tt><tt id="link-13" class="py-name"><a title="ansible.module_utils.network" class="py-name" href="#" onclick="return doclink('link-13', 'network', 'link-2');">network</a></tt> <tt class="py-keyword">import</tt> <tt id="link-14" class="py-name" targets="Class ansible.module_utils.network.Command=ansible.module_utils.network.Command-class.html,Class ansible.module_utils.shell.Command=ansible.module_utils.shell.Command-class.html"><a title="ansible.module_utils.network.Command
+ansible.module_utils.shell.Command" class="py-name" href="#" onclick="return doclink('link-14', 'Command', 'link-14');">Command</a></tt><tt class="py-op">,</tt> <tt id="link-15" class="py-name" targets="Class ansible.module_utils.network.NetCli=ansible.module_utils.network.NetCli-class.html"><a title="ansible.module_utils.network.NetCli" class="py-name" href="#" onclick="return doclink('link-15', 'NetCli', 'link-15');">NetCli</a></tt> </tt>
+<a name="L26"></a><tt class="py-lineno"> 26</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-16" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-16', 'ansible', 'link-0');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-17" class="py-name"><a title="ansible.module_utils" class="py-name" href="#" onclick="return doclink('link-17', 'module_utils', 'link-1');">module_utils</a></tt><tt class="py-op">.</tt><tt id="link-18" class="py-name" targets="Module ansible.module_utils.netcfg=ansible.module_utils.netcfg-module.html"><a title="ansible.module_utils.netcfg" class="py-name" href="#" onclick="return doclink('link-18', 'netcfg', 'link-18');">netcfg</a></tt> <tt class="py-keyword">import</tt> <tt id="link-19" class="py-name" targets="Class ansible.module_utils.netcfg.NetworkConfig=ansible.module_utils.netcfg.NetworkConfig-class.html"><a title="ansible.module_utils.netcfg.NetworkConfig" class="py-name" href="#" onclick="return doclink('link-19', 'NetworkConfig', 'link-19');">NetworkConfig</a></tt> </tt>
+<a name="L27"></a><tt class="py-lineno"> 27</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-20" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-20', 'ansible', 'link-0');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-21" class="py-name"><a title="ansible.module_utils" class="py-name" href="#" onclick="return doclink('link-21', 'module_utils', 'link-1');">module_utils</a></tt><tt class="py-op">.</tt><tt id="link-22" class="py-name" targets="Module ansible.module_utils.shell=ansible.module_utils.shell-module.html,Package ansible.plugins.shell=ansible.plugins.shell-module.html"><a title="ansible.module_utils.shell
+ansible.plugins.shell" class="py-name" href="#" onclick="return doclink('link-22', 'shell', 'link-22');">shell</a></tt> <tt class="py-keyword">import</tt> <tt id="link-23" class="py-name" targets="Class ansible.module_utils.shell.Shell=ansible.module_utils.shell.Shell-class.html"><a title="ansible.module_utils.shell.Shell" class="py-name" href="#" onclick="return doclink('link-23', 'Shell', 'link-23');">Shell</a></tt><tt class="py-op">,</tt> <tt id="link-24" class="py-name" targets="Class ansible.module_utils.shell.ShellError=ansible.module_utils.shell.ShellError-class.html"><a title="ansible.module_utils.shell.ShellError" class="py-name" href="#" onclick="return doclink('link-24', 'ShellError', 'link-24');">ShellError</a></tt><tt class="py-op">,</tt> <tt id="link-25" class="py-name" targets="Variable ansible.module_utils.shell.HAS_PARAMIKO=ansible.module_utils.shell-module.html#HAS_PARAMIKO"><a title="ansible.module_utils.shell.HAS_PARAMIKO" class="py-name" href="#" onclick="return doclink('link-25', 'HAS_PARAMIKO', 'link-25');">HAS_PARAMIKO</a></tt> </tt>
+<a name="L28"></a><tt class="py-lineno"> 28</tt>  <tt class="py-line"> </tt>
+<a name="L29"></a><tt class="py-lineno"> 29</tt>  <tt class="py-line"><tt id="link-26" class="py-name" targets="Variable ansible.module_utils.vyos.DEFAULT_COMMENT=ansible.module_utils.vyos-module.html#DEFAULT_COMMENT"><a title="ansible.module_utils.vyos.DEFAULT_COMMENT" class="py-name" href="#" onclick="return doclink('link-26', 'DEFAULT_COMMENT', 'link-26');">DEFAULT_COMMENT</a></tt> <tt class="py-op">=</tt> <tt class="py-string">'configured by vyos_config'</tt> </tt>
+<a name="L30"></a><tt class="py-lineno"> 30</tt>  <tt class="py-line"> </tt>
+<a name="L31"></a><tt class="py-lineno"> 31</tt>  <tt class="py-line"><tt id="link-27" class="py-name" targets="Variable ansible.module_utils.vyos.FILTERS=ansible.module_utils.vyos-module.html#FILTERS"><a title="ansible.module_utils.vyos.FILTERS" class="py-name" href="#" onclick="return doclink('link-27', 'FILTERS', 'link-27');">FILTERS</a></tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt> </tt>
+<a name="L32"></a><tt class="py-lineno"> 32</tt>  <tt class="py-line">    <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-28" class="py-name" targets="Method ansible.playbook.play.Play.compile()=ansible.playbook.play.Play-class.html#compile,Method ansible.playbook.role.Role.compile()=ansible.playbook.role.Role-class.html#compile"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-28', 'compile', 'link-28');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r'set system login user \S+ authentication encrypted-password'</tt><tt class="py-op">)</tt> </tt>
+<a name="L33"></a><tt class="py-lineno"> 33</tt>  <tt class="py-line"><tt class="py-op">]</tt> </tt>
+<a name="L34"></a><tt class="py-lineno"> 34</tt>  <tt class="py-line"> </tt>
+<a name="argument_spec"></a><div id="argument_spec-def"><a name="L35"></a><tt class="py-lineno"> 35</tt> <a class="py-toggle" href="#" id="argument_spec-toggle" onclick="return toggle('argument_spec');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vyos-module.html#argument_spec">argument_spec</a><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="argument_spec-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="argument_spec-expanded"><a name="L36"></a><tt class="py-lineno"> 36</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt id="link-29" class="py-name" targets="Module ansible.plugins.lookup.dict=ansible.plugins.lookup.dict-module.html"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-29', 'dict', 'link-29');">dict</a></tt><tt class="py-op">(</tt> </tt>
+<a name="L37"></a><tt class="py-lineno"> 37</tt>  <tt class="py-line">        <tt class="py-name">running_config</tt><tt class="py-op">=</tt><tt id="link-30" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-30', 'dict', 'link-29');">dict</a></tt><tt class="py-op">(</tt><tt class="py-name">aliases</tt><tt class="py-op">=</tt><tt class="py-op">[</tt><tt class="py-string">'config'</tt><tt class="py-op">]</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L38"></a><tt class="py-lineno"> 38</tt>  <tt class="py-line">        <tt id="link-31" class="py-name" targets="Function ansible.plugins.filter.core.comment()=ansible.plugins.filter.core-module.html#comment"><a title="ansible.plugins.filter.core.comment" class="py-name" href="#" onclick="return doclink('link-31', 'comment', 'link-31');">comment</a></tt><tt class="py-op">=</tt><tt id="link-32" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-32', 'dict', 'link-29');">dict</a></tt><tt class="py-op">(</tt><tt id="link-33" class="py-name" targets="Method ansible.cli.console.ConsoleCLI.default()=ansible.cli.console.ConsoleCLI-class.html#default,Module ansible.plugins.callback.default=ansible.plugins.callback.default-module.html,Method ansible.plugins.filter.core.AnsibleJSONEncoder.default()=ansible.plugins.filter.core.AnsibleJSONEncoder-class.html#default,Method ansible.plugins.strategy.debug.Debugger.default()=ansible.plugins.strategy.debug.Debugger-class.html#default"><a title="ansible.cli.console.ConsoleCLI.default
+ansible.plugins.callback.default
+ansible.plugins.filter.core.AnsibleJSONEncoder.default
+ansible.plugins.strategy.debug.Debugger.default" class="py-name" href="#" onclick="return doclink('link-33', 'default', 'link-33');">default</a></tt><tt class="py-op">=</tt><tt id="link-34" class="py-name"><a title="ansible.module_utils.vyos.DEFAULT_COMMENT" class="py-name" href="#" onclick="return doclink('link-34', 'DEFAULT_COMMENT', 'link-26');">DEFAULT_COMMENT</a></tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L39"></a><tt class="py-lineno"> 39</tt>  <tt class="py-line">        <tt id="link-35" class="py-name" targets="Method ansible.module_utils.eos.EosConfigMixin.save_config()=ansible.module_utils.eos.EosConfigMixin-class.html#save_config,Method ansible.module_utils.ios.Cli.save_config()=ansible.module_utils.ios.Cli-class.html#save_config,Method ansible.module_utils.ios.Restconf.save_config()=ansible.module_utils.ios.Restconf-class.html#save_config,Method ansible.module_utils.network.Config.save_config()=ansible.module_utils.network.Config-class.html#save_config,Method ansible.module_utils.vyos.Cli.save_config()=ansible.module_utils.vyos.Cli-class.html#save_config"><a title="ansible.module_utils.eos.EosConfigMixin.save_config
+ansible.module_utils.ios.Cli.save_config
+ansible.module_utils.ios.Restconf.save_config
+ansible.module_utils.network.Config.save_config
+ansible.module_utils.vyos.Cli.save_config" class="py-name" href="#" onclick="return doclink('link-35', 'save_config', 'link-35');">save_config</a></tt><tt class="py-op">=</tt><tt id="link-36" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-36', 'dict', 'link-29');">dict</a></tt><tt class="py-op">(</tt><tt id="link-37" class="py-name" targets="Class type=type-class.html"><a title="type" class="py-name" href="#" onclick="return doclink('link-37', 'type', 'link-37');">type</a></tt><tt class="py-op">=</tt><tt class="py-string">'bool'</tt><tt class="py-op">,</tt> <tt class="py-name">aliases</tt><tt class="py-op">=</tt><tt class="py-op">[</tt><tt class="py-string">'save'</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L40"></a><tt class="py-lineno"> 40</tt>  <tt class="py-line">    <tt class="py-op">)</tt> </tt>
+</div><a name="L41"></a><tt class="py-lineno"> 41</tt>  <tt class="py-line"><tt id="link-38" class="py-name" targets="Variable ansible.module_utils.vyos.vyos_argument_spec=ansible.module_utils.vyos-module.html#vyos_argument_spec"><a title="ansible.module_utils.vyos.vyos_argument_spec" class="py-name" href="#" onclick="return doclink('link-38', 'vyos_argument_spec', 'link-38');">vyos_argument_spec</a></tt> <tt class="py-op">=</tt> <tt id="link-39" class="py-name" targets="Function ansible.module_utils.eos.argument_spec()=ansible.module_utils.eos-module.html#argument_spec,Function ansible.module_utils.ios.argument_spec()=ansible.module_utils.ios-module.html#argument_spec,Function ansible.module_utils.vyos.argument_spec()=ansible.module_utils.vyos-module.html#argument_spec"><a title="ansible.module_utils.eos.argument_spec
+ansible.module_utils.ios.argument_spec
+ansible.module_utils.vyos.argument_spec" class="py-name" href="#" onclick="return doclink('link-39', 'argument_spec', 'link-39');">argument_spec</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L42"></a><tt class="py-lineno"> 42</tt>  <tt class="py-line"> </tt>
+<a name="get_config"></a><div id="get_config-def"><a name="L43"></a><tt class="py-lineno"> 43</tt> <a class="py-toggle" href="#" id="get_config-toggle" onclick="return toggle('get_config');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vyos-module.html#get_config">get_config</a><tt class="py-op">(</tt><tt class="py-param">module</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="get_config-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="get_config-expanded"><a name="L44"></a><tt class="py-lineno"> 44</tt>  <tt class="py-line">    <tt class="py-name">contents</tt> <tt class="py-op">=</tt> <tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'running_config'</tt><tt class="py-op">]</tt> </tt>
+<a name="L45"></a><tt class="py-lineno"> 45</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">contents</tt><tt class="py-op">:</tt> </tt>
+<a name="L46"></a><tt class="py-lineno"> 46</tt>  <tt class="py-line">        <tt class="py-name">contents</tt> <tt class="py-op">=</tt> <tt id="link-40" class="py-name" targets="Class str=str-class.html"><a title="str" class="py-name" href="#" onclick="return doclink('link-40', 'str', 'link-40');">str</a></tt><tt class="py-op">(</tt><tt class="py-name">module</tt><tt class="py-op">.</tt><tt id="link-41" class="py-name" targets="Package ansible.config=ansible.config-module.html,Variable ansible.module_utils.asa.NetworkModule.config=ansible.module_utils.asa.NetworkModule-class.html#config,Variable ansible.module_utils.network.NetworkModule.config=ansible.module_utils.network.NetworkModule-class.html#config,Variable ansible.module_utils.nxos.NetworkModule.config=ansible.module_utils.nxos.NetworkModule-class.html#config,Variable ansible.module_utils.openswitch.NetworkModule.config=ansible.module_utils.openswitch.NetworkModule-class.html#config"><a title="ansible.config
+ansible.module_utils.asa.NetworkModule.config
+ansible.module_utils.network.NetworkModule.config
+ansible.module_utils.nxos.NetworkModule.config
+ansible.module_utils.openswitch.NetworkModule.config" class="py-name" href="#" onclick="return doclink('link-41', 'config', 'link-41');">config</a></tt><tt class="py-op">.</tt><tt id="link-42" class="py-name" targets="Function ansible.constants.get_config()=ansible.constants-module.html#get_config,Method ansible.module_utils.asa.NetworkModule.get_config()=ansible.module_utils.asa.NetworkModule-class.html#get_config,Method ansible.module_utils.eos.Eapi.get_config()=ansible.module_utils.eos.Eapi-class.html#get_config,Method ansible.module_utils.eos.EosConfigMixin.get_config()=ansible.module_utils.eos.EosConfigMixin-class.html#get_config,Function ansible.module_utils.eos.get_config()=ansible.module_utils.eos-module.html#get_config,Method ansible.module_utils.ios.Cli.get_config()=ansible.module_utils.ios.Cli-class.html#get_config,Method ansible.module_utils.ios.Restconf.get_config()=ansible.module_utils.ios.Restconf-class.html#get_config,Function ansible.module_utils.ios.get_config()=ansible.module_utils.ios-module.html#get_config,Method ansible.module_utils.iosxr.Cli.get_config()=ansible.module_utils.iosxr.Cli-class.html#get_config,Method ansible.module_utils.junos.Netconf.get_config()=ansible.module_utils.junos.Netconf-class.html#get_config,Method ansible.module_utils.junos.NetworkModule.get_config()=ansible.module_utils.junos.NetworkModule-class.html#get_config,Method ansible.module_utils.network.Config.get_config()=ansible.module_utils.network.Config-class.html#get_config,Method ansible.module_utils.nxos.NetworkModule.get_config()=ansible.module_utils.nxos.NetworkModule-class.html#get_config,Method ansible.module_utils.openswitch.NetworkModule.get_config()=ansible.module_utils.openswitch.NetworkModule-class.html#get_config,Method ansible.module_utils.vyos.Cli.get_config()=ansible.module_utils.vyos.Cli-class.html#get_config,Function ansible.module_utils.vyos.get_config()=ansible.module_utils.vyos-module.html#get_config"><a title="ansible.constants.get_config
+ansible.module_utils.asa.NetworkModule.get_config
+ansible.module_utils.eos.Eapi.get_config
+ansible.module_utils.eos.EosConfigMixin.get_config
+ansible.module_utils.eos.get_config
+ansible.module_utils.ios.Cli.get_config
+ansible.module_utils.ios.Restconf.get_config
+ansible.module_utils.ios.get_config
+ansible.module_utils.iosxr.Cli.get_config
+ansible.module_utils.junos.Netconf.get_config
+ansible.module_utils.junos.NetworkModule.get_config
+ansible.module_utils.network.Config.get_config
+ansible.module_utils.nxos.NetworkModule.get_config
+ansible.module_utils.openswitch.NetworkModule.get_config
+ansible.module_utils.vyos.Cli.get_config
+ansible.module_utils.vyos.get_config" class="py-name" href="#" onclick="return doclink('link-42', 'get_config', 'link-42');">get_config</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt class="py-name">split</tt><tt class="py-op">(</tt><tt class="py-string">'\n'</tt><tt class="py-op">)</tt> </tt>
+<a name="L47"></a><tt class="py-lineno"> 47</tt>  <tt class="py-line">        <tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'config'</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-name">contents</tt> </tt>
+<a name="L48"></a><tt class="py-lineno"> 48</tt>  <tt class="py-line">    <tt class="py-name">contents</tt> <tt class="py-op">=</tt> <tt class="py-string">'\n'</tt><tt class="py-op">.</tt><tt class="py-name">join</tt><tt class="py-op">(</tt><tt class="py-name">contents</tt><tt class="py-op">)</tt> </tt>
+<a name="L49"></a><tt class="py-lineno"> 49</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt id="link-43" class="py-name"><a title="ansible.module_utils.netcfg.NetworkConfig" class="py-name" href="#" onclick="return doclink('link-43', 'NetworkConfig', 'link-19');">NetworkConfig</a></tt><tt class="py-op">(</tt><tt class="py-name">contents</tt><tt class="py-op">=</tt><tt class="py-name">contents</tt><tt class="py-op">,</tt> <tt class="py-name">device_os</tt><tt class="py-op">=</tt><tt class="py-string">'junos'</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L50"></a><tt class="py-lineno"> 50</tt>  <tt class="py-line"> </tt>
+<a name="diff_config"></a><div id="diff_config-def"><a name="L51"></a><tt class="py-lineno"> 51</tt> <a class="py-toggle" href="#" id="diff_config-toggle" onclick="return toggle('diff_config');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vyos-module.html#diff_config">diff_config</a><tt class="py-op">(</tt><tt class="py-param">candidate</tt><tt class="py-op">,</tt> <tt class="py-param">config</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="diff_config-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="diff_config-expanded"><a name="L52"></a><tt class="py-lineno"> 52</tt>  <tt class="py-line">    <tt class="py-name">updates</tt> <tt class="py-op">=</tt> <tt id="link-44" class="py-name" targets="Method ansible.galaxy.token.GalaxyToken.set()=ansible.galaxy.token.GalaxyToken-class.html#set,Method ansible.plugins.cache.base.BaseCacheModule.set()=ansible.plugins.cache.base.BaseCacheModule-class.html#set,Method ansible.plugins.cache.jsonfile.CacheModule.set()=ansible.plugins.cache.jsonfile.CacheModule-class.html#set,Method ansible.plugins.cache.memcached.CacheModule.set()=ansible.plugins.cache.memcached.CacheModule-class.html#set,Method ansible.plugins.cache.memory.CacheModule.set()=ansible.plugins.cache.memory.CacheModule-class.html#set,Method ansible.plugins.cache.redis.CacheModule.set()=ansible.plugins.cache.redis.CacheModule-class.html#set"><a title="ansible.galaxy.token.GalaxyToken.set
+ansible.plugins.cache.base.BaseCacheModule.set
+ansible.plugins.cache.jsonfile.CacheModule.set
+ansible.plugins.cache.memcached.CacheModule.set
+ansible.plugins.cache.memory.CacheModule.set
+ansible.plugins.cache.redis.CacheModule.set" class="py-name" href="#" onclick="return doclink('link-44', 'set', 'link-44');">set</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L53"></a><tt class="py-lineno"> 53</tt>  <tt class="py-line">    <tt id="link-45" class="py-name"><a title="ansible.config
+ansible.module_utils.asa.NetworkModule.config
+ansible.module_utils.network.NetworkModule.config
+ansible.module_utils.nxos.NetworkModule.config
+ansible.module_utils.openswitch.NetworkModule.config" class="py-name" href="#" onclick="return doclink('link-45', 'config', 'link-41');">config</a></tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt id="link-46" class="py-name"><a title="str" class="py-name" href="#" onclick="return doclink('link-46', 'str', 'link-40');">str</a></tt><tt class="py-op">(</tt><tt class="py-name">c</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt id="link-47" class="py-name" targets="Method ansible.module_utils.netcfg.NetworkConfig.replace()=ansible.module_utils.netcfg.NetworkConfig-class.html#replace"><a title="ansible.module_utils.netcfg.NetworkConfig.replace" class="py-name" href="#" onclick="return doclink('link-47', 'replace', 'link-47');">replace</a></tt><tt class="py-op">(</tt><tt class="py-string">"'"</tt><tt class="py-op">,</tt> <tt class="py-string">''</tt><tt class="py-op">)</tt> <tt class="py-keyword">for</tt> <tt class="py-name">c</tt> <tt class="py-keyword">in</tt> <tt id="link-48" class="py-name"><a title="str" class="py-name" href="#" onclick="return doclink('link-48', 'str', 'link-40');">str</a></tt><tt class="py-op">(</tt><tt id="link-49" class="py-name"><a title="ansible.config
+ansible.module_utils.asa.NetworkModule.config
+ansible.module_utils.network.NetworkModule.config
+ansible.module_utils.nxos.NetworkModule.config
+ansible.module_utils.openswitch.NetworkModule.config" class="py-name" href="#" onclick="return doclink('link-49', 'config', 'link-41');">config</a></tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt class="py-name">split</tt><tt class="py-op">(</tt><tt class="py-string">'\n'</tt><tt class="py-op">)</tt><tt class="py-op">]</tt> </tt>
+<a name="L54"></a><tt class="py-lineno"> 54</tt>  <tt class="py-line"> </tt>
+<a name="L55"></a><tt class="py-lineno"> 55</tt>  <tt class="py-line">    <tt class="py-keyword">for</tt> <tt id="link-50" class="py-name" targets="Variable ansible.module_utils.netcfg.ConfigLine.line=ansible.module_utils.netcfg.ConfigLine-class.html#line"><a title="ansible.module_utils.netcfg.ConfigLine.line" class="py-name" href="#" onclick="return doclink('link-50', 'line', 'link-50');">line</a></tt> <tt class="py-keyword">in</tt> <tt id="link-51" class="py-name"><a title="str" class="py-name" href="#" onclick="return doclink('link-51', 'str', 'link-40');">str</a></tt><tt class="py-op">(</tt><tt class="py-name">candidate</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt class="py-name">split</tt><tt class="py-op">(</tt><tt class="py-string">'\n'</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L56"></a><tt class="py-lineno"> 56</tt>  <tt class="py-line">        <tt class="py-name">item</tt> <tt class="py-op">=</tt> <tt id="link-52" class="py-name"><a title="str" class="py-name" href="#" onclick="return doclink('link-52', 'str', 'link-40');">str</a></tt><tt class="py-op">(</tt><tt id="link-53" class="py-name"><a title="ansible.module_utils.netcfg.ConfigLine.line" class="py-name" href="#" onclick="return doclink('link-53', 'line', 'link-50');">line</a></tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt id="link-54" class="py-name"><a title="ansible.module_utils.netcfg.NetworkConfig.replace" class="py-name" href="#" onclick="return doclink('link-54', 'replace', 'link-47');">replace</a></tt><tt class="py-op">(</tt><tt class="py-string">"'"</tt><tt class="py-op">,</tt> <tt class="py-string">''</tt><tt class="py-op">)</tt> </tt>
+<a name="L57"></a><tt class="py-lineno"> 57</tt>  <tt class="py-line"> </tt>
+<a name="L58"></a><tt class="py-lineno"> 58</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">item</tt><tt class="py-op">.</tt><tt class="py-name">startswith</tt><tt class="py-op">(</tt><tt class="py-string">'set'</tt><tt class="py-op">)</tt> <tt class="py-keyword">and</tt> <tt class="py-keyword">not</tt> <tt class="py-name">item</tt><tt class="py-op">.</tt><tt class="py-name">startswith</tt><tt class="py-op">(</tt><tt class="py-string">'delete'</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L59"></a><tt class="py-lineno"> 59</tt>  <tt class="py-line">            <tt class="py-keyword">raise</tt> <tt class="py-name">ValueError</tt><tt class="py-op">(</tt><tt class="py-string">'line must start with either `set` or `delete`'</tt><tt class="py-op">)</tt> </tt>
+<a name="L60"></a><tt class="py-lineno"> 60</tt>  <tt class="py-line"> </tt>
+<a name="L61"></a><tt class="py-lineno"> 61</tt>  <tt class="py-line">        <tt class="py-keyword">elif</tt> <tt class="py-name">item</tt><tt class="py-op">.</tt><tt class="py-name">startswith</tt><tt class="py-op">(</tt><tt class="py-string">'set'</tt><tt class="py-op">)</tt> <tt class="py-keyword">and</tt> <tt class="py-name">item</tt> <tt class="py-keyword">not</tt> <tt class="py-keyword">in</tt> <tt id="link-55" class="py-name"><a title="ansible.config
+ansible.module_utils.asa.NetworkModule.config
+ansible.module_utils.network.NetworkModule.config
+ansible.module_utils.nxos.NetworkModule.config
+ansible.module_utils.openswitch.NetworkModule.config" class="py-name" href="#" onclick="return doclink('link-55', 'config', 'link-41');">config</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L62"></a><tt class="py-lineno"> 62</tt>  <tt class="py-line">            <tt class="py-name">updates</tt><tt class="py-op">.</tt><tt id="link-56" class="py-name" targets="Method ansible.module_utils.netcfg.NetworkConfig.add()=ansible.module_utils.netcfg.NetworkConfig-class.html#add,Method ansible.plugins.cache.memcached.CacheModuleKeys.add()=ansible.plugins.cache.memcached.CacheModuleKeys-class.html#add"><a title="ansible.module_utils.netcfg.NetworkConfig.add
+ansible.plugins.cache.memcached.CacheModuleKeys.add" class="py-name" href="#" onclick="return doclink('link-56', 'add', 'link-56');">add</a></tt><tt class="py-op">(</tt><tt id="link-57" class="py-name"><a title="ansible.module_utils.netcfg.ConfigLine.line" class="py-name" href="#" onclick="return doclink('link-57', 'line', 'link-50');">line</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L63"></a><tt class="py-lineno"> 63</tt>  <tt class="py-line"> </tt>
+<a name="L64"></a><tt class="py-lineno"> 64</tt>  <tt class="py-line">        <tt class="py-keyword">elif</tt> <tt class="py-name">item</tt><tt class="py-op">.</tt><tt class="py-name">startswith</tt><tt class="py-op">(</tt><tt class="py-string">'delete'</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L65"></a><tt class="py-lineno"> 65</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt id="link-58" class="py-name"><a title="ansible.config
+ansible.module_utils.asa.NetworkModule.config
+ansible.module_utils.network.NetworkModule.config
+ansible.module_utils.nxos.NetworkModule.config
+ansible.module_utils.openswitch.NetworkModule.config" class="py-name" href="#" onclick="return doclink('link-58', 'config', 'link-41');">config</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L66"></a><tt class="py-lineno"> 66</tt>  <tt class="py-line">                <tt class="py-name">updates</tt><tt class="py-op">.</tt><tt id="link-59" class="py-name"><a title="ansible.module_utils.netcfg.NetworkConfig.add
+ansible.plugins.cache.memcached.CacheModuleKeys.add" class="py-name" href="#" onclick="return doclink('link-59', 'add', 'link-56');">add</a></tt><tt class="py-op">(</tt><tt id="link-60" class="py-name"><a title="ansible.module_utils.netcfg.ConfigLine.line" class="py-name" href="#" onclick="return doclink('link-60', 'line', 'link-50');">line</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L67"></a><tt class="py-lineno"> 67</tt>  <tt class="py-line">            <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L68"></a><tt class="py-lineno"> 68</tt>  <tt class="py-line">                <tt class="py-name">item</tt> <tt class="py-op">=</tt> <tt class="py-name">re</tt><tt class="py-op">.</tt><tt class="py-name">sub</tt><tt class="py-op">(</tt><tt class="py-string">r'delete'</tt><tt class="py-op">,</tt> <tt class="py-string">'set'</tt><tt class="py-op">,</tt> <tt class="py-name">item</tt><tt class="py-op">)</tt> </tt>
+<a name="L69"></a><tt class="py-lineno"> 69</tt>  <tt class="py-line">                <tt class="py-keyword">for</tt> <tt class="py-name">entry</tt> <tt class="py-keyword">in</tt> <tt id="link-61" class="py-name"><a title="ansible.config
+ansible.module_utils.asa.NetworkModule.config
+ansible.module_utils.network.NetworkModule.config
+ansible.module_utils.nxos.NetworkModule.config
+ansible.module_utils.openswitch.NetworkModule.config" class="py-name" href="#" onclick="return doclink('link-61', 'config', 'link-41');">config</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L70"></a><tt class="py-lineno"> 70</tt>  <tt class="py-line">                    <tt class="py-keyword">if</tt> <tt class="py-name">entry</tt><tt class="py-op">.</tt><tt class="py-name">startswith</tt><tt class="py-op">(</tt><tt class="py-name">item</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L71"></a><tt class="py-lineno"> 71</tt>  <tt class="py-line">                        <tt class="py-name">updates</tt><tt class="py-op">.</tt><tt id="link-62" class="py-name"><a title="ansible.module_utils.netcfg.NetworkConfig.add
+ansible.plugins.cache.memcached.CacheModuleKeys.add" class="py-name" href="#" onclick="return doclink('link-62', 'add', 'link-56');">add</a></tt><tt class="py-op">(</tt><tt id="link-63" class="py-name"><a title="ansible.module_utils.netcfg.ConfigLine.line" class="py-name" href="#" onclick="return doclink('link-63', 'line', 'link-50');">line</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L72"></a><tt class="py-lineno"> 72</tt>  <tt class="py-line"> </tt>
+<a name="L73"></a><tt class="py-lineno"> 73</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt id="link-64" class="py-name" targets="Module ansible.plugins.lookup.list=ansible.plugins.lookup.list-module.html"><a title="ansible.plugins.lookup.list" class="py-name" href="#" onclick="return doclink('link-64', 'list', 'link-64');">list</a></tt><tt class="py-op">(</tt><tt class="py-name">updates</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L74"></a><tt class="py-lineno"> 74</tt>  <tt class="py-line"> </tt>
+<a name="check_config"></a><div id="check_config-def"><a name="L75"></a><tt class="py-lineno"> 75</tt> <a class="py-toggle" href="#" id="check_config-toggle" onclick="return toggle('check_config');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vyos-module.html#check_config">check_config</a><tt class="py-op">(</tt><tt class="py-param">config</tt><tt class="py-op">,</tt> <tt class="py-param">result</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="check_config-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="check_config-expanded"><a name="L76"></a><tt class="py-lineno"> 76</tt>  <tt class="py-line">    <tt id="link-65" class="py-name" targets="Module ansible.executor.process.result=ansible.executor.process.result-module.html,Method ansible.module_utils.service.Service.result()=ansible.module_utils.service.Service-class.html#result"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-65', 'result', 'link-65');">result</a></tt><tt class="py-op">[</tt><tt class="py-string">'filtered'</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt id="link-66" class="py-name"><a title="ansible.plugins.lookup.list" class="py-name" href="#" onclick="return doclink('link-66', 'list', 'link-64');">list</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L77"></a><tt class="py-lineno"> 77</tt>  <tt class="py-line">    <tt class="py-keyword">for</tt> <tt id="link-67" class="py-name" targets="Function ansible.plugins.test.core.regex()=ansible.plugins.test.core-module.html#regex"><a title="ansible.plugins.test.core.regex" class="py-name" href="#" onclick="return doclink('link-67', 'regex', 'link-67');">regex</a></tt> <tt class="py-keyword">in</tt> <tt id="link-68" class="py-name"><a title="ansible.module_utils.vyos.FILTERS" class="py-name" href="#" onclick="return doclink('link-68', 'FILTERS', 'link-27');">FILTERS</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L78"></a><tt class="py-lineno"> 78</tt>  <tt class="py-line">        <tt class="py-keyword">for</tt> <tt class="py-name">index</tt><tt class="py-op">,</tt> <tt id="link-69" class="py-name"><a title="ansible.module_utils.netcfg.ConfigLine.line" class="py-name" href="#" onclick="return doclink('link-69', 'line', 'link-50');">line</a></tt> <tt class="py-keyword">in</tt> <tt class="py-name">enumerate</tt><tt class="py-op">(</tt><tt id="link-70" class="py-name"><a title="ansible.plugins.lookup.list" class="py-name" href="#" onclick="return doclink('link-70', 'list', 'link-64');">list</a></tt><tt class="py-op">(</tt><tt id="link-71" class="py-name"><a title="ansible.config
+ansible.module_utils.asa.NetworkModule.config
+ansible.module_utils.network.NetworkModule.config
+ansible.module_utils.nxos.NetworkModule.config
+ansible.module_utils.openswitch.NetworkModule.config" class="py-name" href="#" onclick="return doclink('link-71', 'config', 'link-41');">config</a></tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L79"></a><tt class="py-lineno"> 79</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt id="link-72" class="py-name"><a title="ansible.plugins.test.core.regex" class="py-name" href="#" onclick="return doclink('link-72', 'regex', 'link-67');">regex</a></tt><tt class="py-op">.</tt><tt id="link-73" class="py-name" targets="Method ansible.module_utils.netcfg.NetworkConfig.search()=ansible.module_utils.netcfg.NetworkConfig-class.html#search,Function ansible.plugins.test.core.search()=ansible.plugins.test.core-module.html#search"><a title="ansible.module_utils.netcfg.NetworkConfig.search
+ansible.plugins.test.core.search" class="py-name" href="#" onclick="return doclink('link-73', 'search', 'link-73');">search</a></tt><tt class="py-op">(</tt><tt id="link-74" class="py-name"><a title="ansible.module_utils.netcfg.ConfigLine.line" class="py-name" href="#" onclick="return doclink('link-74', 'line', 'link-50');">line</a></tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L80"></a><tt class="py-lineno"> 80</tt>  <tt class="py-line">                <tt id="link-75" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-75', 'result', 'link-65');">result</a></tt><tt class="py-op">[</tt><tt class="py-string">'filtered'</tt><tt class="py-op">]</tt><tt class="py-op">.</tt><tt class="py-name">append</tt><tt class="py-op">(</tt><tt id="link-76" class="py-name"><a title="ansible.module_utils.netcfg.ConfigLine.line" class="py-name" href="#" onclick="return doclink('link-76', 'line', 'link-50');">line</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L81"></a><tt class="py-lineno"> 81</tt>  <tt class="py-line">                <tt class="py-keyword">del</tt> <tt id="link-77" class="py-name"><a title="ansible.config
+ansible.module_utils.asa.NetworkModule.config
+ansible.module_utils.network.NetworkModule.config
+ansible.module_utils.nxos.NetworkModule.config
+ansible.module_utils.openswitch.NetworkModule.config" class="py-name" href="#" onclick="return doclink('link-77', 'config', 'link-41');">config</a></tt><tt class="py-op">[</tt><tt class="py-name">index</tt><tt class="py-op">]</tt> </tt>
+</div><a name="L82"></a><tt class="py-lineno"> 82</tt>  <tt class="py-line"> </tt>
+<a name="load_candidate"></a><div id="load_candidate-def"><a name="L83"></a><tt class="py-lineno"> 83</tt> <a class="py-toggle" href="#" id="load_candidate-toggle" onclick="return toggle('load_candidate');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vyos-module.html#load_candidate">load_candidate</a><tt class="py-op">(</tt><tt class="py-param">module</tt><tt class="py-op">,</tt> <tt class="py-param">candidate</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="load_candidate-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="load_candidate-expanded"><a name="L84"></a><tt class="py-lineno"> 84</tt>  <tt class="py-line">    <tt id="link-78" class="py-name"><a title="ansible.config
+ansible.module_utils.asa.NetworkModule.config
+ansible.module_utils.network.NetworkModule.config
+ansible.module_utils.nxos.NetworkModule.config
+ansible.module_utils.openswitch.NetworkModule.config" class="py-name" href="#" onclick="return doclink('link-78', 'config', 'link-41');">config</a></tt> <tt class="py-op">=</tt> <tt id="link-79" class="py-name"><a title="ansible.constants.get_config
+ansible.module_utils.asa.NetworkModule.get_config
+ansible.module_utils.eos.Eapi.get_config
+ansible.module_utils.eos.EosConfigMixin.get_config
+ansible.module_utils.eos.get_config
+ansible.module_utils.ios.Cli.get_config
+ansible.module_utils.ios.Restconf.get_config
+ansible.module_utils.ios.get_config
+ansible.module_utils.iosxr.Cli.get_config
+ansible.module_utils.junos.Netconf.get_config
+ansible.module_utils.junos.NetworkModule.get_config
+ansible.module_utils.network.Config.get_config
+ansible.module_utils.nxos.NetworkModule.get_config
+ansible.module_utils.openswitch.NetworkModule.get_config
+ansible.module_utils.vyos.Cli.get_config
+ansible.module_utils.vyos.get_config" class="py-name" href="#" onclick="return doclink('link-79', 'get_config', 'link-42');">get_config</a></tt><tt class="py-op">(</tt><tt class="py-name">module</tt><tt class="py-op">)</tt> </tt>
+<a name="L85"></a><tt class="py-lineno"> 85</tt>  <tt class="py-line"> </tt>
+<a name="L86"></a><tt class="py-lineno"> 86</tt>  <tt class="py-line">    <tt class="py-name">updates</tt> <tt class="py-op">=</tt> <tt id="link-80" class="py-name" targets="Function ansible.module_utils.vyos.diff_config()=ansible.module_utils.vyos-module.html#diff_config"><a title="ansible.module_utils.vyos.diff_config" class="py-name" href="#" onclick="return doclink('link-80', 'diff_config', 'link-80');">diff_config</a></tt><tt class="py-op">(</tt><tt class="py-name">candidate</tt><tt class="py-op">,</tt> <tt id="link-81" class="py-name"><a title="ansible.config
+ansible.module_utils.asa.NetworkModule.config
+ansible.module_utils.network.NetworkModule.config
+ansible.module_utils.nxos.NetworkModule.config
+ansible.module_utils.openswitch.NetworkModule.config" class="py-name" href="#" onclick="return doclink('link-81', 'config', 'link-41');">config</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L87"></a><tt class="py-lineno"> 87</tt>  <tt class="py-line"> </tt>
+<a name="L88"></a><tt class="py-lineno"> 88</tt>  <tt class="py-line">    <tt id="link-82" class="py-name"><a title="ansible.plugins.filter.core.comment" class="py-name" href="#" onclick="return doclink('link-82', 'comment', 'link-31');">comment</a></tt> <tt class="py-op">=</tt> <tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'comment'</tt><tt class="py-op">]</tt> </tt>
+<a name="L89"></a><tt class="py-lineno"> 89</tt>  <tt class="py-line">    <tt id="link-83" class="py-name" targets="Method ansible.galaxy.token.GalaxyToken.save()=ansible.galaxy.token.GalaxyToken-class.html#save"><a title="ansible.galaxy.token.GalaxyToken.save" class="py-name" href="#" onclick="return doclink('link-83', 'save', 'link-83');">save</a></tt> <tt class="py-op">=</tt> <tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'save_config'</tt><tt class="py-op">]</tt> </tt>
+<a name="L90"></a><tt class="py-lineno"> 90</tt>  <tt class="py-line"> </tt>
+<a name="L91"></a><tt class="py-lineno"> 91</tt>  <tt class="py-line">    <tt id="link-84" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-84', 'result', 'link-65');">result</a></tt> <tt class="py-op">=</tt> <tt id="link-85" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-85', 'dict', 'link-29');">dict</a></tt><tt class="py-op">(</tt><tt id="link-86" class="py-name" targets="Function ansible.plugins.test.core.changed()=ansible.plugins.test.core-module.html#changed"><a title="ansible.plugins.test.core.changed" class="py-name" href="#" onclick="return doclink('link-86', 'changed', 'link-86');">changed</a></tt><tt class="py-op">=</tt><tt class="py-name">False</tt><tt class="py-op">)</tt> </tt>
+<a name="L92"></a><tt class="py-lineno"> 92</tt>  <tt class="py-line"> </tt>
+<a name="L93"></a><tt class="py-lineno"> 93</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">updates</tt><tt class="py-op">:</tt> </tt>
+<a name="L94"></a><tt class="py-lineno"> 94</tt>  <tt class="py-line">        <tt id="link-87" class="py-name" targets="Method ansible.module_utils.junos.Netconf.check_config()=ansible.module_utils.junos.Netconf-class.html#check_config,Function ansible.module_utils.vyos.check_config()=ansible.module_utils.vyos-module.html#check_config"><a title="ansible.module_utils.junos.Netconf.check_config
+ansible.module_utils.vyos.check_config" class="py-name" href="#" onclick="return doclink('link-87', 'check_config', 'link-87');">check_config</a></tt><tt class="py-op">(</tt><tt class="py-name">updates</tt><tt class="py-op">,</tt> <tt id="link-88" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-88', 'result', 'link-65');">result</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L95"></a><tt class="py-lineno"> 95</tt>  <tt class="py-line">        <tt class="py-name">diff</tt> <tt class="py-op">=</tt> <tt class="py-name">module</tt><tt class="py-op">.</tt><tt id="link-89" class="py-name"><a title="ansible.config
+ansible.module_utils.asa.NetworkModule.config
+ansible.module_utils.network.NetworkModule.config
+ansible.module_utils.nxos.NetworkModule.config
+ansible.module_utils.openswitch.NetworkModule.config" class="py-name" href="#" onclick="return doclink('link-89', 'config', 'link-41');">config</a></tt><tt class="py-op">.</tt><tt id="link-90" class="py-name" targets="Method ansible.module_utils.eos.EosConfigMixin.load_config()=ansible.module_utils.eos.EosConfigMixin-class.html#load_config,Function ansible.module_utils.eos.load_config()=ansible.module_utils.eos-module.html#load_config,Method ansible.module_utils.ios.Cli.load_config()=ansible.module_utils.ios.Cli-class.html#load_config,Method ansible.module_utils.ios.Restconf.load_config()=ansible.module_utils.ios.Restconf-class.html#load_config,Function ansible.module_utils.ios.load_config()=ansible.module_utils.ios-module.html#load_config,Method ansible.module_utils.iosxr.Cli.load_config()=ansible.module_utils.iosxr.Cli-class.html#load_config,Method ansible.module_utils.junos.Netconf.load_config()=ansible.module_utils.junos.Netconf-class.html#load_config,Method ansible.module_utils.junos.NetworkModule.load_config()=ansible.module_utils.junos.NetworkModule-class.html#load_config,Method ansible.module_utils.network.Config.load_config()=ansible.module_utils.network.Config-class.html#load_config,Method ansible.module_utils.vyos.Cli.load_config()=ansible.module_utils.vyos.Cli-class.html#load_config,Function ansible.module_utils.vyos.load_config()=ansible.module_utils.vyos-module.html#load_config"><a title="ansible.module_utils.eos.EosConfigMixin.load_config
+ansible.module_utils.eos.load_config
+ansible.module_utils.ios.Cli.load_config
+ansible.module_utils.ios.Restconf.load_config
+ansible.module_utils.ios.load_config
+ansible.module_utils.iosxr.Cli.load_config
+ansible.module_utils.junos.Netconf.load_config
+ansible.module_utils.junos.NetworkModule.load_config
+ansible.module_utils.network.Config.load_config
+ansible.module_utils.vyos.Cli.load_config
+ansible.module_utils.vyos.load_config" class="py-name" href="#" onclick="return doclink('link-90', 'load_config', 'link-90');">load_config</a></tt><tt class="py-op">(</tt><tt class="py-name">updates</tt><tt class="py-op">)</tt> </tt>
+<a name="L96"></a><tt class="py-lineno"> 96</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">diff</tt><tt class="py-op">:</tt> </tt>
+<a name="L97"></a><tt class="py-lineno"> 97</tt>  <tt class="py-line">            <tt id="link-91" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-91', 'result', 'link-65');">result</a></tt><tt class="py-op">[</tt><tt class="py-string">'diff'</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt id="link-92" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-92', 'dict', 'link-29');">dict</a></tt><tt class="py-op">(</tt><tt class="py-name">prepared</tt><tt class="py-op">=</tt><tt class="py-name">diff</tt><tt class="py-op">)</tt> </tt>
+<a name="L98"></a><tt class="py-lineno"> 98</tt>  <tt class="py-line"> </tt>
+<a name="L99"></a><tt class="py-lineno"> 99</tt>  <tt class="py-line">        <tt id="link-93" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-93', 'result', 'link-65');">result</a></tt><tt class="py-op">[</tt><tt class="py-string">'changed'</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-name">True</tt> </tt>
+<a name="L100"></a><tt class="py-lineno">100</tt>  <tt class="py-line"> </tt>
+<a name="L101"></a><tt class="py-lineno">101</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">check_mode</tt><tt class="py-op">:</tt> </tt>
+<a name="L102"></a><tt class="py-lineno">102</tt>  <tt class="py-line">            <tt class="py-name">module</tt><tt class="py-op">.</tt><tt id="link-94" class="py-name"><a title="ansible.config
+ansible.module_utils.asa.NetworkModule.config
+ansible.module_utils.network.NetworkModule.config
+ansible.module_utils.nxos.NetworkModule.config
+ansible.module_utils.openswitch.NetworkModule.config" class="py-name" href="#" onclick="return doclink('link-94', 'config', 'link-41');">config</a></tt><tt class="py-op">.</tt><tt id="link-95" class="py-name" targets="Method ansible.module_utils.eos.EosConfigMixin.commit_config()=ansible.module_utils.eos.EosConfigMixin-class.html#commit_config,Method ansible.module_utils.ios.Cli.commit_config()=ansible.module_utils.ios.Cli-class.html#commit_config,Method ansible.module_utils.ios.Restconf.commit_config()=ansible.module_utils.ios.Restconf-class.html#commit_config,Method ansible.module_utils.iosxr.Cli.commit_config()=ansible.module_utils.iosxr.Cli-class.html#commit_config,Method ansible.module_utils.junos.Netconf.commit_config()=ansible.module_utils.junos.Netconf-class.html#commit_config,Method ansible.module_utils.network.Config.commit_config()=ansible.module_utils.network.Config-class.html#commit_config,Method ansible.module_utils.vyos.Cli.commit_config()=ansible.module_utils.vyos.Cli-class.html#commit_config"><a title="ansible.module_utils.eos.EosConfigMixin.commit_config
+ansible.module_utils.ios.Cli.commit_config
+ansible.module_utils.ios.Restconf.commit_config
+ansible.module_utils.iosxr.Cli.commit_config
+ansible.module_utils.junos.Netconf.commit_config
+ansible.module_utils.network.Config.commit_config
+ansible.module_utils.vyos.Cli.commit_config" class="py-name" href="#" onclick="return doclink('link-95', 'commit_config', 'link-95');">commit_config</a></tt><tt class="py-op">(</tt><tt id="link-96" class="py-name"><a title="ansible.plugins.filter.core.comment" class="py-name" href="#" onclick="return doclink('link-96', 'comment', 'link-31');">comment</a></tt><tt class="py-op">=</tt><tt id="link-97" class="py-name"><a title="ansible.plugins.filter.core.comment" class="py-name" href="#" onclick="return doclink('link-97', 'comment', 'link-31');">comment</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L103"></a><tt class="py-lineno">103</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt id="link-98" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.save" class="py-name" href="#" onclick="return doclink('link-98', 'save', 'link-83');">save</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L104"></a><tt class="py-lineno">104</tt>  <tt class="py-line">                <tt class="py-name">module</tt><tt class="py-op">.</tt><tt id="link-99" class="py-name"><a title="ansible.config
+ansible.module_utils.asa.NetworkModule.config
+ansible.module_utils.network.NetworkModule.config
+ansible.module_utils.nxos.NetworkModule.config
+ansible.module_utils.openswitch.NetworkModule.config" class="py-name" href="#" onclick="return doclink('link-99', 'config', 'link-41');">config</a></tt><tt class="py-op">.</tt><tt id="link-100" class="py-name"><a title="ansible.module_utils.eos.EosConfigMixin.save_config
+ansible.module_utils.ios.Cli.save_config
+ansible.module_utils.ios.Restconf.save_config
+ansible.module_utils.network.Config.save_config
+ansible.module_utils.vyos.Cli.save_config" class="py-name" href="#" onclick="return doclink('link-100', 'save_config', 'link-35');">save_config</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L105"></a><tt class="py-lineno">105</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L106"></a><tt class="py-lineno">106</tt>  <tt class="py-line">            <tt class="py-name">module</tt><tt class="py-op">.</tt><tt id="link-101" class="py-name"><a title="ansible.config
+ansible.module_utils.asa.NetworkModule.config
+ansible.module_utils.network.NetworkModule.config
+ansible.module_utils.nxos.NetworkModule.config
+ansible.module_utils.openswitch.NetworkModule.config" class="py-name" href="#" onclick="return doclink('link-101', 'config', 'link-41');">config</a></tt><tt class="py-op">.</tt><tt id="link-102" class="py-name" targets="Method ansible.module_utils.eos.EosConfigMixin.abort_config()=ansible.module_utils.eos.EosConfigMixin-class.html#abort_config,Method ansible.module_utils.ios.Cli.abort_config()=ansible.module_utils.ios.Cli-class.html#abort_config,Method ansible.module_utils.ios.Restconf.abort_config()=ansible.module_utils.ios.Restconf-class.html#abort_config,Method ansible.module_utils.iosxr.Cli.abort_config()=ansible.module_utils.iosxr.Cli-class.html#abort_config,Method ansible.module_utils.network.Config.abort_config()=ansible.module_utils.network.Config-class.html#abort_config,Method ansible.module_utils.vyos.Cli.abort_config()=ansible.module_utils.vyos.Cli-class.html#abort_config"><a title="ansible.module_utils.eos.EosConfigMixin.abort_config
+ansible.module_utils.ios.Cli.abort_config
+ansible.module_utils.ios.Restconf.abort_config
+ansible.module_utils.iosxr.Cli.abort_config
+ansible.module_utils.network.Config.abort_config
+ansible.module_utils.vyos.Cli.abort_config" class="py-name" href="#" onclick="return doclink('link-102', 'abort_config', 'link-102');">abort_config</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L107"></a><tt class="py-lineno">107</tt>  <tt class="py-line"> </tt>
+<a name="L108"></a><tt class="py-lineno">108</tt>  <tt class="py-line">        <tt class="py-comment"># exit from config mode</tt> </tt>
+<a name="L109"></a><tt class="py-lineno">109</tt>  <tt class="py-line">        <tt class="py-name">module</tt><tt class="py-op">.</tt><tt id="link-103" class="py-name" targets="Package ansible.cli=ansible.cli-module.html,Variable ansible.module_utils.network.NetworkModule.cli=ansible.module_utils.network.NetworkModule-class.html#cli"><a title="ansible.cli
+ansible.module_utils.network.NetworkModule.cli" class="py-name" href="#" onclick="return doclink('link-103', 'cli', 'link-103');">cli</a></tt><tt class="py-op">(</tt><tt class="py-string">'exit'</tt><tt class="py-op">)</tt> </tt>
+<a name="L110"></a><tt class="py-lineno">110</tt>  <tt class="py-line"> </tt>
+<a name="L111"></a><tt class="py-lineno">111</tt>  <tt class="py-line">    <tt id="link-104" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-104', 'result', 'link-65');">result</a></tt><tt class="py-op">[</tt><tt class="py-string">'updates'</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-name">updates</tt> </tt>
+<a name="L112"></a><tt class="py-lineno">112</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt id="link-105" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-105', 'result', 'link-65');">result</a></tt> </tt>
+</div><a name="L113"></a><tt class="py-lineno">113</tt>  <tt class="py-line"> </tt>
+<a name="load_config"></a><div id="load_config-def"><a name="L114"></a><tt class="py-lineno">114</tt> <a class="py-toggle" href="#" id="load_config-toggle" onclick="return toggle('load_config');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vyos-module.html#load_config">load_config</a><tt class="py-op">(</tt><tt class="py-param">module</tt><tt class="py-op">,</tt> <tt class="py-param">commands</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="load_config-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="load_config-expanded"><a name="L115"></a><tt class="py-lineno">115</tt>  <tt class="py-line">    <tt class="py-name">contents</tt> <tt class="py-op">=</tt> <tt class="py-string">'\n'</tt><tt class="py-op">.</tt><tt class="py-name">join</tt><tt class="py-op">(</tt><tt class="py-name">commands</tt><tt class="py-op">)</tt> </tt>
+<a name="L116"></a><tt class="py-lineno">116</tt>  <tt class="py-line">    <tt class="py-name">candidate</tt> <tt class="py-op">=</tt> <tt id="link-106" class="py-name"><a title="ansible.module_utils.netcfg.NetworkConfig" class="py-name" href="#" onclick="return doclink('link-106', 'NetworkConfig', 'link-19');">NetworkConfig</a></tt><tt class="py-op">(</tt><tt class="py-name">contents</tt><tt class="py-op">=</tt><tt class="py-name">contents</tt><tt class="py-op">,</tt> <tt class="py-name">device_os</tt><tt class="py-op">=</tt><tt class="py-string">'junos'</tt><tt class="py-op">)</tt> </tt>
+<a name="L117"></a><tt class="py-lineno">117</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt id="link-107" class="py-name" targets="Function ansible.module_utils.ios.load_candidate()=ansible.module_utils.ios-module.html#load_candidate,Function ansible.module_utils.vyos.load_candidate()=ansible.module_utils.vyos-module.html#load_candidate"><a title="ansible.module_utils.ios.load_candidate
+ansible.module_utils.vyos.load_candidate" class="py-name" href="#" onclick="return doclink('link-107', 'load_candidate', 'link-107');">load_candidate</a></tt><tt class="py-op">(</tt><tt class="py-name">module</tt><tt class="py-op">,</tt> <tt class="py-name">candidate</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L118"></a><tt class="py-lineno">118</tt>  <tt class="py-line"> </tt>
+<a name="L119"></a><tt class="py-lineno">119</tt>  <tt class="py-line"> </tt>
+<a name="Cli"></a><div id="Cli-def"><a name="L120"></a><tt class="py-lineno">120</tt> <a class="py-toggle" href="#" id="Cli-toggle" onclick="return toggle('Cli');">-</a><tt class="py-line"><tt class="py-keyword">class</tt> <a class="py-def-name" href="ansible.module_utils.vyos.Cli-class.html">Cli</a><tt class="py-op">(</tt><tt class="py-base-class">NetCli</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Cli-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="Cli-expanded"><a name="L121"></a><tt class="py-lineno">121</tt>  <tt class="py-line"> </tt>
+<a name="L122"></a><tt class="py-lineno">122</tt>  <tt class="py-line">    <tt id="link-108" class="py-name" targets="Variable ansible.module_utils.asa.CLI_PROMPTS_RE=ansible.module_utils.asa-module.html#CLI_PROMPTS_RE,Variable ansible.module_utils.eos.Cli.CLI_PROMPTS_RE=ansible.module_utils.eos.Cli-class.html#CLI_PROMPTS_RE,Variable ansible.module_utils.ios.Cli.CLI_PROMPTS_RE=ansible.module_utils.ios.Cli-class.html#CLI_PROMPTS_RE,Variable ansible.module_utils.iosxr.Cli.CLI_PROMPTS_RE=ansible.module_utils.iosxr.Cli-class.html#CLI_PROMPTS_RE,Variable ansible.module_utils.nxos.CLI_PROMPTS_RE=ansible.module_utils.nxos-module.html#CLI_PROMPTS_RE,Variable ansible.module_utils.shell.CLI_PROMPTS_RE=ansible.module_utils.shell-module.html#CLI_PROMPTS_RE,Variable ansible.module_utils.vyos.Cli.CLI_PROMPTS_RE=ansible.module_utils.vyos.Cli-class.html#CLI_PROMPTS_RE"><a title="ansible.module_utils.asa.CLI_PROMPTS_RE
+ansible.module_utils.eos.Cli.CLI_PROMPTS_RE
+ansible.module_utils.ios.Cli.CLI_PROMPTS_RE
+ansible.module_utils.iosxr.Cli.CLI_PROMPTS_RE
+ansible.module_utils.nxos.CLI_PROMPTS_RE
+ansible.module_utils.shell.CLI_PROMPTS_RE
+ansible.module_utils.vyos.Cli.CLI_PROMPTS_RE" class="py-name" href="#" onclick="return doclink('link-108', 'CLI_PROMPTS_RE', 'link-108');">CLI_PROMPTS_RE</a></tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt> </tt>
+<a name="L123"></a><tt class="py-lineno">123</tt>  <tt class="py-line">        <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-109" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-109', 'compile', 'link-28');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"[\r\n]?[\w+\-\.:\/\[\]]+(?:\([^\)]+\)){,3}(?:&gt;|#) ?$"</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L124"></a><tt class="py-lineno">124</tt>  <tt class="py-line">        <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-110" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-110', 'compile', 'link-28');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"\@[\w\-\.]+:\S+?[&gt;#\$] ?$"</tt><tt class="py-op">)</tt> </tt>
+<a name="L125"></a><tt class="py-lineno">125</tt>  <tt class="py-line">    <tt class="py-op">]</tt> </tt>
+<a name="L126"></a><tt class="py-lineno">126</tt>  <tt class="py-line"> </tt>
+<a name="L127"></a><tt class="py-lineno">127</tt>  <tt class="py-line">    <tt id="link-111" class="py-name" targets="Variable ansible.module_utils.asa.CLI_ERRORS_RE=ansible.module_utils.asa-module.html#CLI_ERRORS_RE,Variable ansible.module_utils.eos.Cli.CLI_ERRORS_RE=ansible.module_utils.eos.Cli-class.html#CLI_ERRORS_RE,Variable ansible.module_utils.ios.Cli.CLI_ERRORS_RE=ansible.module_utils.ios.Cli-class.html#CLI_ERRORS_RE,Variable ansible.module_utils.iosxr.Cli.CLI_ERRORS_RE=ansible.module_utils.iosxr.Cli-class.html#CLI_ERRORS_RE,Variable ansible.module_utils.nxos.CLI_ERRORS_RE=ansible.module_utils.nxos-module.html#CLI_ERRORS_RE,Variable ansible.module_utils.shell.CLI_ERRORS_RE=ansible.module_utils.shell-module.html#CLI_ERRORS_RE,Variable ansible.module_utils.vyos.Cli.CLI_ERRORS_RE=ansible.module_utils.vyos.Cli-class.html#CLI_ERRORS_RE"><a title="ansible.module_utils.asa.CLI_ERRORS_RE
+ansible.module_utils.eos.Cli.CLI_ERRORS_RE
+ansible.module_utils.ios.Cli.CLI_ERRORS_RE
+ansible.module_utils.iosxr.Cli.CLI_ERRORS_RE
+ansible.module_utils.nxos.CLI_ERRORS_RE
+ansible.module_utils.shell.CLI_ERRORS_RE
+ansible.module_utils.vyos.Cli.CLI_ERRORS_RE" class="py-name" href="#" onclick="return doclink('link-111', 'CLI_ERRORS_RE', 'link-111');">CLI_ERRORS_RE</a></tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt> </tt>
+<a name="L128"></a><tt class="py-lineno">128</tt>  <tt class="py-line">        <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-112" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-112', 'compile', 'link-28');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"\n\s*Invalid command:"</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L129"></a><tt class="py-lineno">129</tt>  <tt class="py-line">        <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-113" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-113', 'compile', 'link-28');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"\nCommit failed"</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L130"></a><tt class="py-lineno">130</tt>  <tt class="py-line">        <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-114" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-114', 'compile', 'link-28');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"\n\s+Set failed"</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L131"></a><tt class="py-lineno">131</tt>  <tt class="py-line">    <tt class="py-op">]</tt> </tt>
+<a name="L132"></a><tt class="py-lineno">132</tt>  <tt class="py-line"> </tt>
+<a name="Cli.connect"></a><div id="Cli.connect-def"><a name="L133"></a><tt class="py-lineno">133</tt> <a class="py-toggle" href="#" id="Cli.connect-toggle" onclick="return toggle('Cli.connect');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vyos.Cli-class.html#connect">connect</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">params</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">kwargs</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Cli.connect-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="Cli.connect-expanded"><a name="L134"></a><tt class="py-lineno">134</tt>  <tt class="py-line">        <tt class="py-name">super</tt><tt class="py-op">(</tt><tt id="link-115" class="py-name" targets="Class ansible.module_utils.asa.Cli=ansible.module_utils.asa.Cli-class.html,Class ansible.module_utils.eos.Cli=ansible.module_utils.eos.Cli-class.html,Class ansible.module_utils.ios.Cli=ansible.module_utils.ios.Cli-class.html,Class ansible.module_utils.iosxr.Cli=ansible.module_utils.iosxr.Cli-class.html,Class ansible.module_utils.junos.Cli=ansible.module_utils.junos.Cli-class.html,Class ansible.module_utils.network.Cli=ansible.module_utils.network.Cli-class.html,Class ansible.module_utils.nxos.Cli=ansible.module_utils.nxos.Cli-class.html,Class ansible.module_utils.openswitch.Cli=ansible.module_utils.openswitch.Cli-class.html,Class ansible.module_utils.vyos.Cli=ansible.module_utils.vyos.Cli-class.html"><a title="ansible.module_utils.asa.Cli
+ansible.module_utils.eos.Cli
+ansible.module_utils.ios.Cli
+ansible.module_utils.iosxr.Cli
+ansible.module_utils.junos.Cli
+ansible.module_utils.network.Cli
+ansible.module_utils.nxos.Cli
+ansible.module_utils.openswitch.Cli
+ansible.module_utils.vyos.Cli" class="py-name" href="#" onclick="return doclink('link-115', 'Cli', 'link-115');">Cli</a></tt><tt class="py-op">,</tt> <tt class="py-name">self</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt id="link-116" class="py-name" targets="Method ansible.module_utils.asa.Cli.connect()=ansible.module_utils.asa.Cli-class.html#connect,Method ansible.module_utils.asa.NetworkModule.connect()=ansible.module_utils.asa.NetworkModule-class.html#connect,Method ansible.module_utils.eos.Cli.connect()=ansible.module_utils.eos.Cli-class.html#connect,Method ansible.module_utils.eos.Eapi.connect()=ansible.module_utils.eos.Eapi-class.html#connect,Method ansible.module_utils.ios.Cli.connect()=ansible.module_utils.ios.Cli-class.html#connect,Method ansible.module_utils.ios.Restconf.connect()=ansible.module_utils.ios.Restconf-class.html#connect,Method ansible.module_utils.iosxr.Cli.connect()=ansible.module_utils.iosxr.Cli-class.html#connect,Method ansible.module_utils.junos.Cli.connect()=ansible.module_utils.junos.Cli-class.html#connect,Method ansible.module_utils.junos.Netconf.connect()=ansible.module_utils.junos.Netconf-class.html#connect,Method ansible.module_utils.junos.NetworkModule.connect()=ansible.module_utils.junos.NetworkModule-class.html#connect,Method ansible.module_utils.network.NetCli.connect()=ansible.module_utils.network.NetCli-class.html#connect,Method ansible.module_utils.network.NetworkModule.connect()=ansible.module_utils.network.NetworkModule-class.html#connect,Method ansible.module_utils.nxos.Cli.connect()=ansible.module_utils.nxos.Cli-class.html#connect,Method ansible.module_utils.nxos.NetworkModule.connect()=ansible.module_utils.nxos.NetworkModule-class.html#connect,Method ansible.module_utils.nxos.Nxapi.connect()=ansible.module_utils.nxos.Nxapi-class.html#connect,Method ansible.module_utils.openswitch.Cli.connect()=ansible.module_utils.openswitch.Cli-class.html#connect,Method ansible.module_utils.openswitch.NetworkModule.connect()=ansible.module_utils.openswitch.NetworkModule-class.html#connect,Method ansible.module_utils.openswitch.Rest.connect()=ansible.module_utils.openswitch.Rest-class.html#connect,Method ansible.module_utils.urls.CustomHTTPSConnection.connect()=ansible.module_utils.urls.CustomHTTPSConnection-class.html#connect,Method ansible.module_utils.vyos.Cli.connect()=ansible.module_utils.vyos.Cli-class.html#connect,Method ansible.plugins.connection.funcd.Connection.connect()=ansible.plugins.connection.funcd.Connection-class.html#connect"><a title="ansible.module_utils.asa.Cli.connect
+ansible.module_utils.asa.NetworkModule.connect
+ansible.module_utils.eos.Cli.connect
+ansible.module_utils.eos.Eapi.connect
+ansible.module_utils.ios.Cli.connect
+ansible.module_utils.ios.Restconf.connect
+ansible.module_utils.iosxr.Cli.connect
+ansible.module_utils.junos.Cli.connect
+ansible.module_utils.junos.Netconf.connect
+ansible.module_utils.junos.NetworkModule.connect
+ansible.module_utils.network.NetCli.connect
+ansible.module_utils.network.NetworkModule.connect
+ansible.module_utils.nxos.Cli.connect
+ansible.module_utils.nxos.NetworkModule.connect
+ansible.module_utils.nxos.Nxapi.connect
+ansible.module_utils.openswitch.Cli.connect
+ansible.module_utils.openswitch.NetworkModule.connect
+ansible.module_utils.openswitch.Rest.connect
+ansible.module_utils.urls.CustomHTTPSConnection.connect
+ansible.module_utils.vyos.Cli.connect
+ansible.plugins.connection.funcd.Connection.connect" class="py-name" href="#" onclick="return doclink('link-116', 'connect', 'link-116');">connect</a></tt><tt class="py-op">(</tt><tt class="py-name">params</tt><tt class="py-op">,</tt> <tt class="py-name">kickstart</tt><tt class="py-op">=</tt><tt class="py-name">False</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-name">kwargs</tt><tt class="py-op">)</tt> </tt>
+<a name="L135"></a><tt class="py-lineno">135</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-117" class="py-name"><a title="ansible.module_utils.shell
+ansible.plugins.shell" class="py-name" href="#" onclick="return doclink('link-117', 'shell', 'link-22');">shell</a></tt><tt class="py-op">.</tt><tt id="link-118" class="py-name" targets="Method ansible.module_utils.asa.Cli.send()=ansible.module_utils.asa.Cli-class.html#send,Method ansible.module_utils.nxos.Cli.send()=ansible.module_utils.nxos.Cli-class.html#send,Method ansible.module_utils.nxos.Nxapi.send()=ansible.module_utils.nxos.Nxapi-class.html#send,Method ansible.module_utils.openswitch.Cli.send()=ansible.module_utils.openswitch.Cli-class.html#send,Method ansible.module_utils.openswitch.Rest.send()=ansible.module_utils.openswitch.Rest-class.html#send,Method ansible.module_utils.shell.Shell.send()=ansible.module_utils.shell.Shell-class.html#send"><a title="ansible.module_utils.asa.Cli.send
+ansible.module_utils.nxos.Cli.send
+ansible.module_utils.nxos.Nxapi.send
+ansible.module_utils.openswitch.Cli.send
+ansible.module_utils.openswitch.Rest.send
+ansible.module_utils.shell.Shell.send" class="py-name" href="#" onclick="return doclink('link-118', 'send', 'link-118');">send</a></tt><tt class="py-op">(</tt><tt class="py-string">'set terminal length 0'</tt><tt class="py-op">)</tt> </tt>
+<a name="L136"></a><tt class="py-lineno">136</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_connected</tt> <tt class="py-op">=</tt> <tt class="py-name">True</tt> </tt>
+</div><a name="L137"></a><tt class="py-lineno">137</tt>  <tt class="py-line"> </tt>
+<a name="L138"></a><tt class="py-lineno">138</tt>  <tt class="py-line">    <tt class="py-comment">### Cli methods ###</tt> </tt>
+<a name="L139"></a><tt class="py-lineno">139</tt>  <tt class="py-line"> </tt>
+<a name="Cli.run_commands"></a><div id="Cli.run_commands-def"><a name="L140"></a><tt class="py-lineno">140</tt> <a class="py-toggle" href="#" id="Cli.run_commands-toggle" onclick="return toggle('Cli.run_commands');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vyos.Cli-class.html#run_commands">run_commands</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">commands</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">kwargs</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Cli.run_commands-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="Cli.run_commands-expanded"><a name="L141"></a><tt class="py-lineno">141</tt>  <tt class="py-line">        <tt class="py-name">commands</tt> <tt class="py-op">=</tt> <tt id="link-119" class="py-name"><a title="ansible.module_utils.asa.to_list
+ansible.module_utils.junos.to_list
+ansible.module_utils.network.to_list
+ansible.module_utils.nxos.to_list
+ansible.module_utils.openswitch.to_list
+ansible.module_utils.shell.to_list" class="py-name" href="#" onclick="return doclink('link-119', 'to_list', 'link-9');">to_list</a></tt><tt class="py-op">(</tt><tt class="py-name">commands</tt><tt class="py-op">)</tt> </tt>
+<a name="L142"></a><tt class="py-lineno">142</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-120" class="py-name" targets="Method ansible.cli.CLI.execute()=ansible.cli.CLI-class.html#execute,Method ansible.module_utils.asa.NetworkModule.execute()=ansible.module_utils.asa.NetworkModule-class.html#execute,Method ansible.module_utils.eos.Eapi.execute()=ansible.module_utils.eos.Eapi-class.html#execute,Method ansible.module_utils.ios.Restconf.execute()=ansible.module_utils.ios.Restconf-class.html#execute,Method ansible.module_utils.network.NetCli.execute()=ansible.module_utils.network.NetCli-class.html#execute,Method ansible.module_utils.nxos.NetworkModule.execute()=ansible.module_utils.nxos.NetworkModule-class.html#execute,Method ansible.module_utils.openswitch.NetworkModule.execute()=ansible.module_utils.openswitch.NetworkModule-class.html#execute,Method ansible.plugins.strategy.debug.Debugger.execute()=ansible.plugins.strategy.debug.Debugger-class.html#execute"><a title="ansible.cli.CLI.execute
+ansible.module_utils.asa.NetworkModule.execute
+ansible.module_utils.eos.Eapi.execute
+ansible.module_utils.ios.Restconf.execute
+ansible.module_utils.network.NetCli.execute
+ansible.module_utils.nxos.NetworkModule.execute
+ansible.module_utils.openswitch.NetworkModule.execute
+ansible.plugins.strategy.debug.Debugger.execute" class="py-name" href="#" onclick="return doclink('link-120', 'execute', 'link-120');">execute</a></tt><tt class="py-op">(</tt><tt class="py-op">[</tt><tt id="link-121" class="py-name"><a title="str" class="py-name" href="#" onclick="return doclink('link-121', 'str', 'link-40');">str</a></tt><tt class="py-op">(</tt><tt class="py-name">c</tt><tt class="py-op">)</tt> <tt class="py-keyword">for</tt> <tt class="py-name">c</tt> <tt class="py-keyword">in</tt> <tt class="py-name">commands</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L143"></a><tt class="py-lineno">143</tt>  <tt class="py-line"> </tt>
+<a name="L144"></a><tt class="py-lineno">144</tt>  <tt class="py-line">    <tt class="py-comment">### Config methods ###</tt> </tt>
+<a name="L145"></a><tt class="py-lineno">145</tt>  <tt class="py-line"> </tt>
+<a name="Cli.configure"></a><div id="Cli.configure-def"><a name="L146"></a><tt class="py-lineno">146</tt> <a class="py-toggle" href="#" id="Cli.configure-toggle" onclick="return toggle('Cli.configure');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vyos.Cli-class.html#configure">configure</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">commands</tt><tt class="py-op">,</tt> <tt class="py-param">commit</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">kwargs</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Cli.configure-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="Cli.configure-expanded"><a name="L147"></a><tt class="py-lineno">147</tt>  <tt class="py-line">        <tt class="py-docstring">"""Called by Config.__call__</tt> </tt>
+<a name="L148"></a><tt class="py-lineno">148</tt>  <tt class="py-line"><tt class="py-docstring">        """</tt> </tt>
+<a name="L149"></a><tt class="py-lineno">149</tt>  <tt class="py-line">        <tt class="py-name">cmds</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-string">'configure'</tt><tt class="py-op">]</tt> </tt>
+<a name="L150"></a><tt class="py-lineno">150</tt>  <tt class="py-line">        <tt class="py-name">cmds</tt><tt class="py-op">.</tt><tt class="py-name">extend</tt><tt class="py-op">(</tt><tt id="link-122" class="py-name"><a title="ansible.module_utils.asa.to_list
+ansible.module_utils.junos.to_list
+ansible.module_utils.network.to_list
+ansible.module_utils.nxos.to_list
+ansible.module_utils.openswitch.to_list
+ansible.module_utils.shell.to_list" class="py-name" href="#" onclick="return doclink('link-122', 'to_list', 'link-9');">to_list</a></tt><tt class="py-op">(</tt><tt class="py-name">commands</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L151"></a><tt class="py-lineno">151</tt>  <tt class="py-line">        <tt id="link-123" class="py-name" targets="Module ansible.compat.six.moves.urllib.response=ansible.compat.six.moves.urllib.response-module.html"><a title="ansible.compat.six.moves.urllib.response" class="py-name" href="#" onclick="return doclink('link-123', 'response', 'link-123');">response</a></tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-124" class="py-name"><a title="ansible.cli.CLI.execute
+ansible.module_utils.asa.NetworkModule.execute
+ansible.module_utils.eos.Eapi.execute
+ansible.module_utils.ios.Restconf.execute
+ansible.module_utils.network.NetCli.execute
+ansible.module_utils.nxos.NetworkModule.execute
+ansible.module_utils.openswitch.NetworkModule.execute
+ansible.plugins.strategy.debug.Debugger.execute" class="py-name" href="#" onclick="return doclink('link-124', 'execute', 'link-120');">execute</a></tt><tt class="py-op">(</tt><tt class="py-name">cmds</tt><tt class="py-op">)</tt> </tt>
+<a name="L152"></a><tt class="py-lineno">152</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">commit</tt><tt class="py-op">:</tt> </tt>
+<a name="L153"></a><tt class="py-lineno">153</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-125" class="py-name"><a title="ansible.module_utils.eos.EosConfigMixin.commit_config
+ansible.module_utils.ios.Cli.commit_config
+ansible.module_utils.ios.Restconf.commit_config
+ansible.module_utils.iosxr.Cli.commit_config
+ansible.module_utils.junos.Netconf.commit_config
+ansible.module_utils.network.Config.commit_config
+ansible.module_utils.vyos.Cli.commit_config" class="py-name" href="#" onclick="return doclink('link-125', 'commit_config', 'link-95');">commit_config</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L154"></a><tt class="py-lineno">154</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt id="link-126" class="py-name"><a title="ansible.compat.six.moves.urllib.response" class="py-name" href="#" onclick="return doclink('link-126', 'response', 'link-123');">response</a></tt> </tt>
+</div><a name="L155"></a><tt class="py-lineno">155</tt>  <tt class="py-line"> </tt>
+<a name="Cli.load_config"></a><div id="Cli.load_config-def"><a name="L156"></a><tt class="py-lineno">156</tt> <a class="py-toggle" href="#" id="Cli.load_config-toggle" onclick="return toggle('Cli.load_config');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vyos.Cli-class.html#load_config">load_config</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">commands</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Cli.load_config-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="Cli.load_config-expanded"><a name="L157"></a><tt class="py-lineno">157</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-127" class="py-name" targets="Method ansible.module_utils.asa.NetworkModule.configure()=ansible.module_utils.asa.NetworkModule-class.html#configure,Method ansible.module_utils.eos.EosConfigMixin.configure()=ansible.module_utils.eos.EosConfigMixin-class.html#configure,Method ansible.module_utils.ios.Cli.configure()=ansible.module_utils.ios.Cli-class.html#configure,Method ansible.module_utils.ios.Restconf.configure()=ansible.module_utils.ios.Restconf-class.html#configure,Method ansible.module_utils.iosxr.Cli.configure()=ansible.module_utils.iosxr.Cli-class.html#configure,Method ansible.module_utils.junos.Cli.configure()=ansible.module_utils.junos.Cli-class.html#configure,Method ansible.module_utils.nxos.NetworkModule.configure()=ansible.module_utils.nxos.NetworkModule-class.html#configure,Method ansible.module_utils.openswitch.NetworkModule.configure()=ansible.module_utils.openswitch.NetworkModule-class.html#configure,Method ansible.module_utils.redhat.RegistrationBase.configure()=ansible.module_utils.redhat.RegistrationBase-class.html#configure,Method ansible.module_utils.redhat.Rhsm.configure()=ansible.module_utils.redhat.Rhsm-class.html#configure,Method ansible.module_utils.vyos.Cli.configure()=ansible.module_utils.vyos.Cli-class.html#configure"><a title="ansible.module_utils.asa.NetworkModule.configure
+ansible.module_utils.eos.EosConfigMixin.configure
+ansible.module_utils.ios.Cli.configure
+ansible.module_utils.ios.Restconf.configure
+ansible.module_utils.iosxr.Cli.configure
+ansible.module_utils.junos.Cli.configure
+ansible.module_utils.nxos.NetworkModule.configure
+ansible.module_utils.openswitch.NetworkModule.configure
+ansible.module_utils.redhat.RegistrationBase.configure
+ansible.module_utils.redhat.Rhsm.configure
+ansible.module_utils.vyos.Cli.configure" class="py-name" href="#" onclick="return doclink('link-127', 'configure', 'link-127');">configure</a></tt><tt class="py-op">(</tt><tt class="py-name">commands</tt><tt class="py-op">,</tt> <tt class="py-name">commit</tt><tt class="py-op">=</tt><tt class="py-name">False</tt><tt class="py-op">)</tt> </tt>
+<a name="L158"></a><tt class="py-lineno">158</tt>  <tt class="py-line">        <tt class="py-name">diff</tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L159"></a><tt class="py-lineno">159</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-128" class="py-name"><a title="ansible.cli.CLI.execute
+ansible.module_utils.asa.NetworkModule.execute
+ansible.module_utils.eos.Eapi.execute
+ansible.module_utils.ios.Restconf.execute
+ansible.module_utils.network.NetCli.execute
+ansible.module_utils.nxos.NetworkModule.execute
+ansible.module_utils.openswitch.NetworkModule.execute
+ansible.plugins.strategy.debug.Debugger.execute" class="py-name" href="#" onclick="return doclink('link-128', 'execute', 'link-120');">execute</a></tt><tt class="py-op">(</tt><tt class="py-string">'compare'</tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-number">0</tt><tt class="py-op">]</tt><tt class="py-op">.</tt><tt class="py-name">startswith</tt><tt class="py-op">(</tt><tt class="py-string">'No changes'</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L160"></a><tt class="py-lineno">160</tt>  <tt class="py-line">            <tt class="py-name">diff</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-129" class="py-name"><a title="ansible.cli.CLI.execute
+ansible.module_utils.asa.NetworkModule.execute
+ansible.module_utils.eos.Eapi.execute
+ansible.module_utils.ios.Restconf.execute
+ansible.module_utils.network.NetCli.execute
+ansible.module_utils.nxos.NetworkModule.execute
+ansible.module_utils.openswitch.NetworkModule.execute
+ansible.plugins.strategy.debug.Debugger.execute" class="py-name" href="#" onclick="return doclink('link-129', 'execute', 'link-120');">execute</a></tt><tt class="py-op">(</tt><tt class="py-op">[</tt><tt class="py-string">'show'</tt><tt class="py-op">]</tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-number">0</tt><tt class="py-op">]</tt> </tt>
+<a name="L161"></a><tt class="py-lineno">161</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">diff</tt> </tt>
+</div><a name="L162"></a><tt class="py-lineno">162</tt>  <tt class="py-line"> </tt>
+<a name="Cli.get_config"></a><div id="Cli.get_config-def"><a name="L163"></a><tt class="py-lineno">163</tt> <a class="py-toggle" href="#" id="Cli.get_config-toggle" onclick="return toggle('Cli.get_config');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vyos.Cli-class.html#get_config">get_config</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Cli.get_config-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="Cli.get_config-expanded"><a name="L164"></a><tt class="py-lineno">164</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-130" class="py-name"><a title="ansible.cli.CLI.execute
+ansible.module_utils.asa.NetworkModule.execute
+ansible.module_utils.eos.Eapi.execute
+ansible.module_utils.ios.Restconf.execute
+ansible.module_utils.network.NetCli.execute
+ansible.module_utils.nxos.NetworkModule.execute
+ansible.module_utils.openswitch.NetworkModule.execute
+ansible.plugins.strategy.debug.Debugger.execute" class="py-name" href="#" onclick="return doclink('link-130', 'execute', 'link-120');">execute</a></tt><tt class="py-op">(</tt><tt class="py-op">[</tt><tt class="py-string">'show configuration commands'</tt><tt class="py-op">]</tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-number">0</tt><tt class="py-op">]</tt> </tt>
+</div><a name="L165"></a><tt class="py-lineno">165</tt>  <tt class="py-line"> </tt>
+<a name="Cli.commit_config"></a><div id="Cli.commit_config-def"><a name="L166"></a><tt class="py-lineno">166</tt> <a class="py-toggle" href="#" id="Cli.commit_config-toggle" onclick="return toggle('Cli.commit_config');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vyos.Cli-class.html#commit_config">commit_config</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">confirm</tt><tt class="py-op">=</tt><tt class="py-number">0</tt><tt class="py-op">,</tt> <tt class="py-param">comment</tt><tt class="py-op">=</tt><tt class="py-name">None</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Cli.commit_config-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="Cli.commit_config-expanded"><a name="L167"></a><tt class="py-lineno">167</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">confirm</tt> <tt class="py-op">&gt;</tt> <tt class="py-number">0</tt><tt class="py-op">:</tt> </tt>
+<a name="L168"></a><tt class="py-lineno">168</tt>  <tt class="py-line">            <tt class="py-name">cmd</tt> <tt class="py-op">=</tt> <tt class="py-string">'commit-confirm %s'</tt> <tt class="py-op">%</tt> <tt class="py-name">confirm</tt> </tt>
+<a name="L169"></a><tt class="py-lineno">169</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L170"></a><tt class="py-lineno">170</tt>  <tt class="py-line">            <tt class="py-name">cmd</tt> <tt class="py-op">=</tt> <tt class="py-string">'commit'</tt> </tt>
+<a name="L171"></a><tt class="py-lineno">171</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt id="link-131" class="py-name"><a title="ansible.plugins.filter.core.comment" class="py-name" href="#" onclick="return doclink('link-131', 'comment', 'link-31');">comment</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L172"></a><tt class="py-lineno">172</tt>  <tt class="py-line">            <tt class="py-name">cmd</tt> <tt class="py-op">+=</tt> <tt class="py-string">' comment "%s"'</tt> <tt class="py-op">%</tt> <tt id="link-132" class="py-name"><a title="ansible.plugins.filter.core.comment" class="py-name" href="#" onclick="return doclink('link-132', 'comment', 'link-31');">comment</a></tt> </tt>
+<a name="L173"></a><tt class="py-lineno">173</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-133" class="py-name"><a title="ansible.cli.CLI.execute
+ansible.module_utils.asa.NetworkModule.execute
+ansible.module_utils.eos.Eapi.execute
+ansible.module_utils.ios.Restconf.execute
+ansible.module_utils.network.NetCli.execute
+ansible.module_utils.nxos.NetworkModule.execute
+ansible.module_utils.openswitch.NetworkModule.execute
+ansible.plugins.strategy.debug.Debugger.execute" class="py-name" href="#" onclick="return doclink('link-133', 'execute', 'link-120');">execute</a></tt><tt class="py-op">(</tt><tt class="py-op">[</tt><tt class="py-name">cmd</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L174"></a><tt class="py-lineno">174</tt>  <tt class="py-line"> </tt>
+<a name="Cli.abort_config"></a><div id="Cli.abort_config-def"><a name="L175"></a><tt class="py-lineno">175</tt> <a class="py-toggle" href="#" id="Cli.abort_config-toggle" onclick="return toggle('Cli.abort_config');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vyos.Cli-class.html#abort_config">abort_config</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Cli.abort_config-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="Cli.abort_config-expanded"><a name="L176"></a><tt class="py-lineno">176</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-134" class="py-name"><a title="ansible.cli.CLI.execute
+ansible.module_utils.asa.NetworkModule.execute
+ansible.module_utils.eos.Eapi.execute
+ansible.module_utils.ios.Restconf.execute
+ansible.module_utils.network.NetCli.execute
+ansible.module_utils.nxos.NetworkModule.execute
+ansible.module_utils.openswitch.NetworkModule.execute
+ansible.plugins.strategy.debug.Debugger.execute" class="py-name" href="#" onclick="return doclink('link-134', 'execute', 'link-120');">execute</a></tt><tt class="py-op">(</tt><tt class="py-op">[</tt><tt class="py-string">'discard'</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L177"></a><tt class="py-lineno">177</tt>  <tt class="py-line"> </tt>
+<a name="Cli.save_config"></a><div id="Cli.save_config-def"><a name="L178"></a><tt class="py-lineno">178</tt> <a class="py-toggle" href="#" id="Cli.save_config-toggle" onclick="return toggle('Cli.save_config');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.vyos.Cli-class.html#save_config">save_config</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Cli.save_config-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="Cli.save_config-expanded"><a name="L179"></a><tt class="py-lineno">179</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-135" class="py-name"><a title="ansible.cli.CLI.execute
+ansible.module_utils.asa.NetworkModule.execute
+ansible.module_utils.eos.Eapi.execute
+ansible.module_utils.ios.Restconf.execute
+ansible.module_utils.network.NetCli.execute
+ansible.module_utils.nxos.NetworkModule.execute
+ansible.module_utils.openswitch.NetworkModule.execute
+ansible.plugins.strategy.debug.Debugger.execute" class="py-name" href="#" onclick="return doclink('link-135', 'execute', 'link-120');">execute</a></tt><tt class="py-op">(</tt><tt class="py-op">[</tt><tt class="py-string">'save'</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+</div></div><a name="L180"></a><tt class="py-lineno">180</tt>  <tt class="py-line"><tt id="link-136" class="py-name"><a title="ansible.module_utils.asa.Cli
+ansible.module_utils.eos.Cli
+ansible.module_utils.ios.Cli
+ansible.module_utils.iosxr.Cli
+ansible.module_utils.junos.Cli
+ansible.module_utils.network.Cli
+ansible.module_utils.nxos.Cli
+ansible.module_utils.openswitch.Cli
+ansible.module_utils.vyos.Cli" class="py-name" href="#" onclick="return doclink('link-136', 'Cli', 'link-115');">Cli</a></tt> <tt class="py-op">=</tt> <tt id="link-137" class="py-name"><a title="ansible.module_utils.network.register_transport" class="py-name" href="#" onclick="return doclink('link-137', 'register_transport', 'link-8');">register_transport</a></tt><tt class="py-op">(</tt><tt class="py-string">'cli'</tt><tt class="py-op">,</tt> <tt id="link-138" class="py-name"><a title="ansible.cli.console.ConsoleCLI.default
+ansible.plugins.callback.default
+ansible.plugins.filter.core.AnsibleJSONEncoder.default
+ansible.plugins.strategy.debug.Debugger.default" class="py-name" href="#" onclick="return doclink('link-138', 'default', 'link-33');">default</a></tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">)</tt><tt class="py-op">(</tt><tt id="link-139" class="py-name"><a title="ansible.module_utils.asa.Cli
+ansible.module_utils.eos.Cli
+ansible.module_utils.ios.Cli
+ansible.module_utils.iosxr.Cli
+ansible.module_utils.junos.Cli
+ansible.module_utils.network.Cli
+ansible.module_utils.nxos.Cli
+ansible.module_utils.openswitch.Cli
+ansible.module_utils.vyos.Cli" class="py-name" href="#" onclick="return doclink('link-139', 'Cli', 'link-115');">Cli</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L181"></a><tt class="py-lineno">181</tt>  <tt class="py-line"> </tt><script type="text/javascript">
+<!--
+expandto(location.href);
+// -->
+</script>
+</pre>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Fri Jul 29 13:11:41 2016
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

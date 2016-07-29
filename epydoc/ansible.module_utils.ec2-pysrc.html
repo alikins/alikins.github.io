@@ -1,0 +1,773 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>ansible.module_utils.ec2</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="ansible-module.html">Package&nbsp;ansible</a> ::
+        <a href="ansible.module_utils-module.html">Package&nbsp;module_utils</a> ::
+        Module&nbsp;ec2
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="ansible.module_utils.ec2-pysrc.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<h1 class="epydoc">Source Code for <a href="ansible.module_utils.ec2-module.html">Module ansible.module_utils.ec2</a></h1>
+<pre class="py-src">
+<a name="L1"></a><tt class="py-lineno">  1</tt>  <tt class="py-line"><tt class="py-comment"># This code is part of Ansible, but is an independent component.</tt> </tt>
+<a name="L2"></a><tt class="py-lineno">  2</tt>  <tt class="py-line"><tt class="py-comment"># This particular file snippet, and this file snippet only, is BSD licensed.</tt> </tt>
+<a name="L3"></a><tt class="py-lineno">  3</tt>  <tt class="py-line"><tt class="py-comment"># Modules you write using this snippet, which is embedded dynamically by Ansible</tt> </tt>
+<a name="L4"></a><tt class="py-lineno">  4</tt>  <tt class="py-line"><tt class="py-comment"># still belong to the author of the module, and may assign their own license</tt> </tt>
+<a name="L5"></a><tt class="py-lineno">  5</tt>  <tt class="py-line"><tt class="py-comment"># to the complete work.</tt> </tt>
+<a name="L6"></a><tt class="py-lineno">  6</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L7"></a><tt class="py-lineno">  7</tt>  <tt class="py-line"><tt class="py-comment"># Copyright (c), Michael DeHaan &lt;michael.dehaan@gmail.com&gt;, 2012-2013</tt> </tt>
+<a name="L8"></a><tt class="py-lineno">  8</tt>  <tt class="py-line"><tt class="py-comment"># All rights reserved.</tt> </tt>
+<a name="L9"></a><tt class="py-lineno">  9</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L10"></a><tt class="py-lineno"> 10</tt>  <tt class="py-line"><tt class="py-comment"># Redistribution and use in source and binary forms, with or without modification,</tt> </tt>
+<a name="L11"></a><tt class="py-lineno"> 11</tt>  <tt class="py-line"><tt class="py-comment"># are permitted provided that the following conditions are met:</tt> </tt>
+<a name="L12"></a><tt class="py-lineno"> 12</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L13"></a><tt class="py-lineno"> 13</tt>  <tt class="py-line"><tt class="py-comment">#    * Redistributions of source code must retain the above copyright</tt> </tt>
+<a name="L14"></a><tt class="py-lineno"> 14</tt>  <tt class="py-line"><tt class="py-comment">#      notice, this list of conditions and the following disclaimer.</tt> </tt>
+<a name="L15"></a><tt class="py-lineno"> 15</tt>  <tt class="py-line"><tt class="py-comment">#    * Redistributions in binary form must reproduce the above copyright notice,</tt> </tt>
+<a name="L16"></a><tt class="py-lineno"> 16</tt>  <tt class="py-line"><tt class="py-comment">#      this list of conditions and the following disclaimer in the documentation</tt> </tt>
+<a name="L17"></a><tt class="py-lineno"> 17</tt>  <tt class="py-line"><tt class="py-comment">#      and/or other materials provided with the distribution.</tt> </tt>
+<a name="L18"></a><tt class="py-lineno"> 18</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L19"></a><tt class="py-lineno"> 19</tt>  <tt class="py-line"><tt class="py-comment"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND</tt> </tt>
+<a name="L20"></a><tt class="py-lineno"> 20</tt>  <tt class="py-line"><tt class="py-comment"># ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED</tt> </tt>
+<a name="L21"></a><tt class="py-lineno"> 21</tt>  <tt class="py-line"><tt class="py-comment"># WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.</tt> </tt>
+<a name="L22"></a><tt class="py-lineno"> 22</tt>  <tt class="py-line"><tt class="py-comment"># IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,</tt> </tt>
+<a name="L23"></a><tt class="py-lineno"> 23</tt>  <tt class="py-line"><tt class="py-comment"># INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,</tt> </tt>
+<a name="L24"></a><tt class="py-lineno"> 24</tt>  <tt class="py-line"><tt class="py-comment"># PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS</tt> </tt>
+<a name="L25"></a><tt class="py-lineno"> 25</tt>  <tt class="py-line"><tt class="py-comment"># INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT</tt> </tt>
+<a name="L26"></a><tt class="py-lineno"> 26</tt>  <tt class="py-line"><tt class="py-comment"># LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE</tt> </tt>
+<a name="L27"></a><tt class="py-lineno"> 27</tt>  <tt class="py-line"><tt class="py-comment"># USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</tt> </tt>
+<a name="L28"></a><tt class="py-lineno"> 28</tt>  <tt class="py-line"> </tt>
+<a name="L29"></a><tt class="py-lineno"> 29</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">os</tt> </tt>
+<a name="L30"></a><tt class="py-lineno"> 30</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">time</tt> <tt class="py-keyword">import</tt> <tt class="py-name">sleep</tt> </tt>
+<a name="L31"></a><tt class="py-lineno"> 31</tt>  <tt class="py-line"> </tt>
+<a name="L32"></a><tt class="py-lineno"> 32</tt>  <tt class="py-line"><tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L33"></a><tt class="py-lineno"> 33</tt>  <tt class="py-line">    <tt class="py-keyword">import</tt> <tt class="py-name">boto</tt> </tt>
+<a name="L34"></a><tt class="py-lineno"> 34</tt>  <tt class="py-line">    <tt class="py-keyword">import</tt> <tt class="py-name">boto</tt><tt class="py-op">.</tt><tt id="link-0" class="py-name" targets="Module ansible.module_utils.ec2=ansible.module_utils.ec2-module.html,Module ansible.utils.module_docs_fragments.ec2=ansible.utils.module_docs_fragments.ec2-module.html"><a title="ansible.module_utils.ec2
+ansible.utils.module_docs_fragments.ec2" class="py-name" href="#" onclick="return doclink('link-0', 'ec2', 'link-0');">ec2</a></tt> <tt class="py-comment">#boto does weird import stuff</tt> </tt>
+<a name="L35"></a><tt class="py-lineno"> 35</tt>  <tt class="py-line">    <tt id="link-1" class="py-name" targets="Variable ansible.module_utils.ec2.HAS_BOTO=ansible.module_utils.ec2-module.html#HAS_BOTO"><a title="ansible.module_utils.ec2.HAS_BOTO" class="py-name" href="#" onclick="return doclink('link-1', 'HAS_BOTO', 'link-1');">HAS_BOTO</a></tt> <tt class="py-op">=</tt> <tt class="py-name">True</tt> </tt>
+<a name="L36"></a><tt class="py-lineno"> 36</tt>  <tt class="py-line"><tt class="py-keyword">except</tt> <tt class="py-name">ImportError</tt><tt class="py-op">:</tt> </tt>
+<a name="L37"></a><tt class="py-lineno"> 37</tt>  <tt class="py-line">    <tt id="link-2" class="py-name"><a title="ansible.module_utils.ec2.HAS_BOTO" class="py-name" href="#" onclick="return doclink('link-2', 'HAS_BOTO', 'link-1');">HAS_BOTO</a></tt> <tt class="py-op">=</tt> <tt class="py-name">False</tt> </tt>
+<a name="L38"></a><tt class="py-lineno"> 38</tt>  <tt class="py-line"> </tt>
+<a name="L39"></a><tt class="py-lineno"> 39</tt>  <tt class="py-line"><tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L40"></a><tt class="py-lineno"> 40</tt>  <tt class="py-line">    <tt class="py-keyword">import</tt> <tt class="py-name">boto3</tt> </tt>
+<a name="L41"></a><tt class="py-lineno"> 41</tt>  <tt class="py-line">    <tt class="py-keyword">import</tt> <tt class="py-name">botocore</tt> </tt>
+<a name="L42"></a><tt class="py-lineno"> 42</tt>  <tt class="py-line">    <tt id="link-3" class="py-name" targets="Variable ansible.module_utils.ec2.HAS_BOTO3=ansible.module_utils.ec2-module.html#HAS_BOTO3"><a title="ansible.module_utils.ec2.HAS_BOTO3" class="py-name" href="#" onclick="return doclink('link-3', 'HAS_BOTO3', 'link-3');">HAS_BOTO3</a></tt> <tt class="py-op">=</tt> <tt class="py-name">True</tt> </tt>
+<a name="L43"></a><tt class="py-lineno"> 43</tt>  <tt class="py-line"><tt class="py-keyword">except</tt><tt class="py-op">:</tt> </tt>
+<a name="L44"></a><tt class="py-lineno"> 44</tt>  <tt class="py-line">    <tt id="link-4" class="py-name"><a title="ansible.module_utils.ec2.HAS_BOTO3" class="py-name" href="#" onclick="return doclink('link-4', 'HAS_BOTO3', 'link-3');">HAS_BOTO3</a></tt> <tt class="py-op">=</tt> <tt class="py-name">False</tt> </tt>
+<a name="L45"></a><tt class="py-lineno"> 45</tt>  <tt class="py-line"> </tt>
+<a name="L46"></a><tt class="py-lineno"> 46</tt>  <tt class="py-line"><tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L47"></a><tt class="py-lineno"> 47</tt>  <tt class="py-line">    <tt class="py-keyword">from</tt> <tt class="py-name">distutils</tt><tt class="py-op">.</tt><tt id="link-5" class="py-name" targets="Static Method ansible.cli.CLI.version()=ansible.cli.CLI-class.html#version"><a title="ansible.cli.CLI.version" class="py-name" href="#" onclick="return doclink('link-5', 'version', 'link-5');">version</a></tt> <tt class="py-keyword">import</tt> <tt class="py-name">LooseVersion</tt> </tt>
+<a name="L48"></a><tt class="py-lineno"> 48</tt>  <tt class="py-line">    <tt id="link-6" class="py-name" targets="Variable ansible.module_utils.ec2.HAS_LOOSE_VERSION=ansible.module_utils.ec2-module.html#HAS_LOOSE_VERSION"><a title="ansible.module_utils.ec2.HAS_LOOSE_VERSION" class="py-name" href="#" onclick="return doclink('link-6', 'HAS_LOOSE_VERSION', 'link-6');">HAS_LOOSE_VERSION</a></tt> <tt class="py-op">=</tt> <tt class="py-name">True</tt> </tt>
+<a name="L49"></a><tt class="py-lineno"> 49</tt>  <tt class="py-line"><tt class="py-keyword">except</tt><tt class="py-op">:</tt> </tt>
+<a name="L50"></a><tt class="py-lineno"> 50</tt>  <tt class="py-line">    <tt id="link-7" class="py-name"><a title="ansible.module_utils.ec2.HAS_LOOSE_VERSION" class="py-name" href="#" onclick="return doclink('link-7', 'HAS_LOOSE_VERSION', 'link-6');">HAS_LOOSE_VERSION</a></tt> <tt class="py-op">=</tt> <tt class="py-name">False</tt> </tt>
+<a name="L51"></a><tt class="py-lineno"> 51</tt>  <tt class="py-line"> </tt>
+<a name="L52"></a><tt class="py-lineno"> 52</tt>  <tt class="py-line"> </tt>
+<a name="AnsibleAWSError"></a><div id="AnsibleAWSError-def"><a name="L53"></a><tt class="py-lineno"> 53</tt> <a class="py-toggle" href="#" id="AnsibleAWSError-toggle" onclick="return toggle('AnsibleAWSError');">-</a><tt class="py-line"><tt class="py-keyword">class</tt> <a class="py-def-name" href="ansible.module_utils.ec2.AnsibleAWSError-class.html">AnsibleAWSError</a><tt class="py-op">(</tt><tt class="py-base-class">Exception</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="AnsibleAWSError-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="AnsibleAWSError-expanded"><a name="L54"></a><tt class="py-lineno"> 54</tt>  <tt class="py-line">    <tt class="py-keyword">pass</tt> </tt>
+</div><a name="L55"></a><tt class="py-lineno"> 55</tt>  <tt class="py-line"> </tt>
+<a name="L56"></a><tt class="py-lineno"> 56</tt>  <tt class="py-line"> </tt>
+<a name="boto3_conn"></a><div id="boto3_conn-def"><a name="L57"></a><tt class="py-lineno"> 57</tt> <a class="py-toggle" href="#" id="boto3_conn-toggle" onclick="return toggle('boto3_conn');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.ec2-module.html#boto3_conn">boto3_conn</a><tt class="py-op">(</tt><tt class="py-param">module</tt><tt class="py-op">,</tt> <tt class="py-param">conn_type</tt><tt class="py-op">=</tt><tt class="py-name">None</tt><tt class="py-op">,</tt> <tt class="py-param">resource</tt><tt class="py-op">=</tt><tt class="py-name">None</tt><tt class="py-op">,</tt> <tt class="py-param">region</tt><tt class="py-op">=</tt><tt class="py-name">None</tt><tt class="py-op">,</tt> <tt class="py-param">endpoint</tt><tt class="py-op">=</tt><tt class="py-name">None</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">params</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="boto3_conn-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="boto3_conn-expanded"><a name="L58"></a><tt class="py-lineno"> 58</tt>  <tt class="py-line">    <tt class="py-name">profile</tt> <tt class="py-op">=</tt> <tt class="py-name">params</tt><tt class="py-op">.</tt><tt class="py-name">pop</tt><tt class="py-op">(</tt><tt class="py-string">'profile_name'</tt><tt class="py-op">,</tt> <tt class="py-name">None</tt><tt class="py-op">)</tt> </tt>
+<a name="L59"></a><tt class="py-lineno"> 59</tt>  <tt class="py-line"> </tt>
+<a name="L60"></a><tt class="py-lineno"> 60</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">conn_type</tt> <tt class="py-keyword">not</tt> <tt class="py-keyword">in</tt> <tt class="py-op">[</tt><tt class="py-string">'both'</tt><tt class="py-op">,</tt> <tt class="py-string">'resource'</tt><tt class="py-op">,</tt> <tt class="py-string">'client'</tt><tt class="py-op">]</tt><tt class="py-op">:</tt> </tt>
+<a name="L61"></a><tt class="py-lineno"> 61</tt>  <tt class="py-line">        <tt class="py-name">module</tt><tt class="py-op">.</tt><tt id="link-8" class="py-name" targets="Method ansible.module_utils.basic.AnsibleModule.fail_json()=ansible.module_utils.basic.AnsibleModule-class.html#fail_json"><a title="ansible.module_utils.basic.AnsibleModule.fail_json" class="py-name" href="#" onclick="return doclink('link-8', 'fail_json', 'link-8');">fail_json</a></tt><tt class="py-op">(</tt><tt class="py-name">msg</tt><tt class="py-op">=</tt><tt class="py-string">'There is an issue in the code of the module. You must specify either both, resource or client to the conn_type parameter in the boto3_conn function call'</tt><tt class="py-op">)</tt> </tt>
+<a name="L62"></a><tt class="py-lineno"> 62</tt>  <tt class="py-line"> </tt>
+<a name="L63"></a><tt class="py-lineno"> 63</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">conn_type</tt> <tt class="py-op">==</tt> <tt class="py-string">'resource'</tt><tt class="py-op">:</tt> </tt>
+<a name="L64"></a><tt class="py-lineno"> 64</tt>  <tt class="py-line">        <tt class="py-name">resource</tt> <tt class="py-op">=</tt> <tt class="py-name">boto3</tt><tt class="py-op">.</tt><tt class="py-name">session</tt><tt class="py-op">.</tt><tt class="py-name">Session</tt><tt class="py-op">(</tt><tt class="py-name">profile_name</tt><tt class="py-op">=</tt><tt class="py-name">profile</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt class="py-name">resource</tt><tt class="py-op">(</tt><tt class="py-name">resource</tt><tt class="py-op">,</tt> <tt class="py-name">region_name</tt><tt class="py-op">=</tt><tt class="py-name">region</tt><tt class="py-op">,</tt> <tt class="py-name">endpoint_url</tt><tt class="py-op">=</tt><tt class="py-name">endpoint</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-name">params</tt><tt class="py-op">)</tt> </tt>
+<a name="L65"></a><tt class="py-lineno"> 65</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">resource</tt> </tt>
+<a name="L66"></a><tt class="py-lineno"> 66</tt>  <tt class="py-line">    <tt class="py-keyword">elif</tt> <tt class="py-name">conn_type</tt> <tt class="py-op">==</tt> <tt class="py-string">'client'</tt><tt class="py-op">:</tt> </tt>
+<a name="L67"></a><tt class="py-lineno"> 67</tt>  <tt class="py-line">        <tt class="py-name">client</tt> <tt class="py-op">=</tt> <tt class="py-name">boto3</tt><tt class="py-op">.</tt><tt class="py-name">session</tt><tt class="py-op">.</tt><tt class="py-name">Session</tt><tt class="py-op">(</tt><tt class="py-name">profile_name</tt><tt class="py-op">=</tt><tt class="py-name">profile</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt class="py-name">client</tt><tt class="py-op">(</tt><tt class="py-name">resource</tt><tt class="py-op">,</tt> <tt class="py-name">region_name</tt><tt class="py-op">=</tt><tt class="py-name">region</tt><tt class="py-op">,</tt> <tt class="py-name">endpoint_url</tt><tt class="py-op">=</tt><tt class="py-name">endpoint</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-name">params</tt><tt class="py-op">)</tt> </tt>
+<a name="L68"></a><tt class="py-lineno"> 68</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">client</tt> </tt>
+<a name="L69"></a><tt class="py-lineno"> 69</tt>  <tt class="py-line">    <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L70"></a><tt class="py-lineno"> 70</tt>  <tt class="py-line">        <tt class="py-name">resource</tt> <tt class="py-op">=</tt> <tt class="py-name">boto3</tt><tt class="py-op">.</tt><tt class="py-name">session</tt><tt class="py-op">.</tt><tt class="py-name">Session</tt><tt class="py-op">(</tt><tt class="py-name">profile_name</tt><tt class="py-op">=</tt><tt class="py-name">profile</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt class="py-name">resource</tt><tt class="py-op">(</tt><tt class="py-name">resource</tt><tt class="py-op">,</tt> <tt class="py-name">region_name</tt><tt class="py-op">=</tt><tt class="py-name">region</tt><tt class="py-op">,</tt> <tt class="py-name">endpoint_url</tt><tt class="py-op">=</tt><tt class="py-name">endpoint</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-name">params</tt><tt class="py-op">)</tt> </tt>
+<a name="L71"></a><tt class="py-lineno"> 71</tt>  <tt class="py-line">        <tt class="py-name">client</tt> <tt class="py-op">=</tt> <tt class="py-name">boto3</tt><tt class="py-op">.</tt><tt class="py-name">session</tt><tt class="py-op">.</tt><tt class="py-name">Session</tt><tt class="py-op">(</tt><tt class="py-name">profile_name</tt><tt class="py-op">=</tt><tt class="py-name">profile</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt class="py-name">client</tt><tt class="py-op">(</tt><tt class="py-name">resource</tt><tt class="py-op">,</tt> <tt class="py-name">region_name</tt><tt class="py-op">=</tt><tt class="py-name">region</tt><tt class="py-op">,</tt> <tt class="py-name">endpoint_url</tt><tt class="py-op">=</tt><tt class="py-name">endpoint</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-name">params</tt><tt class="py-op">)</tt> </tt>
+<a name="L72"></a><tt class="py-lineno"> 72</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">client</tt><tt class="py-op">,</tt> <tt class="py-name">resource</tt> </tt>
+</div><a name="L73"></a><tt class="py-lineno"> 73</tt>  <tt class="py-line"> </tt>
+<a name="L74"></a><tt class="py-lineno"> 74</tt>  <tt class="py-line"> </tt>
+<a name="aws_common_argument_spec"></a><div id="aws_common_argument_spec-def"><a name="L75"></a><tt class="py-lineno"> 75</tt> <a class="py-toggle" href="#" id="aws_common_argument_spec-toggle" onclick="return toggle('aws_common_argument_spec');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.ec2-module.html#aws_common_argument_spec">aws_common_argument_spec</a><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="aws_common_argument_spec-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="aws_common_argument_spec-expanded"><a name="L76"></a><tt class="py-lineno"> 76</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt id="link-9" class="py-name" targets="Module ansible.plugins.lookup.dict=ansible.plugins.lookup.dict-module.html"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-9', 'dict', 'link-9');">dict</a></tt><tt class="py-op">(</tt> </tt>
+<a name="L77"></a><tt class="py-lineno"> 77</tt>  <tt class="py-line">        <tt class="py-name">ec2_url</tt><tt class="py-op">=</tt><tt id="link-10" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-10', 'dict', 'link-9');">dict</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L78"></a><tt class="py-lineno"> 78</tt>  <tt class="py-line">        <tt class="py-name">aws_secret_key</tt><tt class="py-op">=</tt><tt id="link-11" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-11', 'dict', 'link-9');">dict</a></tt><tt class="py-op">(</tt><tt class="py-name">aliases</tt><tt class="py-op">=</tt><tt class="py-op">[</tt><tt class="py-string">'ec2_secret_key'</tt><tt class="py-op">,</tt> <tt class="py-string">'secret_key'</tt><tt class="py-op">]</tt><tt class="py-op">,</tt> <tt class="py-name">no_log</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L79"></a><tt class="py-lineno"> 79</tt>  <tt class="py-line">        <tt class="py-name">aws_access_key</tt><tt class="py-op">=</tt><tt id="link-12" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-12', 'dict', 'link-9');">dict</a></tt><tt class="py-op">(</tt><tt class="py-name">aliases</tt><tt class="py-op">=</tt><tt class="py-op">[</tt><tt class="py-string">'ec2_access_key'</tt><tt class="py-op">,</tt> <tt class="py-string">'access_key'</tt><tt class="py-op">]</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L80"></a><tt class="py-lineno"> 80</tt>  <tt class="py-line">        <tt id="link-13" class="py-name" targets="Variable ansible.galaxy.api.GalaxyAPI.validate_certs=ansible.galaxy.api.GalaxyAPI-class.html#validate_certs"><a title="ansible.galaxy.api.GalaxyAPI.validate_certs" class="py-name" href="#" onclick="return doclink('link-13', 'validate_certs', 'link-13');">validate_certs</a></tt><tt class="py-op">=</tt><tt id="link-14" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-14', 'dict', 'link-9');">dict</a></tt><tt class="py-op">(</tt><tt id="link-15" class="py-name" targets="Method ansible.cli.console.ConsoleCLI.default()=ansible.cli.console.ConsoleCLI-class.html#default,Module ansible.plugins.callback.default=ansible.plugins.callback.default-module.html,Method ansible.plugins.filter.core.AnsibleJSONEncoder.default()=ansible.plugins.filter.core.AnsibleJSONEncoder-class.html#default,Method ansible.plugins.strategy.debug.Debugger.default()=ansible.plugins.strategy.debug.Debugger-class.html#default"><a title="ansible.cli.console.ConsoleCLI.default
+ansible.plugins.callback.default
+ansible.plugins.filter.core.AnsibleJSONEncoder.default
+ansible.plugins.strategy.debug.Debugger.default" class="py-name" href="#" onclick="return doclink('link-15', 'default', 'link-15');">default</a></tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">,</tt> <tt id="link-16" class="py-name" targets="Class type=type-class.html"><a title="type" class="py-name" href="#" onclick="return doclink('link-16', 'type', 'link-16');">type</a></tt><tt class="py-op">=</tt><tt class="py-string">'bool'</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L81"></a><tt class="py-lineno"> 81</tt>  <tt class="py-line">        <tt class="py-name">security_token</tt><tt class="py-op">=</tt><tt id="link-17" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-17', 'dict', 'link-9');">dict</a></tt><tt class="py-op">(</tt><tt class="py-name">aliases</tt><tt class="py-op">=</tt><tt class="py-op">[</tt><tt class="py-string">'access_token'</tt><tt class="py-op">]</tt><tt class="py-op">,</tt> <tt class="py-name">no_log</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L82"></a><tt class="py-lineno"> 82</tt>  <tt class="py-line">        <tt class="py-name">profile</tt><tt class="py-op">=</tt><tt id="link-18" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-18', 'dict', 'link-9');">dict</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L83"></a><tt class="py-lineno"> 83</tt>  <tt class="py-line">    <tt class="py-op">)</tt> </tt>
+</div><a name="L84"></a><tt class="py-lineno"> 84</tt>  <tt class="py-line"> </tt>
+<a name="L85"></a><tt class="py-lineno"> 85</tt>  <tt class="py-line"> </tt>
+<a name="ec2_argument_spec"></a><div id="ec2_argument_spec-def"><a name="L86"></a><tt class="py-lineno"> 86</tt> <a class="py-toggle" href="#" id="ec2_argument_spec-toggle" onclick="return toggle('ec2_argument_spec');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.ec2-module.html#ec2_argument_spec">ec2_argument_spec</a><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="ec2_argument_spec-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="ec2_argument_spec-expanded"><a name="L87"></a><tt class="py-lineno"> 87</tt>  <tt class="py-line">    <tt id="link-19" class="py-name" targets="Variable ansible.galaxy.role.GalaxyRole.spec=ansible.galaxy.role.GalaxyRole-class.html#spec"><a title="ansible.galaxy.role.GalaxyRole.spec" class="py-name" href="#" onclick="return doclink('link-19', 'spec', 'link-19');">spec</a></tt> <tt class="py-op">=</tt> <tt id="link-20" class="py-name" targets="Function ansible.module_utils.ec2.aws_common_argument_spec()=ansible.module_utils.ec2-module.html#aws_common_argument_spec"><a title="ansible.module_utils.ec2.aws_common_argument_spec" class="py-name" href="#" onclick="return doclink('link-20', 'aws_common_argument_spec', 'link-20');">aws_common_argument_spec</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L88"></a><tt class="py-lineno"> 88</tt>  <tt class="py-line">    <tt id="link-21" class="py-name"><a title="ansible.galaxy.role.GalaxyRole.spec" class="py-name" href="#" onclick="return doclink('link-21', 'spec', 'link-19');">spec</a></tt><tt class="py-op">.</tt><tt id="link-22" class="py-name" targets="Method ansible.plugins.cache.FactCache.update()=ansible.plugins.cache.FactCache-class.html#update"><a title="ansible.plugins.cache.FactCache.update" class="py-name" href="#" onclick="return doclink('link-22', 'update', 'link-22');">update</a></tt><tt class="py-op">(</tt> </tt>
+<a name="L89"></a><tt class="py-lineno"> 89</tt>  <tt class="py-line">        <tt id="link-23" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-23', 'dict', 'link-9');">dict</a></tt><tt class="py-op">(</tt> </tt>
+<a name="L90"></a><tt class="py-lineno"> 90</tt>  <tt class="py-line">            <tt class="py-name">region</tt><tt class="py-op">=</tt><tt id="link-24" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-24', 'dict', 'link-9');">dict</a></tt><tt class="py-op">(</tt><tt class="py-name">aliases</tt><tt class="py-op">=</tt><tt class="py-op">[</tt><tt class="py-string">'aws_region'</tt><tt class="py-op">,</tt> <tt class="py-string">'ec2_region'</tt><tt class="py-op">]</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L91"></a><tt class="py-lineno"> 91</tt>  <tt class="py-line">        <tt class="py-op">)</tt> </tt>
+<a name="L92"></a><tt class="py-lineno"> 92</tt>  <tt class="py-line">    <tt class="py-op">)</tt> </tt>
+<a name="L93"></a><tt class="py-lineno"> 93</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt id="link-25" class="py-name"><a title="ansible.galaxy.role.GalaxyRole.spec" class="py-name" href="#" onclick="return doclink('link-25', 'spec', 'link-19');">spec</a></tt> </tt>
+</div><a name="L94"></a><tt class="py-lineno"> 94</tt>  <tt class="py-line"> </tt>
+<a name="L95"></a><tt class="py-lineno"> 95</tt>  <tt class="py-line"> </tt>
+<a name="get_aws_connection_info"></a><div id="get_aws_connection_info-def"><a name="L96"></a><tt class="py-lineno"> 96</tt> <a class="py-toggle" href="#" id="get_aws_connection_info-toggle" onclick="return toggle('get_aws_connection_info');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.ec2-module.html#get_aws_connection_info">get_aws_connection_info</a><tt class="py-op">(</tt><tt class="py-param">module</tt><tt class="py-op">,</tt> <tt class="py-param">boto3</tt><tt class="py-op">=</tt><tt class="py-name">False</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="get_aws_connection_info-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="get_aws_connection_info-expanded"><a name="L97"></a><tt class="py-lineno"> 97</tt>  <tt class="py-line"> </tt>
+<a name="L98"></a><tt class="py-lineno"> 98</tt>  <tt class="py-line">    <tt class="py-comment"># Check module args for credentials, then check environment vars</tt> </tt>
+<a name="L99"></a><tt class="py-lineno"> 99</tt>  <tt class="py-line">    <tt class="py-comment"># access_key</tt> </tt>
+<a name="L100"></a><tt class="py-lineno">100</tt>  <tt class="py-line"> </tt>
+<a name="L101"></a><tt class="py-lineno">101</tt>  <tt class="py-line">    <tt class="py-name">ec2_url</tt> <tt class="py-op">=</tt> <tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">.</tt><tt id="link-26" class="py-name" targets="Method ansible.galaxy.token.GalaxyToken.get()=ansible.galaxy.token.GalaxyToken-class.html#get,Method ansible.module_utils.ios.Restconf.get()=ansible.module_utils.ios.Restconf-class.html#get,Method ansible.module_utils.netcfg.NetworkConfig.get()=ansible.module_utils.netcfg.NetworkConfig-class.html#get,Method ansible.module_utils.openswitch.Rest.get()=ansible.module_utils.openswitch.Rest-class.html#get,Method ansible.plugins.PluginLoader.get()=ansible.plugins.PluginLoader-class.html#get,Method ansible.plugins.cache.base.BaseCacheModule.get()=ansible.plugins.cache.base.BaseCacheModule-class.html#get,Method ansible.plugins.cache.jsonfile.CacheModule.get()=ansible.plugins.cache.jsonfile.CacheModule-class.html#get,Method ansible.plugins.cache.memcached.CacheModule.get()=ansible.plugins.cache.memcached.CacheModule-class.html#get,Method ansible.plugins.cache.memory.CacheModule.get()=ansible.plugins.cache.memory.CacheModule-class.html#get,Method ansible.plugins.cache.redis.CacheModule.get()=ansible.plugins.cache.redis.CacheModule-class.html#get,Method ansible.plugins.lookup.etcd.Etcd.get()=ansible.plugins.lookup.etcd.Etcd-class.html#get,Method ansible.plugins.lookup.hashi_vault.HashiVault.get()=ansible.plugins.lookup.hashi_vault.HashiVault-class.html#get"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-26', 'get', 'link-26');">get</a></tt><tt class="py-op">(</tt><tt class="py-string">'ec2_url'</tt><tt class="py-op">)</tt> </tt>
+<a name="L102"></a><tt class="py-lineno">102</tt>  <tt class="py-line">    <tt class="py-name">access_key</tt> <tt class="py-op">=</tt> <tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">.</tt><tt id="link-27" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-27', 'get', 'link-26');">get</a></tt><tt class="py-op">(</tt><tt class="py-string">'aws_access_key'</tt><tt class="py-op">)</tt> </tt>
+<a name="L103"></a><tt class="py-lineno">103</tt>  <tt class="py-line">    <tt class="py-name">secret_key</tt> <tt class="py-op">=</tt> <tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">.</tt><tt id="link-28" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-28', 'get', 'link-26');">get</a></tt><tt class="py-op">(</tt><tt class="py-string">'aws_secret_key'</tt><tt class="py-op">)</tt> </tt>
+<a name="L104"></a><tt class="py-lineno">104</tt>  <tt class="py-line">    <tt class="py-name">security_token</tt> <tt class="py-op">=</tt> <tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">.</tt><tt id="link-29" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-29', 'get', 'link-26');">get</a></tt><tt class="py-op">(</tt><tt class="py-string">'security_token'</tt><tt class="py-op">)</tt> </tt>
+<a name="L105"></a><tt class="py-lineno">105</tt>  <tt class="py-line">    <tt class="py-name">region</tt> <tt class="py-op">=</tt> <tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">.</tt><tt id="link-30" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-30', 'get', 'link-26');">get</a></tt><tt class="py-op">(</tt><tt class="py-string">'region'</tt><tt class="py-op">)</tt> </tt>
+<a name="L106"></a><tt class="py-lineno">106</tt>  <tt class="py-line">    <tt class="py-name">profile_name</tt> <tt class="py-op">=</tt> <tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">.</tt><tt id="link-31" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-31', 'get', 'link-26');">get</a></tt><tt class="py-op">(</tt><tt class="py-string">'profile'</tt><tt class="py-op">)</tt> </tt>
+<a name="L107"></a><tt class="py-lineno">107</tt>  <tt class="py-line">    <tt id="link-32" class="py-name"><a title="ansible.galaxy.api.GalaxyAPI.validate_certs" class="py-name" href="#" onclick="return doclink('link-32', 'validate_certs', 'link-13');">validate_certs</a></tt> <tt class="py-op">=</tt> <tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">.</tt><tt id="link-33" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-33', 'get', 'link-26');">get</a></tt><tt class="py-op">(</tt><tt class="py-string">'validate_certs'</tt><tt class="py-op">)</tt> </tt>
+<a name="L108"></a><tt class="py-lineno">108</tt>  <tt class="py-line"> </tt>
+<a name="L109"></a><tt class="py-lineno">109</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">ec2_url</tt><tt class="py-op">:</tt> </tt>
+<a name="L110"></a><tt class="py-lineno">110</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-string">'AWS_URL'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">:</tt> </tt>
+<a name="L111"></a><tt class="py-lineno">111</tt>  <tt class="py-line">            <tt class="py-name">ec2_url</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">[</tt><tt class="py-string">'AWS_URL'</tt><tt class="py-op">]</tt> </tt>
+<a name="L112"></a><tt class="py-lineno">112</tt>  <tt class="py-line">        <tt class="py-keyword">elif</tt> <tt class="py-string">'EC2_URL'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">:</tt> </tt>
+<a name="L113"></a><tt class="py-lineno">113</tt>  <tt class="py-line">            <tt class="py-name">ec2_url</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">[</tt><tt class="py-string">'EC2_URL'</tt><tt class="py-op">]</tt> </tt>
+<a name="L114"></a><tt class="py-lineno">114</tt>  <tt class="py-line"> </tt>
+<a name="L115"></a><tt class="py-lineno">115</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">access_key</tt><tt class="py-op">:</tt> </tt>
+<a name="L116"></a><tt class="py-lineno">116</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-string">'AWS_ACCESS_KEY_ID'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">:</tt> </tt>
+<a name="L117"></a><tt class="py-lineno">117</tt>  <tt class="py-line">            <tt class="py-name">access_key</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">[</tt><tt class="py-string">'AWS_ACCESS_KEY_ID'</tt><tt class="py-op">]</tt> </tt>
+<a name="L118"></a><tt class="py-lineno">118</tt>  <tt class="py-line">        <tt class="py-keyword">elif</tt> <tt class="py-string">'AWS_ACCESS_KEY'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">:</tt> </tt>
+<a name="L119"></a><tt class="py-lineno">119</tt>  <tt class="py-line">            <tt class="py-name">access_key</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">[</tt><tt class="py-string">'AWS_ACCESS_KEY'</tt><tt class="py-op">]</tt> </tt>
+<a name="L120"></a><tt class="py-lineno">120</tt>  <tt class="py-line">        <tt class="py-keyword">elif</tt> <tt class="py-string">'EC2_ACCESS_KEY'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">:</tt> </tt>
+<a name="L121"></a><tt class="py-lineno">121</tt>  <tt class="py-line">            <tt class="py-name">access_key</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">[</tt><tt class="py-string">'EC2_ACCESS_KEY'</tt><tt class="py-op">]</tt> </tt>
+<a name="L122"></a><tt class="py-lineno">122</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L123"></a><tt class="py-lineno">123</tt>  <tt class="py-line">            <tt class="py-comment"># in case access_key came in as empty string</tt> </tt>
+<a name="L124"></a><tt class="py-lineno">124</tt>  <tt class="py-line">            <tt class="py-name">access_key</tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L125"></a><tt class="py-lineno">125</tt>  <tt class="py-line"> </tt>
+<a name="L126"></a><tt class="py-lineno">126</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">secret_key</tt><tt class="py-op">:</tt> </tt>
+<a name="L127"></a><tt class="py-lineno">127</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-string">'AWS_SECRET_ACCESS_KEY'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">:</tt> </tt>
+<a name="L128"></a><tt class="py-lineno">128</tt>  <tt class="py-line">            <tt class="py-name">secret_key</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">[</tt><tt class="py-string">'AWS_SECRET_ACCESS_KEY'</tt><tt class="py-op">]</tt> </tt>
+<a name="L129"></a><tt class="py-lineno">129</tt>  <tt class="py-line">        <tt class="py-keyword">elif</tt> <tt class="py-string">'AWS_SECRET_KEY'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">:</tt> </tt>
+<a name="L130"></a><tt class="py-lineno">130</tt>  <tt class="py-line">            <tt class="py-name">secret_key</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">[</tt><tt class="py-string">'AWS_SECRET_KEY'</tt><tt class="py-op">]</tt> </tt>
+<a name="L131"></a><tt class="py-lineno">131</tt>  <tt class="py-line">        <tt class="py-keyword">elif</tt> <tt class="py-string">'EC2_SECRET_KEY'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">:</tt> </tt>
+<a name="L132"></a><tt class="py-lineno">132</tt>  <tt class="py-line">            <tt class="py-name">secret_key</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">[</tt><tt class="py-string">'EC2_SECRET_KEY'</tt><tt class="py-op">]</tt> </tt>
+<a name="L133"></a><tt class="py-lineno">133</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L134"></a><tt class="py-lineno">134</tt>  <tt class="py-line">            <tt class="py-comment"># in case secret_key came in as empty string</tt> </tt>
+<a name="L135"></a><tt class="py-lineno">135</tt>  <tt class="py-line">            <tt class="py-name">secret_key</tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L136"></a><tt class="py-lineno">136</tt>  <tt class="py-line"> </tt>
+<a name="L137"></a><tt class="py-lineno">137</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">region</tt><tt class="py-op">:</tt> </tt>
+<a name="L138"></a><tt class="py-lineno">138</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-string">'AWS_REGION'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">:</tt> </tt>
+<a name="L139"></a><tt class="py-lineno">139</tt>  <tt class="py-line">            <tt class="py-name">region</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">[</tt><tt class="py-string">'AWS_REGION'</tt><tt class="py-op">]</tt> </tt>
+<a name="L140"></a><tt class="py-lineno">140</tt>  <tt class="py-line">        <tt class="py-keyword">elif</tt> <tt class="py-string">'AWS_DEFAULT_REGION'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">:</tt> </tt>
+<a name="L141"></a><tt class="py-lineno">141</tt>  <tt class="py-line">            <tt class="py-name">region</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">[</tt><tt class="py-string">'AWS_DEFAULT_REGION'</tt><tt class="py-op">]</tt> </tt>
+<a name="L142"></a><tt class="py-lineno">142</tt>  <tt class="py-line">        <tt class="py-keyword">elif</tt> <tt class="py-string">'EC2_REGION'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">:</tt> </tt>
+<a name="L143"></a><tt class="py-lineno">143</tt>  <tt class="py-line">            <tt class="py-name">region</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">[</tt><tt class="py-string">'EC2_REGION'</tt><tt class="py-op">]</tt> </tt>
+<a name="L144"></a><tt class="py-lineno">144</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L145"></a><tt class="py-lineno">145</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">boto3</tt><tt class="py-op">:</tt> </tt>
+<a name="L146"></a><tt class="py-lineno">146</tt>  <tt class="py-line">                <tt class="py-comment"># boto.config.get returns None if config not found</tt> </tt>
+<a name="L147"></a><tt class="py-lineno">147</tt>  <tt class="py-line">                <tt class="py-name">region</tt> <tt class="py-op">=</tt> <tt class="py-name">boto</tt><tt class="py-op">.</tt><tt id="link-34" class="py-name" targets="Package ansible.config=ansible.config-module.html,Variable ansible.module_utils.asa.NetworkModule.config=ansible.module_utils.asa.NetworkModule-class.html#config,Variable ansible.module_utils.network.NetworkModule.config=ansible.module_utils.network.NetworkModule-class.html#config,Variable ansible.module_utils.nxos.NetworkModule.config=ansible.module_utils.nxos.NetworkModule-class.html#config,Variable ansible.module_utils.openswitch.NetworkModule.config=ansible.module_utils.openswitch.NetworkModule-class.html#config"><a title="ansible.config
+ansible.module_utils.asa.NetworkModule.config
+ansible.module_utils.network.NetworkModule.config
+ansible.module_utils.nxos.NetworkModule.config
+ansible.module_utils.openswitch.NetworkModule.config" class="py-name" href="#" onclick="return doclink('link-34', 'config', 'link-34');">config</a></tt><tt class="py-op">.</tt><tt id="link-35" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-35', 'get', 'link-26');">get</a></tt><tt class="py-op">(</tt><tt class="py-string">'Boto'</tt><tt class="py-op">,</tt> <tt class="py-string">'aws_region'</tt><tt class="py-op">)</tt> </tt>
+<a name="L148"></a><tt class="py-lineno">148</tt>  <tt class="py-line">                <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">region</tt><tt class="py-op">:</tt> </tt>
+<a name="L149"></a><tt class="py-lineno">149</tt>  <tt class="py-line">                    <tt class="py-name">region</tt> <tt class="py-op">=</tt> <tt class="py-name">boto</tt><tt class="py-op">.</tt><tt id="link-36" class="py-name"><a title="ansible.config
+ansible.module_utils.asa.NetworkModule.config
+ansible.module_utils.network.NetworkModule.config
+ansible.module_utils.nxos.NetworkModule.config
+ansible.module_utils.openswitch.NetworkModule.config" class="py-name" href="#" onclick="return doclink('link-36', 'config', 'link-34');">config</a></tt><tt class="py-op">.</tt><tt id="link-37" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-37', 'get', 'link-26');">get</a></tt><tt class="py-op">(</tt><tt class="py-string">'Boto'</tt><tt class="py-op">,</tt> <tt class="py-string">'ec2_region'</tt><tt class="py-op">)</tt> </tt>
+<a name="L150"></a><tt class="py-lineno">150</tt>  <tt class="py-line">            <tt class="py-keyword">elif</tt> <tt id="link-38" class="py-name"><a title="ansible.module_utils.ec2.HAS_BOTO3" class="py-name" href="#" onclick="return doclink('link-38', 'HAS_BOTO3', 'link-3');">HAS_BOTO3</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L151"></a><tt class="py-lineno">151</tt>  <tt class="py-line">                <tt class="py-comment"># here we don't need to make an additional call, will default to 'us-east-1' if the below evaluates to None.</tt> </tt>
+<a name="L152"></a><tt class="py-lineno">152</tt>  <tt class="py-line">                <tt class="py-name">region</tt> <tt class="py-op">=</tt> <tt class="py-name">botocore</tt><tt class="py-op">.</tt><tt class="py-name">session</tt><tt class="py-op">.</tt><tt class="py-name">get_session</tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt class="py-name">get_config_variable</tt><tt class="py-op">(</tt><tt class="py-string">'region'</tt><tt class="py-op">)</tt> </tt>
+<a name="L153"></a><tt class="py-lineno">153</tt>  <tt class="py-line">            <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L154"></a><tt class="py-lineno">154</tt>  <tt class="py-line">                <tt class="py-name">module</tt><tt class="py-op">.</tt><tt id="link-39" class="py-name"><a title="ansible.module_utils.basic.AnsibleModule.fail_json" class="py-name" href="#" onclick="return doclink('link-39', 'fail_json', 'link-8');">fail_json</a></tt><tt class="py-op">(</tt><tt class="py-name">msg</tt><tt class="py-op">=</tt><tt class="py-string">"Boto3 is required for this module. Please install boto3 and try again"</tt><tt class="py-op">)</tt> </tt>
+<a name="L155"></a><tt class="py-lineno">155</tt>  <tt class="py-line"> </tt>
+<a name="L156"></a><tt class="py-lineno">156</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">security_token</tt><tt class="py-op">:</tt> </tt>
+<a name="L157"></a><tt class="py-lineno">157</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-string">'AWS_SECURITY_TOKEN'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">:</tt> </tt>
+<a name="L158"></a><tt class="py-lineno">158</tt>  <tt class="py-line">            <tt class="py-name">security_token</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">[</tt><tt class="py-string">'AWS_SECURITY_TOKEN'</tt><tt class="py-op">]</tt> </tt>
+<a name="L159"></a><tt class="py-lineno">159</tt>  <tt class="py-line">        <tt class="py-keyword">elif</tt> <tt class="py-string">'AWS_SESSION_TOKEN'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">:</tt> </tt>
+<a name="L160"></a><tt class="py-lineno">160</tt>  <tt class="py-line">            <tt class="py-name">security_token</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">[</tt><tt class="py-string">'AWS_SESSION_TOKEN'</tt><tt class="py-op">]</tt> </tt>
+<a name="L161"></a><tt class="py-lineno">161</tt>  <tt class="py-line">        <tt class="py-keyword">elif</tt> <tt class="py-string">'EC2_SECURITY_TOKEN'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">:</tt> </tt>
+<a name="L162"></a><tt class="py-lineno">162</tt>  <tt class="py-line">            <tt class="py-name">security_token</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">environ</tt><tt class="py-op">[</tt><tt class="py-string">'EC2_SECURITY_TOKEN'</tt><tt class="py-op">]</tt> </tt>
+<a name="L163"></a><tt class="py-lineno">163</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L164"></a><tt class="py-lineno">164</tt>  <tt class="py-line">            <tt class="py-comment"># in case security_token came in as empty string</tt> </tt>
+<a name="L165"></a><tt class="py-lineno">165</tt>  <tt class="py-line">            <tt class="py-name">security_token</tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L166"></a><tt class="py-lineno">166</tt>  <tt class="py-line"> </tt>
+<a name="L167"></a><tt class="py-lineno">167</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt id="link-40" class="py-name"><a title="ansible.module_utils.ec2.HAS_BOTO3" class="py-name" href="#" onclick="return doclink('link-40', 'HAS_BOTO3', 'link-3');">HAS_BOTO3</a></tt> <tt class="py-keyword">and</tt> <tt class="py-name">boto3</tt><tt class="py-op">:</tt> </tt>
+<a name="L168"></a><tt class="py-lineno">168</tt>  <tt class="py-line">        <tt class="py-name">boto_params</tt> <tt class="py-op">=</tt> <tt id="link-41" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-41', 'dict', 'link-9');">dict</a></tt><tt class="py-op">(</tt><tt class="py-name">aws_access_key_id</tt><tt class="py-op">=</tt><tt class="py-name">access_key</tt><tt class="py-op">,</tt> </tt>
+<a name="L169"></a><tt class="py-lineno">169</tt>  <tt class="py-line">                           <tt class="py-name">aws_secret_access_key</tt><tt class="py-op">=</tt><tt class="py-name">secret_key</tt><tt class="py-op">,</tt> </tt>
+<a name="L170"></a><tt class="py-lineno">170</tt>  <tt class="py-line">                           <tt class="py-name">aws_session_token</tt><tt class="py-op">=</tt><tt class="py-name">security_token</tt><tt class="py-op">)</tt> </tt>
+<a name="L171"></a><tt class="py-lineno">171</tt>  <tt class="py-line">        <tt class="py-name">boto_params</tt><tt class="py-op">[</tt><tt class="py-string">'verify'</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt id="link-42" class="py-name"><a title="ansible.galaxy.api.GalaxyAPI.validate_certs" class="py-name" href="#" onclick="return doclink('link-42', 'validate_certs', 'link-13');">validate_certs</a></tt> </tt>
+<a name="L172"></a><tt class="py-lineno">172</tt>  <tt class="py-line"> </tt>
+<a name="L173"></a><tt class="py-lineno">173</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">profile_name</tt><tt class="py-op">:</tt> </tt>
+<a name="L174"></a><tt class="py-lineno">174</tt>  <tt class="py-line">            <tt class="py-name">boto_params</tt><tt class="py-op">[</tt><tt class="py-string">'profile_name'</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-name">profile_name</tt> </tt>
+<a name="L175"></a><tt class="py-lineno">175</tt>  <tt class="py-line"> </tt>
+<a name="L176"></a><tt class="py-lineno">176</tt>  <tt class="py-line">    <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L177"></a><tt class="py-lineno">177</tt>  <tt class="py-line">        <tt class="py-name">boto_params</tt> <tt class="py-op">=</tt> <tt id="link-43" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-43', 'dict', 'link-9');">dict</a></tt><tt class="py-op">(</tt><tt class="py-name">aws_access_key_id</tt><tt class="py-op">=</tt><tt class="py-name">access_key</tt><tt class="py-op">,</tt> </tt>
+<a name="L178"></a><tt class="py-lineno">178</tt>  <tt class="py-line">                           <tt class="py-name">aws_secret_access_key</tt><tt class="py-op">=</tt><tt class="py-name">secret_key</tt><tt class="py-op">,</tt> </tt>
+<a name="L179"></a><tt class="py-lineno">179</tt>  <tt class="py-line">                           <tt class="py-name">security_token</tt><tt class="py-op">=</tt><tt class="py-name">security_token</tt><tt class="py-op">)</tt> </tt>
+<a name="L180"></a><tt class="py-lineno">180</tt>  <tt class="py-line"> </tt>
+<a name="L181"></a><tt class="py-lineno">181</tt>  <tt class="py-line">        <tt class="py-comment"># only set profile_name if passed as an argument</tt> </tt>
+<a name="L182"></a><tt class="py-lineno">182</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">profile_name</tt><tt class="py-op">:</tt> </tt>
+<a name="L183"></a><tt class="py-lineno">183</tt>  <tt class="py-line">            <tt class="py-name">boto_params</tt><tt class="py-op">[</tt><tt class="py-string">'profile_name'</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-name">profile_name</tt> </tt>
+<a name="L184"></a><tt class="py-lineno">184</tt>  <tt class="py-line"> </tt>
+<a name="L185"></a><tt class="py-lineno">185</tt>  <tt class="py-line">        <tt class="py-name">boto_params</tt><tt class="py-op">[</tt><tt class="py-string">'validate_certs'</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt id="link-44" class="py-name"><a title="ansible.galaxy.api.GalaxyAPI.validate_certs" class="py-name" href="#" onclick="return doclink('link-44', 'validate_certs', 'link-13');">validate_certs</a></tt> </tt>
+<a name="L186"></a><tt class="py-lineno">186</tt>  <tt class="py-line"> </tt>
+<a name="L187"></a><tt class="py-lineno">187</tt>  <tt class="py-line">    <tt class="py-keyword">for</tt> <tt class="py-name">param</tt><tt class="py-op">,</tt> <tt class="py-name">value</tt> <tt class="py-keyword">in</tt> <tt class="py-name">boto_params</tt><tt class="py-op">.</tt><tt id="link-45" class="py-name" targets="Variable ansible.module_utils.netcfg.NetworkConfig.items=ansible.module_utils.netcfg.NetworkConfig-class.html#items,Module ansible.plugins.lookup.items=ansible.plugins.lookup.items-module.html"><a title="ansible.module_utils.netcfg.NetworkConfig.items
+ansible.plugins.lookup.items" class="py-name" href="#" onclick="return doclink('link-45', 'items', 'link-45');">items</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L188"></a><tt class="py-lineno">188</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">isinstance</tt><tt class="py-op">(</tt><tt class="py-name">value</tt><tt class="py-op">,</tt> <tt id="link-46" class="py-name" targets="Class str=str-class.html"><a title="str" class="py-name" href="#" onclick="return doclink('link-46', 'str', 'link-46');">str</a></tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L189"></a><tt class="py-lineno">189</tt>  <tt class="py-line">            <tt class="py-name">boto_params</tt><tt class="py-op">[</tt><tt class="py-name">param</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt id="link-47" class="py-name" targets="Module ansible.utils.unicode=ansible.utils.unicode-module.html"><a title="ansible.utils.unicode" class="py-name" href="#" onclick="return doclink('link-47', 'unicode', 'link-47');">unicode</a></tt><tt class="py-op">(</tt><tt class="py-name">value</tt><tt class="py-op">,</tt> <tt class="py-string">'utf-8'</tt><tt class="py-op">,</tt> <tt class="py-string">'strict'</tt><tt class="py-op">)</tt> </tt>
+<a name="L190"></a><tt class="py-lineno">190</tt>  <tt class="py-line"> </tt>
+<a name="L191"></a><tt class="py-lineno">191</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">region</tt><tt class="py-op">,</tt> <tt class="py-name">ec2_url</tt><tt class="py-op">,</tt> <tt class="py-name">boto_params</tt> </tt>
+</div><a name="L192"></a><tt class="py-lineno">192</tt>  <tt class="py-line"> </tt>
+<a name="L193"></a><tt class="py-lineno">193</tt>  <tt class="py-line"> </tt>
+<a name="get_ec2_creds"></a><div id="get_ec2_creds-def"><a name="L194"></a><tt class="py-lineno">194</tt> <a class="py-toggle" href="#" id="get_ec2_creds-toggle" onclick="return toggle('get_ec2_creds');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.ec2-module.html#get_ec2_creds">get_ec2_creds</a><tt class="py-op">(</tt><tt class="py-param">module</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="get_ec2_creds-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="get_ec2_creds-expanded"><a name="L195"></a><tt class="py-lineno">195</tt>  <tt class="py-line">    <tt class="py-docstring">''' for compatibility mode with old modules that don't/can't yet</tt> </tt>
+<a name="L196"></a><tt class="py-lineno">196</tt>  <tt class="py-line"><tt class="py-docstring">        use ec2_connect method '''</tt> </tt>
+<a name="L197"></a><tt class="py-lineno">197</tt>  <tt class="py-line">    <tt class="py-name">region</tt><tt class="py-op">,</tt> <tt class="py-name">ec2_url</tt><tt class="py-op">,</tt> <tt class="py-name">boto_params</tt> <tt class="py-op">=</tt> <tt id="link-48" class="py-name" targets="Function ansible.module_utils.ec2.get_aws_connection_info()=ansible.module_utils.ec2-module.html#get_aws_connection_info"><a title="ansible.module_utils.ec2.get_aws_connection_info" class="py-name" href="#" onclick="return doclink('link-48', 'get_aws_connection_info', 'link-48');">get_aws_connection_info</a></tt><tt class="py-op">(</tt><tt class="py-name">module</tt><tt class="py-op">)</tt> </tt>
+<a name="L198"></a><tt class="py-lineno">198</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">ec2_url</tt><tt class="py-op">,</tt> <tt class="py-name">boto_params</tt><tt class="py-op">[</tt><tt class="py-string">'aws_access_key_id'</tt><tt class="py-op">]</tt><tt class="py-op">,</tt> <tt class="py-name">boto_params</tt><tt class="py-op">[</tt><tt class="py-string">'aws_secret_access_key'</tt><tt class="py-op">]</tt><tt class="py-op">,</tt> <tt class="py-name">region</tt> </tt>
+</div><a name="L199"></a><tt class="py-lineno">199</tt>  <tt class="py-line"> </tt>
+<a name="L200"></a><tt class="py-lineno">200</tt>  <tt class="py-line"> </tt>
+<a name="boto_fix_security_token_in_profile"></a><div id="boto_fix_security_token_in_profile-def"><a name="L201"></a><tt class="py-lineno">201</tt> <a class="py-toggle" href="#" id="boto_fix_security_token_in_profile-toggle" onclick="return toggle('boto_fix_security_token_in_profile');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.ec2-module.html#boto_fix_security_token_in_profile">boto_fix_security_token_in_profile</a><tt class="py-op">(</tt><tt class="py-param">conn</tt><tt class="py-op">,</tt> <tt class="py-param">profile_name</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="boto_fix_security_token_in_profile-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="boto_fix_security_token_in_profile-expanded"><a name="L202"></a><tt class="py-lineno">202</tt>  <tt class="py-line">    <tt class="py-docstring">''' monkey patch for boto issue boto/boto#2100 '''</tt> </tt>
+<a name="L203"></a><tt class="py-lineno">203</tt>  <tt class="py-line">    <tt class="py-name">profile</tt> <tt class="py-op">=</tt> <tt class="py-string">'profile '</tt> <tt class="py-op">+</tt> <tt class="py-name">profile_name</tt> </tt>
+<a name="L204"></a><tt class="py-lineno">204</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">boto</tt><tt class="py-op">.</tt><tt id="link-49" class="py-name"><a title="ansible.config
+ansible.module_utils.asa.NetworkModule.config
+ansible.module_utils.network.NetworkModule.config
+ansible.module_utils.nxos.NetworkModule.config
+ansible.module_utils.openswitch.NetworkModule.config" class="py-name" href="#" onclick="return doclink('link-49', 'config', 'link-34');">config</a></tt><tt class="py-op">.</tt><tt class="py-name">has_option</tt><tt class="py-op">(</tt><tt class="py-name">profile</tt><tt class="py-op">,</tt> <tt class="py-string">'aws_security_token'</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L205"></a><tt class="py-lineno">205</tt>  <tt class="py-line">        <tt class="py-name">conn</tt><tt class="py-op">.</tt><tt class="py-name">provider</tt><tt class="py-op">.</tt><tt class="py-name">set_security_token</tt><tt class="py-op">(</tt><tt class="py-name">boto</tt><tt class="py-op">.</tt><tt id="link-50" class="py-name"><a title="ansible.config
+ansible.module_utils.asa.NetworkModule.config
+ansible.module_utils.network.NetworkModule.config
+ansible.module_utils.nxos.NetworkModule.config
+ansible.module_utils.openswitch.NetworkModule.config" class="py-name" href="#" onclick="return doclink('link-50', 'config', 'link-34');">config</a></tt><tt class="py-op">.</tt><tt id="link-51" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-51', 'get', 'link-26');">get</a></tt><tt class="py-op">(</tt><tt class="py-name">profile</tt><tt class="py-op">,</tt> <tt class="py-string">'aws_security_token'</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L206"></a><tt class="py-lineno">206</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">conn</tt> </tt>
+</div><a name="L207"></a><tt class="py-lineno">207</tt>  <tt class="py-line"> </tt>
+<a name="L208"></a><tt class="py-lineno">208</tt>  <tt class="py-line"> </tt>
+<a name="connect_to_aws"></a><div id="connect_to_aws-def"><a name="L209"></a><tt class="py-lineno">209</tt> <a class="py-toggle" href="#" id="connect_to_aws-toggle" onclick="return toggle('connect_to_aws');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.ec2-module.html#connect_to_aws">connect_to_aws</a><tt class="py-op">(</tt><tt class="py-param">aws_module</tt><tt class="py-op">,</tt> <tt class="py-param">region</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">params</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="connect_to_aws-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="connect_to_aws-expanded"><a name="L210"></a><tt class="py-lineno">210</tt>  <tt class="py-line">    <tt class="py-name">conn</tt> <tt class="py-op">=</tt> <tt class="py-name">aws_module</tt><tt class="py-op">.</tt><tt class="py-name">connect_to_region</tt><tt class="py-op">(</tt><tt class="py-name">region</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-name">params</tt><tt class="py-op">)</tt> </tt>
+<a name="L211"></a><tt class="py-lineno">211</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">conn</tt><tt class="py-op">:</tt> </tt>
+<a name="L212"></a><tt class="py-lineno">212</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">region</tt> <tt class="py-keyword">not</tt> <tt class="py-keyword">in</tt> <tt class="py-op">[</tt><tt class="py-name">aws_module_region</tt><tt class="py-op">.</tt><tt class="py-name">name</tt> <tt class="py-keyword">for</tt> <tt class="py-name">aws_module_region</tt> <tt class="py-keyword">in</tt> <tt class="py-name">aws_module</tt><tt class="py-op">.</tt><tt class="py-name">regions</tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">]</tt><tt class="py-op">:</tt> </tt>
+<a name="L213"></a><tt class="py-lineno">213</tt>  <tt class="py-line">            <tt class="py-keyword">raise</tt> <tt id="link-52" class="py-name" targets="Class ansible.module_utils.ec2.AnsibleAWSError=ansible.module_utils.ec2.AnsibleAWSError-class.html"><a title="ansible.module_utils.ec2.AnsibleAWSError" class="py-name" href="#" onclick="return doclink('link-52', 'AnsibleAWSError', 'link-52');">AnsibleAWSError</a></tt><tt class="py-op">(</tt><tt class="py-string">"Region %s does not seem to be available for aws module %s. If the region definitely exists, you may need to upgrade boto or extend with endpoints_path"</tt> <tt class="py-op">%</tt> <tt class="py-op">(</tt><tt class="py-name">region</tt><tt class="py-op">,</tt> <tt class="py-name">aws_module</tt><tt class="py-op">.</tt><tt class="py-name">__name__</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L214"></a><tt class="py-lineno">214</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L215"></a><tt class="py-lineno">215</tt>  <tt class="py-line">            <tt class="py-keyword">raise</tt> <tt id="link-53" class="py-name"><a title="ansible.module_utils.ec2.AnsibleAWSError" class="py-name" href="#" onclick="return doclink('link-53', 'AnsibleAWSError', 'link-52');">AnsibleAWSError</a></tt><tt class="py-op">(</tt><tt class="py-string">"Unknown problem connecting to region %s for aws module %s."</tt> <tt class="py-op">%</tt> <tt class="py-op">(</tt><tt class="py-name">region</tt><tt class="py-op">,</tt> <tt class="py-name">aws_module</tt><tt class="py-op">.</tt><tt class="py-name">__name__</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L216"></a><tt class="py-lineno">216</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">params</tt><tt class="py-op">.</tt><tt id="link-54" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-54', 'get', 'link-26');">get</a></tt><tt class="py-op">(</tt><tt class="py-string">'profile_name'</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L217"></a><tt class="py-lineno">217</tt>  <tt class="py-line">        <tt class="py-name">conn</tt> <tt class="py-op">=</tt> <tt id="link-55" class="py-name" targets="Function ansible.module_utils.ec2.boto_fix_security_token_in_profile()=ansible.module_utils.ec2-module.html#boto_fix_security_token_in_profile"><a title="ansible.module_utils.ec2.boto_fix_security_token_in_profile" class="py-name" href="#" onclick="return doclink('link-55', 'boto_fix_security_token_in_profile', 'link-55');">boto_fix_security_token_in_profile</a></tt><tt class="py-op">(</tt><tt class="py-name">conn</tt><tt class="py-op">,</tt> <tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'profile_name'</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L218"></a><tt class="py-lineno">218</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">conn</tt> </tt>
+</div><a name="L219"></a><tt class="py-lineno">219</tt>  <tt class="py-line"> </tt>
+<a name="L220"></a><tt class="py-lineno">220</tt>  <tt class="py-line"> </tt>
+<a name="ec2_connect"></a><div id="ec2_connect-def"><a name="L221"></a><tt class="py-lineno">221</tt> <a class="py-toggle" href="#" id="ec2_connect-toggle" onclick="return toggle('ec2_connect');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.ec2-module.html#ec2_connect">ec2_connect</a><tt class="py-op">(</tt><tt class="py-param">module</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="ec2_connect-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="ec2_connect-expanded"><a name="L222"></a><tt class="py-lineno">222</tt>  <tt class="py-line"> </tt>
+<a name="L223"></a><tt class="py-lineno">223</tt>  <tt class="py-line">    <tt class="py-docstring">""" Return an ec2 connection"""</tt> </tt>
+<a name="L224"></a><tt class="py-lineno">224</tt>  <tt class="py-line"> </tt>
+<a name="L225"></a><tt class="py-lineno">225</tt>  <tt class="py-line">    <tt class="py-name">region</tt><tt class="py-op">,</tt> <tt class="py-name">ec2_url</tt><tt class="py-op">,</tt> <tt class="py-name">boto_params</tt> <tt class="py-op">=</tt> <tt id="link-56" class="py-name"><a title="ansible.module_utils.ec2.get_aws_connection_info" class="py-name" href="#" onclick="return doclink('link-56', 'get_aws_connection_info', 'link-48');">get_aws_connection_info</a></tt><tt class="py-op">(</tt><tt class="py-name">module</tt><tt class="py-op">)</tt> </tt>
+<a name="L226"></a><tt class="py-lineno">226</tt>  <tt class="py-line"> </tt>
+<a name="L227"></a><tt class="py-lineno">227</tt>  <tt class="py-line">    <tt class="py-comment"># If we have a region specified, connect to its endpoint.</tt> </tt>
+<a name="L228"></a><tt class="py-lineno">228</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">region</tt><tt class="py-op">:</tt> </tt>
+<a name="L229"></a><tt class="py-lineno">229</tt>  <tt class="py-line">        <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L230"></a><tt class="py-lineno">230</tt>  <tt class="py-line">            <tt id="link-57" class="py-name"><a title="ansible.module_utils.ec2
+ansible.utils.module_docs_fragments.ec2" class="py-name" href="#" onclick="return doclink('link-57', 'ec2', 'link-0');">ec2</a></tt> <tt class="py-op">=</tt> <tt id="link-58" class="py-name" targets="Function ansible.module_utils.ec2.connect_to_aws()=ansible.module_utils.ec2-module.html#connect_to_aws"><a title="ansible.module_utils.ec2.connect_to_aws" class="py-name" href="#" onclick="return doclink('link-58', 'connect_to_aws', 'link-58');">connect_to_aws</a></tt><tt class="py-op">(</tt><tt class="py-name">boto</tt><tt class="py-op">.</tt><tt id="link-59" class="py-name"><a title="ansible.module_utils.ec2
+ansible.utils.module_docs_fragments.ec2" class="py-name" href="#" onclick="return doclink('link-59', 'ec2', 'link-0');">ec2</a></tt><tt class="py-op">,</tt> <tt class="py-name">region</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-name">boto_params</tt><tt class="py-op">)</tt> </tt>
+<a name="L231"></a><tt class="py-lineno">231</tt>  <tt class="py-line">        <tt class="py-keyword">except</tt> <tt class="py-op">(</tt><tt class="py-name">boto</tt><tt class="py-op">.</tt><tt class="py-name">exception</tt><tt class="py-op">.</tt><tt class="py-name">NoAuthHandlerFound</tt><tt class="py-op">,</tt> <tt id="link-60" class="py-name"><a title="ansible.module_utils.ec2.AnsibleAWSError" class="py-name" href="#" onclick="return doclink('link-60', 'AnsibleAWSError', 'link-52');">AnsibleAWSError</a></tt><tt class="py-op">)</tt> <tt class="py-keyword">as</tt> <tt id="link-61" class="py-name" targets="Variable ansible.plugins.lookup.consul_kv.e=ansible.plugins.lookup.consul_kv-module.html#e"><a title="ansible.plugins.lookup.consul_kv.e" class="py-name" href="#" onclick="return doclink('link-61', 'e', 'link-61');">e</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L232"></a><tt class="py-lineno">232</tt>  <tt class="py-line">            <tt class="py-name">module</tt><tt class="py-op">.</tt><tt id="link-62" class="py-name"><a title="ansible.module_utils.basic.AnsibleModule.fail_json" class="py-name" href="#" onclick="return doclink('link-62', 'fail_json', 'link-8');">fail_json</a></tt><tt class="py-op">(</tt><tt class="py-name">msg</tt><tt class="py-op">=</tt><tt id="link-63" class="py-name"><a title="str" class="py-name" href="#" onclick="return doclink('link-63', 'str', 'link-46');">str</a></tt><tt class="py-op">(</tt><tt id="link-64" class="py-name"><a title="ansible.plugins.lookup.consul_kv.e" class="py-name" href="#" onclick="return doclink('link-64', 'e', 'link-61');">e</a></tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L233"></a><tt class="py-lineno">233</tt>  <tt class="py-line">    <tt class="py-comment"># Otherwise, no region so we fallback to the old connection method</tt> </tt>
+<a name="L234"></a><tt class="py-lineno">234</tt>  <tt class="py-line">    <tt class="py-keyword">elif</tt> <tt class="py-name">ec2_url</tt><tt class="py-op">:</tt> </tt>
+<a name="L235"></a><tt class="py-lineno">235</tt>  <tt class="py-line">        <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L236"></a><tt class="py-lineno">236</tt>  <tt class="py-line">            <tt id="link-65" class="py-name"><a title="ansible.module_utils.ec2
+ansible.utils.module_docs_fragments.ec2" class="py-name" href="#" onclick="return doclink('link-65', 'ec2', 'link-0');">ec2</a></tt> <tt class="py-op">=</tt> <tt class="py-name">boto</tt><tt class="py-op">.</tt><tt class="py-name">connect_ec2_endpoint</tt><tt class="py-op">(</tt><tt class="py-name">ec2_url</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-name">boto_params</tt><tt class="py-op">)</tt> </tt>
+<a name="L237"></a><tt class="py-lineno">237</tt>  <tt class="py-line">        <tt class="py-keyword">except</tt> <tt class="py-op">(</tt><tt class="py-name">boto</tt><tt class="py-op">.</tt><tt class="py-name">exception</tt><tt class="py-op">.</tt><tt class="py-name">NoAuthHandlerFound</tt><tt class="py-op">,</tt> <tt id="link-66" class="py-name"><a title="ansible.module_utils.ec2.AnsibleAWSError" class="py-name" href="#" onclick="return doclink('link-66', 'AnsibleAWSError', 'link-52');">AnsibleAWSError</a></tt><tt class="py-op">)</tt> <tt class="py-keyword">as</tt> <tt id="link-67" class="py-name"><a title="ansible.plugins.lookup.consul_kv.e" class="py-name" href="#" onclick="return doclink('link-67', 'e', 'link-61');">e</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L238"></a><tt class="py-lineno">238</tt>  <tt class="py-line">            <tt class="py-name">module</tt><tt class="py-op">.</tt><tt id="link-68" class="py-name"><a title="ansible.module_utils.basic.AnsibleModule.fail_json" class="py-name" href="#" onclick="return doclink('link-68', 'fail_json', 'link-8');">fail_json</a></tt><tt class="py-op">(</tt><tt class="py-name">msg</tt><tt class="py-op">=</tt><tt id="link-69" class="py-name"><a title="str" class="py-name" href="#" onclick="return doclink('link-69', 'str', 'link-46');">str</a></tt><tt class="py-op">(</tt><tt id="link-70" class="py-name"><a title="ansible.plugins.lookup.consul_kv.e" class="py-name" href="#" onclick="return doclink('link-70', 'e', 'link-61');">e</a></tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L239"></a><tt class="py-lineno">239</tt>  <tt class="py-line">    <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L240"></a><tt class="py-lineno">240</tt>  <tt class="py-line">        <tt class="py-name">module</tt><tt class="py-op">.</tt><tt id="link-71" class="py-name"><a title="ansible.module_utils.basic.AnsibleModule.fail_json" class="py-name" href="#" onclick="return doclink('link-71', 'fail_json', 'link-8');">fail_json</a></tt><tt class="py-op">(</tt><tt class="py-name">msg</tt><tt class="py-op">=</tt><tt class="py-string">"Either region or ec2_url must be specified"</tt><tt class="py-op">)</tt> </tt>
+<a name="L241"></a><tt class="py-lineno">241</tt>  <tt class="py-line"> </tt>
+<a name="L242"></a><tt class="py-lineno">242</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt id="link-72" class="py-name"><a title="ansible.module_utils.ec2
+ansible.utils.module_docs_fragments.ec2" class="py-name" href="#" onclick="return doclink('link-72', 'ec2', 'link-0');">ec2</a></tt> </tt>
+</div><a name="L243"></a><tt class="py-lineno">243</tt>  <tt class="py-line"> </tt>
+<a name="paging"></a><div id="paging-def"><a name="L244"></a><tt class="py-lineno">244</tt> <a class="py-toggle" href="#" id="paging-toggle" onclick="return toggle('paging');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.ec2-module.html#paging">paging</a><tt class="py-op">(</tt><tt class="py-param">pause</tt><tt class="py-op">=</tt><tt class="py-number">0</tt><tt class="py-op">,</tt> <tt class="py-param">marker_property</tt><tt class="py-op">=</tt><tt class="py-string">'marker'</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="paging-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="paging-expanded"><a name="L245"></a><tt class="py-lineno">245</tt>  <tt class="py-line">    <tt class="py-docstring">""" Adds paging to boto retrieval functions that support a 'marker'</tt> </tt>
+<a name="L246"></a><tt class="py-lineno">246</tt>  <tt class="py-line"><tt class="py-docstring">        this is configurable as not all boto functions seem to use the</tt> </tt>
+<a name="L247"></a><tt class="py-lineno">247</tt>  <tt class="py-line"><tt class="py-docstring">        same name.</tt> </tt>
+<a name="L248"></a><tt class="py-lineno">248</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L249"></a><tt class="py-lineno">249</tt>  <tt class="py-line">    <tt class="py-keyword">def</tt> <tt class="py-def-name">wrapper</tt><tt class="py-op">(</tt><tt class="py-param">f</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L250"></a><tt class="py-lineno">250</tt>  <tt class="py-line">        <tt class="py-keyword">def</tt> <tt class="py-def-name">page</tt><tt class="py-op">(</tt><tt class="py-op">*</tt><tt class="py-param">args</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">kwargs</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L251"></a><tt class="py-lineno">251</tt>  <tt class="py-line">            <tt class="py-name">results</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-op">]</tt> </tt>
+<a name="L252"></a><tt class="py-lineno">252</tt>  <tt class="py-line">            <tt class="py-name">marker</tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L253"></a><tt class="py-lineno">253</tt>  <tt class="py-line">            <tt class="py-keyword">while</tt> <tt class="py-name">True</tt><tt class="py-op">:</tt> </tt>
+<a name="L254"></a><tt class="py-lineno">254</tt>  <tt class="py-line">                <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L255"></a><tt class="py-lineno">255</tt>  <tt class="py-line">                    <tt class="py-name">new</tt> <tt class="py-op">=</tt> <tt class="py-name">f</tt><tt class="py-op">(</tt><tt class="py-op">*</tt><tt class="py-name">args</tt><tt class="py-op">,</tt> <tt class="py-name">marker</tt><tt class="py-op">=</tt><tt class="py-name">marker</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-name">kwargs</tt><tt class="py-op">)</tt> </tt>
+<a name="L256"></a><tt class="py-lineno">256</tt>  <tt class="py-line">                    <tt class="py-name">marker</tt> <tt class="py-op">=</tt> <tt class="py-name">getattr</tt><tt class="py-op">(</tt><tt class="py-name">new</tt><tt class="py-op">,</tt> <tt class="py-name">marker_property</tt><tt class="py-op">)</tt> </tt>
+<a name="L257"></a><tt class="py-lineno">257</tt>  <tt class="py-line">                    <tt class="py-name">results</tt><tt class="py-op">.</tt><tt class="py-name">extend</tt><tt class="py-op">(</tt><tt class="py-name">new</tt><tt class="py-op">)</tt> </tt>
+<a name="L258"></a><tt class="py-lineno">258</tt>  <tt class="py-line">                    <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">marker</tt><tt class="py-op">:</tt> </tt>
+<a name="L259"></a><tt class="py-lineno">259</tt>  <tt class="py-line">                        <tt class="py-keyword">break</tt> </tt>
+<a name="L260"></a><tt class="py-lineno">260</tt>  <tt class="py-line">                    <tt class="py-keyword">elif</tt> <tt id="link-73" class="py-name" targets="Module ansible.plugins.action.pause=ansible.plugins.action.pause-module.html"><a title="ansible.plugins.action.pause" class="py-name" href="#" onclick="return doclink('link-73', 'pause', 'link-73');">pause</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L261"></a><tt class="py-lineno">261</tt>  <tt class="py-line">                        <tt class="py-name">sleep</tt><tt class="py-op">(</tt><tt id="link-74" class="py-name"><a title="ansible.plugins.action.pause" class="py-name" href="#" onclick="return doclink('link-74', 'pause', 'link-73');">pause</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L262"></a><tt class="py-lineno">262</tt>  <tt class="py-line">                <tt class="py-keyword">except</tt> <tt class="py-name">TypeError</tt><tt class="py-op">:</tt> </tt>
+<a name="L263"></a><tt class="py-lineno">263</tt>  <tt class="py-line">                    <tt class="py-comment"># Older version of boto do not allow for marker param, just run normally</tt> </tt>
+<a name="L264"></a><tt class="py-lineno">264</tt>  <tt class="py-line">                    <tt class="py-name">results</tt> <tt class="py-op">=</tt> <tt class="py-name">f</tt><tt class="py-op">(</tt><tt class="py-op">*</tt><tt class="py-name">args</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-name">kwargs</tt><tt class="py-op">)</tt> </tt>
+<a name="L265"></a><tt class="py-lineno">265</tt>  <tt class="py-line">                    <tt class="py-keyword">break</tt> </tt>
+<a name="L266"></a><tt class="py-lineno">266</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">results</tt> </tt>
+</div><a name="L267"></a><tt class="py-lineno">267</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">page</tt> </tt>
+</div><a name="L268"></a><tt class="py-lineno">268</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">wrapper</tt> </tt>
+</div><a name="L269"></a><tt class="py-lineno">269</tt>  <tt class="py-line"> </tt>
+<a name="L270"></a><tt class="py-lineno">270</tt>  <tt class="py-line"> </tt>
+<a name="camel_dict_to_snake_dict"></a><div id="camel_dict_to_snake_dict-def"><a name="L271"></a><tt class="py-lineno">271</tt> <a class="py-toggle" href="#" id="camel_dict_to_snake_dict-toggle" onclick="return toggle('camel_dict_to_snake_dict');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.ec2-module.html#camel_dict_to_snake_dict">camel_dict_to_snake_dict</a><tt class="py-op">(</tt><tt class="py-param">camel_dict</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="camel_dict_to_snake_dict-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="camel_dict_to_snake_dict-expanded"><a name="L272"></a><tt class="py-lineno">272</tt>  <tt class="py-line"> </tt>
+<a name="L273"></a><tt class="py-lineno">273</tt>  <tt class="py-line">    <tt class="py-keyword">def</tt> <tt class="py-def-name">camel_to_snake</tt><tt class="py-op">(</tt><tt class="py-param">name</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L274"></a><tt class="py-lineno">274</tt>  <tt class="py-line"> </tt>
+<a name="L275"></a><tt class="py-lineno">275</tt>  <tt class="py-line">        <tt class="py-keyword">import</tt> <tt class="py-name">re</tt> </tt>
+<a name="L276"></a><tt class="py-lineno">276</tt>  <tt class="py-line"> </tt>
+<a name="L277"></a><tt class="py-lineno">277</tt>  <tt class="py-line">        <tt class="py-name">first_cap_re</tt> <tt class="py-op">=</tt> <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-75" class="py-name" targets="Method ansible.playbook.play.Play.compile()=ansible.playbook.play.Play-class.html#compile,Method ansible.playbook.role.Role.compile()=ansible.playbook.role.Role-class.html#compile"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-75', 'compile', 'link-75');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">'(.)([A-Z][a-z]+)'</tt><tt class="py-op">)</tt> </tt>
+<a name="L278"></a><tt class="py-lineno">278</tt>  <tt class="py-line">        <tt class="py-name">all_cap_re</tt> <tt class="py-op">=</tt> <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-76" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-76', 'compile', 'link-75');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">'([a-z0-9])([A-Z])'</tt><tt class="py-op">)</tt> </tt>
+<a name="L279"></a><tt class="py-lineno">279</tt>  <tt class="py-line">        <tt class="py-name">s1</tt> <tt class="py-op">=</tt> <tt class="py-name">first_cap_re</tt><tt class="py-op">.</tt><tt class="py-name">sub</tt><tt class="py-op">(</tt><tt class="py-string">r'\1_\2'</tt><tt class="py-op">,</tt> <tt class="py-name">name</tt><tt class="py-op">)</tt> </tt>
+<a name="L280"></a><tt class="py-lineno">280</tt>  <tt class="py-line"> </tt>
+<a name="L281"></a><tt class="py-lineno">281</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">all_cap_re</tt><tt class="py-op">.</tt><tt class="py-name">sub</tt><tt class="py-op">(</tt><tt class="py-string">r'\1_\2'</tt><tt class="py-op">,</tt> <tt class="py-name">s1</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt class="py-name">lower</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L282"></a><tt class="py-lineno">282</tt>  <tt class="py-line"> </tt>
+<a name="L283"></a><tt class="py-lineno">283</tt>  <tt class="py-line"> </tt>
+<a name="L284"></a><tt class="py-lineno">284</tt>  <tt class="py-line">    <tt class="py-keyword">def</tt> <tt class="py-def-name">value_is_list</tt><tt class="py-op">(</tt><tt class="py-param">camel_list</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L285"></a><tt class="py-lineno">285</tt>  <tt class="py-line"> </tt>
+<a name="L286"></a><tt class="py-lineno">286</tt>  <tt class="py-line">        <tt class="py-name">checked_list</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-op">]</tt> </tt>
+<a name="L287"></a><tt class="py-lineno">287</tt>  <tt class="py-line">        <tt class="py-keyword">for</tt> <tt class="py-name">item</tt> <tt class="py-keyword">in</tt> <tt class="py-name">camel_list</tt><tt class="py-op">:</tt> </tt>
+<a name="L288"></a><tt class="py-lineno">288</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-name">isinstance</tt><tt class="py-op">(</tt><tt class="py-name">item</tt><tt class="py-op">,</tt> <tt id="link-77" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-77', 'dict', 'link-9');">dict</a></tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L289"></a><tt class="py-lineno">289</tt>  <tt class="py-line">                <tt class="py-name">checked_list</tt><tt class="py-op">.</tt><tt class="py-name">append</tt><tt class="py-op">(</tt><tt id="link-78" class="py-name" targets="Function ansible.module_utils.ec2.camel_dict_to_snake_dict()=ansible.module_utils.ec2-module.html#camel_dict_to_snake_dict"><a title="ansible.module_utils.ec2.camel_dict_to_snake_dict" class="py-name" href="#" onclick="return doclink('link-78', 'camel_dict_to_snake_dict', 'link-78');">camel_dict_to_snake_dict</a></tt><tt class="py-op">(</tt><tt class="py-name">item</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L290"></a><tt class="py-lineno">290</tt>  <tt class="py-line">            <tt class="py-keyword">elif</tt> <tt class="py-name">isinstance</tt><tt class="py-op">(</tt><tt class="py-name">item</tt><tt class="py-op">,</tt> <tt id="link-79" class="py-name" targets="Module ansible.plugins.lookup.list=ansible.plugins.lookup.list-module.html"><a title="ansible.plugins.lookup.list" class="py-name" href="#" onclick="return doclink('link-79', 'list', 'link-79');">list</a></tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L291"></a><tt class="py-lineno">291</tt>  <tt class="py-line">                <tt class="py-name">checked_list</tt><tt class="py-op">.</tt><tt class="py-name">append</tt><tt class="py-op">(</tt><tt class="py-name">value_is_list</tt><tt class="py-op">(</tt><tt class="py-name">item</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L292"></a><tt class="py-lineno">292</tt>  <tt class="py-line">            <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L293"></a><tt class="py-lineno">293</tt>  <tt class="py-line">                <tt class="py-name">checked_list</tt><tt class="py-op">.</tt><tt class="py-name">append</tt><tt class="py-op">(</tt><tt class="py-name">item</tt><tt class="py-op">)</tt> </tt>
+<a name="L294"></a><tt class="py-lineno">294</tt>  <tt class="py-line"> </tt>
+<a name="L295"></a><tt class="py-lineno">295</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">checked_list</tt> </tt>
+</div><a name="L296"></a><tt class="py-lineno">296</tt>  <tt class="py-line"> </tt>
+<a name="L297"></a><tt class="py-lineno">297</tt>  <tt class="py-line"> </tt>
+<a name="L298"></a><tt class="py-lineno">298</tt>  <tt class="py-line">    <tt class="py-name">snake_dict</tt> <tt class="py-op">=</tt> <tt class="py-op">{</tt><tt class="py-op">}</tt> </tt>
+<a name="L299"></a><tt class="py-lineno">299</tt>  <tt class="py-line">    <tt class="py-keyword">for</tt> <tt class="py-name">k</tt><tt class="py-op">,</tt> <tt id="link-80" class="py-name" targets="Method ansible.utils.display.Display.v()=ansible.utils.display.Display-class.html#v"><a title="ansible.utils.display.Display.v" class="py-name" href="#" onclick="return doclink('link-80', 'v', 'link-80');">v</a></tt> <tt class="py-keyword">in</tt> <tt class="py-name">camel_dict</tt><tt class="py-op">.</tt><tt id="link-81" class="py-name" targets="Function ansible.compat.six.iteritems()=ansible.compat.six-module.html#iteritems,Function ansible.module_utils.basic.iteritems()=ansible.module_utils.basic-module.html#iteritems,Function ansible.module_utils.facts.iteritems()=ansible.module_utils.facts-module.html#iteritems,Function ansible.module_utils.six.iteritems()=ansible.module_utils.six-module.html#iteritems"><a title="ansible.compat.six.iteritems
+ansible.module_utils.basic.iteritems
+ansible.module_utils.facts.iteritems
+ansible.module_utils.six.iteritems" class="py-name" href="#" onclick="return doclink('link-81', 'iteritems', 'link-81');">iteritems</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L300"></a><tt class="py-lineno">300</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">isinstance</tt><tt class="py-op">(</tt><tt id="link-82" class="py-name"><a title="ansible.utils.display.Display.v" class="py-name" href="#" onclick="return doclink('link-82', 'v', 'link-80');">v</a></tt><tt class="py-op">,</tt> <tt id="link-83" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-83', 'dict', 'link-9');">dict</a></tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L301"></a><tt class="py-lineno">301</tt>  <tt class="py-line">            <tt class="py-name">snake_dict</tt><tt class="py-op">[</tt><tt class="py-name">camel_to_snake</tt><tt class="py-op">(</tt><tt class="py-name">k</tt><tt class="py-op">)</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt id="link-84" class="py-name"><a title="ansible.module_utils.ec2.camel_dict_to_snake_dict" class="py-name" href="#" onclick="return doclink('link-84', 'camel_dict_to_snake_dict', 'link-78');">camel_dict_to_snake_dict</a></tt><tt class="py-op">(</tt><tt id="link-85" class="py-name"><a title="ansible.utils.display.Display.v" class="py-name" href="#" onclick="return doclink('link-85', 'v', 'link-80');">v</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L302"></a><tt class="py-lineno">302</tt>  <tt class="py-line">        <tt class="py-keyword">elif</tt> <tt class="py-name">isinstance</tt><tt class="py-op">(</tt><tt id="link-86" class="py-name"><a title="ansible.utils.display.Display.v" class="py-name" href="#" onclick="return doclink('link-86', 'v', 'link-80');">v</a></tt><tt class="py-op">,</tt> <tt id="link-87" class="py-name"><a title="ansible.plugins.lookup.list" class="py-name" href="#" onclick="return doclink('link-87', 'list', 'link-79');">list</a></tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L303"></a><tt class="py-lineno">303</tt>  <tt class="py-line">            <tt class="py-name">snake_dict</tt><tt class="py-op">[</tt><tt class="py-name">camel_to_snake</tt><tt class="py-op">(</tt><tt class="py-name">k</tt><tt class="py-op">)</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-name">value_is_list</tt><tt class="py-op">(</tt><tt id="link-88" class="py-name"><a title="ansible.utils.display.Display.v" class="py-name" href="#" onclick="return doclink('link-88', 'v', 'link-80');">v</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L304"></a><tt class="py-lineno">304</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L305"></a><tt class="py-lineno">305</tt>  <tt class="py-line">            <tt class="py-name">snake_dict</tt><tt class="py-op">[</tt><tt class="py-name">camel_to_snake</tt><tt class="py-op">(</tt><tt class="py-name">k</tt><tt class="py-op">)</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt id="link-89" class="py-name"><a title="ansible.utils.display.Display.v" class="py-name" href="#" onclick="return doclink('link-89', 'v', 'link-80');">v</a></tt> </tt>
+<a name="L306"></a><tt class="py-lineno">306</tt>  <tt class="py-line"> </tt>
+<a name="L307"></a><tt class="py-lineno">307</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">snake_dict</tt> </tt>
+</div><a name="L308"></a><tt class="py-lineno">308</tt>  <tt class="py-line"> </tt>
+<a name="L309"></a><tt class="py-lineno">309</tt>  <tt class="py-line"> </tt>
+<a name="ansible_dict_to_boto3_filter_list"></a><div id="ansible_dict_to_boto3_filter_list-def"><a name="L310"></a><tt class="py-lineno">310</tt> <a class="py-toggle" href="#" id="ansible_dict_to_boto3_filter_list-toggle" onclick="return toggle('ansible_dict_to_boto3_filter_list');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.ec2-module.html#ansible_dict_to_boto3_filter_list">ansible_dict_to_boto3_filter_list</a><tt class="py-op">(</tt><tt class="py-param">filters_dict</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="ansible_dict_to_boto3_filter_list-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="ansible_dict_to_boto3_filter_list-expanded"><a name="L311"></a><tt class="py-lineno">311</tt>  <tt class="py-line"> </tt>
+<a name="L312"></a><tt class="py-lineno">312</tt>  <tt class="py-line">    <tt class="py-docstring">""" Convert an Ansible dict of filters to list of dicts that boto3 can use</tt> </tt>
+<a name="L313"></a><tt class="py-lineno">313</tt>  <tt class="py-line"><tt class="py-docstring">    Args:</tt> </tt>
+<a name="L314"></a><tt class="py-lineno">314</tt>  <tt class="py-line"><tt class="py-docstring">        filters_dict (dict): Dict of AWS filters.</tt> </tt>
+<a name="L315"></a><tt class="py-lineno">315</tt>  <tt class="py-line"><tt class="py-docstring">    Basic Usage:</tt> </tt>
+<a name="L316"></a><tt class="py-lineno">316</tt>  <tt class="py-line"><tt class="py-docstring">        &gt;&gt;&gt; filters = {'some-aws-id', 'i-01234567'}</tt> </tt>
+<a name="L317"></a><tt class="py-lineno">317</tt>  <tt class="py-line"><tt class="py-docstring">        &gt;&gt;&gt; ansible_dict_to_boto3_filter_list(filters)</tt> </tt>
+<a name="L318"></a><tt class="py-lineno">318</tt>  <tt class="py-line"><tt class="py-docstring">        {</tt> </tt>
+<a name="L319"></a><tt class="py-lineno">319</tt>  <tt class="py-line"><tt class="py-docstring">            'some-aws-id': 'i-01234567'</tt> </tt>
+<a name="L320"></a><tt class="py-lineno">320</tt>  <tt class="py-line"><tt class="py-docstring">        }</tt> </tt>
+<a name="L321"></a><tt class="py-lineno">321</tt>  <tt class="py-line"><tt class="py-docstring">    Returns:</tt> </tt>
+<a name="L322"></a><tt class="py-lineno">322</tt>  <tt class="py-line"><tt class="py-docstring">        List: List of AWS filters and their values</tt> </tt>
+<a name="L323"></a><tt class="py-lineno">323</tt>  <tt class="py-line"><tt class="py-docstring">        [</tt> </tt>
+<a name="L324"></a><tt class="py-lineno">324</tt>  <tt class="py-line"><tt class="py-docstring">            {</tt> </tt>
+<a name="L325"></a><tt class="py-lineno">325</tt>  <tt class="py-line"><tt class="py-docstring">                'Name': 'some-aws-id',</tt> </tt>
+<a name="L326"></a><tt class="py-lineno">326</tt>  <tt class="py-line"><tt class="py-docstring">                'Values': [</tt> </tt>
+<a name="L327"></a><tt class="py-lineno">327</tt>  <tt class="py-line"><tt class="py-docstring">                    'i-01234567',</tt> </tt>
+<a name="L328"></a><tt class="py-lineno">328</tt>  <tt class="py-line"><tt class="py-docstring">                ]</tt> </tt>
+<a name="L329"></a><tt class="py-lineno">329</tt>  <tt class="py-line"><tt class="py-docstring">            }</tt> </tt>
+<a name="L330"></a><tt class="py-lineno">330</tt>  <tt class="py-line"><tt class="py-docstring">        ]</tt> </tt>
+<a name="L331"></a><tt class="py-lineno">331</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L332"></a><tt class="py-lineno">332</tt>  <tt class="py-line"> </tt>
+<a name="L333"></a><tt class="py-lineno">333</tt>  <tt class="py-line">    <tt class="py-name">filters_list</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-op">]</tt> </tt>
+<a name="L334"></a><tt class="py-lineno">334</tt>  <tt class="py-line">    <tt class="py-keyword">for</tt> <tt class="py-name">k</tt><tt class="py-op">,</tt><tt id="link-90" class="py-name"><a title="ansible.utils.display.Display.v" class="py-name" href="#" onclick="return doclink('link-90', 'v', 'link-80');">v</a></tt> <tt class="py-keyword">in</tt> <tt class="py-name">filters_dict</tt><tt class="py-op">.</tt><tt id="link-91" class="py-name"><a title="ansible.compat.six.iteritems
+ansible.module_utils.basic.iteritems
+ansible.module_utils.facts.iteritems
+ansible.module_utils.six.iteritems" class="py-name" href="#" onclick="return doclink('link-91', 'iteritems', 'link-81');">iteritems</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L335"></a><tt class="py-lineno">335</tt>  <tt class="py-line">        <tt class="py-name">filter_dict</tt> <tt class="py-op">=</tt> <tt class="py-op">{</tt><tt class="py-string">'Name'</tt><tt class="py-op">:</tt> <tt class="py-name">k</tt><tt class="py-op">}</tt> </tt>
+<a name="L336"></a><tt class="py-lineno">336</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">isinstance</tt><tt class="py-op">(</tt><tt id="link-92" class="py-name"><a title="ansible.utils.display.Display.v" class="py-name" href="#" onclick="return doclink('link-92', 'v', 'link-80');">v</a></tt><tt class="py-op">,</tt> <tt id="link-93" class="py-name" targets="Variable ansible.utils.unicode.basestring=ansible.utils.unicode-module.html#basestring"><a title="ansible.utils.unicode.basestring" class="py-name" href="#" onclick="return doclink('link-93', 'basestring', 'link-93');">basestring</a></tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L337"></a><tt class="py-lineno">337</tt>  <tt class="py-line">            <tt class="py-name">filter_dict</tt><tt class="py-op">[</tt><tt class="py-string">'Values'</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt id="link-94" class="py-name"><a title="ansible.utils.display.Display.v" class="py-name" href="#" onclick="return doclink('link-94', 'v', 'link-80');">v</a></tt><tt class="py-op">]</tt> </tt>
+<a name="L338"></a><tt class="py-lineno">338</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L339"></a><tt class="py-lineno">339</tt>  <tt class="py-line">            <tt class="py-name">filter_dict</tt><tt class="py-op">[</tt><tt class="py-string">'Values'</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt id="link-95" class="py-name"><a title="ansible.utils.display.Display.v" class="py-name" href="#" onclick="return doclink('link-95', 'v', 'link-80');">v</a></tt> </tt>
+<a name="L340"></a><tt class="py-lineno">340</tt>  <tt class="py-line"> </tt>
+<a name="L341"></a><tt class="py-lineno">341</tt>  <tt class="py-line">        <tt class="py-name">filters_list</tt><tt class="py-op">.</tt><tt class="py-name">append</tt><tt class="py-op">(</tt><tt class="py-name">filter_dict</tt><tt class="py-op">)</tt> </tt>
+<a name="L342"></a><tt class="py-lineno">342</tt>  <tt class="py-line"> </tt>
+<a name="L343"></a><tt class="py-lineno">343</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">filters_list</tt> </tt>
+</div><a name="L344"></a><tt class="py-lineno">344</tt>  <tt class="py-line"> </tt>
+<a name="L345"></a><tt class="py-lineno">345</tt>  <tt class="py-line"> </tt>
+<a name="boto3_tag_list_to_ansible_dict"></a><div id="boto3_tag_list_to_ansible_dict-def"><a name="L346"></a><tt class="py-lineno">346</tt> <a class="py-toggle" href="#" id="boto3_tag_list_to_ansible_dict-toggle" onclick="return toggle('boto3_tag_list_to_ansible_dict');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.ec2-module.html#boto3_tag_list_to_ansible_dict">boto3_tag_list_to_ansible_dict</a><tt class="py-op">(</tt><tt class="py-param">tags_list</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="boto3_tag_list_to_ansible_dict-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="boto3_tag_list_to_ansible_dict-expanded"><a name="L347"></a><tt class="py-lineno">347</tt>  <tt class="py-line"> </tt>
+<a name="L348"></a><tt class="py-lineno">348</tt>  <tt class="py-line">    <tt class="py-docstring">""" Convert a boto3 list of resource tags to a flat dict of key:value pairs</tt> </tt>
+<a name="L349"></a><tt class="py-lineno">349</tt>  <tt class="py-line"><tt class="py-docstring">    Args:</tt> </tt>
+<a name="L350"></a><tt class="py-lineno">350</tt>  <tt class="py-line"><tt class="py-docstring">        tags_list (list): List of dicts representing AWS tags.</tt> </tt>
+<a name="L351"></a><tt class="py-lineno">351</tt>  <tt class="py-line"><tt class="py-docstring">    Basic Usage:</tt> </tt>
+<a name="L352"></a><tt class="py-lineno">352</tt>  <tt class="py-line"><tt class="py-docstring">        &gt;&gt;&gt; tags_list = [{'Key': 'MyTagKey', 'Value': 'MyTagValue'}]</tt> </tt>
+<a name="L353"></a><tt class="py-lineno">353</tt>  <tt class="py-line"><tt class="py-docstring">        &gt;&gt;&gt; boto3_tag_list_to_ansible_dict(tags_list)</tt> </tt>
+<a name="L354"></a><tt class="py-lineno">354</tt>  <tt class="py-line"><tt class="py-docstring">        [</tt> </tt>
+<a name="L355"></a><tt class="py-lineno">355</tt>  <tt class="py-line"><tt class="py-docstring">            {</tt> </tt>
+<a name="L356"></a><tt class="py-lineno">356</tt>  <tt class="py-line"><tt class="py-docstring">                'Key': 'MyTagKey',</tt> </tt>
+<a name="L357"></a><tt class="py-lineno">357</tt>  <tt class="py-line"><tt class="py-docstring">                'Value': 'MyTagValue'</tt> </tt>
+<a name="L358"></a><tt class="py-lineno">358</tt>  <tt class="py-line"><tt class="py-docstring">            }</tt> </tt>
+<a name="L359"></a><tt class="py-lineno">359</tt>  <tt class="py-line"><tt class="py-docstring">        ]</tt> </tt>
+<a name="L360"></a><tt class="py-lineno">360</tt>  <tt class="py-line"><tt class="py-docstring">    Returns:</tt> </tt>
+<a name="L361"></a><tt class="py-lineno">361</tt>  <tt class="py-line"><tt class="py-docstring">        Dict: Dict of key:value pairs representing AWS tags</tt> </tt>
+<a name="L362"></a><tt class="py-lineno">362</tt>  <tt class="py-line"><tt class="py-docstring">         {</tt> </tt>
+<a name="L363"></a><tt class="py-lineno">363</tt>  <tt class="py-line"><tt class="py-docstring">            'MyTagKey': 'MyTagValue',</tt> </tt>
+<a name="L364"></a><tt class="py-lineno">364</tt>  <tt class="py-line"><tt class="py-docstring">        }</tt> </tt>
+<a name="L365"></a><tt class="py-lineno">365</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L366"></a><tt class="py-lineno">366</tt>  <tt class="py-line"> </tt>
+<a name="L367"></a><tt class="py-lineno">367</tt>  <tt class="py-line">    <tt class="py-name">tags_dict</tt> <tt class="py-op">=</tt> <tt class="py-op">{</tt><tt class="py-op">}</tt> </tt>
+<a name="L368"></a><tt class="py-lineno">368</tt>  <tt class="py-line">    <tt class="py-keyword">for</tt> <tt class="py-name">tag</tt> <tt class="py-keyword">in</tt> <tt class="py-name">tags_list</tt><tt class="py-op">:</tt> </tt>
+<a name="L369"></a><tt class="py-lineno">369</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-string">'key'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">tag</tt><tt class="py-op">:</tt> </tt>
+<a name="L370"></a><tt class="py-lineno">370</tt>  <tt class="py-line">            <tt class="py-name">tags_dict</tt><tt class="py-op">[</tt><tt class="py-name">tag</tt><tt class="py-op">[</tt><tt class="py-string">'key'</tt><tt class="py-op">]</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-name">tag</tt><tt class="py-op">[</tt><tt class="py-string">'value'</tt><tt class="py-op">]</tt> </tt>
+<a name="L371"></a><tt class="py-lineno">371</tt>  <tt class="py-line">        <tt class="py-keyword">elif</tt> <tt class="py-string">'Key'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">tag</tt><tt class="py-op">:</tt> </tt>
+<a name="L372"></a><tt class="py-lineno">372</tt>  <tt class="py-line">            <tt class="py-name">tags_dict</tt><tt class="py-op">[</tt><tt class="py-name">tag</tt><tt class="py-op">[</tt><tt class="py-string">'Key'</tt><tt class="py-op">]</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-name">tag</tt><tt class="py-op">[</tt><tt class="py-string">'Value'</tt><tt class="py-op">]</tt> </tt>
+<a name="L373"></a><tt class="py-lineno">373</tt>  <tt class="py-line"> </tt>
+<a name="L374"></a><tt class="py-lineno">374</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">tags_dict</tt> </tt>
+</div><a name="L375"></a><tt class="py-lineno">375</tt>  <tt class="py-line"> </tt>
+<a name="L376"></a><tt class="py-lineno">376</tt>  <tt class="py-line"> </tt>
+<a name="ansible_dict_to_boto3_tag_list"></a><div id="ansible_dict_to_boto3_tag_list-def"><a name="L377"></a><tt class="py-lineno">377</tt> <a class="py-toggle" href="#" id="ansible_dict_to_boto3_tag_list-toggle" onclick="return toggle('ansible_dict_to_boto3_tag_list');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.ec2-module.html#ansible_dict_to_boto3_tag_list">ansible_dict_to_boto3_tag_list</a><tt class="py-op">(</tt><tt class="py-param">tags_dict</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="ansible_dict_to_boto3_tag_list-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="ansible_dict_to_boto3_tag_list-expanded"><a name="L378"></a><tt class="py-lineno">378</tt>  <tt class="py-line"> </tt>
+<a name="L379"></a><tt class="py-lineno">379</tt>  <tt class="py-line">    <tt class="py-docstring">""" Convert a flat dict of key:value pairs representing AWS resource tags to a boto3 list of dicts</tt> </tt>
+<a name="L380"></a><tt class="py-lineno">380</tt>  <tt class="py-line"><tt class="py-docstring">    Args:</tt> </tt>
+<a name="L381"></a><tt class="py-lineno">381</tt>  <tt class="py-line"><tt class="py-docstring">        tags_dict (dict): Dict representing AWS resource tags.</tt> </tt>
+<a name="L382"></a><tt class="py-lineno">382</tt>  <tt class="py-line"><tt class="py-docstring">    Basic Usage:</tt> </tt>
+<a name="L383"></a><tt class="py-lineno">383</tt>  <tt class="py-line"><tt class="py-docstring">        &gt;&gt;&gt; tags_dict = {'MyTagKey': 'MyTagValue'}</tt> </tt>
+<a name="L384"></a><tt class="py-lineno">384</tt>  <tt class="py-line"><tt class="py-docstring">        &gt;&gt;&gt; ansible_dict_to_boto3_tag_list(tags_dict)</tt> </tt>
+<a name="L385"></a><tt class="py-lineno">385</tt>  <tt class="py-line"><tt class="py-docstring">        {</tt> </tt>
+<a name="L386"></a><tt class="py-lineno">386</tt>  <tt class="py-line"><tt class="py-docstring">            'MyTagKey': 'MyTagValue'</tt> </tt>
+<a name="L387"></a><tt class="py-lineno">387</tt>  <tt class="py-line"><tt class="py-docstring">        }</tt> </tt>
+<a name="L388"></a><tt class="py-lineno">388</tt>  <tt class="py-line"><tt class="py-docstring">    Returns:</tt> </tt>
+<a name="L389"></a><tt class="py-lineno">389</tt>  <tt class="py-line"><tt class="py-docstring">        List: List of dicts containing tag keys and values</tt> </tt>
+<a name="L390"></a><tt class="py-lineno">390</tt>  <tt class="py-line"><tt class="py-docstring">        [</tt> </tt>
+<a name="L391"></a><tt class="py-lineno">391</tt>  <tt class="py-line"><tt class="py-docstring">            {</tt> </tt>
+<a name="L392"></a><tt class="py-lineno">392</tt>  <tt class="py-line"><tt class="py-docstring">                'Key': 'MyTagKey',</tt> </tt>
+<a name="L393"></a><tt class="py-lineno">393</tt>  <tt class="py-line"><tt class="py-docstring">                'Value': 'MyTagValue'</tt> </tt>
+<a name="L394"></a><tt class="py-lineno">394</tt>  <tt class="py-line"><tt class="py-docstring">            }</tt> </tt>
+<a name="L395"></a><tt class="py-lineno">395</tt>  <tt class="py-line"><tt class="py-docstring">        ]</tt> </tt>
+<a name="L396"></a><tt class="py-lineno">396</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L397"></a><tt class="py-lineno">397</tt>  <tt class="py-line"> </tt>
+<a name="L398"></a><tt class="py-lineno">398</tt>  <tt class="py-line">    <tt class="py-name">tags_list</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-op">]</tt> </tt>
+<a name="L399"></a><tt class="py-lineno">399</tt>  <tt class="py-line">    <tt class="py-keyword">for</tt> <tt class="py-name">k</tt><tt class="py-op">,</tt><tt id="link-96" class="py-name"><a title="ansible.utils.display.Display.v" class="py-name" href="#" onclick="return doclink('link-96', 'v', 'link-80');">v</a></tt> <tt class="py-keyword">in</tt> <tt class="py-name">tags_dict</tt><tt class="py-op">.</tt><tt id="link-97" class="py-name"><a title="ansible.compat.six.iteritems
+ansible.module_utils.basic.iteritems
+ansible.module_utils.facts.iteritems
+ansible.module_utils.six.iteritems" class="py-name" href="#" onclick="return doclink('link-97', 'iteritems', 'link-81');">iteritems</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L400"></a><tt class="py-lineno">400</tt>  <tt class="py-line">        <tt class="py-name">tags_list</tt><tt class="py-op">.</tt><tt class="py-name">append</tt><tt class="py-op">(</tt><tt class="py-op">{</tt><tt class="py-string">'Key'</tt><tt class="py-op">:</tt> <tt class="py-name">k</tt><tt class="py-op">,</tt> <tt class="py-string">'Value'</tt><tt class="py-op">:</tt> <tt id="link-98" class="py-name"><a title="ansible.utils.display.Display.v" class="py-name" href="#" onclick="return doclink('link-98', 'v', 'link-80');">v</a></tt><tt class="py-op">}</tt><tt class="py-op">)</tt> </tt>
+<a name="L401"></a><tt class="py-lineno">401</tt>  <tt class="py-line"> </tt>
+<a name="L402"></a><tt class="py-lineno">402</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">tags_list</tt> </tt>
+</div><a name="L403"></a><tt class="py-lineno">403</tt>  <tt class="py-line"> </tt>
+<a name="L404"></a><tt class="py-lineno">404</tt>  <tt class="py-line"> </tt>
+<a name="get_ec2_security_group_ids_from_names"></a><div id="get_ec2_security_group_ids_from_names-def"><a name="L405"></a><tt class="py-lineno">405</tt> <a class="py-toggle" href="#" id="get_ec2_security_group_ids_from_names-toggle" onclick="return toggle('get_ec2_security_group_ids_from_names');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.ec2-module.html#get_ec2_security_group_ids_from_names">get_ec2_security_group_ids_from_names</a><tt class="py-op">(</tt><tt class="py-param">sec_group_list</tt><tt class="py-op">,</tt> <tt class="py-param">ec2_connection</tt><tt class="py-op">,</tt> <tt class="py-param">vpc_id</tt><tt class="py-op">=</tt><tt class="py-name">None</tt><tt class="py-op">,</tt> <tt class="py-param">boto3</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="get_ec2_security_group_ids_from_names-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="get_ec2_security_group_ids_from_names-expanded"><a name="L406"></a><tt class="py-lineno">406</tt>  <tt class="py-line"> </tt>
+<a name="L407"></a><tt class="py-lineno">407</tt>  <tt class="py-line">    <tt class="py-docstring">""" Return list of security group IDs from security group names. Note that security group names are not unique</tt> </tt>
+<a name="L408"></a><tt class="py-lineno">408</tt>  <tt class="py-line"><tt class="py-docstring">     across VPCs.  If a name exists across multiple VPCs and no VPC ID is supplied, all matching IDs will be returned. This</tt> </tt>
+<a name="L409"></a><tt class="py-lineno">409</tt>  <tt class="py-line"><tt class="py-docstring">     will probably lead to a boto exception if you attempt to assign both IDs to a resource so ensure you wrap the call in</tt> </tt>
+<a name="L410"></a><tt class="py-lineno">410</tt>  <tt class="py-line"><tt class="py-docstring">     a try block</tt> </tt>
+<a name="L411"></a><tt class="py-lineno">411</tt>  <tt class="py-line"><tt class="py-docstring">     """</tt> </tt>
+<a name="L412"></a><tt class="py-lineno">412</tt>  <tt class="py-line"> </tt>
+<a name="L413"></a><tt class="py-lineno">413</tt>  <tt class="py-line">    <tt class="py-keyword">def</tt> <tt class="py-def-name">get_sg_name</tt><tt class="py-op">(</tt><tt class="py-param">sg</tt><tt class="py-op">,</tt> <tt class="py-param">boto3</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L414"></a><tt class="py-lineno">414</tt>  <tt class="py-line"> </tt>
+<a name="L415"></a><tt class="py-lineno">415</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">boto3</tt><tt class="py-op">:</tt> </tt>
+<a name="L416"></a><tt class="py-lineno">416</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">sg</tt><tt class="py-op">[</tt><tt class="py-string">'GroupName'</tt><tt class="py-op">]</tt> </tt>
+<a name="L417"></a><tt class="py-lineno">417</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L418"></a><tt class="py-lineno">418</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">sg</tt><tt class="py-op">.</tt><tt class="py-name">name</tt> </tt>
+</div><a name="L419"></a><tt class="py-lineno">419</tt>  <tt class="py-line"> </tt>
+<a name="L420"></a><tt class="py-lineno">420</tt>  <tt class="py-line"> </tt>
+<a name="L421"></a><tt class="py-lineno">421</tt>  <tt class="py-line">    <tt class="py-keyword">def</tt> <tt class="py-def-name">get_sg_id</tt><tt class="py-op">(</tt><tt class="py-param">sg</tt><tt class="py-op">,</tt> <tt class="py-param">boto3</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L422"></a><tt class="py-lineno">422</tt>  <tt class="py-line"> </tt>
+<a name="L423"></a><tt class="py-lineno">423</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">boto3</tt><tt class="py-op">:</tt> </tt>
+<a name="L424"></a><tt class="py-lineno">424</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">sg</tt><tt class="py-op">[</tt><tt class="py-string">'GroupId'</tt><tt class="py-op">]</tt> </tt>
+<a name="L425"></a><tt class="py-lineno">425</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L426"></a><tt class="py-lineno">426</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">sg</tt><tt class="py-op">.</tt><tt class="py-name">id</tt> </tt>
+</div><a name="L427"></a><tt class="py-lineno">427</tt>  <tt class="py-line"> </tt>
+<a name="L428"></a><tt class="py-lineno">428</tt>  <tt class="py-line"> </tt>
+<a name="L429"></a><tt class="py-lineno">429</tt>  <tt class="py-line">    <tt class="py-name">sec_group_id_list</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-op">]</tt> </tt>
+<a name="L430"></a><tt class="py-lineno">430</tt>  <tt class="py-line"> </tt>
+<a name="L431"></a><tt class="py-lineno">431</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">isinstance</tt><tt class="py-op">(</tt><tt class="py-name">sec_group_list</tt><tt class="py-op">,</tt> <tt id="link-99" class="py-name"><a title="ansible.utils.unicode.basestring" class="py-name" href="#" onclick="return doclink('link-99', 'basestring', 'link-93');">basestring</a></tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L432"></a><tt class="py-lineno">432</tt>  <tt class="py-line">        <tt class="py-name">sec_group_list</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-name">sec_group_list</tt><tt class="py-op">]</tt> </tt>
+<a name="L433"></a><tt class="py-lineno">433</tt>  <tt class="py-line"> </tt>
+<a name="L434"></a><tt class="py-lineno">434</tt>  <tt class="py-line">    <tt class="py-comment"># Get all security groups</tt> </tt>
+<a name="L435"></a><tt class="py-lineno">435</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">boto3</tt><tt class="py-op">:</tt> </tt>
+<a name="L436"></a><tt class="py-lineno">436</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">vpc_id</tt><tt class="py-op">:</tt> </tt>
+<a name="L437"></a><tt class="py-lineno">437</tt>  <tt class="py-line">            <tt id="link-100" class="py-name" targets="Method ansible.plugins.filter.core.FilterModule.filters()=ansible.plugins.filter.core.FilterModule-class.html#filters,Method ansible.plugins.filter.ipaddr.FilterModule.filters()=ansible.plugins.filter.ipaddr.FilterModule-class.html#filters,Method ansible.plugins.filter.mathstuff.FilterModule.filters()=ansible.plugins.filter.mathstuff.FilterModule-class.html#filters"><a title="ansible.plugins.filter.core.FilterModule.filters
+ansible.plugins.filter.ipaddr.FilterModule.filters
+ansible.plugins.filter.mathstuff.FilterModule.filters" class="py-name" href="#" onclick="return doclink('link-100', 'filters', 'link-100');">filters</a></tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt> </tt>
+<a name="L438"></a><tt class="py-lineno">438</tt>  <tt class="py-line">                <tt class="py-op">{</tt> </tt>
+<a name="L439"></a><tt class="py-lineno">439</tt>  <tt class="py-line">                    <tt class="py-string">'Name'</tt><tt class="py-op">:</tt> <tt class="py-string">'vpc-id'</tt><tt class="py-op">,</tt> </tt>
+<a name="L440"></a><tt class="py-lineno">440</tt>  <tt class="py-line">                    <tt class="py-string">'Values'</tt><tt class="py-op">:</tt> <tt class="py-op">[</tt> </tt>
+<a name="L441"></a><tt class="py-lineno">441</tt>  <tt class="py-line">                        <tt class="py-name">vpc_id</tt><tt class="py-op">,</tt> </tt>
+<a name="L442"></a><tt class="py-lineno">442</tt>  <tt class="py-line">                    <tt class="py-op">]</tt> </tt>
+<a name="L443"></a><tt class="py-lineno">443</tt>  <tt class="py-line">                <tt class="py-op">}</tt> </tt>
+<a name="L444"></a><tt class="py-lineno">444</tt>  <tt class="py-line">            <tt class="py-op">]</tt> </tt>
+<a name="L445"></a><tt class="py-lineno">445</tt>  <tt class="py-line">            <tt class="py-name">all_sec_groups</tt> <tt class="py-op">=</tt> <tt class="py-name">ec2_connection</tt><tt class="py-op">.</tt><tt class="py-name">describe_security_groups</tt><tt class="py-op">(</tt><tt class="py-name">Filters</tt><tt class="py-op">=</tt><tt id="link-101" class="py-name"><a title="ansible.plugins.filter.core.FilterModule.filters
+ansible.plugins.filter.ipaddr.FilterModule.filters
+ansible.plugins.filter.mathstuff.FilterModule.filters" class="py-name" href="#" onclick="return doclink('link-101', 'filters', 'link-100');">filters</a></tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-string">'SecurityGroups'</tt><tt class="py-op">]</tt> </tt>
+<a name="L446"></a><tt class="py-lineno">446</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L447"></a><tt class="py-lineno">447</tt>  <tt class="py-line">            <tt class="py-name">all_sec_groups</tt> <tt class="py-op">=</tt> <tt class="py-name">ec2_connection</tt><tt class="py-op">.</tt><tt class="py-name">describe_security_groups</tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-string">'SecurityGroups'</tt><tt class="py-op">]</tt> </tt>
+<a name="L448"></a><tt class="py-lineno">448</tt>  <tt class="py-line">    <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L449"></a><tt class="py-lineno">449</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">vpc_id</tt><tt class="py-op">:</tt> </tt>
+<a name="L450"></a><tt class="py-lineno">450</tt>  <tt class="py-line">            <tt id="link-102" class="py-name"><a title="ansible.plugins.filter.core.FilterModule.filters
+ansible.plugins.filter.ipaddr.FilterModule.filters
+ansible.plugins.filter.mathstuff.FilterModule.filters" class="py-name" href="#" onclick="return doclink('link-102', 'filters', 'link-100');">filters</a></tt> <tt class="py-op">=</tt> <tt class="py-op">{</tt> <tt class="py-string">'vpc-id'</tt><tt class="py-op">:</tt> <tt class="py-name">vpc_id</tt> <tt class="py-op">}</tt> </tt>
+<a name="L451"></a><tt class="py-lineno">451</tt>  <tt class="py-line">            <tt class="py-name">all_sec_groups</tt> <tt class="py-op">=</tt> <tt class="py-name">ec2_connection</tt><tt class="py-op">.</tt><tt class="py-name">get_all_security_groups</tt><tt class="py-op">(</tt><tt id="link-103" class="py-name"><a title="ansible.plugins.filter.core.FilterModule.filters
+ansible.plugins.filter.ipaddr.FilterModule.filters
+ansible.plugins.filter.mathstuff.FilterModule.filters" class="py-name" href="#" onclick="return doclink('link-103', 'filters', 'link-100');">filters</a></tt><tt class="py-op">=</tt><tt id="link-104" class="py-name"><a title="ansible.plugins.filter.core.FilterModule.filters
+ansible.plugins.filter.ipaddr.FilterModule.filters
+ansible.plugins.filter.mathstuff.FilterModule.filters" class="py-name" href="#" onclick="return doclink('link-104', 'filters', 'link-100');">filters</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L452"></a><tt class="py-lineno">452</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L453"></a><tt class="py-lineno">453</tt>  <tt class="py-line">            <tt class="py-name">all_sec_groups</tt> <tt class="py-op">=</tt> <tt class="py-name">ec2_connection</tt><tt class="py-op">.</tt><tt class="py-name">get_all_security_groups</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L454"></a><tt class="py-lineno">454</tt>  <tt class="py-line"> </tt>
+<a name="L455"></a><tt class="py-lineno">455</tt>  <tt class="py-line">    <tt class="py-name">unmatched</tt> <tt class="py-op">=</tt> <tt id="link-105" class="py-name" targets="Method ansible.galaxy.token.GalaxyToken.set()=ansible.galaxy.token.GalaxyToken-class.html#set,Method ansible.plugins.cache.base.BaseCacheModule.set()=ansible.plugins.cache.base.BaseCacheModule-class.html#set,Method ansible.plugins.cache.jsonfile.CacheModule.set()=ansible.plugins.cache.jsonfile.CacheModule-class.html#set,Method ansible.plugins.cache.memcached.CacheModule.set()=ansible.plugins.cache.memcached.CacheModule-class.html#set,Method ansible.plugins.cache.memory.CacheModule.set()=ansible.plugins.cache.memory.CacheModule-class.html#set,Method ansible.plugins.cache.redis.CacheModule.set()=ansible.plugins.cache.redis.CacheModule-class.html#set"><a title="ansible.galaxy.token.GalaxyToken.set
+ansible.plugins.cache.base.BaseCacheModule.set
+ansible.plugins.cache.jsonfile.CacheModule.set
+ansible.plugins.cache.memcached.CacheModule.set
+ansible.plugins.cache.memory.CacheModule.set
+ansible.plugins.cache.redis.CacheModule.set" class="py-name" href="#" onclick="return doclink('link-105', 'set', 'link-105');">set</a></tt><tt class="py-op">(</tt><tt class="py-name">sec_group_list</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt id="link-106" class="py-name" targets="Method ansible.module_utils.netcfg.NetworkConfig.difference()=ansible.module_utils.netcfg.NetworkConfig-class.html#difference,Function ansible.plugins.filter.mathstuff.difference()=ansible.plugins.filter.mathstuff-module.html#difference"><a title="ansible.module_utils.netcfg.NetworkConfig.difference
+ansible.plugins.filter.mathstuff.difference" class="py-name" href="#" onclick="return doclink('link-106', 'difference', 'link-106');">difference</a></tt><tt class="py-op">(</tt><tt id="link-107" class="py-name"><a title="str" class="py-name" href="#" onclick="return doclink('link-107', 'str', 'link-46');">str</a></tt><tt class="py-op">(</tt><tt class="py-name">get_sg_name</tt><tt class="py-op">(</tt><tt class="py-name">all_sg</tt><tt class="py-op">,</tt> <tt class="py-name">boto3</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> <tt class="py-keyword">for</tt> <tt class="py-name">all_sg</tt> <tt class="py-keyword">in</tt> <tt class="py-name">all_sec_groups</tt><tt class="py-op">)</tt> </tt>
+<a name="L456"></a><tt class="py-lineno">456</tt>  <tt class="py-line">    <tt class="py-name">sec_group_name_list</tt> <tt class="py-op">=</tt> <tt id="link-108" class="py-name"><a title="ansible.plugins.lookup.list" class="py-name" href="#" onclick="return doclink('link-108', 'list', 'link-79');">list</a></tt><tt class="py-op">(</tt><tt id="link-109" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.set
+ansible.plugins.cache.base.BaseCacheModule.set
+ansible.plugins.cache.jsonfile.CacheModule.set
+ansible.plugins.cache.memcached.CacheModule.set
+ansible.plugins.cache.memory.CacheModule.set
+ansible.plugins.cache.redis.CacheModule.set" class="py-name" href="#" onclick="return doclink('link-109', 'set', 'link-105');">set</a></tt><tt class="py-op">(</tt><tt class="py-name">sec_group_list</tt><tt class="py-op">)</tt> <tt class="py-op">-</tt> <tt id="link-110" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.set
+ansible.plugins.cache.base.BaseCacheModule.set
+ansible.plugins.cache.jsonfile.CacheModule.set
+ansible.plugins.cache.memcached.CacheModule.set
+ansible.plugins.cache.memory.CacheModule.set
+ansible.plugins.cache.redis.CacheModule.set" class="py-name" href="#" onclick="return doclink('link-110', 'set', 'link-105');">set</a></tt><tt class="py-op">(</tt><tt class="py-name">unmatched</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L457"></a><tt class="py-lineno">457</tt>  <tt class="py-line"> </tt>
+<a name="L458"></a><tt class="py-lineno">458</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">len</tt><tt class="py-op">(</tt><tt class="py-name">unmatched</tt><tt class="py-op">)</tt> <tt class="py-op">&gt;</tt> <tt class="py-number">0</tt><tt class="py-op">:</tt> </tt>
+<a name="L459"></a><tt class="py-lineno">459</tt>  <tt class="py-line">        <tt class="py-comment"># If we have unmatched names that look like an ID, assume they are</tt> </tt>
+<a name="L460"></a><tt class="py-lineno">460</tt>  <tt class="py-line">        <tt class="py-keyword">import</tt> <tt class="py-name">re</tt> </tt>
+<a name="L461"></a><tt class="py-lineno">461</tt>  <tt class="py-line">        <tt class="py-name">sec_group_id_list</tt><tt class="py-op">[</tt><tt class="py-op">:</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-name">sg</tt> <tt class="py-keyword">for</tt> <tt class="py-name">sg</tt> <tt class="py-keyword">in</tt> <tt class="py-name">unmatched</tt> <tt class="py-keyword">if</tt> <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-111" class="py-name" targets="Function ansible.plugins.test.core.match()=ansible.plugins.test.core-module.html#match"><a title="ansible.plugins.test.core.match" class="py-name" href="#" onclick="return doclink('link-111', 'match', 'link-111');">match</a></tt><tt class="py-op">(</tt><tt class="py-string">'sg-[a-fA-F0-9]+$'</tt><tt class="py-op">,</tt> <tt class="py-name">sg</tt><tt class="py-op">)</tt><tt class="py-op">]</tt> </tt>
+<a name="L462"></a><tt class="py-lineno">462</tt>  <tt class="py-line">        <tt class="py-name">still_unmatched</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-name">sg</tt> <tt class="py-keyword">for</tt> <tt class="py-name">sg</tt> <tt class="py-keyword">in</tt> <tt class="py-name">unmatched</tt> <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-112" class="py-name"><a title="ansible.plugins.test.core.match" class="py-name" href="#" onclick="return doclink('link-112', 'match', 'link-111');">match</a></tt><tt class="py-op">(</tt><tt class="py-string">'sg-[a-fA-F0-9]+$'</tt><tt class="py-op">,</tt> <tt class="py-name">sg</tt><tt class="py-op">)</tt><tt class="py-op">]</tt> </tt>
+<a name="L463"></a><tt class="py-lineno">463</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">len</tt><tt class="py-op">(</tt><tt class="py-name">still_unmatched</tt><tt class="py-op">)</tt> <tt class="py-op">&gt;</tt> <tt class="py-number">0</tt><tt class="py-op">:</tt> </tt>
+<a name="L464"></a><tt class="py-lineno">464</tt>  <tt class="py-line">            <tt class="py-keyword">raise</tt> <tt class="py-name">ValueError</tt><tt class="py-op">(</tt><tt class="py-string">"The following group names are not valid: %s"</tt> <tt class="py-op">%</tt> <tt class="py-string">', '</tt><tt class="py-op">.</tt><tt class="py-name">join</tt><tt class="py-op">(</tt><tt class="py-name">still_unmatched</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L465"></a><tt class="py-lineno">465</tt>  <tt class="py-line"> </tt>
+<a name="L466"></a><tt class="py-lineno">466</tt>  <tt class="py-line">    <tt class="py-name">sec_group_id_list</tt> <tt class="py-op">+=</tt> <tt class="py-op">[</tt> <tt id="link-113" class="py-name"><a title="str" class="py-name" href="#" onclick="return doclink('link-113', 'str', 'link-46');">str</a></tt><tt class="py-op">(</tt><tt class="py-name">get_sg_id</tt><tt class="py-op">(</tt><tt class="py-name">all_sg</tt><tt class="py-op">,</tt> <tt class="py-name">boto3</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> <tt class="py-keyword">for</tt> <tt class="py-name">all_sg</tt> <tt class="py-keyword">in</tt> <tt class="py-name">all_sec_groups</tt> <tt class="py-keyword">if</tt> <tt id="link-114" class="py-name"><a title="str" class="py-name" href="#" onclick="return doclink('link-114', 'str', 'link-46');">str</a></tt><tt class="py-op">(</tt><tt class="py-name">get_sg_name</tt><tt class="py-op">(</tt><tt class="py-name">all_sg</tt><tt class="py-op">,</tt> <tt class="py-name">boto3</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> <tt class="py-keyword">in</tt> <tt class="py-name">sec_group_name_list</tt> <tt class="py-op">]</tt> </tt>
+<a name="L467"></a><tt class="py-lineno">467</tt>  <tt class="py-line"> </tt>
+<a name="L468"></a><tt class="py-lineno">468</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">sec_group_id_list</tt> </tt>
+</div><a name="L469"></a><tt class="py-lineno">469</tt>  <tt class="py-line"> </tt><script type="text/javascript">
+<!--
+expandto(location.href);
+// -->
+</script>
+</pre>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Fri Jul 29 13:11:42 2016
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

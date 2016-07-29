@@ -1,0 +1,913 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>ansible.module_utils.nxos</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="ansible-module.html">Package&nbsp;ansible</a> ::
+        <a href="ansible.module_utils-module.html">Package&nbsp;module_utils</a> ::
+        Module&nbsp;nxos
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="ansible.module_utils.nxos-pysrc.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<h1 class="epydoc">Source Code for <a href="ansible.module_utils.nxos-module.html">Module ansible.module_utils.nxos</a></h1>
+<pre class="py-src">
+<a name="L1"></a><tt class="py-lineno">  1</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L2"></a><tt class="py-lineno">  2</tt>  <tt class="py-line"><tt class="py-comment"># (c) 2015 Peter Sprygada, &lt;psprygada@ansible.com&gt;</tt> </tt>
+<a name="L3"></a><tt class="py-lineno">  3</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L4"></a><tt class="py-lineno">  4</tt>  <tt class="py-line"><tt class="py-comment"># This file is part of Ansible</tt> </tt>
+<a name="L5"></a><tt class="py-lineno">  5</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L6"></a><tt class="py-lineno">  6</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is free software: you can redistribute it and/or modify</tt> </tt>
+<a name="L7"></a><tt class="py-lineno">  7</tt>  <tt class="py-line"><tt class="py-comment"># it under the terms of the GNU General Public License as published by</tt> </tt>
+<a name="L8"></a><tt class="py-lineno">  8</tt>  <tt class="py-line"><tt class="py-comment"># the Free Software Foundation, either version 3 of the License, or</tt> </tt>
+<a name="L9"></a><tt class="py-lineno">  9</tt>  <tt class="py-line"><tt class="py-comment"># (at your option) any later version.</tt> </tt>
+<a name="L10"></a><tt class="py-lineno"> 10</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L11"></a><tt class="py-lineno"> 11</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is distributed in the hope that it will be useful,</tt> </tt>
+<a name="L12"></a><tt class="py-lineno"> 12</tt>  <tt class="py-line"><tt class="py-comment"># but WITHOUT ANY WARRANTY; without even the implied warranty of</tt> </tt>
+<a name="L13"></a><tt class="py-lineno"> 13</tt>  <tt class="py-line"><tt class="py-comment"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</tt> </tt>
+<a name="L14"></a><tt class="py-lineno"> 14</tt>  <tt class="py-line"><tt class="py-comment"># GNU General Public License for more details.</tt> </tt>
+<a name="L15"></a><tt class="py-lineno"> 15</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L16"></a><tt class="py-lineno"> 16</tt>  <tt class="py-line"><tt class="py-comment"># You should have received a copy of the GNU General Public License</tt> </tt>
+<a name="L17"></a><tt class="py-lineno"> 17</tt>  <tt class="py-line"><tt class="py-comment"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</tt> </tt>
+<a name="L18"></a><tt class="py-lineno"> 18</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L19"></a><tt class="py-lineno"> 19</tt>  <tt class="py-line"> </tt>
+<a name="L20"></a><tt class="py-lineno"> 20</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">re</tt> </tt>
+<a name="L21"></a><tt class="py-lineno"> 21</tt>  <tt class="py-line"> </tt>
+<a name="L22"></a><tt class="py-lineno"> 22</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-0" class="py-name" targets="Package ansible=ansible-module.html"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-0', 'ansible', 'link-0');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-1" class="py-name" targets="Package ansible.module_utils=ansible.module_utils-module.html"><a title="ansible.module_utils" class="py-name" href="#" onclick="return doclink('link-1', 'module_utils', 'link-1');">module_utils</a></tt><tt class="py-op">.</tt><tt id="link-2" class="py-name" targets="Module ansible.module_utils.basic=ansible.module_utils.basic-module.html"><a title="ansible.module_utils.basic" class="py-name" href="#" onclick="return doclink('link-2', 'basic', 'link-2');">basic</a></tt> <tt class="py-keyword">import</tt> <tt id="link-3" class="py-name" targets="Class ansible.module_utils.basic.AnsibleModule=ansible.module_utils.basic.AnsibleModule-class.html"><a title="ansible.module_utils.basic.AnsibleModule" class="py-name" href="#" onclick="return doclink('link-3', 'AnsibleModule', 'link-3');">AnsibleModule</a></tt><tt class="py-op">,</tt> <tt id="link-4" class="py-name" targets="Function ansible.module_utils.basic.env_fallback()=ansible.module_utils.basic-module.html#env_fallback"><a title="ansible.module_utils.basic.env_fallback" class="py-name" href="#" onclick="return doclink('link-4', 'env_fallback', 'link-4');">env_fallback</a></tt><tt class="py-op">,</tt> <tt id="link-5" class="py-name" targets="Function ansible.module_utils.pycompat24.get_exception()=ansible.module_utils.pycompat24-module.html#get_exception"><a title="ansible.module_utils.pycompat24.get_exception" class="py-name" href="#" onclick="return doclink('link-5', 'get_exception', 'link-5');">get_exception</a></tt> </tt>
+<a name="L23"></a><tt class="py-lineno"> 23</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-6" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-6', 'ansible', 'link-0');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-7" class="py-name"><a title="ansible.module_utils" class="py-name" href="#" onclick="return doclink('link-7', 'module_utils', 'link-1');">module_utils</a></tt><tt class="py-op">.</tt><tt id="link-8" class="py-name" targets="Module ansible.module_utils.shell=ansible.module_utils.shell-module.html,Package ansible.plugins.shell=ansible.plugins.shell-module.html"><a title="ansible.module_utils.shell
+ansible.plugins.shell" class="py-name" href="#" onclick="return doclink('link-8', 'shell', 'link-8');">shell</a></tt> <tt class="py-keyword">import</tt> <tt id="link-9" class="py-name" targets="Class ansible.module_utils.shell.Shell=ansible.module_utils.shell.Shell-class.html"><a title="ansible.module_utils.shell.Shell" class="py-name" href="#" onclick="return doclink('link-9', 'Shell', 'link-9');">Shell</a></tt><tt class="py-op">,</tt> <tt id="link-10" class="py-name" targets="Class ansible.module_utils.shell.ShellError=ansible.module_utils.shell.ShellError-class.html"><a title="ansible.module_utils.shell.ShellError" class="py-name" href="#" onclick="return doclink('link-10', 'ShellError', 'link-10');">ShellError</a></tt><tt class="py-op">,</tt> <tt id="link-11" class="py-name" targets="Variable ansible.module_utils.shell.HAS_PARAMIKO=ansible.module_utils.shell-module.html#HAS_PARAMIKO"><a title="ansible.module_utils.shell.HAS_PARAMIKO" class="py-name" href="#" onclick="return doclink('link-11', 'HAS_PARAMIKO', 'link-11');">HAS_PARAMIKO</a></tt> </tt>
+<a name="L24"></a><tt class="py-lineno"> 24</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-12" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-12', 'ansible', 'link-0');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-13" class="py-name"><a title="ansible.module_utils" class="py-name" href="#" onclick="return doclink('link-13', 'module_utils', 'link-1');">module_utils</a></tt><tt class="py-op">.</tt><tt id="link-14" class="py-name" targets="Module ansible.module_utils.netcfg=ansible.module_utils.netcfg-module.html"><a title="ansible.module_utils.netcfg" class="py-name" href="#" onclick="return doclink('link-14', 'netcfg', 'link-14');">netcfg</a></tt> <tt class="py-keyword">import</tt> <tt id="link-15" class="py-name" targets="Method ansible.cli.CLI.parse()=ansible.cli.CLI-class.html#parse,Method ansible.cli.adhoc.AdHocCLI.parse()=ansible.cli.adhoc.AdHocCLI-class.html#parse,Method ansible.cli.console.ConsoleCLI.parse()=ansible.cli.console.ConsoleCLI-class.html#parse,Method ansible.cli.doc.DocCLI.parse()=ansible.cli.doc.DocCLI-class.html#parse,Method ansible.cli.galaxy.GalaxyCLI.parse()=ansible.cli.galaxy.GalaxyCLI-class.html#parse,Method ansible.cli.playbook.PlaybookCLI.parse()=ansible.cli.playbook.PlaybookCLI-class.html#parse,Method ansible.cli.pull.PullCLI.parse()=ansible.cli.pull.PullCLI-class.html#parse,Method ansible.cli.vault.VaultCLI.parse()=ansible.cli.vault.VaultCLI-class.html#parse,Function ansible.module_utils.netcfg.parse()=ansible.module_utils.netcfg-module.html#parse,Method ansible.parsing.mod_args.ModuleArgsParser.parse()=ansible.parsing.mod_args.ModuleArgsParser-class.html#parse"><a title="ansible.cli.CLI.parse
+ansible.cli.adhoc.AdHocCLI.parse
+ansible.cli.console.ConsoleCLI.parse
+ansible.cli.doc.DocCLI.parse
+ansible.cli.galaxy.GalaxyCLI.parse
+ansible.cli.playbook.PlaybookCLI.parse
+ansible.cli.pull.PullCLI.parse
+ansible.cli.vault.VaultCLI.parse
+ansible.module_utils.netcfg.parse
+ansible.parsing.mod_args.ModuleArgsParser.parse" class="py-name" href="#" onclick="return doclink('link-15', 'parse', 'link-15');">parse</a></tt> </tt>
+<a name="L25"></a><tt class="py-lineno"> 25</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-16" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-16', 'ansible', 'link-0');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-17" class="py-name"><a title="ansible.module_utils" class="py-name" href="#" onclick="return doclink('link-17', 'module_utils', 'link-1');">module_utils</a></tt><tt class="py-op">.</tt><tt id="link-18" class="py-name" targets="Module ansible.module_utils.urls=ansible.module_utils.urls-module.html"><a title="ansible.module_utils.urls" class="py-name" href="#" onclick="return doclink('link-18', 'urls', 'link-18');">urls</a></tt> <tt class="py-keyword">import</tt> <tt id="link-19" class="py-name" targets="Function ansible.module_utils.urls.fetch_url()=ansible.module_utils.urls-module.html#fetch_url"><a title="ansible.module_utils.urls.fetch_url" class="py-name" href="#" onclick="return doclink('link-19', 'fetch_url', 'link-19');">fetch_url</a></tt> </tt>
+<a name="L26"></a><tt class="py-lineno"> 26</tt>  <tt class="py-line"> </tt>
+<a name="L27"></a><tt class="py-lineno"> 27</tt>  <tt class="py-line"><tt id="link-20" class="py-name" targets="Variable ansible.module_utils.asa.NET_PASSWD_RE=ansible.module_utils.asa-module.html#NET_PASSWD_RE,Variable ansible.module_utils.eos.Cli.NET_PASSWD_RE=ansible.module_utils.eos.Cli-class.html#NET_PASSWD_RE,Variable ansible.module_utils.ios.Cli.NET_PASSWD_RE=ansible.module_utils.ios.Cli-class.html#NET_PASSWD_RE,Variable ansible.module_utils.iosxr.Cli.NET_PASSWD_RE=ansible.module_utils.iosxr.Cli-class.html#NET_PASSWD_RE,Variable ansible.module_utils.nxos.NET_PASSWD_RE=ansible.module_utils.nxos-module.html#NET_PASSWD_RE,Variable ansible.module_utils.openswitch.NET_PASSWD_RE=ansible.module_utils.openswitch-module.html#NET_PASSWD_RE"><a title="ansible.module_utils.asa.NET_PASSWD_RE
+ansible.module_utils.eos.Cli.NET_PASSWD_RE
+ansible.module_utils.ios.Cli.NET_PASSWD_RE
+ansible.module_utils.iosxr.Cli.NET_PASSWD_RE
+ansible.module_utils.nxos.NET_PASSWD_RE
+ansible.module_utils.openswitch.NET_PASSWD_RE" class="py-name" href="#" onclick="return doclink('link-20', 'NET_PASSWD_RE', 'link-20');">NET_PASSWD_RE</a></tt> <tt class="py-op">=</tt> <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-21" class="py-name" targets="Method ansible.playbook.play.Play.compile()=ansible.playbook.play.Play-class.html#compile,Method ansible.playbook.role.Role.compile()=ansible.playbook.role.Role-class.html#compile"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-21', 'compile', 'link-21');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"[\r\n]?password: $"</tt><tt class="py-op">,</tt> <tt class="py-name">re</tt><tt class="py-op">.</tt><tt class="py-name">I</tt><tt class="py-op">)</tt> </tt>
+<a name="L28"></a><tt class="py-lineno"> 28</tt>  <tt class="py-line"> </tt>
+<a name="L29"></a><tt class="py-lineno"> 29</tt>  <tt class="py-line"><tt id="link-22" class="py-name" targets="Variable ansible.module_utils.asa.NET_COMMON_ARGS=ansible.module_utils.asa-module.html#NET_COMMON_ARGS,Variable ansible.module_utils.junos.NET_COMMON_ARGS=ansible.module_utils.junos-module.html#NET_COMMON_ARGS,Variable ansible.module_utils.nxos.NET_COMMON_ARGS=ansible.module_utils.nxos-module.html#NET_COMMON_ARGS,Variable ansible.module_utils.openswitch.NET_COMMON_ARGS=ansible.module_utils.openswitch-module.html#NET_COMMON_ARGS"><a title="ansible.module_utils.asa.NET_COMMON_ARGS
+ansible.module_utils.junos.NET_COMMON_ARGS
+ansible.module_utils.nxos.NET_COMMON_ARGS
+ansible.module_utils.openswitch.NET_COMMON_ARGS" class="py-name" href="#" onclick="return doclink('link-22', 'NET_COMMON_ARGS', 'link-22');">NET_COMMON_ARGS</a></tt> <tt class="py-op">=</tt> <tt id="link-23" class="py-name" targets="Module ansible.plugins.lookup.dict=ansible.plugins.lookup.dict-module.html"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-23', 'dict', 'link-23');">dict</a></tt><tt class="py-op">(</tt> </tt>
+<a name="L30"></a><tt class="py-lineno"> 30</tt>  <tt class="py-line">    <tt id="link-24" class="py-name" targets="Module ansible.inventory.host=ansible.inventory.host-module.html"><a title="ansible.inventory.host" class="py-name" href="#" onclick="return doclink('link-24', 'host', 'link-24');">host</a></tt><tt class="py-op">=</tt><tt id="link-25" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-25', 'dict', 'link-23');">dict</a></tt><tt class="py-op">(</tt><tt class="py-name">required</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L31"></a><tt class="py-lineno"> 31</tt>  <tt class="py-line">    <tt class="py-name">port</tt><tt class="py-op">=</tt><tt id="link-26" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-26', 'dict', 'link-23');">dict</a></tt><tt class="py-op">(</tt><tt id="link-27" class="py-name" targets="Class type=type-class.html"><a title="type" class="py-name" href="#" onclick="return doclink('link-27', 'type', 'link-27');">type</a></tt><tt class="py-op">=</tt><tt class="py-string">'int'</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L32"></a><tt class="py-lineno"> 32</tt>  <tt class="py-line">    <tt class="py-name">username</tt><tt class="py-op">=</tt><tt id="link-28" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-28', 'dict', 'link-23');">dict</a></tt><tt class="py-op">(</tt><tt class="py-name">fallback</tt><tt class="py-op">=</tt><tt class="py-op">(</tt><tt id="link-29" class="py-name"><a title="ansible.module_utils.basic.env_fallback" class="py-name" href="#" onclick="return doclink('link-29', 'env_fallback', 'link-4');">env_fallback</a></tt><tt class="py-op">,</tt> <tt class="py-op">[</tt><tt class="py-string">'ANSIBLE_NET_USERNAME'</tt><tt class="py-op">]</tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L33"></a><tt class="py-lineno"> 33</tt>  <tt class="py-line">    <tt id="link-30" class="py-name" targets="Module ansible.plugins.lookup.password=ansible.plugins.lookup.password-module.html"><a title="ansible.plugins.lookup.password" class="py-name" href="#" onclick="return doclink('link-30', 'password', 'link-30');">password</a></tt><tt class="py-op">=</tt><tt id="link-31" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-31', 'dict', 'link-23');">dict</a></tt><tt class="py-op">(</tt><tt class="py-name">no_log</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">,</tt> <tt class="py-name">fallback</tt><tt class="py-op">=</tt><tt class="py-op">(</tt><tt id="link-32" class="py-name"><a title="ansible.module_utils.basic.env_fallback" class="py-name" href="#" onclick="return doclink('link-32', 'env_fallback', 'link-4');">env_fallback</a></tt><tt class="py-op">,</tt> <tt class="py-op">[</tt><tt class="py-string">'ANSIBLE_NET_PASSWORD'</tt><tt class="py-op">]</tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L34"></a><tt class="py-lineno"> 34</tt>  <tt class="py-line">    <tt class="py-name">ssh_keyfile</tt><tt class="py-op">=</tt><tt id="link-33" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-33', 'dict', 'link-23');">dict</a></tt><tt class="py-op">(</tt><tt class="py-name">fallback</tt><tt class="py-op">=</tt><tt class="py-op">(</tt><tt id="link-34" class="py-name"><a title="ansible.module_utils.basic.env_fallback" class="py-name" href="#" onclick="return doclink('link-34', 'env_fallback', 'link-4');">env_fallback</a></tt><tt class="py-op">,</tt> <tt class="py-op">[</tt><tt class="py-string">'ANSIBLE_NET_SSH_KEYFILE'</tt><tt class="py-op">]</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt id="link-35" class="py-name"><a title="type" class="py-name" href="#" onclick="return doclink('link-35', 'type', 'link-27');">type</a></tt><tt class="py-op">=</tt><tt class="py-string">'path'</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L35"></a><tt class="py-lineno"> 35</tt>  <tt class="py-line">    <tt id="link-36" class="py-name" targets="Variable ansible.plugins.connection.ConnectionBase.transport=ansible.plugins.connection.ConnectionBase-class.html#transport,Variable ansible.plugins.connection.accelerate.Connection.transport=ansible.plugins.connection.accelerate.Connection-class.html#transport,Variable ansible.plugins.connection.chroot.Connection.transport=ansible.plugins.connection.chroot.Connection-class.html#transport,Variable ansible.plugins.connection.docker.Connection.transport=ansible.plugins.connection.docker.Connection-class.html#transport,Variable ansible.plugins.connection.jail.Connection.transport=ansible.plugins.connection.jail.Connection-class.html#transport,Variable ansible.plugins.connection.libvirt_lxc.Connection.transport=ansible.plugins.connection.libvirt_lxc.Connection-class.html#transport,Variable ansible.plugins.connection.local.Connection.transport=ansible.plugins.connection.local.Connection-class.html#transport,Variable ansible.plugins.connection.lxc.Connection.transport=ansible.plugins.connection.lxc.Connection-class.html#transport,Variable ansible.plugins.connection.lxd.Connection.transport=ansible.plugins.connection.lxd.Connection-class.html#transport,Variable ansible.plugins.connection.paramiko_ssh.Connection.transport=ansible.plugins.connection.paramiko_ssh.Connection-class.html#transport,Variable ansible.plugins.connection.ssh.Connection.transport=ansible.plugins.connection.ssh.Connection-class.html#transport,Variable ansible.plugins.connection.winrm.Connection.transport=ansible.plugins.connection.winrm.Connection-class.html#transport,Variable ansible.plugins.connection.zone.Connection.transport=ansible.plugins.connection.zone.Connection-class.html#transport"><a title="ansible.plugins.connection.ConnectionBase.transport
+ansible.plugins.connection.accelerate.Connection.transport
+ansible.plugins.connection.chroot.Connection.transport
+ansible.plugins.connection.docker.Connection.transport
+ansible.plugins.connection.jail.Connection.transport
+ansible.plugins.connection.libvirt_lxc.Connection.transport
+ansible.plugins.connection.local.Connection.transport
+ansible.plugins.connection.lxc.Connection.transport
+ansible.plugins.connection.lxd.Connection.transport
+ansible.plugins.connection.paramiko_ssh.Connection.transport
+ansible.plugins.connection.ssh.Connection.transport
+ansible.plugins.connection.winrm.Connection.transport
+ansible.plugins.connection.zone.Connection.transport" class="py-name" href="#" onclick="return doclink('link-36', 'transport', 'link-36');">transport</a></tt><tt class="py-op">=</tt><tt id="link-37" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-37', 'dict', 'link-23');">dict</a></tt><tt class="py-op">(</tt><tt id="link-38" class="py-name" targets="Method ansible.cli.console.ConsoleCLI.default()=ansible.cli.console.ConsoleCLI-class.html#default,Module ansible.plugins.callback.default=ansible.plugins.callback.default-module.html,Method ansible.plugins.filter.core.AnsibleJSONEncoder.default()=ansible.plugins.filter.core.AnsibleJSONEncoder-class.html#default,Method ansible.plugins.strategy.debug.Debugger.default()=ansible.plugins.strategy.debug.Debugger-class.html#default"><a title="ansible.cli.console.ConsoleCLI.default
+ansible.plugins.callback.default
+ansible.plugins.filter.core.AnsibleJSONEncoder.default
+ansible.plugins.strategy.debug.Debugger.default" class="py-name" href="#" onclick="return doclink('link-38', 'default', 'link-38');">default</a></tt><tt class="py-op">=</tt><tt class="py-string">'cli'</tt><tt class="py-op">,</tt> <tt class="py-name">choices</tt><tt class="py-op">=</tt><tt class="py-op">[</tt><tt class="py-string">'cli'</tt><tt class="py-op">,</tt> <tt class="py-string">'nxapi'</tt><tt class="py-op">]</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L36"></a><tt class="py-lineno"> 36</tt>  <tt class="py-line">    <tt class="py-name">use_ssl</tt><tt class="py-op">=</tt><tt id="link-39" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-39', 'dict', 'link-23');">dict</a></tt><tt class="py-op">(</tt><tt id="link-40" class="py-name"><a title="ansible.cli.console.ConsoleCLI.default
+ansible.plugins.callback.default
+ansible.plugins.filter.core.AnsibleJSONEncoder.default
+ansible.plugins.strategy.debug.Debugger.default" class="py-name" href="#" onclick="return doclink('link-40', 'default', 'link-38');">default</a></tt><tt class="py-op">=</tt><tt class="py-name">False</tt><tt class="py-op">,</tt> <tt id="link-41" class="py-name"><a title="type" class="py-name" href="#" onclick="return doclink('link-41', 'type', 'link-27');">type</a></tt><tt class="py-op">=</tt><tt class="py-string">'bool'</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L37"></a><tt class="py-lineno"> 37</tt>  <tt class="py-line">    <tt id="link-42" class="py-name" targets="Variable ansible.galaxy.api.GalaxyAPI.validate_certs=ansible.galaxy.api.GalaxyAPI-class.html#validate_certs"><a title="ansible.galaxy.api.GalaxyAPI.validate_certs" class="py-name" href="#" onclick="return doclink('link-42', 'validate_certs', 'link-42');">validate_certs</a></tt><tt class="py-op">=</tt><tt id="link-43" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-43', 'dict', 'link-23');">dict</a></tt><tt class="py-op">(</tt><tt id="link-44" class="py-name"><a title="ansible.cli.console.ConsoleCLI.default
+ansible.plugins.callback.default
+ansible.plugins.filter.core.AnsibleJSONEncoder.default
+ansible.plugins.strategy.debug.Debugger.default" class="py-name" href="#" onclick="return doclink('link-44', 'default', 'link-38');">default</a></tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">,</tt> <tt id="link-45" class="py-name"><a title="type" class="py-name" href="#" onclick="return doclink('link-45', 'type', 'link-27');">type</a></tt><tt class="py-op">=</tt><tt class="py-string">'bool'</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L38"></a><tt class="py-lineno"> 38</tt>  <tt class="py-line">    <tt class="py-name">provider</tt><tt class="py-op">=</tt><tt id="link-46" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-46', 'dict', 'link-23');">dict</a></tt><tt class="py-op">(</tt><tt id="link-47" class="py-name"><a title="type" class="py-name" href="#" onclick="return doclink('link-47', 'type', 'link-27');">type</a></tt><tt class="py-op">=</tt><tt class="py-string">'dict'</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L39"></a><tt class="py-lineno"> 39</tt>  <tt class="py-line">    <tt id="link-48" class="py-name" targets="Function ansible.module_utils.facts.timeout()=ansible.module_utils.facts-module.html#timeout"><a title="ansible.module_utils.facts.timeout" class="py-name" href="#" onclick="return doclink('link-48', 'timeout', 'link-48');">timeout</a></tt><tt class="py-op">=</tt><tt id="link-49" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-49', 'dict', 'link-23');">dict</a></tt><tt class="py-op">(</tt><tt id="link-50" class="py-name"><a title="ansible.cli.console.ConsoleCLI.default
+ansible.plugins.callback.default
+ansible.plugins.filter.core.AnsibleJSONEncoder.default
+ansible.plugins.strategy.debug.Debugger.default" class="py-name" href="#" onclick="return doclink('link-50', 'default', 'link-38');">default</a></tt><tt class="py-op">=</tt><tt class="py-number">10</tt><tt class="py-op">,</tt> <tt id="link-51" class="py-name"><a title="type" class="py-name" href="#" onclick="return doclink('link-51', 'type', 'link-27');">type</a></tt><tt class="py-op">=</tt><tt class="py-string">'int'</tt><tt class="py-op">)</tt> </tt>
+<a name="L40"></a><tt class="py-lineno"> 40</tt>  <tt class="py-line"><tt class="py-op">)</tt> </tt>
+<a name="L41"></a><tt class="py-lineno"> 41</tt>  <tt class="py-line"> </tt>
+<a name="L42"></a><tt class="py-lineno"> 42</tt>  <tt class="py-line"><tt id="link-52" class="py-name" targets="Variable ansible.module_utils.nxos.NXAPI_COMMAND_TYPES=ansible.module_utils.nxos-module.html#NXAPI_COMMAND_TYPES"><a title="ansible.module_utils.nxos.NXAPI_COMMAND_TYPES" class="py-name" href="#" onclick="return doclink('link-52', 'NXAPI_COMMAND_TYPES', 'link-52');">NXAPI_COMMAND_TYPES</a></tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-string">'cli_show'</tt><tt class="py-op">,</tt> <tt class="py-string">'cli_show_ascii'</tt><tt class="py-op">,</tt> <tt class="py-string">'cli_conf'</tt><tt class="py-op">,</tt> <tt class="py-string">'bash'</tt><tt class="py-op">]</tt> </tt>
+<a name="L43"></a><tt class="py-lineno"> 43</tt>  <tt class="py-line"> </tt>
+<a name="L44"></a><tt class="py-lineno"> 44</tt>  <tt class="py-line"><tt id="link-53" class="py-name" targets="Variable ansible.module_utils.nxos.NXAPI_ENCODINGS=ansible.module_utils.nxos-module.html#NXAPI_ENCODINGS"><a title="ansible.module_utils.nxos.NXAPI_ENCODINGS" class="py-name" href="#" onclick="return doclink('link-53', 'NXAPI_ENCODINGS', 'link-53');">NXAPI_ENCODINGS</a></tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-string">'json'</tt><tt class="py-op">,</tt> <tt class="py-string">'xml'</tt><tt class="py-op">]</tt> </tt>
+<a name="L45"></a><tt class="py-lineno"> 45</tt>  <tt class="py-line"> </tt>
+<a name="L46"></a><tt class="py-lineno"> 46</tt>  <tt class="py-line"><tt id="link-54" class="py-name" targets="Variable ansible.module_utils.asa.CLI_PROMPTS_RE=ansible.module_utils.asa-module.html#CLI_PROMPTS_RE,Variable ansible.module_utils.eos.Cli.CLI_PROMPTS_RE=ansible.module_utils.eos.Cli-class.html#CLI_PROMPTS_RE,Variable ansible.module_utils.ios.Cli.CLI_PROMPTS_RE=ansible.module_utils.ios.Cli-class.html#CLI_PROMPTS_RE,Variable ansible.module_utils.iosxr.Cli.CLI_PROMPTS_RE=ansible.module_utils.iosxr.Cli-class.html#CLI_PROMPTS_RE,Variable ansible.module_utils.nxos.CLI_PROMPTS_RE=ansible.module_utils.nxos-module.html#CLI_PROMPTS_RE,Variable ansible.module_utils.shell.CLI_PROMPTS_RE=ansible.module_utils.shell-module.html#CLI_PROMPTS_RE,Variable ansible.module_utils.vyos.Cli.CLI_PROMPTS_RE=ansible.module_utils.vyos.Cli-class.html#CLI_PROMPTS_RE"><a title="ansible.module_utils.asa.CLI_PROMPTS_RE
+ansible.module_utils.eos.Cli.CLI_PROMPTS_RE
+ansible.module_utils.ios.Cli.CLI_PROMPTS_RE
+ansible.module_utils.iosxr.Cli.CLI_PROMPTS_RE
+ansible.module_utils.nxos.CLI_PROMPTS_RE
+ansible.module_utils.shell.CLI_PROMPTS_RE
+ansible.module_utils.vyos.Cli.CLI_PROMPTS_RE" class="py-name" href="#" onclick="return doclink('link-54', 'CLI_PROMPTS_RE', 'link-54');">CLI_PROMPTS_RE</a></tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt> </tt>
+<a name="L47"></a><tt class="py-lineno"> 47</tt>  <tt class="py-line">    <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-55" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-55', 'compile', 'link-21');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r'[\r\n]?[a-zA-Z]{1}[a-zA-Z0-9-]*[&gt;|#|%](?:\s*)$'</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L48"></a><tt class="py-lineno"> 48</tt>  <tt class="py-line">    <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-56" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-56', 'compile', 'link-21');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r'[\r\n]?[a-zA-Z]{1}[a-zA-Z0-9-]*\(.+\)#(?:\s*)$'</tt><tt class="py-op">)</tt> </tt>
+<a name="L49"></a><tt class="py-lineno"> 49</tt>  <tt class="py-line"><tt class="py-op">]</tt> </tt>
+<a name="L50"></a><tt class="py-lineno"> 50</tt>  <tt class="py-line"> </tt>
+<a name="L51"></a><tt class="py-lineno"> 51</tt>  <tt class="py-line"><tt id="link-57" class="py-name" targets="Variable ansible.module_utils.asa.CLI_ERRORS_RE=ansible.module_utils.asa-module.html#CLI_ERRORS_RE,Variable ansible.module_utils.eos.Cli.CLI_ERRORS_RE=ansible.module_utils.eos.Cli-class.html#CLI_ERRORS_RE,Variable ansible.module_utils.ios.Cli.CLI_ERRORS_RE=ansible.module_utils.ios.Cli-class.html#CLI_ERRORS_RE,Variable ansible.module_utils.iosxr.Cli.CLI_ERRORS_RE=ansible.module_utils.iosxr.Cli-class.html#CLI_ERRORS_RE,Variable ansible.module_utils.nxos.CLI_ERRORS_RE=ansible.module_utils.nxos-module.html#CLI_ERRORS_RE,Variable ansible.module_utils.shell.CLI_ERRORS_RE=ansible.module_utils.shell-module.html#CLI_ERRORS_RE,Variable ansible.module_utils.vyos.Cli.CLI_ERRORS_RE=ansible.module_utils.vyos.Cli-class.html#CLI_ERRORS_RE"><a title="ansible.module_utils.asa.CLI_ERRORS_RE
+ansible.module_utils.eos.Cli.CLI_ERRORS_RE
+ansible.module_utils.ios.Cli.CLI_ERRORS_RE
+ansible.module_utils.iosxr.Cli.CLI_ERRORS_RE
+ansible.module_utils.nxos.CLI_ERRORS_RE
+ansible.module_utils.shell.CLI_ERRORS_RE
+ansible.module_utils.vyos.Cli.CLI_ERRORS_RE" class="py-name" href="#" onclick="return doclink('link-57', 'CLI_ERRORS_RE', 'link-57');">CLI_ERRORS_RE</a></tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt> </tt>
+<a name="L52"></a><tt class="py-lineno"> 52</tt>  <tt class="py-line">    <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-58" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-58', 'compile', 'link-21');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"% ?Error"</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L53"></a><tt class="py-lineno"> 53</tt>  <tt class="py-line">    <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-59" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-59', 'compile', 'link-21');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"^% \w+"</tt><tt class="py-op">,</tt> <tt class="py-name">re</tt><tt class="py-op">.</tt><tt class="py-name">M</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L54"></a><tt class="py-lineno"> 54</tt>  <tt class="py-line">    <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-60" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-60', 'compile', 'link-21');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"% ?Bad secret"</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L55"></a><tt class="py-lineno"> 55</tt>  <tt class="py-line">    <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-61" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-61', 'compile', 'link-21');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"invalid input"</tt><tt class="py-op">,</tt> <tt class="py-name">re</tt><tt class="py-op">.</tt><tt class="py-name">I</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L56"></a><tt class="py-lineno"> 56</tt>  <tt class="py-line">    <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-62" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-62', 'compile', 'link-21');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"(?:incomplete|ambiguous) command"</tt><tt class="py-op">,</tt> <tt class="py-name">re</tt><tt class="py-op">.</tt><tt class="py-name">I</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L57"></a><tt class="py-lineno"> 57</tt>  <tt class="py-line">    <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-63" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-63', 'compile', 'link-21');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"connection timed out"</tt><tt class="py-op">,</tt> <tt class="py-name">re</tt><tt class="py-op">.</tt><tt class="py-name">I</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L58"></a><tt class="py-lineno"> 58</tt>  <tt class="py-line">    <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-64" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-64', 'compile', 'link-21');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"[^\r\n]+ not found"</tt><tt class="py-op">,</tt> <tt class="py-name">re</tt><tt class="py-op">.</tt><tt class="py-name">I</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L59"></a><tt class="py-lineno"> 59</tt>  <tt class="py-line">    <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-65" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-65', 'compile', 'link-21');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"'[^']' +returned error code: ?\d+"</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L60"></a><tt class="py-lineno"> 60</tt>  <tt class="py-line">    <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-66" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-66', 'compile', 'link-21');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"syntax error"</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> </tt>
+<a name="L61"></a><tt class="py-lineno"> 61</tt>  <tt class="py-line">    <tt class="py-name">re</tt><tt class="py-op">.</tt><tt id="link-67" class="py-name"><a title="ansible.playbook.play.Play.compile
+ansible.playbook.role.Role.compile" class="py-name" href="#" onclick="return doclink('link-67', 'compile', 'link-21');">compile</a></tt><tt class="py-op">(</tt><tt class="py-string">r"unknown command"</tt><tt class="py-op">)</tt> </tt>
+<a name="L62"></a><tt class="py-lineno"> 62</tt>  <tt class="py-line"><tt class="py-op">]</tt> </tt>
+<a name="to_list"></a><div id="to_list-def"><a name="L63"></a><tt class="py-lineno"> 63</tt>  <tt class="py-line"> </tt>
+<a name="L64"></a><tt class="py-lineno"> 64</tt>  <tt class="py-line"> </tt>
+<a name="L65"></a><tt class="py-lineno"> 65</tt> <a class="py-toggle" href="#" id="to_list-toggle" onclick="return toggle('to_list');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.nxos-module.html#to_list">to_list</a><tt class="py-op">(</tt><tt class="py-param">val</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="to_list-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="to_list-expanded"><a name="L66"></a><tt class="py-lineno"> 66</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">isinstance</tt><tt class="py-op">(</tt><tt class="py-name">val</tt><tt class="py-op">,</tt> <tt class="py-op">(</tt><tt id="link-68" class="py-name" targets="Module ansible.plugins.lookup.list=ansible.plugins.lookup.list-module.html"><a title="ansible.plugins.lookup.list" class="py-name" href="#" onclick="return doclink('link-68', 'list', 'link-68');">list</a></tt><tt class="py-op">,</tt> <tt class="py-name">tuple</tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L67"></a><tt class="py-lineno"> 67</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt id="link-69" class="py-name"><a title="ansible.plugins.lookup.list" class="py-name" href="#" onclick="return doclink('link-69', 'list', 'link-68');">list</a></tt><tt class="py-op">(</tt><tt class="py-name">val</tt><tt class="py-op">)</tt> </tt>
+<a name="L68"></a><tt class="py-lineno"> 68</tt>  <tt class="py-line">    <tt class="py-keyword">elif</tt> <tt class="py-name">val</tt> <tt class="py-keyword">is</tt> <tt class="py-keyword">not</tt> <tt class="py-name">None</tt><tt class="py-op">:</tt> </tt>
+<a name="L69"></a><tt class="py-lineno"> 69</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-op">[</tt><tt class="py-name">val</tt><tt class="py-op">]</tt> </tt>
+<a name="L70"></a><tt class="py-lineno"> 70</tt>  <tt class="py-line">    <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L71"></a><tt class="py-lineno"> 71</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt id="link-70" class="py-name"><a title="ansible.plugins.lookup.list" class="py-name" href="#" onclick="return doclink('link-70', 'list', 'link-68');">list</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L72"></a><tt class="py-lineno"> 72</tt>  <tt class="py-line"> </tt>
+<a name="Nxapi"></a><div id="Nxapi-def"><a name="L73"></a><tt class="py-lineno"> 73</tt>  <tt class="py-line"> </tt>
+<a name="L74"></a><tt class="py-lineno"> 74</tt> <a class="py-toggle" href="#" id="Nxapi-toggle" onclick="return toggle('Nxapi');">-</a><tt class="py-line"><tt class="py-keyword">class</tt> <a class="py-def-name" href="ansible.module_utils.nxos.Nxapi-class.html">Nxapi</a><tt class="py-op">(</tt><tt class="py-base-class">object</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Nxapi-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="Nxapi-expanded"><a name="L75"></a><tt class="py-lineno"> 75</tt>  <tt class="py-line"> </tt>
+<a name="Nxapi.__init__"></a><div id="Nxapi.__init__-def"><a name="L76"></a><tt class="py-lineno"> 76</tt> <a class="py-toggle" href="#" id="Nxapi.__init__-toggle" onclick="return toggle('Nxapi.__init__');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.nxos.Nxapi-class.html#__init__">__init__</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">module</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Nxapi.__init__-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="Nxapi.__init__-expanded"><a name="L77"></a><tt class="py-lineno"> 77</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">module</tt> <tt class="py-op">=</tt> <tt class="py-name">module</tt> </tt>
+<a name="L78"></a><tt class="py-lineno"> 78</tt>  <tt class="py-line"> </tt>
+<a name="L79"></a><tt class="py-lineno"> 79</tt>  <tt class="py-line">        <tt class="py-comment"># sets the module_utils/urls.py req parameters</tt> </tt>
+<a name="L80"></a><tt class="py-lineno"> 80</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'url_username'</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'username'</tt><tt class="py-op">]</tt> </tt>
+<a name="L81"></a><tt class="py-lineno"> 81</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'url_password'</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'password'</tt><tt class="py-op">]</tt> </tt>
+<a name="L82"></a><tt class="py-lineno"> 82</tt>  <tt class="py-line"> </tt>
+<a name="L83"></a><tt class="py-lineno"> 83</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-71" class="py-name" targets="Module ansible.plugins.lookup.url=ansible.plugins.lookup.url-module.html"><a title="ansible.plugins.lookup.url" class="py-name" href="#" onclick="return doclink('link-71', 'url', 'link-71');">url</a></tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L84"></a><tt class="py-lineno"> 84</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_nxapi_auth</tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+</div><a name="L85"></a><tt class="py-lineno"> 85</tt>  <tt class="py-line"> </tt>
+<a name="Nxapi._get_body"></a><div id="Nxapi._get_body-def"><a name="L86"></a><tt class="py-lineno"> 86</tt> <a class="py-toggle" href="#" id="Nxapi._get_body-toggle" onclick="return toggle('Nxapi._get_body');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.nxos.Nxapi-class.html#_get_body">_get_body</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">commands</tt><tt class="py-op">,</tt> <tt class="py-param">command_type</tt><tt class="py-op">,</tt> <tt class="py-param">encoding</tt><tt class="py-op">,</tt> <tt class="py-param">version</tt><tt class="py-op">=</tt><tt class="py-string">'1.0'</tt><tt class="py-op">,</tt> <tt class="py-param">chunk</tt><tt class="py-op">=</tt><tt class="py-string">'0'</tt><tt class="py-op">,</tt> <tt class="py-param">sid</tt><tt class="py-op">=</tt><tt class="py-name">None</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Nxapi._get_body-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="Nxapi._get_body-expanded"><a name="L87"></a><tt class="py-lineno"> 87</tt>  <tt class="py-line">        <tt class="py-docstring">"""Encodes a NXAPI JSON request message</tt> </tt>
+<a name="L88"></a><tt class="py-lineno"> 88</tt>  <tt class="py-line"><tt class="py-docstring">        """</tt> </tt>
+<a name="L89"></a><tt class="py-lineno"> 89</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">isinstance</tt><tt class="py-op">(</tt><tt class="py-name">commands</tt><tt class="py-op">,</tt> <tt class="py-op">(</tt><tt id="link-72" class="py-name"><a title="ansible.plugins.lookup.list" class="py-name" href="#" onclick="return doclink('link-72', 'list', 'link-68');">list</a></tt><tt class="py-op">,</tt> <tt id="link-73" class="py-name" targets="Method ansible.galaxy.token.GalaxyToken.set()=ansible.galaxy.token.GalaxyToken-class.html#set,Method ansible.plugins.cache.base.BaseCacheModule.set()=ansible.plugins.cache.base.BaseCacheModule-class.html#set,Method ansible.plugins.cache.jsonfile.CacheModule.set()=ansible.plugins.cache.jsonfile.CacheModule-class.html#set,Method ansible.plugins.cache.memcached.CacheModule.set()=ansible.plugins.cache.memcached.CacheModule-class.html#set,Method ansible.plugins.cache.memory.CacheModule.set()=ansible.plugins.cache.memory.CacheModule-class.html#set,Method ansible.plugins.cache.redis.CacheModule.set()=ansible.plugins.cache.redis.CacheModule-class.html#set"><a title="ansible.galaxy.token.GalaxyToken.set
+ansible.plugins.cache.base.BaseCacheModule.set
+ansible.plugins.cache.jsonfile.CacheModule.set
+ansible.plugins.cache.memcached.CacheModule.set
+ansible.plugins.cache.memory.CacheModule.set
+ansible.plugins.cache.redis.CacheModule.set" class="py-name" href="#" onclick="return doclink('link-73', 'set', 'link-73');">set</a></tt><tt class="py-op">,</tt> <tt class="py-name">tuple</tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L90"></a><tt class="py-lineno"> 90</tt>  <tt class="py-line">            <tt class="py-name">commands</tt> <tt class="py-op">=</tt> <tt class="py-string">' ;'</tt><tt class="py-op">.</tt><tt class="py-name">join</tt><tt class="py-op">(</tt><tt class="py-name">commands</tt><tt class="py-op">)</tt> </tt>
+<a name="L91"></a><tt class="py-lineno"> 91</tt>  <tt class="py-line"> </tt>
+<a name="L92"></a><tt class="py-lineno"> 92</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">encoding</tt> <tt class="py-keyword">not</tt> <tt class="py-keyword">in</tt> <tt id="link-74" class="py-name"><a title="ansible.module_utils.nxos.NXAPI_ENCODINGS" class="py-name" href="#" onclick="return doclink('link-74', 'NXAPI_ENCODINGS', 'link-53');">NXAPI_ENCODINGS</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L93"></a><tt class="py-lineno"> 93</tt>  <tt class="py-line">            <tt class="py-name">msg</tt> <tt class="py-op">=</tt> <tt class="py-string">'invalid encoding, received %s, exceped one of %s'</tt> <tt class="py-op">%</tt> \ </tt>
+<a name="L94"></a><tt class="py-lineno"> 94</tt>  <tt class="py-line">                    <tt class="py-op">(</tt><tt class="py-name">encoding</tt><tt class="py-op">,</tt> <tt class="py-string">','</tt><tt class="py-op">.</tt><tt class="py-name">join</tt><tt class="py-op">(</tt><tt id="link-75" class="py-name"><a title="ansible.module_utils.nxos.NXAPI_ENCODINGS" class="py-name" href="#" onclick="return doclink('link-75', 'NXAPI_ENCODINGS', 'link-53');">NXAPI_ENCODINGS</a></tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L95"></a><tt class="py-lineno"> 95</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">module_fail_json</tt><tt class="py-op">(</tt><tt class="py-name">msg</tt><tt class="py-op">=</tt><tt class="py-name">msg</tt><tt class="py-op">)</tt> </tt>
+<a name="L96"></a><tt class="py-lineno"> 96</tt>  <tt class="py-line"> </tt>
+<a name="L97"></a><tt class="py-lineno"> 97</tt>  <tt class="py-line">        <tt class="py-name">msg</tt> <tt class="py-op">=</tt> <tt class="py-op">{</tt> </tt>
+<a name="L98"></a><tt class="py-lineno"> 98</tt>  <tt class="py-line">            <tt class="py-string">'version'</tt><tt class="py-op">:</tt> <tt id="link-76" class="py-name" targets="Static Method ansible.cli.CLI.version()=ansible.cli.CLI-class.html#version"><a title="ansible.cli.CLI.version" class="py-name" href="#" onclick="return doclink('link-76', 'version', 'link-76');">version</a></tt><tt class="py-op">,</tt> </tt>
+<a name="L99"></a><tt class="py-lineno"> 99</tt>  <tt class="py-line">            <tt class="py-string">'type'</tt><tt class="py-op">:</tt> <tt class="py-name">command_type</tt><tt class="py-op">,</tt> </tt>
+<a name="L100"></a><tt class="py-lineno">100</tt>  <tt class="py-line">            <tt class="py-string">'chunk'</tt><tt class="py-op">:</tt> <tt class="py-name">chunk</tt><tt class="py-op">,</tt> </tt>
+<a name="L101"></a><tt class="py-lineno">101</tt>  <tt class="py-line">            <tt class="py-string">'sid'</tt><tt class="py-op">:</tt> <tt class="py-name">sid</tt><tt class="py-op">,</tt> </tt>
+<a name="L102"></a><tt class="py-lineno">102</tt>  <tt class="py-line">            <tt class="py-string">'input'</tt><tt class="py-op">:</tt> <tt class="py-name">commands</tt><tt class="py-op">,</tt> </tt>
+<a name="L103"></a><tt class="py-lineno">103</tt>  <tt class="py-line">            <tt class="py-string">'output_format'</tt><tt class="py-op">:</tt> <tt class="py-name">encoding</tt> </tt>
+<a name="L104"></a><tt class="py-lineno">104</tt>  <tt class="py-line">        <tt class="py-op">}</tt> </tt>
+<a name="L105"></a><tt class="py-lineno">105</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt id="link-77" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-77', 'dict', 'link-23');">dict</a></tt><tt class="py-op">(</tt><tt class="py-name">ins_api</tt><tt class="py-op">=</tt><tt class="py-name">msg</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L106"></a><tt class="py-lineno">106</tt>  <tt class="py-line"> </tt>
+<a name="Nxapi.connect"></a><div id="Nxapi.connect-def"><a name="L107"></a><tt class="py-lineno">107</tt> <a class="py-toggle" href="#" id="Nxapi.connect-toggle" onclick="return toggle('Nxapi.connect');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.nxos.Nxapi-class.html#connect">connect</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Nxapi.connect-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="Nxapi.connect-expanded"><a name="L108"></a><tt class="py-lineno">108</tt>  <tt class="py-line">        <tt id="link-78" class="py-name"><a title="ansible.inventory.host" class="py-name" href="#" onclick="return doclink('link-78', 'host', 'link-24');">host</a></tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'host'</tt><tt class="py-op">]</tt> </tt>
+<a name="L109"></a><tt class="py-lineno">109</tt>  <tt class="py-line">        <tt class="py-name">port</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'port'</tt><tt class="py-op">]</tt> </tt>
+<a name="L110"></a><tt class="py-lineno">110</tt>  <tt class="py-line"> </tt>
+<a name="L111"></a><tt class="py-lineno">111</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'use_ssl'</tt><tt class="py-op">]</tt><tt class="py-op">:</tt> </tt>
+<a name="L112"></a><tt class="py-lineno">112</tt>  <tt class="py-line">            <tt class="py-name">proto</tt> <tt class="py-op">=</tt> <tt class="py-string">'https'</tt> </tt>
+<a name="L113"></a><tt class="py-lineno">113</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">port</tt><tt class="py-op">:</tt> </tt>
+<a name="L114"></a><tt class="py-lineno">114</tt>  <tt class="py-line">                <tt class="py-name">port</tt> <tt class="py-op">=</tt> <tt class="py-number">443</tt> </tt>
+<a name="L115"></a><tt class="py-lineno">115</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L116"></a><tt class="py-lineno">116</tt>  <tt class="py-line">            <tt class="py-name">proto</tt> <tt class="py-op">=</tt> <tt class="py-string">'http'</tt> </tt>
+<a name="L117"></a><tt class="py-lineno">117</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">port</tt><tt class="py-op">:</tt> </tt>
+<a name="L118"></a><tt class="py-lineno">118</tt>  <tt class="py-line">                <tt class="py-name">port</tt> <tt class="py-op">=</tt> <tt class="py-number">80</tt> </tt>
+<a name="L119"></a><tt class="py-lineno">119</tt>  <tt class="py-line"> </tt>
+<a name="L120"></a><tt class="py-lineno">120</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-79" class="py-name"><a title="ansible.plugins.lookup.url" class="py-name" href="#" onclick="return doclink('link-79', 'url', 'link-71');">url</a></tt> <tt class="py-op">=</tt> <tt class="py-string">'%s://%s:%s/ins'</tt> <tt class="py-op">%</tt> <tt class="py-op">(</tt><tt class="py-name">proto</tt><tt class="py-op">,</tt> <tt id="link-80" class="py-name"><a title="ansible.inventory.host" class="py-name" href="#" onclick="return doclink('link-80', 'host', 'link-24');">host</a></tt><tt class="py-op">,</tt> <tt class="py-name">port</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L121"></a><tt class="py-lineno">121</tt>  <tt class="py-line"> </tt>
+<a name="Nxapi.send"></a><div id="Nxapi.send-def"><a name="L122"></a><tt class="py-lineno">122</tt> <a class="py-toggle" href="#" id="Nxapi.send-toggle" onclick="return toggle('Nxapi.send');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.nxos.Nxapi-class.html#send">send</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">commands</tt><tt class="py-op">,</tt> <tt class="py-param">command_type</tt><tt class="py-op">=</tt><tt class="py-string">'cli_show_ascii'</tt><tt class="py-op">,</tt> <tt class="py-param">encoding</tt><tt class="py-op">=</tt><tt class="py-string">'json'</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Nxapi.send-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="Nxapi.send-expanded"><a name="L123"></a><tt class="py-lineno">123</tt>  <tt class="py-line">        <tt class="py-docstring">"""Send commands to the device.</tt> </tt>
+<a name="L124"></a><tt class="py-lineno">124</tt>  <tt class="py-line"><tt class="py-docstring">        """</tt> </tt>
+<a name="L125"></a><tt class="py-lineno">125</tt>  <tt class="py-line">        <tt class="py-name">clist</tt> <tt class="py-op">=</tt> <tt id="link-81" class="py-name" targets="Function ansible.module_utils.asa.to_list()=ansible.module_utils.asa-module.html#to_list,Function ansible.module_utils.junos.to_list()=ansible.module_utils.junos-module.html#to_list,Function ansible.module_utils.network.to_list()=ansible.module_utils.network-module.html#to_list,Function ansible.module_utils.nxos.to_list()=ansible.module_utils.nxos-module.html#to_list,Function ansible.module_utils.openswitch.to_list()=ansible.module_utils.openswitch-module.html#to_list,Function ansible.module_utils.shell.to_list()=ansible.module_utils.shell-module.html#to_list"><a title="ansible.module_utils.asa.to_list
+ansible.module_utils.junos.to_list
+ansible.module_utils.network.to_list
+ansible.module_utils.nxos.to_list
+ansible.module_utils.openswitch.to_list
+ansible.module_utils.shell.to_list" class="py-name" href="#" onclick="return doclink('link-81', 'to_list', 'link-81');">to_list</a></tt><tt class="py-op">(</tt><tt class="py-name">commands</tt><tt class="py-op">)</tt> </tt>
+<a name="L126"></a><tt class="py-lineno">126</tt>  <tt class="py-line"> </tt>
+<a name="L127"></a><tt class="py-lineno">127</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">command_type</tt> <tt class="py-keyword">not</tt> <tt class="py-keyword">in</tt> <tt id="link-82" class="py-name"><a title="ansible.module_utils.nxos.NXAPI_COMMAND_TYPES" class="py-name" href="#" onclick="return doclink('link-82', 'NXAPI_COMMAND_TYPES', 'link-52');">NXAPI_COMMAND_TYPES</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L128"></a><tt class="py-lineno">128</tt>  <tt class="py-line">            <tt class="py-name">msg</tt> <tt class="py-op">=</tt> <tt class="py-string">'invalid command_type, received %s, exceped one of %s'</tt> <tt class="py-op">%</tt> \ </tt>
+<a name="L129"></a><tt class="py-lineno">129</tt>  <tt class="py-line">                    <tt class="py-op">(</tt><tt class="py-name">command_type</tt><tt class="py-op">,</tt> <tt class="py-string">','</tt><tt class="py-op">.</tt><tt class="py-name">join</tt><tt class="py-op">(</tt><tt id="link-83" class="py-name"><a title="ansible.module_utils.nxos.NXAPI_COMMAND_TYPES" class="py-name" href="#" onclick="return doclink('link-83', 'NXAPI_COMMAND_TYPES', 'link-52');">NXAPI_COMMAND_TYPES</a></tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L130"></a><tt class="py-lineno">130</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">module_fail_json</tt><tt class="py-op">(</tt><tt class="py-name">msg</tt><tt class="py-op">=</tt><tt class="py-name">msg</tt><tt class="py-op">)</tt> </tt>
+<a name="L131"></a><tt class="py-lineno">131</tt>  <tt class="py-line"> </tt>
+<a name="L132"></a><tt class="py-lineno">132</tt>  <tt class="py-line">        <tt class="py-name">data</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-84" class="py-name" targets="Method ansible.module_utils.eos.Eapi._get_body()=ansible.module_utils.eos.Eapi-class.html#_get_body,Method ansible.module_utils.nxos.Nxapi._get_body()=ansible.module_utils.nxos.Nxapi-class.html#_get_body"><a title="ansible.module_utils.eos.Eapi._get_body
+ansible.module_utils.nxos.Nxapi._get_body" class="py-name" href="#" onclick="return doclink('link-84', '_get_body', 'link-84');">_get_body</a></tt><tt class="py-op">(</tt><tt class="py-name">clist</tt><tt class="py-op">,</tt> <tt class="py-name">command_type</tt><tt class="py-op">,</tt> <tt class="py-name">encoding</tt><tt class="py-op">)</tt> </tt>
+<a name="L133"></a><tt class="py-lineno">133</tt>  <tt class="py-line">        <tt class="py-name">data</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">module</tt><tt class="py-op">.</tt><tt id="link-85" class="py-name" targets="Method ansible.module_utils.basic.AnsibleModule.jsonify()=ansible.module_utils.basic.AnsibleModule-class.html#jsonify,Module ansible.parsing.utils.jsonify=ansible.parsing.utils.jsonify-module.html,Function ansible.parsing.utils.jsonify.jsonify()=ansible.parsing.utils.jsonify-module.html#jsonify"><a title="ansible.module_utils.basic.AnsibleModule.jsonify
+ansible.parsing.utils.jsonify
+ansible.parsing.utils.jsonify.jsonify" class="py-name" href="#" onclick="return doclink('link-85', 'jsonify', 'link-85');">jsonify</a></tt><tt class="py-op">(</tt><tt class="py-name">data</tt><tt class="py-op">)</tt> </tt>
+<a name="L134"></a><tt class="py-lineno">134</tt>  <tt class="py-line"> </tt>
+<a name="L135"></a><tt class="py-lineno">135</tt>  <tt class="py-line">        <tt class="py-name">headers</tt> <tt class="py-op">=</tt> <tt class="py-op">{</tt><tt class="py-string">'Content-Type'</tt><tt class="py-op">:</tt> <tt class="py-string">'application/json'</tt><tt class="py-op">}</tt> </tt>
+<a name="L136"></a><tt class="py-lineno">136</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_nxapi_auth</tt><tt class="py-op">:</tt> </tt>
+<a name="L137"></a><tt class="py-lineno">137</tt>  <tt class="py-line">            <tt class="py-name">headers</tt><tt class="py-op">[</tt><tt class="py-string">'Cookie'</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_nxapi_auth</tt> </tt>
+<a name="L138"></a><tt class="py-lineno">138</tt>  <tt class="py-line"> </tt>
+<a name="L139"></a><tt class="py-lineno">139</tt>  <tt class="py-line">        <tt id="link-86" class="py-name" targets="Module ansible.compat.six.moves.urllib.response=ansible.compat.six.moves.urllib.response-module.html"><a title="ansible.compat.six.moves.urllib.response" class="py-name" href="#" onclick="return doclink('link-86', 'response', 'link-86');">response</a></tt><tt class="py-op">,</tt> <tt class="py-name">headers</tt> <tt class="py-op">=</tt> <tt id="link-87" class="py-name"><a title="ansible.module_utils.urls.fetch_url" class="py-name" href="#" onclick="return doclink('link-87', 'fetch_url', 'link-19');">fetch_url</a></tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">module</tt><tt class="py-op">,</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-88" class="py-name"><a title="ansible.plugins.lookup.url" class="py-name" href="#" onclick="return doclink('link-88', 'url', 'link-71');">url</a></tt><tt class="py-op">,</tt> <tt class="py-name">data</tt><tt class="py-op">=</tt><tt class="py-name">data</tt><tt class="py-op">,</tt> </tt>
+<a name="L140"></a><tt class="py-lineno">140</tt>  <tt class="py-line">                <tt class="py-name">headers</tt><tt class="py-op">=</tt><tt class="py-name">headers</tt><tt class="py-op">,</tt> <tt class="py-name">method</tt><tt class="py-op">=</tt><tt class="py-string">'POST'</tt><tt class="py-op">)</tt> </tt>
+<a name="L141"></a><tt class="py-lineno">141</tt>  <tt class="py-line"> </tt>
+<a name="L142"></a><tt class="py-lineno">142</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_nxapi_auth</tt> <tt class="py-op">=</tt> <tt class="py-name">headers</tt><tt class="py-op">.</tt><tt id="link-89" class="py-name" targets="Method ansible.galaxy.token.GalaxyToken.get()=ansible.galaxy.token.GalaxyToken-class.html#get,Method ansible.module_utils.ios.Restconf.get()=ansible.module_utils.ios.Restconf-class.html#get,Method ansible.module_utils.netcfg.NetworkConfig.get()=ansible.module_utils.netcfg.NetworkConfig-class.html#get,Method ansible.module_utils.openswitch.Rest.get()=ansible.module_utils.openswitch.Rest-class.html#get,Method ansible.plugins.PluginLoader.get()=ansible.plugins.PluginLoader-class.html#get,Method ansible.plugins.cache.base.BaseCacheModule.get()=ansible.plugins.cache.base.BaseCacheModule-class.html#get,Method ansible.plugins.cache.jsonfile.CacheModule.get()=ansible.plugins.cache.jsonfile.CacheModule-class.html#get,Method ansible.plugins.cache.memcached.CacheModule.get()=ansible.plugins.cache.memcached.CacheModule-class.html#get,Method ansible.plugins.cache.memory.CacheModule.get()=ansible.plugins.cache.memory.CacheModule-class.html#get,Method ansible.plugins.cache.redis.CacheModule.get()=ansible.plugins.cache.redis.CacheModule-class.html#get,Method ansible.plugins.lookup.etcd.Etcd.get()=ansible.plugins.lookup.etcd.Etcd-class.html#get,Method ansible.plugins.lookup.hashi_vault.HashiVault.get()=ansible.plugins.lookup.hashi_vault.HashiVault-class.html#get"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-89', 'get', 'link-89');">get</a></tt><tt class="py-op">(</tt><tt class="py-string">'set-cookie'</tt><tt class="py-op">)</tt> </tt>
+<a name="L143"></a><tt class="py-lineno">143</tt>  <tt class="py-line"> </tt>
+<a name="L144"></a><tt class="py-lineno">144</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">headers</tt><tt class="py-op">[</tt><tt class="py-string">'status'</tt><tt class="py-op">]</tt> <tt class="py-op">!=</tt> <tt class="py-number">200</tt><tt class="py-op">:</tt> </tt>
+<a name="L145"></a><tt class="py-lineno">145</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">module</tt><tt class="py-op">.</tt><tt id="link-90" class="py-name" targets="Method ansible.module_utils.basic.AnsibleModule.fail_json()=ansible.module_utils.basic.AnsibleModule-class.html#fail_json"><a title="ansible.module_utils.basic.AnsibleModule.fail_json" class="py-name" href="#" onclick="return doclink('link-90', 'fail_json', 'link-90');">fail_json</a></tt><tt class="py-op">(</tt><tt class="py-op">**</tt><tt class="py-name">headers</tt><tt class="py-op">)</tt> </tt>
+<a name="L146"></a><tt class="py-lineno">146</tt>  <tt class="py-line"> </tt>
+<a name="L147"></a><tt class="py-lineno">147</tt>  <tt class="py-line">        <tt id="link-91" class="py-name"><a title="ansible.compat.six.moves.urllib.response" class="py-name" href="#" onclick="return doclink('link-91', 'response', 'link-86');">response</a></tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">module</tt><tt class="py-op">.</tt><tt id="link-92" class="py-name" targets="Method ansible.module_utils.basic.AnsibleModule.from_json()=ansible.module_utils.basic.AnsibleModule-class.html#from_json"><a title="ansible.module_utils.basic.AnsibleModule.from_json" class="py-name" href="#" onclick="return doclink('link-92', 'from_json', 'link-92');">from_json</a></tt><tt class="py-op">(</tt><tt id="link-93" class="py-name"><a title="ansible.compat.six.moves.urllib.response" class="py-name" href="#" onclick="return doclink('link-93', 'response', 'link-86');">response</a></tt><tt class="py-op">.</tt><tt id="link-94" class="py-name" targets="Method ansible.module_utils.shell.Shell.read()=ansible.module_utils.shell.Shell-class.html#read"><a title="ansible.module_utils.shell.Shell.read" class="py-name" href="#" onclick="return doclink('link-94', 'read', 'link-94');">read</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L148"></a><tt class="py-lineno">148</tt>  <tt class="py-line">        <tt id="link-95" class="py-name" targets="Module ansible.executor.process.result=ansible.executor.process.result-module.html,Method ansible.module_utils.service.Service.result()=ansible.module_utils.service.Service-class.html#result"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-95', 'result', 'link-95');">result</a></tt> <tt class="py-op">=</tt> <tt id="link-96" class="py-name"><a title="ansible.plugins.lookup.list" class="py-name" href="#" onclick="return doclink('link-96', 'list', 'link-68');">list</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L149"></a><tt class="py-lineno">149</tt>  <tt class="py-line"> </tt>
+<a name="L150"></a><tt class="py-lineno">150</tt>  <tt class="py-line">        <tt class="py-name">output</tt> <tt class="py-op">=</tt> <tt id="link-97" class="py-name"><a title="ansible.compat.six.moves.urllib.response" class="py-name" href="#" onclick="return doclink('link-97', 'response', 'link-86');">response</a></tt><tt class="py-op">[</tt><tt class="py-string">'ins_api'</tt><tt class="py-op">]</tt><tt class="py-op">[</tt><tt class="py-string">'outputs'</tt><tt class="py-op">]</tt><tt class="py-op">[</tt><tt class="py-string">'output'</tt><tt class="py-op">]</tt> </tt>
+<a name="L151"></a><tt class="py-lineno">151</tt>  <tt class="py-line">        <tt class="py-keyword">for</tt> <tt class="py-name">item</tt> <tt class="py-keyword">in</tt> <tt id="link-98" class="py-name"><a title="ansible.module_utils.asa.to_list
+ansible.module_utils.junos.to_list
+ansible.module_utils.network.to_list
+ansible.module_utils.nxos.to_list
+ansible.module_utils.openswitch.to_list
+ansible.module_utils.shell.to_list" class="py-name" href="#" onclick="return doclink('link-98', 'to_list', 'link-81');">to_list</a></tt><tt class="py-op">(</tt><tt class="py-name">output</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L152"></a><tt class="py-lineno">152</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-name">item</tt><tt class="py-op">[</tt><tt class="py-string">'code'</tt><tt class="py-op">]</tt> <tt class="py-op">!=</tt> <tt class="py-string">'200'</tt><tt class="py-op">:</tt> </tt>
+<a name="L153"></a><tt class="py-lineno">153</tt>  <tt class="py-line">                <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">module</tt><tt class="py-op">.</tt><tt id="link-99" class="py-name"><a title="ansible.module_utils.basic.AnsibleModule.fail_json" class="py-name" href="#" onclick="return doclink('link-99', 'fail_json', 'link-90');">fail_json</a></tt><tt class="py-op">(</tt><tt class="py-op">**</tt><tt class="py-name">item</tt><tt class="py-op">)</tt> </tt>
+<a name="L154"></a><tt class="py-lineno">154</tt>  <tt class="py-line">            <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L155"></a><tt class="py-lineno">155</tt>  <tt class="py-line">                <tt id="link-100" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-100', 'result', 'link-95');">result</a></tt><tt class="py-op">.</tt><tt class="py-name">append</tt><tt class="py-op">(</tt><tt class="py-name">item</tt><tt class="py-op">[</tt><tt class="py-string">'body'</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L156"></a><tt class="py-lineno">156</tt>  <tt class="py-line"> </tt>
+<a name="L157"></a><tt class="py-lineno">157</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt id="link-101" class="py-name"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-101', 'result', 'link-95');">result</a></tt> </tt>
+</div></div><a name="L158"></a><tt class="py-lineno">158</tt>  <tt class="py-line"> </tt>
+<a name="Cli"></a><div id="Cli-def"><a name="L159"></a><tt class="py-lineno">159</tt>  <tt class="py-line"> </tt>
+<a name="L160"></a><tt class="py-lineno">160</tt> <a class="py-toggle" href="#" id="Cli-toggle" onclick="return toggle('Cli');">-</a><tt class="py-line"><tt class="py-keyword">class</tt> <a class="py-def-name" href="ansible.module_utils.nxos.Cli-class.html">Cli</a><tt class="py-op">(</tt><tt class="py-base-class">object</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Cli-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="Cli-expanded"><a name="L161"></a><tt class="py-lineno">161</tt>  <tt class="py-line"> </tt>
+<a name="Cli.__init__"></a><div id="Cli.__init__-def"><a name="L162"></a><tt class="py-lineno">162</tt> <a class="py-toggle" href="#" id="Cli.__init__-toggle" onclick="return toggle('Cli.__init__');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.nxos.Cli-class.html#__init__">__init__</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">module</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Cli.__init__-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="Cli.__init__-expanded"><a name="L163"></a><tt class="py-lineno">163</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">module</tt> <tt class="py-op">=</tt> <tt class="py-name">module</tt> </tt>
+<a name="L164"></a><tt class="py-lineno">164</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-102" class="py-name"><a title="ansible.module_utils.shell
+ansible.plugins.shell" class="py-name" href="#" onclick="return doclink('link-102', 'shell', 'link-8');">shell</a></tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+</div><a name="L165"></a><tt class="py-lineno">165</tt>  <tt class="py-line"> </tt>
+<a name="Cli.connect"></a><div id="Cli.connect-def"><a name="L166"></a><tt class="py-lineno">166</tt> <a class="py-toggle" href="#" id="Cli.connect-toggle" onclick="return toggle('Cli.connect');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.nxos.Cli-class.html#connect">connect</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">kwargs</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Cli.connect-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="Cli.connect-expanded"><a name="L167"></a><tt class="py-lineno">167</tt>  <tt class="py-line">        <tt id="link-103" class="py-name"><a title="ansible.inventory.host" class="py-name" href="#" onclick="return doclink('link-103', 'host', 'link-24');">host</a></tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'host'</tt><tt class="py-op">]</tt> </tt>
+<a name="L168"></a><tt class="py-lineno">168</tt>  <tt class="py-line">        <tt class="py-name">port</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'port'</tt><tt class="py-op">]</tt> <tt class="py-keyword">or</tt> <tt class="py-number">22</tt> </tt>
+<a name="L169"></a><tt class="py-lineno">169</tt>  <tt class="py-line"> </tt>
+<a name="L170"></a><tt class="py-lineno">170</tt>  <tt class="py-line">        <tt class="py-name">username</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'username'</tt><tt class="py-op">]</tt> </tt>
+<a name="L171"></a><tt class="py-lineno">171</tt>  <tt class="py-line">        <tt id="link-104" class="py-name"><a title="ansible.plugins.lookup.password" class="py-name" href="#" onclick="return doclink('link-104', 'password', 'link-30');">password</a></tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'password'</tt><tt class="py-op">]</tt> </tt>
+<a name="L172"></a><tt class="py-lineno">172</tt>  <tt class="py-line">        <tt id="link-105" class="py-name"><a title="ansible.module_utils.facts.timeout" class="py-name" href="#" onclick="return doclink('link-105', 'timeout', 'link-48');">timeout</a></tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'timeout'</tt><tt class="py-op">]</tt> </tt>
+<a name="L173"></a><tt class="py-lineno">173</tt>  <tt class="py-line">        <tt class="py-name">key_filename</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'ssh_keyfile'</tt><tt class="py-op">]</tt> </tt>
+<a name="L174"></a><tt class="py-lineno">174</tt>  <tt class="py-line"> </tt>
+<a name="L175"></a><tt class="py-lineno">175</tt>  <tt class="py-line">        <tt class="py-name">allow_agent</tt> <tt class="py-op">=</tt> <tt class="py-op">(</tt><tt class="py-name">key_filename</tt> <tt class="py-keyword">is</tt> <tt class="py-keyword">not</tt> <tt class="py-name">None</tt><tt class="py-op">)</tt> <tt class="py-keyword">or</tt> <tt class="py-op">(</tt><tt class="py-name">key_filename</tt> <tt class="py-keyword">is</tt> <tt class="py-name">None</tt> <tt class="py-keyword">and</tt> <tt id="link-106" class="py-name"><a title="ansible.plugins.lookup.password" class="py-name" href="#" onclick="return doclink('link-106', 'password', 'link-30');">password</a></tt> <tt class="py-keyword">is</tt> <tt class="py-name">None</tt><tt class="py-op">)</tt> </tt>
+<a name="L176"></a><tt class="py-lineno">176</tt>  <tt class="py-line"> </tt>
+<a name="L177"></a><tt class="py-lineno">177</tt>  <tt class="py-line">        <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L178"></a><tt class="py-lineno">178</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-107" class="py-name"><a title="ansible.module_utils.shell
+ansible.plugins.shell" class="py-name" href="#" onclick="return doclink('link-107', 'shell', 'link-8');">shell</a></tt> <tt class="py-op">=</tt> <tt id="link-108" class="py-name"><a title="ansible.module_utils.shell.Shell" class="py-name" href="#" onclick="return doclink('link-108', 'Shell', 'link-9');">Shell</a></tt><tt class="py-op">(</tt><tt class="py-name">kickstart</tt><tt class="py-op">=</tt><tt class="py-name">False</tt><tt class="py-op">,</tt> <tt class="py-name">prompts_re</tt><tt class="py-op">=</tt><tt id="link-109" class="py-name"><a title="ansible.module_utils.asa.CLI_PROMPTS_RE
+ansible.module_utils.eos.Cli.CLI_PROMPTS_RE
+ansible.module_utils.ios.Cli.CLI_PROMPTS_RE
+ansible.module_utils.iosxr.Cli.CLI_PROMPTS_RE
+ansible.module_utils.nxos.CLI_PROMPTS_RE
+ansible.module_utils.shell.CLI_PROMPTS_RE
+ansible.module_utils.vyos.Cli.CLI_PROMPTS_RE" class="py-name" href="#" onclick="return doclink('link-109', 'CLI_PROMPTS_RE', 'link-54');">CLI_PROMPTS_RE</a></tt><tt class="py-op">,</tt> </tt>
+<a name="L179"></a><tt class="py-lineno">179</tt>  <tt class="py-line">                    <tt class="py-name">errors_re</tt><tt class="py-op">=</tt><tt id="link-110" class="py-name"><a title="ansible.module_utils.asa.CLI_ERRORS_RE
+ansible.module_utils.eos.Cli.CLI_ERRORS_RE
+ansible.module_utils.ios.Cli.CLI_ERRORS_RE
+ansible.module_utils.iosxr.Cli.CLI_ERRORS_RE
+ansible.module_utils.nxos.CLI_ERRORS_RE
+ansible.module_utils.shell.CLI_ERRORS_RE
+ansible.module_utils.vyos.Cli.CLI_ERRORS_RE" class="py-name" href="#" onclick="return doclink('link-110', 'CLI_ERRORS_RE', 'link-57');">CLI_ERRORS_RE</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L180"></a><tt class="py-lineno">180</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-111" class="py-name"><a title="ansible.module_utils.shell
+ansible.plugins.shell" class="py-name" href="#" onclick="return doclink('link-111', 'shell', 'link-8');">shell</a></tt><tt class="py-op">.</tt><tt id="link-112" class="py-name" targets="Method ansible.module_utils.shell.Shell.open()=ansible.module_utils.shell.Shell-class.html#open"><a title="ansible.module_utils.shell.Shell.open" class="py-name" href="#" onclick="return doclink('link-112', 'open', 'link-112');">open</a></tt><tt class="py-op">(</tt><tt id="link-113" class="py-name"><a title="ansible.inventory.host" class="py-name" href="#" onclick="return doclink('link-113', 'host', 'link-24');">host</a></tt><tt class="py-op">,</tt> <tt class="py-name">port</tt><tt class="py-op">=</tt><tt class="py-name">port</tt><tt class="py-op">,</tt> <tt class="py-name">username</tt><tt class="py-op">=</tt><tt class="py-name">username</tt><tt class="py-op">,</tt> </tt>
+<a name="L181"></a><tt class="py-lineno">181</tt>  <tt class="py-line">                    <tt id="link-114" class="py-name"><a title="ansible.plugins.lookup.password" class="py-name" href="#" onclick="return doclink('link-114', 'password', 'link-30');">password</a></tt><tt class="py-op">=</tt><tt id="link-115" class="py-name"><a title="ansible.plugins.lookup.password" class="py-name" href="#" onclick="return doclink('link-115', 'password', 'link-30');">password</a></tt><tt class="py-op">,</tt> <tt class="py-name">key_filename</tt><tt class="py-op">=</tt><tt class="py-name">key_filename</tt><tt class="py-op">,</tt> </tt>
+<a name="L182"></a><tt class="py-lineno">182</tt>  <tt class="py-line">                    <tt class="py-name">allow_agent</tt><tt class="py-op">=</tt><tt class="py-name">allow_agent</tt><tt class="py-op">,</tt> <tt id="link-116" class="py-name"><a title="ansible.module_utils.facts.timeout" class="py-name" href="#" onclick="return doclink('link-116', 'timeout', 'link-48');">timeout</a></tt><tt class="py-op">=</tt><tt id="link-117" class="py-name"><a title="ansible.module_utils.facts.timeout" class="py-name" href="#" onclick="return doclink('link-117', 'timeout', 'link-48');">timeout</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L183"></a><tt class="py-lineno">183</tt>  <tt class="py-line">        <tt class="py-keyword">except</tt> <tt id="link-118" class="py-name"><a title="ansible.module_utils.shell.ShellError" class="py-name" href="#" onclick="return doclink('link-118', 'ShellError', 'link-10');">ShellError</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L184"></a><tt class="py-lineno">184</tt>  <tt class="py-line">            <tt id="link-119" class="py-name" targets="Variable ansible.plugins.lookup.consul_kv.e=ansible.plugins.lookup.consul_kv-module.html#e"><a title="ansible.plugins.lookup.consul_kv.e" class="py-name" href="#" onclick="return doclink('link-119', 'e', 'link-119');">e</a></tt> <tt class="py-op">=</tt> <tt id="link-120" class="py-name"><a title="ansible.module_utils.pycompat24.get_exception" class="py-name" href="#" onclick="return doclink('link-120', 'get_exception', 'link-5');">get_exception</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L185"></a><tt class="py-lineno">185</tt>  <tt class="py-line">            <tt class="py-name">msg</tt> <tt class="py-op">=</tt> <tt class="py-string">'failed to connect to %s:%s - %s'</tt> <tt class="py-op">%</tt> <tt class="py-op">(</tt><tt id="link-121" class="py-name"><a title="ansible.inventory.host" class="py-name" href="#" onclick="return doclink('link-121', 'host', 'link-24');">host</a></tt><tt class="py-op">,</tt> <tt class="py-name">port</tt><tt class="py-op">,</tt> <tt id="link-122" class="py-name" targets="Class str=str-class.html"><a title="str" class="py-name" href="#" onclick="return doclink('link-122', 'str', 'link-122');">str</a></tt><tt class="py-op">(</tt><tt id="link-123" class="py-name"><a title="ansible.plugins.lookup.consul_kv.e" class="py-name" href="#" onclick="return doclink('link-123', 'e', 'link-119');">e</a></tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L186"></a><tt class="py-lineno">186</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">module</tt><tt class="py-op">.</tt><tt id="link-124" class="py-name"><a title="ansible.module_utils.basic.AnsibleModule.fail_json" class="py-name" href="#" onclick="return doclink('link-124', 'fail_json', 'link-90');">fail_json</a></tt><tt class="py-op">(</tt><tt class="py-name">msg</tt><tt class="py-op">=</tt><tt class="py-name">msg</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L187"></a><tt class="py-lineno">187</tt>  <tt class="py-line"> </tt>
+<a name="Cli.send"></a><div id="Cli.send-def"><a name="L188"></a><tt class="py-lineno">188</tt> <a class="py-toggle" href="#" id="Cli.send-toggle" onclick="return toggle('Cli.send');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.nxos.Cli-class.html#send">send</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">commands</tt><tt class="py-op">,</tt> <tt class="py-param">encoding</tt><tt class="py-op">=</tt><tt class="py-string">'text'</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Cli.send-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="Cli.send-expanded"><a name="L189"></a><tt class="py-lineno">189</tt>  <tt class="py-line">        <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L190"></a><tt class="py-lineno">190</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-125" class="py-name"><a title="ansible.module_utils.shell
+ansible.plugins.shell" class="py-name" href="#" onclick="return doclink('link-125', 'shell', 'link-8');">shell</a></tt><tt class="py-op">.</tt><tt id="link-126" class="py-name" targets="Method ansible.module_utils.asa.Cli.send()=ansible.module_utils.asa.Cli-class.html#send,Method ansible.module_utils.nxos.Cli.send()=ansible.module_utils.nxos.Cli-class.html#send,Method ansible.module_utils.nxos.Nxapi.send()=ansible.module_utils.nxos.Nxapi-class.html#send,Method ansible.module_utils.openswitch.Cli.send()=ansible.module_utils.openswitch.Cli-class.html#send,Method ansible.module_utils.openswitch.Rest.send()=ansible.module_utils.openswitch.Rest-class.html#send,Method ansible.module_utils.shell.Shell.send()=ansible.module_utils.shell.Shell-class.html#send"><a title="ansible.module_utils.asa.Cli.send
+ansible.module_utils.nxos.Cli.send
+ansible.module_utils.nxos.Nxapi.send
+ansible.module_utils.openswitch.Cli.send
+ansible.module_utils.openswitch.Rest.send
+ansible.module_utils.shell.Shell.send" class="py-name" href="#" onclick="return doclink('link-126', 'send', 'link-126');">send</a></tt><tt class="py-op">(</tt><tt class="py-name">commands</tt><tt class="py-op">)</tt> </tt>
+<a name="L191"></a><tt class="py-lineno">191</tt>  <tt class="py-line">        <tt class="py-keyword">except</tt> <tt id="link-127" class="py-name"><a title="ansible.module_utils.shell.ShellError" class="py-name" href="#" onclick="return doclink('link-127', 'ShellError', 'link-10');">ShellError</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L192"></a><tt class="py-lineno">192</tt>  <tt class="py-line">            <tt id="link-128" class="py-name"><a title="ansible.plugins.lookup.consul_kv.e" class="py-name" href="#" onclick="return doclink('link-128', 'e', 'link-119');">e</a></tt> <tt class="py-op">=</tt> <tt id="link-129" class="py-name"><a title="ansible.module_utils.pycompat24.get_exception" class="py-name" href="#" onclick="return doclink('link-129', 'get_exception', 'link-5');">get_exception</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L193"></a><tt class="py-lineno">193</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">module</tt><tt class="py-op">.</tt><tt id="link-130" class="py-name"><a title="ansible.module_utils.basic.AnsibleModule.fail_json" class="py-name" href="#" onclick="return doclink('link-130', 'fail_json', 'link-90');">fail_json</a></tt><tt class="py-op">(</tt><tt class="py-name">msg</tt><tt class="py-op">=</tt><tt id="link-131" class="py-name"><a title="ansible.plugins.lookup.consul_kv.e" class="py-name" href="#" onclick="return doclink('link-131', 'e', 'link-119');">e</a></tt><tt class="py-op">.</tt><tt class="py-name">message</tt><tt class="py-op">,</tt> <tt class="py-name">commands</tt><tt class="py-op">=</tt><tt class="py-name">commands</tt><tt class="py-op">)</tt> </tt>
+</div></div><a name="L194"></a><tt class="py-lineno">194</tt>  <tt class="py-line"> </tt>
+<a name="NetworkModule"></a><div id="NetworkModule-def"><a name="L195"></a><tt class="py-lineno">195</tt>  <tt class="py-line"> </tt>
+<a name="L196"></a><tt class="py-lineno">196</tt> <a class="py-toggle" href="#" id="NetworkModule-toggle" onclick="return toggle('NetworkModule');">-</a><tt class="py-line"><tt class="py-keyword">class</tt> <a class="py-def-name" href="ansible.module_utils.nxos.NetworkModule-class.html">NetworkModule</a><tt class="py-op">(</tt><tt class="py-base-class">AnsibleModule</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="NetworkModule-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="NetworkModule-expanded"><a name="L197"></a><tt class="py-lineno">197</tt>  <tt class="py-line"> </tt>
+<a name="NetworkModule.__init__"></a><div id="NetworkModule.__init__-def"><a name="L198"></a><tt class="py-lineno">198</tt> <a class="py-toggle" href="#" id="NetworkModule.__init__-toggle" onclick="return toggle('NetworkModule.__init__');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.nxos.NetworkModule-class.html#__init__">__init__</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-op">*</tt><tt class="py-param">args</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">kwargs</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="NetworkModule.__init__-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="NetworkModule.__init__-expanded"><a name="L199"></a><tt class="py-lineno">199</tt>  <tt class="py-line">        <tt class="py-name">super</tt><tt class="py-op">(</tt><tt id="link-132" class="py-name" targets="Class ansible.module_utils.asa.NetworkModule=ansible.module_utils.asa.NetworkModule-class.html,Class ansible.module_utils.junos.NetworkModule=ansible.module_utils.junos.NetworkModule-class.html,Class ansible.module_utils.network.NetworkModule=ansible.module_utils.network.NetworkModule-class.html,Class ansible.module_utils.nxos.NetworkModule=ansible.module_utils.nxos.NetworkModule-class.html,Class ansible.module_utils.openswitch.NetworkModule=ansible.module_utils.openswitch.NetworkModule-class.html"><a title="ansible.module_utils.asa.NetworkModule
+ansible.module_utils.junos.NetworkModule
+ansible.module_utils.network.NetworkModule
+ansible.module_utils.nxos.NetworkModule
+ansible.module_utils.openswitch.NetworkModule" class="py-name" href="#" onclick="return doclink('link-132', 'NetworkModule', 'link-132');">NetworkModule</a></tt><tt class="py-op">,</tt> <tt class="py-name">self</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt id="link-133" class="py-name" targets="Method ansible.cli.CLI.__init__()=ansible.cli.CLI-class.html#__init__,Method ansible.cli.console.ConsoleCLI.__init__()=ansible.cli.console.ConsoleCLI-class.html#__init__,Method ansible.cli.doc.DocCLI.__init__()=ansible.cli.doc.DocCLI-class.html#__init__,Method ansible.cli.galaxy.GalaxyCLI.__init__()=ansible.cli.galaxy.GalaxyCLI-class.html#__init__,Method ansible.cli.vault.VaultCLI.__init__()=ansible.cli.vault.VaultCLI-class.html#__init__,Method ansible.compat.six.MovedAttribute.__init__()=ansible.compat.six.MovedAttribute-class.html#__init__,Method ansible.compat.six.MovedModule.__init__()=ansible.compat.six.MovedModule-class.html#__init__,Method ansible.compat.six._LazyDescr.__init__()=ansible.compat.six._LazyDescr-class.html#__init__,Method ansible.compat.six._LazyModule.__init__()=ansible.compat.six._LazyModule-class.html#__init__,Method ansible.compat.six._SixMetaPathImporter.__init__()=ansible.compat.six._SixMetaPathImporter-class.html#__init__,Method ansible.errors.AnsibleError.__init__()=ansible.errors.AnsibleError-class.html#__init__,Method ansible.executor.module_common.ModuleDepFinder.__init__()=ansible.executor.module_common.ModuleDepFinder-class.html#__init__,Method ansible.executor.play_iterator.HostState.__init__()=ansible.executor.play_iterator.HostState-class.html#__init__,Method ansible.executor.play_iterator.PlayIterator.__init__()=ansible.executor.play_iterator.PlayIterator-class.html#__init__,Method ansible.executor.playbook_executor.PlaybookExecutor.__init__()=ansible.executor.playbook_executor.PlaybookExecutor-class.html#__init__,Method ansible.executor.process.result.ResultProcess.__init__()=ansible.executor.process.result.ResultProcess-class.html#__init__,Method ansible.executor.process.worker.WorkerProcess.__init__()=ansible.executor.process.worker.WorkerProcess-class.html#__init__,Method ansible.executor.stats.AggregateStats.__init__()=ansible.executor.stats.AggregateStats-class.html#__init__,Method ansible.executor.task_executor.TaskExecutor.__init__()=ansible.executor.task_executor.TaskExecutor-class.html#__init__,Method ansible.executor.task_queue_manager.TaskQueueManager.__init__()=ansible.executor.task_queue_manager.TaskQueueManager-class.html#__init__,Method ansible.executor.task_result.TaskResult.__init__()=ansible.executor.task_result.TaskResult-class.html#__init__,Method ansible.galaxy.Galaxy.__init__()=ansible.galaxy.Galaxy-class.html#__init__,Method ansible.galaxy.api.GalaxyAPI.__init__()=ansible.galaxy.api.GalaxyAPI-class.html#__init__,Method ansible.galaxy.login.GalaxyLogin.__init__()=ansible.galaxy.login.GalaxyLogin-class.html#__init__,Method ansible.galaxy.role.GalaxyRole.__init__()=ansible.galaxy.role.GalaxyRole-class.html#__init__,Method ansible.galaxy.token.GalaxyToken.__init__()=ansible.galaxy.token.GalaxyToken-class.html#__init__,Method ansible.inventory.Inventory.__init__()=ansible.inventory.Inventory-class.html#__init__,Method ansible.inventory.dir.InventoryDirectory.__init__()=ansible.inventory.dir.InventoryDirectory-class.html#__init__,Method ansible.inventory.group.Group.__init__()=ansible.inventory.group.Group-class.html#__init__,Method ansible.inventory.host.Host.__init__()=ansible.inventory.host.Host-class.html#__init__,Method ansible.inventory.ini.InventoryParser.__init__()=ansible.inventory.ini.InventoryParser-class.html#__init__,Method ansible.inventory.script.InventoryScript.__init__()=ansible.inventory.script.InventoryScript-class.html#__init__,Method ansible.inventory.vars_plugins.noop.VarsModule.__init__()=ansible.inventory.vars_plugins.noop.VarsModule-class.html#__init__,Method ansible.inventory.yaml.InventoryParser.__init__()=ansible.inventory.yaml.InventoryParser-class.html#__init__,Method ansible.module_utils.asa.Cli.__init__()=ansible.module_utils.asa.Cli-class.html#__init__,Method ansible.module_utils.asa.NetworkModule.__init__()=ansible.module_utils.asa.NetworkModule-class.html#__init__,Method ansible.module_utils.azure_rm_common.AzureRMModuleBase.__init__()=ansible.module_utils.azure_rm_common.AzureRMModuleBase-class.html#__init__,Method ansible.module_utils.basic.AnsibleModule.__init__()=ansible.module_utils.basic.AnsibleModule-class.html#__init__,Method ansible.module_utils.cloudstack.AnsibleCloudStack.__init__()=ansible.module_utils.cloudstack.AnsibleCloudStack-class.html#__init__,Method ansible.module_utils.docker_common.AnsibleDockerClient.__init__()=ansible.module_utils.docker_common.AnsibleDockerClient-class.html#__init__,Method ansible.module_utils.docker_common.DockerBaseClass.__init__()=ansible.module_utils.docker_common.DockerBaseClass-class.html#__init__,Method ansible.module_utils.eos.Eapi.__init__()=ansible.module_utils.eos.Eapi-class.html#__init__,Method ansible.module_utils.facts.Distribution.__init__()=ansible.module_utils.facts.Distribution-class.html#__init__,Method ansible.module_utils.facts.Facts.__init__()=ansible.module_utils.facts.Facts-class.html#__init__,Method ansible.module_utils.ios.Restconf.__init__()=ansible.module_utils.ios.Restconf-class.html#__init__,Method ansible.module_utils.junos.Cli.__init__()=ansible.module_utils.junos.Cli-class.html#__init__,Method ansible.module_utils.junos.Netconf.__init__()=ansible.module_utils.junos.Netconf-class.html#__init__,Method ansible.module_utils.junos.NetworkModule.__init__()=ansible.module_utils.junos.NetworkModule-class.html#__init__,Method ansible.module_utils.netcfg.ConfigLine.__init__()=ansible.module_utils.netcfg.ConfigLine-class.html#__init__,Method ansible.module_utils.netcfg.NetworkConfig.__init__()=ansible.module_utils.netcfg.NetworkConfig-class.html#__init__,Method ansible.module_utils.netcmd.CommandRunner.__init__()=ansible.module_utils.netcmd.CommandRunner-class.html#__init__,Method ansible.module_utils.netcmd.Conditional.__init__()=ansible.module_utils.netcmd.Conditional-class.html#__init__,Method ansible.module_utils.netcmd.FailedConditionsError.__init__()=ansible.module_utils.netcmd.FailedConditionsError-class.html#__init__,Method ansible.module_utils.network.Cli.__init__()=ansible.module_utils.network.Cli-class.html#__init__,Method ansible.module_utils.network.Command.__init__()=ansible.module_utils.network.Command-class.html#__init__,Method ansible.module_utils.network.Config.__init__()=ansible.module_utils.network.Config-class.html#__init__,Method ansible.module_utils.network.ModuleStub.__init__()=ansible.module_utils.network.ModuleStub-class.html#__init__,Method ansible.module_utils.network.NetCli.__init__()=ansible.module_utils.network.NetCli-class.html#__init__,Method ansible.module_utils.network.NetworkError.__init__()=ansible.module_utils.network.NetworkError-class.html#__init__,Method ansible.module_utils.network.NetworkModule.__init__()=ansible.module_utils.network.NetworkModule-class.html#__init__,Method ansible.module_utils.nxos.Cli.__init__()=ansible.module_utils.nxos.Cli-class.html#__init__,Method ansible.module_utils.nxos.NetworkModule.__init__()=ansible.module_utils.nxos.NetworkModule-class.html#__init__,Method ansible.module_utils.nxos.Nxapi.__init__()=ansible.module_utils.nxos.Nxapi-class.html#__init__,Method ansible.module_utils.openswitch.Cli.__init__()=ansible.module_utils.openswitch.Cli-class.html#__init__,Method ansible.module_utils.openswitch.NetworkModule.__init__()=ansible.module_utils.openswitch.NetworkModule-class.html#__init__,Method ansible.module_utils.openswitch.Response.__init__()=ansible.module_utils.openswitch.Response-class.html#__init__,Method ansible.module_utils.openswitch.Rest.__init__()=ansible.module_utils.openswitch.Rest-class.html#__init__,Method ansible.module_utils.redhat.RegistrationBase.__init__()=ansible.module_utils.redhat.RegistrationBase-class.html#__init__,Method ansible.module_utils.redhat.Rhsm.__init__()=ansible.module_utils.redhat.Rhsm-class.html#__init__,Method ansible.module_utils.redhat.RhsmPool.__init__()=ansible.module_utils.redhat.RhsmPool-class.html#__init__,Method ansible.module_utils.redhat.RhsmPools.__init__()=ansible.module_utils.redhat.RhsmPools-class.html#__init__,Method ansible.module_utils.service.Service.__init__()=ansible.module_utils.service.Service-class.html#__init__,Method ansible.module_utils.shell.Command.__init__()=ansible.module_utils.shell.Command-class.html#__init__,Method ansible.module_utils.shell.Shell.__init__()=ansible.module_utils.shell.Shell-class.html#__init__,Method ansible.module_utils.shell.ShellError.__init__()=ansible.module_utils.shell.ShellError-class.html#__init__,Method ansible.module_utils.six.MovedAttribute.__init__()=ansible.module_utils.six.MovedAttribute-class.html#__init__,Method ansible.module_utils.six.MovedModule.__init__()=ansible.module_utils.six.MovedModule-class.html#__init__,Method ansible.module_utils.six._LazyDescr.__init__()=ansible.module_utils.six._LazyDescr-class.html#__init__,Method ansible.module_utils.urls.CustomHTTPSConnection.__init__()=ansible.module_utils.urls.CustomHTTPSConnection-class.html#__init__,Method ansible.module_utils.urls.RequestWithMethod.__init__()=ansible.module_utils.urls.RequestWithMethod-class.html#__init__,Method ansible.module_utils.urls.SSLValidationHandler.__init__()=ansible.module_utils.urls.SSLValidationHandler-class.html#__init__,Method ansible.module_utils.vca.VcaAnsibleModule.__init__()=ansible.module_utils.vca.VcaAnsibleModule-class.html#__init__,Method ansible.module_utils.vca.VcaError.__init__()=ansible.module_utils.vca.VcaError-class.html#__init__,Method ansible.parsing.dataloader.DataLoader.__init__()=ansible.parsing.dataloader.DataLoader-class.html#__init__,Method ansible.parsing.mod_args.ModuleArgsParser.__init__()=ansible.parsing.mod_args.ModuleArgsParser-class.html#__init__,Method ansible.parsing.vault.VaultAES.__init__()=ansible.parsing.vault.VaultAES-class.html#__init__,Method ansible.parsing.vault.VaultAES256.__init__()=ansible.parsing.vault.VaultAES256-class.html#__init__,Method ansible.parsing.vault.VaultEditor.__init__()=ansible.parsing.vault.VaultEditor-class.html#__init__,Method ansible.parsing.vault.VaultFile.__init__()=ansible.parsing.vault.VaultFile-class.html#__init__,Method ansible.parsing.vault.VaultLib.__init__()=ansible.parsing.vault.VaultLib-class.html#__init__,Method ansible.parsing.yaml.constructor.AnsibleConstructor.__init__()=ansible.parsing.yaml.constructor.AnsibleConstructor-class.html#__init__,Method ansible.parsing.yaml.loader.AnsibleLoader.__init__()=ansible.parsing.yaml.loader.AnsibleLoader-class.html#__init__,Method ansible.playbook.Playbook.__init__()=ansible.playbook.Playbook-class.html#__init__,Method ansible.playbook.attribute.Attribute.__init__()=ansible.playbook.attribute.Attribute-class.html#__init__,Method ansible.playbook.base.Base.__init__()=ansible.playbook.base.Base-class.html#__init__,Method ansible.playbook.become.Become.__init__()=ansible.playbook.become.Become-class.html#__init__,Method ansible.playbook.block.Block.__init__()=ansible.playbook.block.Block-class.html#__init__,Method ansible.playbook.conditional.Conditional.__init__()=ansible.playbook.conditional.Conditional-class.html#__init__,Method ansible.playbook.handler.Handler.__init__()=ansible.playbook.handler.Handler-class.html#__init__,Method ansible.playbook.included_file.IncludedFile.__init__()=ansible.playbook.included_file.IncludedFile-class.html#__init__,Method ansible.playbook.loop_control.LoopControl.__init__()=ansible.playbook.loop_control.LoopControl-class.html#__init__,Method ansible.playbook.play.Play.__init__()=ansible.playbook.play.Play-class.html#__init__,Method ansible.playbook.play_context.PlayContext.__init__()=ansible.playbook.play_context.PlayContext-class.html#__init__,Method ansible.playbook.role.Role.__init__()=ansible.playbook.role.Role-class.html#__init__,Method ansible.playbook.role.definition.RoleDefinition.__init__()=ansible.playbook.role.definition.RoleDefinition-class.html#__init__,Method ansible.playbook.role.include.RoleInclude.__init__()=ansible.playbook.role.include.RoleInclude-class.html#__init__,Method ansible.playbook.role.metadata.RoleMetadata.__init__()=ansible.playbook.role.metadata.RoleMetadata-class.html#__init__,Method ansible.playbook.role.requirement.RoleRequirement.__init__()=ansible.playbook.role.requirement.RoleRequirement-class.html#__init__,Method ansible.playbook.taggable.Taggable.__init__()=ansible.playbook.taggable.Taggable-class.html#__init__,Method ansible.playbook.task.Task.__init__()=ansible.playbook.task.Task-class.html#__init__,Method ansible.plugins.PluginLoader.__init__()=ansible.plugins.PluginLoader-class.html#__init__,Method ansible.plugins.action.ActionBase.__init__()=ansible.plugins.action.ActionBase-class.html#__init__,Method ansible.plugins.cache.FactCache.__init__()=ansible.plugins.cache.FactCache-class.html#__init__,Method ansible.plugins.cache.jsonfile.CacheModule.__init__()=ansible.plugins.cache.jsonfile.CacheModule-class.html#__init__,Method ansible.plugins.cache.memcached.CacheModule.__init__()=ansible.plugins.cache.memcached.CacheModule-class.html#__init__,Method ansible.plugins.cache.memcached.CacheModuleKeys.__init__()=ansible.plugins.cache.memcached.CacheModuleKeys-class.html#__init__,Method ansible.plugins.cache.memcached.ProxyClientPool.__init__()=ansible.plugins.cache.memcached.ProxyClientPool-class.html#__init__,Method ansible.plugins.cache.memory.CacheModule.__init__()=ansible.plugins.cache.memory.CacheModule-class.html#__init__,Method ansible.plugins.cache.redis.CacheModule.__init__()=ansible.plugins.cache.redis.CacheModule-class.html#__init__,Method ansible.plugins.callback.CallbackBase.__init__()=ansible.plugins.callback.CallbackBase-class.html#__init__,Method ansible.plugins.callback.actionable.CallbackModule.__init__()=ansible.plugins.callback.actionable.CallbackModule-class.html#__init__,Method ansible.plugins.callback.context_demo.CallbackModule.__init__()=ansible.plugins.callback.context_demo.CallbackModule-class.html#__init__,Method ansible.plugins.callback.hipchat.CallbackModule.__init__()=ansible.plugins.callback.hipchat.CallbackModule-class.html#__init__,Method ansible.plugins.callback.json.CallbackModule.__init__()=ansible.plugins.callback.json.CallbackModule-class.html#__init__,Method ansible.plugins.callback.junit.CallbackModule.__init__()=ansible.plugins.callback.junit.CallbackModule-class.html#__init__,Method ansible.plugins.callback.junit.HostData.__init__()=ansible.plugins.callback.junit.HostData-class.html#__init__,Method ansible.plugins.callback.junit.TaskData.__init__()=ansible.plugins.callback.junit.TaskData-class.html#__init__,Method ansible.plugins.callback.log_plays.CallbackModule.__init__()=ansible.plugins.callback.log_plays.CallbackModule-class.html#__init__,Method ansible.plugins.callback.logentries.CallbackModule.__init__()=ansible.plugins.callback.logentries.CallbackModule-class.html#__init__,Method ansible.plugins.callback.logentries.PlainTextSocketAppender.__init__()=ansible.plugins.callback.logentries.PlainTextSocketAppender-class.html#__init__,Method ansible.plugins.callback.osx_say.CallbackModule.__init__()=ansible.plugins.callback.osx_say.CallbackModule-class.html#__init__,Method ansible.plugins.callback.profile_tasks.CallbackModule.__init__()=ansible.plugins.callback.profile_tasks.CallbackModule-class.html#__init__,Method ansible.plugins.callback.slack.CallbackModule.__init__()=ansible.plugins.callback.slack.CallbackModule-class.html#__init__,Method ansible.plugins.callback.syslog_json.CallbackModule.__init__()=ansible.plugins.callback.syslog_json.CallbackModule-class.html#__init__,Method ansible.plugins.callback.timer.CallbackModule.__init__()=ansible.plugins.callback.timer.CallbackModule-class.html#__init__,Method ansible.plugins.callback.tree.CallbackModule.__init__()=ansible.plugins.callback.tree.CallbackModule-class.html#__init__,Method ansible.plugins.connection.ConnectionBase.__init__()=ansible.plugins.connection.ConnectionBase-class.html#__init__,Method ansible.plugins.connection.accelerate.Connection.__init__()=ansible.plugins.connection.accelerate.Connection-class.html#__init__,Method ansible.plugins.connection.chroot.Connection.__init__()=ansible.plugins.connection.chroot.Connection-class.html#__init__,Method ansible.plugins.connection.docker.Connection.__init__()=ansible.plugins.connection.docker.Connection-class.html#__init__,Method ansible.plugins.connection.funcd.Connection.__init__()=ansible.plugins.connection.funcd.Connection-class.html#__init__,Method ansible.plugins.connection.jail.Connection.__init__()=ansible.plugins.connection.jail.Connection-class.html#__init__,Method ansible.plugins.connection.libvirt_lxc.Connection.__init__()=ansible.plugins.connection.libvirt_lxc.Connection-class.html#__init__,Method ansible.plugins.connection.lxc.Connection.__init__()=ansible.plugins.connection.lxc.Connection-class.html#__init__,Method ansible.plugins.connection.lxd.Connection.__init__()=ansible.plugins.connection.lxd.Connection-class.html#__init__,Method ansible.plugins.connection.paramiko_ssh.MyAddPolicy.__init__()=ansible.plugins.connection.paramiko_ssh.MyAddPolicy-class.html#__init__,Method ansible.plugins.connection.ssh.Connection.__init__()=ansible.plugins.connection.ssh.Connection-class.html#__init__,Method ansible.plugins.connection.winrm.Connection.__init__()=ansible.plugins.connection.winrm.Connection-class.html#__init__,Method ansible.plugins.connection.zone.Connection.__init__()=ansible.plugins.connection.zone.Connection-class.html#__init__,Method ansible.plugins.lookup.LookupBase.__init__()=ansible.plugins.lookup.LookupBase-class.html#__init__,Method ansible.plugins.lookup.consul_kv.LookupModule.__init__()=ansible.plugins.lookup.consul_kv.LookupModule-class.html#__init__,Method ansible.plugins.lookup.csvfile.CSVReader.__init__()=ansible.plugins.lookup.csvfile.CSVReader-class.html#__init__,Method ansible.plugins.lookup.csvfile.CSVRecoder.__init__()=ansible.plugins.lookup.csvfile.CSVRecoder-class.html#__init__,Method ansible.plugins.lookup.etcd.Etcd.__init__()=ansible.plugins.lookup.etcd.Etcd-class.html#__init__,Method ansible.plugins.lookup.hashi_vault.HashiVault.__init__()=ansible.plugins.lookup.hashi_vault.HashiVault-class.html#__init__,Method ansible.plugins.lookup.indexed_items.LookupModule.__init__()=ansible.plugins.lookup.indexed_items.LookupModule-class.html#__init__,Method ansible.plugins.shell.ShellBase.__init__()=ansible.plugins.shell.ShellBase-class.html#__init__,Method ansible.plugins.strategy.SharedPluginLoaderObj.__init__()=ansible.plugins.strategy.SharedPluginLoaderObj-class.html#__init__,Method ansible.plugins.strategy.StrategyBase.__init__()=ansible.plugins.strategy.StrategyBase-class.html#__init__,Method ansible.plugins.strategy.debug.Debugger.__init__()=ansible.plugins.strategy.debug.Debugger-class.html#__init__,Method ansible.plugins.strategy.debug.NextAction.__init__()=ansible.plugins.strategy.debug.NextAction-class.html#__init__,Method ansible.plugins.strategy.debug.StrategyModule.__init__()=ansible.plugins.strategy.debug.StrategyModule-class.html#__init__,Method ansible.template.Templar.__init__()=ansible.template.Templar-class.html#__init__,Method ansible.template.vars.AnsibleJ2Vars.__init__()=ansible.template.vars.AnsibleJ2Vars-class.html#__init__,Method ansible.utils.display.Display.__init__()=ansible.utils.display.Display-class.html#__init__,Method ansible.vars.AnsibleInventoryVarsData.__init__()=ansible.vars.AnsibleInventoryVarsData-class.html#__init__,Method ansible.vars.VariableManager.__init__()=ansible.vars.VariableManager-class.html#__init__,Method ansible.vars.hostvars.HostVars.__init__()=ansible.vars.hostvars.HostVars-class.html#__init__"><a title="ansible.cli.CLI.__init__
+ansible.cli.console.ConsoleCLI.__init__
+ansible.cli.doc.DocCLI.__init__
+ansible.cli.galaxy.GalaxyCLI.__init__
+ansible.cli.vault.VaultCLI.__init__
+ansible.compat.six.MovedAttribute.__init__
+ansible.compat.six.MovedModule.__init__
+ansible.compat.six._LazyDescr.__init__
+ansible.compat.six._LazyModule.__init__
+ansible.compat.six._SixMetaPathImporter.__init__
+ansible.errors.AnsibleError.__init__
+ansible.executor.module_common.ModuleDepFinder.__init__
+ansible.executor.play_iterator.HostState.__init__
+ansible.executor.play_iterator.PlayIterator.__init__
+ansible.executor.playbook_executor.PlaybookExecutor.__init__
+ansible.executor.process.result.ResultProcess.__init__
+ansible.executor.process.worker.WorkerProcess.__init__
+ansible.executor.stats.AggregateStats.__init__
+ansible.executor.task_executor.TaskExecutor.__init__
+ansible.executor.task_queue_manager.TaskQueueManager.__init__
+ansible.executor.task_result.TaskResult.__init__
+ansible.galaxy.Galaxy.__init__
+ansible.galaxy.api.GalaxyAPI.__init__
+ansible.galaxy.login.GalaxyLogin.__init__
+ansible.galaxy.role.GalaxyRole.__init__
+ansible.galaxy.token.GalaxyToken.__init__
+ansible.inventory.Inventory.__init__
+ansible.inventory.dir.InventoryDirectory.__init__
+ansible.inventory.group.Group.__init__
+ansible.inventory.host.Host.__init__
+ansible.inventory.ini.InventoryParser.__init__
+ansible.inventory.script.InventoryScript.__init__
+ansible.inventory.vars_plugins.noop.VarsModule.__init__
+ansible.inventory.yaml.InventoryParser.__init__
+ansible.module_utils.asa.Cli.__init__
+ansible.module_utils.asa.NetworkModule.__init__
+ansible.module_utils.azure_rm_common.AzureRMModuleBase.__init__
+ansible.module_utils.basic.AnsibleModule.__init__
+ansible.module_utils.cloudstack.AnsibleCloudStack.__init__
+ansible.module_utils.docker_common.AnsibleDockerClient.__init__
+ansible.module_utils.docker_common.DockerBaseClass.__init__
+ansible.module_utils.eos.Eapi.__init__
+ansible.module_utils.facts.Distribution.__init__
+ansible.module_utils.facts.Facts.__init__
+ansible.module_utils.ios.Restconf.__init__
+ansible.module_utils.junos.Cli.__init__
+ansible.module_utils.junos.Netconf.__init__
+ansible.module_utils.junos.NetworkModule.__init__
+ansible.module_utils.netcfg.ConfigLine.__init__
+ansible.module_utils.netcfg.NetworkConfig.__init__
+ansible.module_utils.netcmd.CommandRunner.__init__
+ansible.module_utils.netcmd.Conditional.__init__
+ansible.module_utils.netcmd.FailedConditionsError.__init__
+ansible.module_utils.network.Cli.__init__
+ansible.module_utils.network.Command.__init__
+ansible.module_utils.network.Config.__init__
+ansible.module_utils.network.ModuleStub.__init__
+ansible.module_utils.network.NetCli.__init__
+ansible.module_utils.network.NetworkError.__init__
+ansible.module_utils.network.NetworkModule.__init__
+ansible.module_utils.nxos.Cli.__init__
+ansible.module_utils.nxos.NetworkModule.__init__
+ansible.module_utils.nxos.Nxapi.__init__
+ansible.module_utils.openswitch.Cli.__init__
+ansible.module_utils.openswitch.NetworkModule.__init__
+ansible.module_utils.openswitch.Response.__init__
+ansible.module_utils.openswitch.Rest.__init__
+ansible.module_utils.redhat.RegistrationBase.__init__
+ansible.module_utils.redhat.Rhsm.__init__
+ansible.module_utils.redhat.RhsmPool.__init__
+ansible.module_utils.redhat.RhsmPools.__init__
+ansible.module_utils.service.Service.__init__
+ansible.module_utils.shell.Command.__init__
+ansible.module_utils.shell.Shell.__init__
+ansible.module_utils.shell.ShellError.__init__
+ansible.module_utils.six.MovedAttribute.__init__
+ansible.module_utils.six.MovedModule.__init__
+ansible.module_utils.six._LazyDescr.__init__
+ansible.module_utils.urls.CustomHTTPSConnection.__init__
+ansible.module_utils.urls.RequestWithMethod.__init__
+ansible.module_utils.urls.SSLValidationHandler.__init__
+ansible.module_utils.vca.VcaAnsibleModule.__init__
+ansible.module_utils.vca.VcaError.__init__
+ansible.parsing.dataloader.DataLoader.__init__
+ansible.parsing.mod_args.ModuleArgsParser.__init__
+ansible.parsing.vault.VaultAES.__init__
+ansible.parsing.vault.VaultAES256.__init__
+ansible.parsing.vault.VaultEditor.__init__
+ansible.parsing.vault.VaultFile.__init__
+ansible.parsing.vault.VaultLib.__init__
+ansible.parsing.yaml.constructor.AnsibleConstructor.__init__
+ansible.parsing.yaml.loader.AnsibleLoader.__init__
+ansible.playbook.Playbook.__init__
+ansible.playbook.attribute.Attribute.__init__
+ansible.playbook.base.Base.__init__
+ansible.playbook.become.Become.__init__
+ansible.playbook.block.Block.__init__
+ansible.playbook.conditional.Conditional.__init__
+ansible.playbook.handler.Handler.__init__
+ansible.playbook.included_file.IncludedFile.__init__
+ansible.playbook.loop_control.LoopControl.__init__
+ansible.playbook.play.Play.__init__
+ansible.playbook.play_context.PlayContext.__init__
+ansible.playbook.role.Role.__init__
+ansible.playbook.role.definition.RoleDefinition.__init__
+ansible.playbook.role.include.RoleInclude.__init__
+ansible.playbook.role.metadata.RoleMetadata.__init__
+ansible.playbook.role.requirement.RoleRequirement.__init__
+ansible.playbook.taggable.Taggable.__init__
+ansible.playbook.task.Task.__init__
+ansible.plugins.PluginLoader.__init__
+ansible.plugins.action.ActionBase.__init__
+ansible.plugins.cache.FactCache.__init__
+ansible.plugins.cache.jsonfile.CacheModule.__init__
+ansible.plugins.cache.memcached.CacheModule.__init__
+ansible.plugins.cache.memcached.CacheModuleKeys.__init__
+ansible.plugins.cache.memcached.ProxyClientPool.__init__
+ansible.plugins.cache.memory.CacheModule.__init__
+ansible.plugins.cache.redis.CacheModule.__init__
+ansible.plugins.callback.CallbackBase.__init__
+ansible.plugins.callback.actionable.CallbackModule.__init__
+ansible.plugins.callback.context_demo.CallbackModule.__init__
+ansible.plugins.callback.hipchat.CallbackModule.__init__
+ansible.plugins.callback.json.CallbackModule.__init__
+ansible.plugins.callback.junit.CallbackModule.__init__
+ansible.plugins.callback.junit.HostData.__init__
+ansible.plugins.callback.junit.TaskData.__init__
+ansible.plugins.callback.log_plays.CallbackModule.__init__
+ansible.plugins.callback.logentries.CallbackModule.__init__
+ansible.plugins.callback.logentries.PlainTextSocketAppender.__init__
+ansible.plugins.callback.osx_say.CallbackModule.__init__
+ansible.plugins.callback.profile_tasks.CallbackModule.__init__
+ansible.plugins.callback.slack.CallbackModule.__init__
+ansible.plugins.callback.syslog_json.CallbackModule.__init__
+ansible.plugins.callback.timer.CallbackModule.__init__
+ansible.plugins.callback.tree.CallbackModule.__init__
+ansible.plugins.connection.ConnectionBase.__init__
+ansible.plugins.connection.accelerate.Connection.__init__
+ansible.plugins.connection.chroot.Connection.__init__
+ansible.plugins.connection.docker.Connection.__init__
+ansible.plugins.connection.funcd.Connection.__init__
+ansible.plugins.connection.jail.Connection.__init__
+ansible.plugins.connection.libvirt_lxc.Connection.__init__
+ansible.plugins.connection.lxc.Connection.__init__
+ansible.plugins.connection.lxd.Connection.__init__
+ansible.plugins.connection.paramiko_ssh.MyAddPolicy.__init__
+ansible.plugins.connection.ssh.Connection.__init__
+ansible.plugins.connection.winrm.Connection.__init__
+ansible.plugins.connection.zone.Connection.__init__
+ansible.plugins.lookup.LookupBase.__init__
+ansible.plugins.lookup.consul_kv.LookupModule.__init__
+ansible.plugins.lookup.csvfile.CSVReader.__init__
+ansible.plugins.lookup.csvfile.CSVRecoder.__init__
+ansible.plugins.lookup.etcd.Etcd.__init__
+ansible.plugins.lookup.hashi_vault.HashiVault.__init__
+ansible.plugins.lookup.indexed_items.LookupModule.__init__
+ansible.plugins.shell.ShellBase.__init__
+ansible.plugins.strategy.SharedPluginLoaderObj.__init__
+ansible.plugins.strategy.StrategyBase.__init__
+ansible.plugins.strategy.debug.Debugger.__init__
+ansible.plugins.strategy.debug.NextAction.__init__
+ansible.plugins.strategy.debug.StrategyModule.__init__
+ansible.template.Templar.__init__
+ansible.template.vars.AnsibleJ2Vars.__init__
+ansible.utils.display.Display.__init__
+ansible.vars.AnsibleInventoryVarsData.__init__
+ansible.vars.VariableManager.__init__
+ansible.vars.hostvars.HostVars.__init__" class="py-name" href="#" onclick="return doclink('link-133', '__init__', 'link-133');">__init__</a></tt><tt class="py-op">(</tt><tt class="py-op">*</tt><tt class="py-name">args</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-name">kwargs</tt><tt class="py-op">)</tt> </tt>
+<a name="L200"></a><tt class="py-lineno">200</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-134" class="py-name" targets="Package ansible.plugins.connection=ansible.plugins.connection-module.html"><a title="ansible.plugins.connection" class="py-name" href="#" onclick="return doclink('link-134', 'connection', 'link-134');">connection</a></tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L201"></a><tt class="py-lineno">201</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_config</tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L202"></a><tt class="py-lineno">202</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_connected</tt> <tt class="py-op">=</tt> <tt class="py-name">False</tt> </tt>
+</div><a name="L203"></a><tt class="py-lineno">203</tt>  <tt class="py-line"> </tt>
+<a name="L204"></a><tt class="py-lineno">204</tt>  <tt class="py-line">    <tt class="py-decorator">@</tt><tt class="py-decorator">property</tt> </tt>
+<a name="NetworkModule.connected"></a><div id="NetworkModule.connected-def"><a name="L205"></a><tt class="py-lineno">205</tt> <a class="py-toggle" href="#" id="NetworkModule.connected-toggle" onclick="return toggle('NetworkModule.connected');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.nxos.NetworkModule-class.html#connected">connected</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="NetworkModule.connected-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="NetworkModule.connected-expanded"><a name="L206"></a><tt class="py-lineno">206</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_connected</tt> </tt>
+</div><a name="L207"></a><tt class="py-lineno">207</tt>  <tt class="py-line"> </tt>
+<a name="L208"></a><tt class="py-lineno">208</tt>  <tt class="py-line">    <tt class="py-decorator">@</tt><tt class="py-decorator">property</tt> </tt>
+<a name="NetworkModule.config"></a><div id="NetworkModule.config-def"><a name="L209"></a><tt class="py-lineno">209</tt> <a class="py-toggle" href="#" id="NetworkModule.config-toggle" onclick="return toggle('NetworkModule.config');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.nxos.NetworkModule-class.html#config">config</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="NetworkModule.config-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="NetworkModule.config-expanded"><a name="L210"></a><tt class="py-lineno">210</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_config</tt><tt class="py-op">:</tt> </tt>
+<a name="L211"></a><tt class="py-lineno">211</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_config</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-135" class="py-name" targets="Function ansible.constants.get_config()=ansible.constants-module.html#get_config,Method ansible.module_utils.asa.NetworkModule.get_config()=ansible.module_utils.asa.NetworkModule-class.html#get_config,Method ansible.module_utils.eos.Eapi.get_config()=ansible.module_utils.eos.Eapi-class.html#get_config,Method ansible.module_utils.eos.EosConfigMixin.get_config()=ansible.module_utils.eos.EosConfigMixin-class.html#get_config,Function ansible.module_utils.eos.get_config()=ansible.module_utils.eos-module.html#get_config,Method ansible.module_utils.ios.Cli.get_config()=ansible.module_utils.ios.Cli-class.html#get_config,Method ansible.module_utils.ios.Restconf.get_config()=ansible.module_utils.ios.Restconf-class.html#get_config,Function ansible.module_utils.ios.get_config()=ansible.module_utils.ios-module.html#get_config,Method ansible.module_utils.iosxr.Cli.get_config()=ansible.module_utils.iosxr.Cli-class.html#get_config,Method ansible.module_utils.junos.Netconf.get_config()=ansible.module_utils.junos.Netconf-class.html#get_config,Method ansible.module_utils.junos.NetworkModule.get_config()=ansible.module_utils.junos.NetworkModule-class.html#get_config,Method ansible.module_utils.network.Config.get_config()=ansible.module_utils.network.Config-class.html#get_config,Method ansible.module_utils.nxos.NetworkModule.get_config()=ansible.module_utils.nxos.NetworkModule-class.html#get_config,Method ansible.module_utils.openswitch.NetworkModule.get_config()=ansible.module_utils.openswitch.NetworkModule-class.html#get_config,Method ansible.module_utils.vyos.Cli.get_config()=ansible.module_utils.vyos.Cli-class.html#get_config,Function ansible.module_utils.vyos.get_config()=ansible.module_utils.vyos-module.html#get_config"><a title="ansible.constants.get_config
+ansible.module_utils.asa.NetworkModule.get_config
+ansible.module_utils.eos.Eapi.get_config
+ansible.module_utils.eos.EosConfigMixin.get_config
+ansible.module_utils.eos.get_config
+ansible.module_utils.ios.Cli.get_config
+ansible.module_utils.ios.Restconf.get_config
+ansible.module_utils.ios.get_config
+ansible.module_utils.iosxr.Cli.get_config
+ansible.module_utils.junos.Netconf.get_config
+ansible.module_utils.junos.NetworkModule.get_config
+ansible.module_utils.network.Config.get_config
+ansible.module_utils.nxos.NetworkModule.get_config
+ansible.module_utils.openswitch.NetworkModule.get_config
+ansible.module_utils.vyos.Cli.get_config
+ansible.module_utils.vyos.get_config" class="py-name" href="#" onclick="return doclink('link-135', 'get_config', 'link-135');">get_config</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L212"></a><tt class="py-lineno">212</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_config</tt> </tt>
+</div><a name="L213"></a><tt class="py-lineno">213</tt>  <tt class="py-line"> </tt>
+<a name="NetworkModule._load_params"></a><div id="NetworkModule._load_params-def"><a name="L214"></a><tt class="py-lineno">214</tt> <a class="py-toggle" href="#" id="NetworkModule._load_params-toggle" onclick="return toggle('NetworkModule._load_params');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.nxos.NetworkModule-class.html#_load_params">_load_params</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="NetworkModule._load_params-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="NetworkModule._load_params-expanded"><a name="L215"></a><tt class="py-lineno">215</tt>  <tt class="py-line">        <tt class="py-name">super</tt><tt class="py-op">(</tt><tt id="link-136" class="py-name"><a title="ansible.module_utils.asa.NetworkModule
+ansible.module_utils.junos.NetworkModule
+ansible.module_utils.network.NetworkModule
+ansible.module_utils.nxos.NetworkModule
+ansible.module_utils.openswitch.NetworkModule" class="py-name" href="#" onclick="return doclink('link-136', 'NetworkModule', 'link-132');">NetworkModule</a></tt><tt class="py-op">,</tt> <tt class="py-name">self</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt id="link-137" class="py-name" targets="Method ansible.module_utils.asa.NetworkModule._load_params()=ansible.module_utils.asa.NetworkModule-class.html#_load_params,Method ansible.module_utils.basic.AnsibleModule._load_params()=ansible.module_utils.basic.AnsibleModule-class.html#_load_params,Function ansible.module_utils.basic._load_params()=ansible.module_utils.basic-module.html#_load_params,Method ansible.module_utils.junos.NetworkModule._load_params()=ansible.module_utils.junos.NetworkModule-class.html#_load_params,Method ansible.module_utils.network.NetworkModule._load_params()=ansible.module_utils.network.NetworkModule-class.html#_load_params,Method ansible.module_utils.nxos.NetworkModule._load_params()=ansible.module_utils.nxos.NetworkModule-class.html#_load_params,Method ansible.module_utils.openswitch.NetworkModule._load_params()=ansible.module_utils.openswitch.NetworkModule-class.html#_load_params"><a title="ansible.module_utils.asa.NetworkModule._load_params
+ansible.module_utils.basic.AnsibleModule._load_params
+ansible.module_utils.basic._load_params
+ansible.module_utils.junos.NetworkModule._load_params
+ansible.module_utils.network.NetworkModule._load_params
+ansible.module_utils.nxos.NetworkModule._load_params
+ansible.module_utils.openswitch.NetworkModule._load_params" class="py-name" href="#" onclick="return doclink('link-137', '_load_params', 'link-137');">_load_params</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L216"></a><tt class="py-lineno">216</tt>  <tt class="py-line">        <tt class="py-name">provider</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">.</tt><tt id="link-138" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-138', 'get', 'link-89');">get</a></tt><tt class="py-op">(</tt><tt class="py-string">'provider'</tt><tt class="py-op">)</tt> <tt class="py-keyword">or</tt> <tt id="link-139" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-139', 'dict', 'link-23');">dict</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L217"></a><tt class="py-lineno">217</tt>  <tt class="py-line">        <tt class="py-keyword">for</tt> <tt class="py-name">key</tt><tt class="py-op">,</tt> <tt class="py-name">value</tt> <tt class="py-keyword">in</tt> <tt class="py-name">provider</tt><tt class="py-op">.</tt><tt id="link-140" class="py-name" targets="Variable ansible.module_utils.netcfg.NetworkConfig.items=ansible.module_utils.netcfg.NetworkConfig-class.html#items,Module ansible.plugins.lookup.items=ansible.plugins.lookup.items-module.html"><a title="ansible.module_utils.netcfg.NetworkConfig.items
+ansible.plugins.lookup.items" class="py-name" href="#" onclick="return doclink('link-140', 'items', 'link-140');">items</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L218"></a><tt class="py-lineno">218</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-name">key</tt> <tt class="py-keyword">in</tt> <tt id="link-141" class="py-name"><a title="ansible.module_utils.asa.NET_COMMON_ARGS
+ansible.module_utils.junos.NET_COMMON_ARGS
+ansible.module_utils.nxos.NET_COMMON_ARGS
+ansible.module_utils.openswitch.NET_COMMON_ARGS" class="py-name" href="#" onclick="return doclink('link-141', 'NET_COMMON_ARGS', 'link-22');">NET_COMMON_ARGS</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L219"></a><tt class="py-lineno">219</tt>  <tt class="py-line">                <tt class="py-keyword">if</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">.</tt><tt id="link-142" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-142', 'get', 'link-89');">get</a></tt><tt class="py-op">(</tt><tt class="py-name">key</tt><tt class="py-op">)</tt> <tt class="py-keyword">is</tt> <tt class="py-name">None</tt> <tt class="py-keyword">and</tt> <tt class="py-name">value</tt> <tt class="py-keyword">is</tt> <tt class="py-keyword">not</tt> <tt class="py-name">None</tt><tt class="py-op">:</tt> </tt>
+<a name="L220"></a><tt class="py-lineno">220</tt>  <tt class="py-line">                    <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-name">key</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-name">value</tt> </tt>
+</div><a name="L221"></a><tt class="py-lineno">221</tt>  <tt class="py-line"> </tt>
+<a name="NetworkModule.connect"></a><div id="NetworkModule.connect-def"><a name="L222"></a><tt class="py-lineno">222</tt> <a class="py-toggle" href="#" id="NetworkModule.connect-toggle" onclick="return toggle('NetworkModule.connect');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.nxos.NetworkModule-class.html#connect">connect</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="NetworkModule.connect-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="NetworkModule.connect-expanded"><a name="L223"></a><tt class="py-lineno">223</tt>  <tt class="py-line">        <tt class="py-name">cls</tt> <tt class="py-op">=</tt> <tt class="py-name">globals</tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt id="link-143" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-143', 'get', 'link-89');">get</a></tt><tt class="py-op">(</tt><tt id="link-144" class="py-name"><a title="str" class="py-name" href="#" onclick="return doclink('link-144', 'str', 'link-122');">str</a></tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'transport'</tt><tt class="py-op">]</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt class="py-name">capitalize</tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L224"></a><tt class="py-lineno">224</tt>  <tt class="py-line">        <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L225"></a><tt class="py-lineno">225</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-145" class="py-name"><a title="ansible.plugins.connection" class="py-name" href="#" onclick="return doclink('link-145', 'connection', 'link-134');">connection</a></tt> <tt class="py-op">=</tt> <tt class="py-name">cls</tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">)</tt> </tt>
+<a name="L226"></a><tt class="py-lineno">226</tt>  <tt class="py-line">        <tt class="py-keyword">except</tt> <tt class="py-name">TypeError</tt><tt class="py-op">:</tt> </tt>
+<a name="L227"></a><tt class="py-lineno">227</tt>  <tt class="py-line">            <tt id="link-146" class="py-name"><a title="ansible.plugins.lookup.consul_kv.e" class="py-name" href="#" onclick="return doclink('link-146', 'e', 'link-119');">e</a></tt> <tt class="py-op">=</tt> <tt id="link-147" class="py-name"><a title="ansible.module_utils.pycompat24.get_exception" class="py-name" href="#" onclick="return doclink('link-147', 'get_exception', 'link-5');">get_exception</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L228"></a><tt class="py-lineno">228</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-148" class="py-name"><a title="ansible.module_utils.basic.AnsibleModule.fail_json" class="py-name" href="#" onclick="return doclink('link-148', 'fail_json', 'link-90');">fail_json</a></tt><tt class="py-op">(</tt><tt class="py-name">msg</tt><tt class="py-op">=</tt><tt id="link-149" class="py-name"><a title="ansible.plugins.lookup.consul_kv.e" class="py-name" href="#" onclick="return doclink('link-149', 'e', 'link-119');">e</a></tt><tt class="py-op">.</tt><tt class="py-name">message</tt><tt class="py-op">)</tt> </tt>
+<a name="L229"></a><tt class="py-lineno">229</tt>  <tt class="py-line"> </tt>
+<a name="L230"></a><tt class="py-lineno">230</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-150" class="py-name"><a title="ansible.plugins.connection" class="py-name" href="#" onclick="return doclink('link-150', 'connection', 'link-134');">connection</a></tt><tt class="py-op">.</tt><tt id="link-151" class="py-name" targets="Method ansible.module_utils.asa.Cli.connect()=ansible.module_utils.asa.Cli-class.html#connect,Method ansible.module_utils.asa.NetworkModule.connect()=ansible.module_utils.asa.NetworkModule-class.html#connect,Method ansible.module_utils.eos.Cli.connect()=ansible.module_utils.eos.Cli-class.html#connect,Method ansible.module_utils.eos.Eapi.connect()=ansible.module_utils.eos.Eapi-class.html#connect,Method ansible.module_utils.ios.Cli.connect()=ansible.module_utils.ios.Cli-class.html#connect,Method ansible.module_utils.ios.Restconf.connect()=ansible.module_utils.ios.Restconf-class.html#connect,Method ansible.module_utils.iosxr.Cli.connect()=ansible.module_utils.iosxr.Cli-class.html#connect,Method ansible.module_utils.junos.Cli.connect()=ansible.module_utils.junos.Cli-class.html#connect,Method ansible.module_utils.junos.Netconf.connect()=ansible.module_utils.junos.Netconf-class.html#connect,Method ansible.module_utils.junos.NetworkModule.connect()=ansible.module_utils.junos.NetworkModule-class.html#connect,Method ansible.module_utils.network.NetCli.connect()=ansible.module_utils.network.NetCli-class.html#connect,Method ansible.module_utils.network.NetworkModule.connect()=ansible.module_utils.network.NetworkModule-class.html#connect,Method ansible.module_utils.nxos.Cli.connect()=ansible.module_utils.nxos.Cli-class.html#connect,Method ansible.module_utils.nxos.NetworkModule.connect()=ansible.module_utils.nxos.NetworkModule-class.html#connect,Method ansible.module_utils.nxos.Nxapi.connect()=ansible.module_utils.nxos.Nxapi-class.html#connect,Method ansible.module_utils.openswitch.Cli.connect()=ansible.module_utils.openswitch.Cli-class.html#connect,Method ansible.module_utils.openswitch.NetworkModule.connect()=ansible.module_utils.openswitch.NetworkModule-class.html#connect,Method ansible.module_utils.openswitch.Rest.connect()=ansible.module_utils.openswitch.Rest-class.html#connect,Method ansible.module_utils.urls.CustomHTTPSConnection.connect()=ansible.module_utils.urls.CustomHTTPSConnection-class.html#connect,Method ansible.module_utils.vyos.Cli.connect()=ansible.module_utils.vyos.Cli-class.html#connect,Method ansible.plugins.connection.funcd.Connection.connect()=ansible.plugins.connection.funcd.Connection-class.html#connect"><a title="ansible.module_utils.asa.Cli.connect
+ansible.module_utils.asa.NetworkModule.connect
+ansible.module_utils.eos.Cli.connect
+ansible.module_utils.eos.Eapi.connect
+ansible.module_utils.ios.Cli.connect
+ansible.module_utils.ios.Restconf.connect
+ansible.module_utils.iosxr.Cli.connect
+ansible.module_utils.junos.Cli.connect
+ansible.module_utils.junos.Netconf.connect
+ansible.module_utils.junos.NetworkModule.connect
+ansible.module_utils.network.NetCli.connect
+ansible.module_utils.network.NetworkModule.connect
+ansible.module_utils.nxos.Cli.connect
+ansible.module_utils.nxos.NetworkModule.connect
+ansible.module_utils.nxos.Nxapi.connect
+ansible.module_utils.openswitch.Cli.connect
+ansible.module_utils.openswitch.NetworkModule.connect
+ansible.module_utils.openswitch.Rest.connect
+ansible.module_utils.urls.CustomHTTPSConnection.connect
+ansible.module_utils.vyos.Cli.connect
+ansible.plugins.connection.funcd.Connection.connect" class="py-name" href="#" onclick="return doclink('link-151', 'connect', 'link-151');">connect</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L231"></a><tt class="py-lineno">231</tt>  <tt class="py-line"> </tt>
+<a name="L232"></a><tt class="py-lineno">232</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'transport'</tt><tt class="py-op">]</tt> <tt class="py-op">==</tt> <tt class="py-string">'cli'</tt><tt class="py-op">:</tt> </tt>
+<a name="L233"></a><tt class="py-lineno">233</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-152" class="py-name"><a title="ansible.plugins.connection" class="py-name" href="#" onclick="return doclink('link-152', 'connection', 'link-134');">connection</a></tt><tt class="py-op">.</tt><tt id="link-153" class="py-name"><a title="ansible.module_utils.asa.Cli.send
+ansible.module_utils.nxos.Cli.send
+ansible.module_utils.nxos.Nxapi.send
+ansible.module_utils.openswitch.Cli.send
+ansible.module_utils.openswitch.Rest.send
+ansible.module_utils.shell.Shell.send" class="py-name" href="#" onclick="return doclink('link-153', 'send', 'link-126');">send</a></tt><tt class="py-op">(</tt><tt class="py-string">'terminal length 0'</tt><tt class="py-op">)</tt> </tt>
+<a name="L234"></a><tt class="py-lineno">234</tt>  <tt class="py-line"> </tt>
+<a name="L235"></a><tt class="py-lineno">235</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_connected</tt> <tt class="py-op">=</tt> <tt class="py-name">True</tt> </tt>
+</div><a name="L236"></a><tt class="py-lineno">236</tt>  <tt class="py-line"> </tt>
+<a name="NetworkModule.configure"></a><div id="NetworkModule.configure-def"><a name="L237"></a><tt class="py-lineno">237</tt> <a class="py-toggle" href="#" id="NetworkModule.configure-toggle" onclick="return toggle('NetworkModule.configure');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.nxos.NetworkModule-class.html#configure">configure</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">commands</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="NetworkModule.configure-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="NetworkModule.configure-expanded"><a name="L238"></a><tt class="py-lineno">238</tt>  <tt class="py-line">        <tt class="py-name">commands</tt> <tt class="py-op">=</tt> <tt id="link-154" class="py-name"><a title="ansible.module_utils.asa.to_list
+ansible.module_utils.junos.to_list
+ansible.module_utils.network.to_list
+ansible.module_utils.nxos.to_list
+ansible.module_utils.openswitch.to_list
+ansible.module_utils.shell.to_list" class="py-name" href="#" onclick="return doclink('link-154', 'to_list', 'link-81');">to_list</a></tt><tt class="py-op">(</tt><tt class="py-name">commands</tt><tt class="py-op">)</tt> </tt>
+<a name="L239"></a><tt class="py-lineno">239</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'transport'</tt><tt class="py-op">]</tt> <tt class="py-op">==</tt> <tt class="py-string">'cli'</tt><tt class="py-op">:</tt> </tt>
+<a name="L240"></a><tt class="py-lineno">240</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-155" class="py-name" targets="Method ansible.module_utils.nxos.NetworkModule.configure_cli()=ansible.module_utils.nxos.NetworkModule-class.html#configure_cli"><a title="ansible.module_utils.nxos.NetworkModule.configure_cli" class="py-name" href="#" onclick="return doclink('link-155', 'configure_cli', 'link-155');">configure_cli</a></tt><tt class="py-op">(</tt><tt class="py-name">commands</tt><tt class="py-op">)</tt> </tt>
+<a name="L241"></a><tt class="py-lineno">241</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L242"></a><tt class="py-lineno">242</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-156" class="py-name" targets="Method ansible.cli.CLI.execute()=ansible.cli.CLI-class.html#execute,Method ansible.module_utils.asa.NetworkModule.execute()=ansible.module_utils.asa.NetworkModule-class.html#execute,Method ansible.module_utils.eos.Eapi.execute()=ansible.module_utils.eos.Eapi-class.html#execute,Method ansible.module_utils.ios.Restconf.execute()=ansible.module_utils.ios.Restconf-class.html#execute,Method ansible.module_utils.network.NetCli.execute()=ansible.module_utils.network.NetCli-class.html#execute,Method ansible.module_utils.nxos.NetworkModule.execute()=ansible.module_utils.nxos.NetworkModule-class.html#execute,Method ansible.module_utils.openswitch.NetworkModule.execute()=ansible.module_utils.openswitch.NetworkModule-class.html#execute,Method ansible.plugins.strategy.debug.Debugger.execute()=ansible.plugins.strategy.debug.Debugger-class.html#execute"><a title="ansible.cli.CLI.execute
+ansible.module_utils.asa.NetworkModule.execute
+ansible.module_utils.eos.Eapi.execute
+ansible.module_utils.ios.Restconf.execute
+ansible.module_utils.network.NetCli.execute
+ansible.module_utils.nxos.NetworkModule.execute
+ansible.module_utils.openswitch.NetworkModule.execute
+ansible.plugins.strategy.debug.Debugger.execute" class="py-name" href="#" onclick="return doclink('link-156', 'execute', 'link-156');">execute</a></tt><tt class="py-op">(</tt><tt class="py-name">commands</tt><tt class="py-op">,</tt> <tt class="py-name">command_type</tt><tt class="py-op">=</tt><tt class="py-string">'cli_conf'</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L243"></a><tt class="py-lineno">243</tt>  <tt class="py-line"> </tt>
+<a name="NetworkModule.configure_cli"></a><div id="NetworkModule.configure_cli-def"><a name="L244"></a><tt class="py-lineno">244</tt> <a class="py-toggle" href="#" id="NetworkModule.configure_cli-toggle" onclick="return toggle('NetworkModule.configure_cli');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.nxos.NetworkModule-class.html#configure_cli">configure_cli</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">commands</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="NetworkModule.configure_cli-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="NetworkModule.configure_cli-expanded"><a name="L245"></a><tt class="py-lineno">245</tt>  <tt class="py-line">        <tt class="py-name">commands</tt> <tt class="py-op">=</tt> <tt id="link-157" class="py-name"><a title="ansible.module_utils.asa.to_list
+ansible.module_utils.junos.to_list
+ansible.module_utils.network.to_list
+ansible.module_utils.nxos.to_list
+ansible.module_utils.openswitch.to_list
+ansible.module_utils.shell.to_list" class="py-name" href="#" onclick="return doclink('link-157', 'to_list', 'link-81');">to_list</a></tt><tt class="py-op">(</tt><tt class="py-name">commands</tt><tt class="py-op">)</tt> </tt>
+<a name="L246"></a><tt class="py-lineno">246</tt>  <tt class="py-line">        <tt class="py-name">commands</tt><tt class="py-op">.</tt><tt class="py-name">insert</tt><tt class="py-op">(</tt><tt class="py-number">0</tt><tt class="py-op">,</tt> <tt class="py-string">'configure'</tt><tt class="py-op">)</tt> </tt>
+<a name="L247"></a><tt class="py-lineno">247</tt>  <tt class="py-line">        <tt class="py-name">responses</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-158" class="py-name"><a title="ansible.cli.CLI.execute
+ansible.module_utils.asa.NetworkModule.execute
+ansible.module_utils.eos.Eapi.execute
+ansible.module_utils.ios.Restconf.execute
+ansible.module_utils.network.NetCli.execute
+ansible.module_utils.nxos.NetworkModule.execute
+ansible.module_utils.openswitch.NetworkModule.execute
+ansible.plugins.strategy.debug.Debugger.execute" class="py-name" href="#" onclick="return doclink('link-158', 'execute', 'link-156');">execute</a></tt><tt class="py-op">(</tt><tt class="py-name">commands</tt><tt class="py-op">)</tt> </tt>
+<a name="L248"></a><tt class="py-lineno">248</tt>  <tt class="py-line">        <tt class="py-name">responses</tt><tt class="py-op">.</tt><tt class="py-name">pop</tt><tt class="py-op">(</tt><tt class="py-number">0</tt><tt class="py-op">)</tt> </tt>
+<a name="L249"></a><tt class="py-lineno">249</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">responses</tt> </tt>
+</div><a name="L250"></a><tt class="py-lineno">250</tt>  <tt class="py-line"> </tt>
+<a name="NetworkModule.execute"></a><div id="NetworkModule.execute-def"><a name="L251"></a><tt class="py-lineno">251</tt> <a class="py-toggle" href="#" id="NetworkModule.execute-toggle" onclick="return toggle('NetworkModule.execute');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.nxos.NetworkModule-class.html#execute">execute</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">commands</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">kwargs</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="NetworkModule.execute-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="NetworkModule.execute-expanded"><a name="L252"></a><tt class="py-lineno">252</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-159" class="py-name" targets="Variable ansible.module_utils.asa.NetworkModule.connected=ansible.module_utils.asa.NetworkModule-class.html#connected,Variable ansible.module_utils.junos.NetworkModule.connected=ansible.module_utils.junos.NetworkModule-class.html#connected,Variable ansible.module_utils.network.NetworkModule.connected=ansible.module_utils.network.NetworkModule-class.html#connected,Variable ansible.module_utils.nxos.NetworkModule.connected=ansible.module_utils.nxos.NetworkModule-class.html#connected,Variable ansible.plugins.connection.ConnectionBase.connected=ansible.plugins.connection.ConnectionBase-class.html#connected"><a title="ansible.module_utils.asa.NetworkModule.connected
+ansible.module_utils.junos.NetworkModule.connected
+ansible.module_utils.network.NetworkModule.connected
+ansible.module_utils.nxos.NetworkModule.connected
+ansible.plugins.connection.ConnectionBase.connected" class="py-name" href="#" onclick="return doclink('link-159', 'connected', 'link-159');">connected</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L253"></a><tt class="py-lineno">253</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-160" class="py-name"><a title="ansible.module_utils.asa.Cli.connect
+ansible.module_utils.asa.NetworkModule.connect
+ansible.module_utils.eos.Cli.connect
+ansible.module_utils.eos.Eapi.connect
+ansible.module_utils.ios.Cli.connect
+ansible.module_utils.ios.Restconf.connect
+ansible.module_utils.iosxr.Cli.connect
+ansible.module_utils.junos.Cli.connect
+ansible.module_utils.junos.Netconf.connect
+ansible.module_utils.junos.NetworkModule.connect
+ansible.module_utils.network.NetCli.connect
+ansible.module_utils.network.NetworkModule.connect
+ansible.module_utils.nxos.Cli.connect
+ansible.module_utils.nxos.NetworkModule.connect
+ansible.module_utils.nxos.Nxapi.connect
+ansible.module_utils.openswitch.Cli.connect
+ansible.module_utils.openswitch.NetworkModule.connect
+ansible.module_utils.openswitch.Rest.connect
+ansible.module_utils.urls.CustomHTTPSConnection.connect
+ansible.module_utils.vyos.Cli.connect
+ansible.plugins.connection.funcd.Connection.connect" class="py-name" href="#" onclick="return doclink('link-160', 'connect', 'link-151');">connect</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L254"></a><tt class="py-lineno">254</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-161" class="py-name"><a title="ansible.plugins.connection" class="py-name" href="#" onclick="return doclink('link-161', 'connection', 'link-134');">connection</a></tt><tt class="py-op">.</tt><tt id="link-162" class="py-name"><a title="ansible.module_utils.asa.Cli.send
+ansible.module_utils.nxos.Cli.send
+ansible.module_utils.nxos.Nxapi.send
+ansible.module_utils.openswitch.Cli.send
+ansible.module_utils.openswitch.Rest.send
+ansible.module_utils.shell.Shell.send" class="py-name" href="#" onclick="return doclink('link-162', 'send', 'link-126');">send</a></tt><tt class="py-op">(</tt><tt class="py-name">commands</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-name">kwargs</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L255"></a><tt class="py-lineno">255</tt>  <tt class="py-line"> </tt>
+<a name="NetworkModule.disconnect"></a><div id="NetworkModule.disconnect-def"><a name="L256"></a><tt class="py-lineno">256</tt> <a class="py-toggle" href="#" id="NetworkModule.disconnect-toggle" onclick="return toggle('NetworkModule.disconnect');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.nxos.NetworkModule-class.html#disconnect">disconnect</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="NetworkModule.disconnect-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="NetworkModule.disconnect-expanded"><a name="L257"></a><tt class="py-lineno">257</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-163" class="py-name"><a title="ansible.plugins.connection" class="py-name" href="#" onclick="return doclink('link-163', 'connection', 'link-134');">connection</a></tt><tt class="py-op">.</tt><tt id="link-164" class="py-name" targets="Method ansible.module_utils.shell.Shell.close()=ansible.module_utils.shell.Shell-class.html#close,Method ansible.plugins.connection.ConnectionBase.close()=ansible.plugins.connection.ConnectionBase-class.html#close,Method ansible.plugins.connection.accelerate.Connection.close()=ansible.plugins.connection.accelerate.Connection-class.html#close,Method ansible.plugins.connection.chroot.Connection.close()=ansible.plugins.connection.chroot.Connection-class.html#close,Method ansible.plugins.connection.docker.Connection.close()=ansible.plugins.connection.docker.Connection-class.html#close,Method ansible.plugins.connection.funcd.Connection.close()=ansible.plugins.connection.funcd.Connection-class.html#close,Method ansible.plugins.connection.jail.Connection.close()=ansible.plugins.connection.jail.Connection-class.html#close,Method ansible.plugins.connection.libvirt_lxc.Connection.close()=ansible.plugins.connection.libvirt_lxc.Connection-class.html#close,Method ansible.plugins.connection.local.Connection.close()=ansible.plugins.connection.local.Connection-class.html#close,Method ansible.plugins.connection.lxc.Connection.close()=ansible.plugins.connection.lxc.Connection-class.html#close,Method ansible.plugins.connection.lxd.Connection.close()=ansible.plugins.connection.lxd.Connection-class.html#close,Method ansible.plugins.connection.paramiko_ssh.Connection.close()=ansible.plugins.connection.paramiko_ssh.Connection-class.html#close,Method ansible.plugins.connection.ssh.Connection.close()=ansible.plugins.connection.ssh.Connection-class.html#close,Method ansible.plugins.connection.winrm.Connection.close()=ansible.plugins.connection.winrm.Connection-class.html#close,Method ansible.plugins.connection.zone.Connection.close()=ansible.plugins.connection.zone.Connection-class.html#close"><a title="ansible.module_utils.shell.Shell.close
+ansible.plugins.connection.ConnectionBase.close
+ansible.plugins.connection.accelerate.Connection.close
+ansible.plugins.connection.chroot.Connection.close
+ansible.plugins.connection.docker.Connection.close
+ansible.plugins.connection.funcd.Connection.close
+ansible.plugins.connection.jail.Connection.close
+ansible.plugins.connection.libvirt_lxc.Connection.close
+ansible.plugins.connection.local.Connection.close
+ansible.plugins.connection.lxc.Connection.close
+ansible.plugins.connection.lxd.Connection.close
+ansible.plugins.connection.paramiko_ssh.Connection.close
+ansible.plugins.connection.ssh.Connection.close
+ansible.plugins.connection.winrm.Connection.close
+ansible.plugins.connection.zone.Connection.close" class="py-name" href="#" onclick="return doclink('link-164', 'close', 'link-164');">close</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L258"></a><tt class="py-lineno">258</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_connected</tt> <tt class="py-op">=</tt> <tt class="py-name">False</tt> </tt>
+</div><a name="L259"></a><tt class="py-lineno">259</tt>  <tt class="py-line"> </tt>
+<a name="NetworkModule.parse_config"></a><div id="NetworkModule.parse_config-def"><a name="L260"></a><tt class="py-lineno">260</tt> <a class="py-toggle" href="#" id="NetworkModule.parse_config-toggle" onclick="return toggle('NetworkModule.parse_config');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.nxos.NetworkModule-class.html#parse_config">parse_config</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">cfg</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="NetworkModule.parse_config-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="NetworkModule.parse_config-expanded"><a name="L261"></a><tt class="py-lineno">261</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt id="link-165" class="py-name"><a title="ansible.cli.CLI.parse
+ansible.cli.adhoc.AdHocCLI.parse
+ansible.cli.console.ConsoleCLI.parse
+ansible.cli.doc.DocCLI.parse
+ansible.cli.galaxy.GalaxyCLI.parse
+ansible.cli.playbook.PlaybookCLI.parse
+ansible.cli.pull.PullCLI.parse
+ansible.cli.vault.VaultCLI.parse
+ansible.module_utils.netcfg.parse
+ansible.parsing.mod_args.ModuleArgsParser.parse" class="py-name" href="#" onclick="return doclink('link-165', 'parse', 'link-15');">parse</a></tt><tt class="py-op">(</tt><tt class="py-name">cfg</tt><tt class="py-op">,</tt> <tt class="py-name">indent</tt><tt class="py-op">=</tt><tt class="py-number">2</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L262"></a><tt class="py-lineno">262</tt>  <tt class="py-line"> </tt>
+<a name="NetworkModule.get_config"></a><div id="NetworkModule.get_config-def"><a name="L263"></a><tt class="py-lineno">263</tt> <a class="py-toggle" href="#" id="NetworkModule.get_config-toggle" onclick="return toggle('NetworkModule.get_config');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.nxos.NetworkModule-class.html#get_config">get_config</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="NetworkModule.get_config-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="NetworkModule.get_config-expanded"><a name="L264"></a><tt class="py-lineno">264</tt>  <tt class="py-line">        <tt class="py-name">cmd</tt> <tt class="py-op">=</tt> <tt class="py-string">'show running-config'</tt> </tt>
+<a name="L265"></a><tt class="py-lineno">265</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">.</tt><tt id="link-166" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-166', 'get', 'link-89');">get</a></tt><tt class="py-op">(</tt><tt class="py-string">'include_defaults'</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L266"></a><tt class="py-lineno">266</tt>  <tt class="py-line">            <tt class="py-name">cmd</tt> <tt class="py-op">+=</tt> <tt class="py-string">' all'</tt> </tt>
+<a name="L267"></a><tt class="py-lineno">267</tt>  <tt class="py-line">        <tt id="link-167" class="py-name"><a title="ansible.compat.six.moves.urllib.response" class="py-name" href="#" onclick="return doclink('link-167', 'response', 'link-86');">response</a></tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-168" class="py-name"><a title="ansible.cli.CLI.execute
+ansible.module_utils.asa.NetworkModule.execute
+ansible.module_utils.eos.Eapi.execute
+ansible.module_utils.ios.Restconf.execute
+ansible.module_utils.network.NetCli.execute
+ansible.module_utils.nxos.NetworkModule.execute
+ansible.module_utils.openswitch.NetworkModule.execute
+ansible.plugins.strategy.debug.Debugger.execute" class="py-name" href="#" onclick="return doclink('link-168', 'execute', 'link-156');">execute</a></tt><tt class="py-op">(</tt><tt class="py-name">cmd</tt><tt class="py-op">)</tt> </tt>
+<a name="L268"></a><tt class="py-lineno">268</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt id="link-169" class="py-name"><a title="ansible.compat.six.moves.urllib.response" class="py-name" href="#" onclick="return doclink('link-169', 'response', 'link-86');">response</a></tt><tt class="py-op">[</tt><tt class="py-number">0</tt><tt class="py-op">]</tt> </tt>
+</div></div><a name="L269"></a><tt class="py-lineno">269</tt>  <tt class="py-line"> </tt>
+<a name="get_module"></a><div id="get_module-def"><a name="L270"></a><tt class="py-lineno">270</tt>  <tt class="py-line"> </tt>
+<a name="L271"></a><tt class="py-lineno">271</tt> <a class="py-toggle" href="#" id="get_module-toggle" onclick="return toggle('get_module');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.module_utils.nxos-module.html#get_module">get_module</a><tt class="py-op">(</tt><tt class="py-op">**</tt><tt class="py-param">kwargs</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="get_module-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="get_module-expanded"><a name="L272"></a><tt class="py-lineno">272</tt>  <tt class="py-line">    <tt class="py-docstring">"""Return instance of NetworkModule</tt> </tt>
+<a name="L273"></a><tt class="py-lineno">273</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L274"></a><tt class="py-lineno">274</tt>  <tt class="py-line">    <tt id="link-170" class="py-name" targets="Function ansible.module_utils.eos.argument_spec()=ansible.module_utils.eos-module.html#argument_spec,Function ansible.module_utils.ios.argument_spec()=ansible.module_utils.ios-module.html#argument_spec,Function ansible.module_utils.vyos.argument_spec()=ansible.module_utils.vyos-module.html#argument_spec"><a title="ansible.module_utils.eos.argument_spec
+ansible.module_utils.ios.argument_spec
+ansible.module_utils.vyos.argument_spec" class="py-name" href="#" onclick="return doclink('link-170', 'argument_spec', 'link-170');">argument_spec</a></tt> <tt class="py-op">=</tt> <tt id="link-171" class="py-name"><a title="ansible.module_utils.asa.NET_COMMON_ARGS
+ansible.module_utils.junos.NET_COMMON_ARGS
+ansible.module_utils.nxos.NET_COMMON_ARGS
+ansible.module_utils.openswitch.NET_COMMON_ARGS" class="py-name" href="#" onclick="return doclink('link-171', 'NET_COMMON_ARGS', 'link-22');">NET_COMMON_ARGS</a></tt><tt class="py-op">.</tt><tt id="link-172" class="py-name" targets="Method ansible.executor.play_iterator.HostState.copy()=ansible.executor.play_iterator.HostState-class.html#copy,Method ansible.playbook.base.Base.copy()=ansible.playbook.base.Base-class.html#copy,Method ansible.playbook.block.Block.copy()=ansible.playbook.block.Block-class.html#copy,Method ansible.playbook.play.Play.copy()=ansible.playbook.play.Play-class.html#copy,Method ansible.playbook.task.Task.copy()=ansible.playbook.task.Task-class.html#copy,Module ansible.plugins.action.copy=ansible.plugins.action.copy-module.html,Method ansible.plugins.cache.FactCache.copy()=ansible.plugins.cache.FactCache-class.html#copy,Method ansible.plugins.cache.base.BaseCacheModule.copy()=ansible.plugins.cache.base.BaseCacheModule-class.html#copy,Method ansible.plugins.cache.jsonfile.CacheModule.copy()=ansible.plugins.cache.jsonfile.CacheModule-class.html#copy,Method ansible.plugins.cache.memcached.CacheModule.copy()=ansible.plugins.cache.memcached.CacheModule-class.html#copy,Method ansible.plugins.cache.memory.CacheModule.copy()=ansible.plugins.cache.memory.CacheModule-class.html#copy,Method ansible.plugins.cache.redis.CacheModule.copy()=ansible.plugins.cache.redis.CacheModule-class.html#copy"><a title="ansible.executor.play_iterator.HostState.copy
+ansible.playbook.base.Base.copy
+ansible.playbook.block.Block.copy
+ansible.playbook.play.Play.copy
+ansible.playbook.task.Task.copy
+ansible.plugins.action.copy
+ansible.plugins.cache.FactCache.copy
+ansible.plugins.cache.base.BaseCacheModule.copy
+ansible.plugins.cache.jsonfile.CacheModule.copy
+ansible.plugins.cache.memcached.CacheModule.copy
+ansible.plugins.cache.memory.CacheModule.copy
+ansible.plugins.cache.redis.CacheModule.copy" class="py-name" href="#" onclick="return doclink('link-172', 'copy', 'link-172');">copy</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L275"></a><tt class="py-lineno">275</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">kwargs</tt><tt class="py-op">.</tt><tt id="link-173" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-173', 'get', 'link-89');">get</a></tt><tt class="py-op">(</tt><tt class="py-string">'argument_spec'</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L276"></a><tt class="py-lineno">276</tt>  <tt class="py-line">        <tt id="link-174" class="py-name"><a title="ansible.module_utils.eos.argument_spec
+ansible.module_utils.ios.argument_spec
+ansible.module_utils.vyos.argument_spec" class="py-name" href="#" onclick="return doclink('link-174', 'argument_spec', 'link-170');">argument_spec</a></tt><tt class="py-op">.</tt><tt id="link-175" class="py-name" targets="Method ansible.plugins.cache.FactCache.update()=ansible.plugins.cache.FactCache-class.html#update"><a title="ansible.plugins.cache.FactCache.update" class="py-name" href="#" onclick="return doclink('link-175', 'update', 'link-175');">update</a></tt><tt class="py-op">(</tt><tt class="py-name">kwargs</tt><tt class="py-op">[</tt><tt class="py-string">'argument_spec'</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L277"></a><tt class="py-lineno">277</tt>  <tt class="py-line">    <tt class="py-name">kwargs</tt><tt class="py-op">[</tt><tt class="py-string">'argument_spec'</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt id="link-176" class="py-name"><a title="ansible.module_utils.eos.argument_spec
+ansible.module_utils.ios.argument_spec
+ansible.module_utils.vyos.argument_spec" class="py-name" href="#" onclick="return doclink('link-176', 'argument_spec', 'link-170');">argument_spec</a></tt> </tt>
+<a name="L278"></a><tt class="py-lineno">278</tt>  <tt class="py-line"> </tt>
+<a name="L279"></a><tt class="py-lineno">279</tt>  <tt class="py-line">    <tt class="py-name">module</tt> <tt class="py-op">=</tt> <tt id="link-177" class="py-name"><a title="ansible.module_utils.asa.NetworkModule
+ansible.module_utils.junos.NetworkModule
+ansible.module_utils.network.NetworkModule
+ansible.module_utils.nxos.NetworkModule
+ansible.module_utils.openswitch.NetworkModule" class="py-name" href="#" onclick="return doclink('link-177', 'NetworkModule', 'link-132');">NetworkModule</a></tt><tt class="py-op">(</tt><tt class="py-op">**</tt><tt class="py-name">kwargs</tt><tt class="py-op">)</tt> </tt>
+<a name="L280"></a><tt class="py-lineno">280</tt>  <tt class="py-line"> </tt>
+<a name="L281"></a><tt class="py-lineno">281</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">module</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">[</tt><tt class="py-string">'transport'</tt><tt class="py-op">]</tt> <tt class="py-op">==</tt> <tt class="py-string">'cli'</tt> <tt class="py-keyword">and</tt> <tt class="py-keyword">not</tt> <tt id="link-178" class="py-name"><a title="ansible.module_utils.shell.HAS_PARAMIKO" class="py-name" href="#" onclick="return doclink('link-178', 'HAS_PARAMIKO', 'link-11');">HAS_PARAMIKO</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L282"></a><tt class="py-lineno">282</tt>  <tt class="py-line">        <tt class="py-name">module</tt><tt class="py-op">.</tt><tt id="link-179" class="py-name"><a title="ansible.module_utils.basic.AnsibleModule.fail_json" class="py-name" href="#" onclick="return doclink('link-179', 'fail_json', 'link-90');">fail_json</a></tt><tt class="py-op">(</tt><tt class="py-name">msg</tt><tt class="py-op">=</tt><tt class="py-string">'paramiko is required but does not appear to be installed'</tt><tt class="py-op">)</tt> </tt>
+<a name="L283"></a><tt class="py-lineno">283</tt>  <tt class="py-line"> </tt>
+<a name="L284"></a><tt class="py-lineno">284</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">module</tt> </tt>
+</div><a name="L285"></a><tt class="py-lineno">285</tt>  <tt class="py-line"> </tt><script type="text/javascript">
+<!--
+expandto(location.href);
+// -->
+</script>
+</pre>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Fri Jul 29 13:11:39 2016
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

@@ -1,0 +1,1093 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>ansible.executor.task_queue_manager</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="ansible-module.html">Package&nbsp;ansible</a> ::
+        <a href="ansible.executor-module.html">Package&nbsp;executor</a> ::
+        Module&nbsp;task_queue_manager
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="ansible.executor.task_queue_manager-pysrc.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<h1 class="epydoc">Source Code for <a href="ansible.executor.task_queue_manager-module.html">Module ansible.executor.task_queue_manager</a></h1>
+<pre class="py-src">
+<a name="L1"></a><tt class="py-lineno">  1</tt>  <tt class="py-line"><tt class="py-comment"># (c) 2012-2014, Michael DeHaan &lt;michael.dehaan@gmail.com&gt;</tt> </tt>
+<a name="L2"></a><tt class="py-lineno">  2</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L3"></a><tt class="py-lineno">  3</tt>  <tt class="py-line"><tt class="py-comment"># This file is part of Ansible</tt> </tt>
+<a name="L4"></a><tt class="py-lineno">  4</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L5"></a><tt class="py-lineno">  5</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is free software: you can redistribute it and/or modify</tt> </tt>
+<a name="L6"></a><tt class="py-lineno">  6</tt>  <tt class="py-line"><tt class="py-comment"># it under the terms of the GNU General Public License as published by</tt> </tt>
+<a name="L7"></a><tt class="py-lineno">  7</tt>  <tt class="py-line"><tt class="py-comment"># the Free Software Foundation, either version 3 of the License, or</tt> </tt>
+<a name="L8"></a><tt class="py-lineno">  8</tt>  <tt class="py-line"><tt class="py-comment"># (at your option) any later version.</tt> </tt>
+<a name="L9"></a><tt class="py-lineno">  9</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L10"></a><tt class="py-lineno"> 10</tt>  <tt class="py-line"><tt class="py-comment"># Ansible is distributed in the hope that it will be useful,</tt> </tt>
+<a name="L11"></a><tt class="py-lineno"> 11</tt>  <tt class="py-line"><tt class="py-comment"># but WITHOUT ANY WARRANTY; without even the implied warranty of</tt> </tt>
+<a name="L12"></a><tt class="py-lineno"> 12</tt>  <tt class="py-line"><tt class="py-comment"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</tt> </tt>
+<a name="L13"></a><tt class="py-lineno"> 13</tt>  <tt class="py-line"><tt class="py-comment"># GNU General Public License for more details.</tt> </tt>
+<a name="L14"></a><tt class="py-lineno"> 14</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L15"></a><tt class="py-lineno"> 15</tt>  <tt class="py-line"><tt class="py-comment"># You should have received a copy of the GNU General Public License</tt> </tt>
+<a name="L16"></a><tt class="py-lineno"> 16</tt>  <tt class="py-line"><tt class="py-comment"># along with Ansible.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</tt> </tt>
+<a name="L17"></a><tt class="py-lineno"> 17</tt>  <tt class="py-line"> </tt>
+<a name="L18"></a><tt class="py-lineno"> 18</tt>  <tt class="py-line"><tt class="py-comment"># Make coding more python3-ish</tt> </tt>
+<a name="L19"></a><tt class="py-lineno"> 19</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">__future__</tt> <tt class="py-keyword">import</tt> <tt class="py-op">(</tt><tt class="py-name">absolute_import</tt><tt class="py-op">,</tt> <tt class="py-name">division</tt><tt class="py-op">,</tt> <tt class="py-name">print_function</tt><tt class="py-op">)</tt> </tt>
+<a name="L20"></a><tt class="py-lineno"> 20</tt>  <tt class="py-line"><tt class="py-name">__metaclass__</tt> <tt class="py-op">=</tt> <tt id="link-0" class="py-name" targets="Class type=type-class.html"><a title="type" class="py-name" href="#" onclick="return doclink('link-0', 'type', 'link-0');">type</a></tt> </tt>
+<a name="L21"></a><tt class="py-lineno"> 21</tt>  <tt class="py-line"> </tt>
+<a name="L22"></a><tt class="py-lineno"> 22</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">multiprocessing</tt> </tt>
+<a name="L23"></a><tt class="py-lineno"> 23</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">os</tt> </tt>
+<a name="L24"></a><tt class="py-lineno"> 24</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">tempfile</tt> </tt>
+<a name="L25"></a><tt class="py-lineno"> 25</tt>  <tt class="py-line"> </tt>
+<a name="L26"></a><tt class="py-lineno"> 26</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-1" class="py-name" targets="Package ansible=ansible-module.html"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-1', 'ansible', 'link-1');">ansible</a></tt> <tt class="py-keyword">import</tt> <tt id="link-2" class="py-name" targets="Module ansible.constants=ansible.constants-module.html"><a title="ansible.constants" class="py-name" href="#" onclick="return doclink('link-2', 'constants', 'link-2');">constants</a></tt> <tt class="py-keyword">as</tt> <tt class="py-name">C</tt> </tt>
+<a name="L27"></a><tt class="py-lineno"> 27</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-3" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-3', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-4" class="py-name" targets="Package ansible.errors=ansible.errors-module.html"><a title="ansible.errors" class="py-name" href="#" onclick="return doclink('link-4', 'errors', 'link-4');">errors</a></tt> <tt class="py-keyword">import</tt> <tt id="link-5" class="py-name" targets="Class ansible.errors.AnsibleError=ansible.errors.AnsibleError-class.html"><a title="ansible.errors.AnsibleError" class="py-name" href="#" onclick="return doclink('link-5', 'AnsibleError', 'link-5');">AnsibleError</a></tt> </tt>
+<a name="L28"></a><tt class="py-lineno"> 28</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-6" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-6', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-7" class="py-name" targets="Package ansible.executor=ansible.executor-module.html"><a title="ansible.executor" class="py-name" href="#" onclick="return doclink('link-7', 'executor', 'link-7');">executor</a></tt><tt class="py-op">.</tt><tt id="link-8" class="py-name" targets="Module ansible.executor.play_iterator=ansible.executor.play_iterator-module.html"><a title="ansible.executor.play_iterator" class="py-name" href="#" onclick="return doclink('link-8', 'play_iterator', 'link-8');">play_iterator</a></tt> <tt class="py-keyword">import</tt> <tt id="link-9" class="py-name" targets="Class ansible.executor.play_iterator.PlayIterator=ansible.executor.play_iterator.PlayIterator-class.html"><a title="ansible.executor.play_iterator.PlayIterator" class="py-name" href="#" onclick="return doclink('link-9', 'PlayIterator', 'link-9');">PlayIterator</a></tt> </tt>
+<a name="L29"></a><tt class="py-lineno"> 29</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-10" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-10', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-11" class="py-name"><a title="ansible.executor" class="py-name" href="#" onclick="return doclink('link-11', 'executor', 'link-7');">executor</a></tt><tt class="py-op">.</tt><tt id="link-12" class="py-name" targets="Package ansible.executor.process=ansible.executor.process-module.html"><a title="ansible.executor.process" class="py-name" href="#" onclick="return doclink('link-12', 'process', 'link-12');">process</a></tt><tt class="py-op">.</tt><tt id="link-13" class="py-name" targets="Module ansible.executor.process.result=ansible.executor.process.result-module.html,Method ansible.module_utils.service.Service.result()=ansible.module_utils.service.Service-class.html#result"><a title="ansible.executor.process.result
+ansible.module_utils.service.Service.result" class="py-name" href="#" onclick="return doclink('link-13', 'result', 'link-13');">result</a></tt> <tt class="py-keyword">import</tt> <tt id="link-14" class="py-name" targets="Class ansible.executor.process.result.ResultProcess=ansible.executor.process.result.ResultProcess-class.html"><a title="ansible.executor.process.result.ResultProcess" class="py-name" href="#" onclick="return doclink('link-14', 'ResultProcess', 'link-14');">ResultProcess</a></tt> </tt>
+<a name="L30"></a><tt class="py-lineno"> 30</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-15" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-15', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-16" class="py-name"><a title="ansible.executor" class="py-name" href="#" onclick="return doclink('link-16', 'executor', 'link-7');">executor</a></tt><tt class="py-op">.</tt><tt id="link-17" class="py-name" targets="Module ansible.executor.stats=ansible.executor.stats-module.html"><a title="ansible.executor.stats" class="py-name" href="#" onclick="return doclink('link-17', 'stats', 'link-17');">stats</a></tt> <tt class="py-keyword">import</tt> <tt id="link-18" class="py-name" targets="Class ansible.executor.stats.AggregateStats=ansible.executor.stats.AggregateStats-class.html"><a title="ansible.executor.stats.AggregateStats" class="py-name" href="#" onclick="return doclink('link-18', 'AggregateStats', 'link-18');">AggregateStats</a></tt> </tt>
+<a name="L31"></a><tt class="py-lineno"> 31</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-19" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-19', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-20" class="py-name" targets="Module ansible.cli.playbook=ansible.cli.playbook-module.html,Package ansible.playbook=ansible.playbook-module.html"><a title="ansible.cli.playbook
+ansible.playbook" class="py-name" href="#" onclick="return doclink('link-20', 'playbook', 'link-20');">playbook</a></tt><tt class="py-op">.</tt><tt id="link-21" class="py-name" targets="Module ansible.playbook.block=ansible.playbook.block-module.html"><a title="ansible.playbook.block" class="py-name" href="#" onclick="return doclink('link-21', 'block', 'link-21');">block</a></tt> <tt class="py-keyword">import</tt> <tt id="link-22" class="py-name" targets="Class ansible.playbook.block.Block=ansible.playbook.block.Block-class.html"><a title="ansible.playbook.block.Block" class="py-name" href="#" onclick="return doclink('link-22', 'Block', 'link-22');">Block</a></tt> </tt>
+<a name="L32"></a><tt class="py-lineno"> 32</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-23" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-23', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-24" class="py-name"><a title="ansible.cli.playbook
+ansible.playbook" class="py-name" href="#" onclick="return doclink('link-24', 'playbook', 'link-20');">playbook</a></tt><tt class="py-op">.</tt><tt id="link-25" class="py-name" targets="Module ansible.playbook.play_context=ansible.playbook.play_context-module.html"><a title="ansible.playbook.play_context" class="py-name" href="#" onclick="return doclink('link-25', 'play_context', 'link-25');">play_context</a></tt> <tt class="py-keyword">import</tt> <tt id="link-26" class="py-name" targets="Class ansible.playbook.play_context.PlayContext=ansible.playbook.play_context.PlayContext-class.html"><a title="ansible.playbook.play_context.PlayContext" class="py-name" href="#" onclick="return doclink('link-26', 'PlayContext', 'link-26');">PlayContext</a></tt> </tt>
+<a name="L33"></a><tt class="py-lineno"> 33</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-27" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-27', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-28" class="py-name" targets="Package ansible.plugins=ansible.plugins-module.html"><a title="ansible.plugins" class="py-name" href="#" onclick="return doclink('link-28', 'plugins', 'link-28');">plugins</a></tt> <tt class="py-keyword">import</tt> <tt id="link-29" class="py-name" targets="Variable ansible.plugins.callback_loader=ansible.plugins-module.html#callback_loader"><a title="ansible.plugins.callback_loader" class="py-name" href="#" onclick="return doclink('link-29', 'callback_loader', 'link-29');">callback_loader</a></tt><tt class="py-op">,</tt> <tt id="link-30" class="py-name" targets="Variable ansible.plugins.strategy_loader=ansible.plugins-module.html#strategy_loader"><a title="ansible.plugins.strategy_loader" class="py-name" href="#" onclick="return doclink('link-30', 'strategy_loader', 'link-30');">strategy_loader</a></tt><tt class="py-op">,</tt> <tt id="link-31" class="py-name" targets="Variable ansible.plugins.module_loader=ansible.plugins-module.html#module_loader"><a title="ansible.plugins.module_loader" class="py-name" href="#" onclick="return doclink('link-31', 'module_loader', 'link-31');">module_loader</a></tt> </tt>
+<a name="L34"></a><tt class="py-lineno"> 34</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-32" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-32', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-33" class="py-name" targets="Module ansible.plugins.action.template=ansible.plugins.action.template-module.html,Module ansible.plugins.lookup.template=ansible.plugins.lookup.template-module.html,Package ansible.template=ansible.template-module.html,Method ansible.template.Templar.template()=ansible.template.Templar-class.html#template,Module ansible.template.template=ansible.template.template-module.html"><a title="ansible.plugins.action.template
+ansible.plugins.lookup.template
+ansible.template
+ansible.template.Templar.template
+ansible.template.template" class="py-name" href="#" onclick="return doclink('link-33', 'template', 'link-33');">template</a></tt> <tt class="py-keyword">import</tt> <tt id="link-34" class="py-name" targets="Class ansible.template.Templar=ansible.template.Templar-class.html"><a title="ansible.template.Templar" class="py-name" href="#" onclick="return doclink('link-34', 'Templar', 'link-34');">Templar</a></tt> </tt>
+<a name="L35"></a><tt class="py-lineno"> 35</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-35" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-35', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-36" class="py-name" targets="Module ansible.playbook.vars=ansible.playbook.vars-module.html,Package ansible.plugins.vars=ansible.plugins.vars-module.html,Module ansible.template.vars=ansible.template.vars-module.html,Module ansible.utils.vars=ansible.utils.vars-module.html,Package ansible.vars=ansible.vars-module.html"><a title="ansible.playbook.vars
+ansible.plugins.vars
+ansible.template.vars
+ansible.utils.vars
+ansible.vars" class="py-name" href="#" onclick="return doclink('link-36', 'vars', 'link-36');">vars</a></tt><tt class="py-op">.</tt><tt id="link-37" class="py-name" targets="Module ansible.vars.hostvars=ansible.vars.hostvars-module.html"><a title="ansible.vars.hostvars" class="py-name" href="#" onclick="return doclink('link-37', 'hostvars', 'link-37');">hostvars</a></tt> <tt class="py-keyword">import</tt> <tt id="link-38" class="py-name" targets="Class ansible.vars.hostvars.HostVars=ansible.vars.hostvars.HostVars-class.html"><a title="ansible.vars.hostvars.HostVars" class="py-name" href="#" onclick="return doclink('link-38', 'HostVars', 'link-38');">HostVars</a></tt> </tt>
+<a name="L36"></a><tt class="py-lineno"> 36</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-39" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-39', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-40" class="py-name"><a title="ansible.plugins" class="py-name" href="#" onclick="return doclink('link-40', 'plugins', 'link-28');">plugins</a></tt><tt class="py-op">.</tt><tt id="link-41" class="py-name" targets="Package ansible.plugins.callback=ansible.plugins.callback-module.html"><a title="ansible.plugins.callback" class="py-name" href="#" onclick="return doclink('link-41', 'callback', 'link-41');">callback</a></tt> <tt class="py-keyword">import</tt> <tt id="link-42" class="py-name" targets="Class ansible.plugins.callback.CallbackBase=ansible.plugins.callback.CallbackBase-class.html"><a title="ansible.plugins.callback.CallbackBase" class="py-name" href="#" onclick="return doclink('link-42', 'CallbackBase', 'link-42');">CallbackBase</a></tt> </tt>
+<a name="L37"></a><tt class="py-lineno"> 37</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-43" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-43', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-44" class="py-name" targets="Package ansible.parsing.utils=ansible.parsing.utils-module.html,Package ansible.utils=ansible.utils-module.html"><a title="ansible.parsing.utils
+ansible.utils" class="py-name" href="#" onclick="return doclink('link-44', 'utils', 'link-44');">utils</a></tt><tt class="py-op">.</tt><tt id="link-45" class="py-name" targets="Module ansible.utils.unicode=ansible.utils.unicode-module.html"><a title="ansible.utils.unicode" class="py-name" href="#" onclick="return doclink('link-45', 'unicode', 'link-45');">unicode</a></tt> <tt class="py-keyword">import</tt> <tt id="link-46" class="py-name" targets="Function ansible.utils.unicode.to_unicode()=ansible.utils.unicode-module.html#to_unicode"><a title="ansible.utils.unicode.to_unicode" class="py-name" href="#" onclick="return doclink('link-46', 'to_unicode', 'link-46');">to_unicode</a></tt> </tt>
+<a name="L38"></a><tt class="py-lineno"> 38</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-47" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-47', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-48" class="py-name" targets="Package ansible.compat=ansible.compat-module.html"><a title="ansible.compat" class="py-name" href="#" onclick="return doclink('link-48', 'compat', 'link-48');">compat</a></tt><tt class="py-op">.</tt><tt id="link-49" class="py-name" targets="Package ansible.compat.six=ansible.compat.six-module.html,Module ansible.module_utils.six=ansible.module_utils.six-module.html"><a title="ansible.compat.six
+ansible.module_utils.six" class="py-name" href="#" onclick="return doclink('link-49', 'six', 'link-49');">six</a></tt> <tt class="py-keyword">import</tt> <tt id="link-50" class="py-name" targets="Variable ansible.compat.six.string_types=ansible.compat.six-module.html#string_types,Variable ansible.module_utils.six.string_types=ansible.module_utils.six-module.html#string_types,Variable ansible.template.safe_eval'.string_types=ansible.template.safe_eval%27-module.html#string_types"><a title="ansible.compat.six.string_types
+ansible.module_utils.six.string_types
+ansible.template.safe_eval'.string_types" class="py-name" href="#" onclick="return doclink('link-50', 'string_types', 'link-50');">string_types</a></tt> </tt>
+<a name="L39"></a><tt class="py-lineno"> 39</tt>  <tt class="py-line"> </tt>
+<a name="L40"></a><tt class="py-lineno"> 40</tt>  <tt class="py-line"><tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L41"></a><tt class="py-lineno"> 41</tt>  <tt class="py-line">    <tt class="py-keyword">from</tt> <tt class="py-name">__main__</tt> <tt class="py-keyword">import</tt> <tt id="link-51" class="py-name" targets="Variable ansible.cli.adhoc.display=ansible.cli.adhoc-module.html#display,Variable ansible.cli.console.display=ansible.cli.console-module.html#display,Variable ansible.cli.display=ansible.cli-module.html#display,Variable ansible.cli.doc.display=ansible.cli.doc-module.html#display,Variable ansible.cli.galaxy.display=ansible.cli.galaxy-module.html#display,Variable ansible.cli.playbook.display=ansible.cli.playbook-module.html#display,Variable ansible.cli.pull.display=ansible.cli.pull-module.html#display,Variable ansible.cli.vault.display=ansible.cli.vault-module.html#display,Variable ansible.executor.module_common.display=ansible.executor.module_common-module.html#display,Variable ansible.executor.play_iterator.display=ansible.executor.play_iterator-module.html#display,Variable ansible.executor.playbook_executor.display=ansible.executor.playbook_executor-module.html#display,Variable ansible.executor.process.result.display=ansible.executor.process.result-module.html#display,Variable ansible.executor.process.worker.display=ansible.executor.process.worker-module.html#display,Variable ansible.executor.task_executor.display=ansible.executor.task_executor-module.html#display,Variable ansible.executor.task_queue_manager.display=ansible.executor.task_queue_manager-module.html#display,Variable ansible.galaxy.api.display=ansible.galaxy.api-module.html#display,Variable ansible.galaxy.login.display=ansible.galaxy.login-module.html#display,Variable ansible.galaxy.role.display=ansible.galaxy.role-module.html#display,Variable ansible.galaxy.token.display=ansible.galaxy.token-module.html#display,Variable ansible.inventory.display=ansible.inventory-module.html#display,Variable ansible.parsing.dataloader.display=ansible.parsing.dataloader-module.html#display,Variable ansible.parsing.vault.display=ansible.parsing.vault-module.html#display,Variable ansible.parsing.yaml.constructor.display=ansible.parsing.yaml.constructor-module.html#display,Variable ansible.playbook.base.display=ansible.playbook.base-module.html#display,Variable ansible.playbook.become.display=ansible.playbook.become-module.html#display,Variable ansible.playbook.display=ansible.playbook-module.html#display,Variable ansible.playbook.helpers.display=ansible.playbook.helpers-module.html#display,Variable ansible.playbook.included_file.display=ansible.playbook.included_file-module.html#display,Variable ansible.playbook.play.display=ansible.playbook.play-module.html#display,Variable ansible.playbook.play_context.display=ansible.playbook.play_context-module.html#display,Variable ansible.playbook.role.requirement.display=ansible.playbook.role.requirement-module.html#display,Variable ansible.playbook.task.display=ansible.playbook.task-module.html#display,Variable ansible.playbook.task_include.display=ansible.playbook.task_include-module.html#display,Variable ansible.plugins.action.add_host.display=ansible.plugins.action.add_host-module.html#display,Variable ansible.plugins.action.display=ansible.plugins.action-module.html#display,Variable ansible.plugins.action.package.display=ansible.plugins.action.package-module.html#display,Variable ansible.plugins.action.pause.display=ansible.plugins.action.pause-module.html#display,Variable ansible.plugins.action.win_reboot.display=ansible.plugins.action.win_reboot-module.html#display,Variable ansible.plugins.cache.base.display=ansible.plugins.cache.base-module.html#display,Variable ansible.plugins.cache.display=ansible.plugins.cache-module.html#display,Variable ansible.plugins.cache.jsonfile.display=ansible.plugins.cache.jsonfile-module.html#display,Variable ansible.plugins.connection.accelerate.display=ansible.plugins.connection.accelerate-module.html#display,Variable ansible.plugins.connection.chroot.display=ansible.plugins.connection.chroot-module.html#display,Variable ansible.plugins.connection.display=ansible.plugins.connection-module.html#display,Variable ansible.plugins.connection.docker.display=ansible.plugins.connection.docker-module.html#display,Variable ansible.plugins.connection.jail.display=ansible.plugins.connection.jail-module.html#display,Variable ansible.plugins.connection.libvirt_lxc.display=ansible.plugins.connection.libvirt_lxc-module.html#display,Variable ansible.plugins.connection.local.display=ansible.plugins.connection.local-module.html#display,Variable ansible.plugins.connection.paramiko_ssh.display=ansible.plugins.connection.paramiko_ssh-module.html#display,Variable ansible.plugins.connection.ssh.display=ansible.plugins.connection.ssh-module.html#display,Variable ansible.plugins.connection.winrm.display=ansible.plugins.connection.winrm-module.html#display,Variable ansible.plugins.connection.zone.display=ansible.plugins.connection.zone-module.html#display,Variable ansible.plugins.display=ansible.plugins-module.html#display,Variable ansible.plugins.lookup.display=ansible.plugins.lookup-module.html#display,Variable ansible.plugins.lookup.file.display=ansible.plugins.lookup.file-module.html#display,Variable ansible.plugins.lookup.template.display=ansible.plugins.lookup.template-module.html#display,Variable ansible.plugins.lookup.url.display=ansible.plugins.lookup.url-module.html#display,Variable ansible.plugins.strategy.debug.display=ansible.plugins.strategy.debug-module.html#display,Variable ansible.plugins.strategy.display=ansible.plugins.strategy-module.html#display,Variable ansible.plugins.strategy.free.display=ansible.plugins.strategy.free-module.html#display,Variable ansible.plugins.strategy.linear.display=ansible.plugins.strategy.linear-module.html#display,Variable ansible.template.display=ansible.template-module.html#display,Module ansible.utils.display=ansible.utils.display-module.html,Method ansible.utils.display.Display.display()=ansible.utils.display.Display-class.html#display,Variable ansible.utils.encrypt.display=ansible.utils.encrypt-module.html#display,Variable ansible.utils.module_docs.display=ansible.utils.module_docs-module.html#display,Variable ansible.vars.display=ansible.vars-module.html#display"><a title="ansible.cli.adhoc.display
+ansible.cli.console.display
+ansible.cli.display
+ansible.cli.doc.display
+ansible.cli.galaxy.display
+ansible.cli.playbook.display
+ansible.cli.pull.display
+ansible.cli.vault.display
+ansible.executor.module_common.display
+ansible.executor.play_iterator.display
+ansible.executor.playbook_executor.display
+ansible.executor.process.result.display
+ansible.executor.process.worker.display
+ansible.executor.task_executor.display
+ansible.executor.task_queue_manager.display
+ansible.galaxy.api.display
+ansible.galaxy.login.display
+ansible.galaxy.role.display
+ansible.galaxy.token.display
+ansible.inventory.display
+ansible.parsing.dataloader.display
+ansible.parsing.vault.display
+ansible.parsing.yaml.constructor.display
+ansible.playbook.base.display
+ansible.playbook.become.display
+ansible.playbook.display
+ansible.playbook.helpers.display
+ansible.playbook.included_file.display
+ansible.playbook.play.display
+ansible.playbook.play_context.display
+ansible.playbook.role.requirement.display
+ansible.playbook.task.display
+ansible.playbook.task_include.display
+ansible.plugins.action.add_host.display
+ansible.plugins.action.display
+ansible.plugins.action.package.display
+ansible.plugins.action.pause.display
+ansible.plugins.action.win_reboot.display
+ansible.plugins.cache.base.display
+ansible.plugins.cache.display
+ansible.plugins.cache.jsonfile.display
+ansible.plugins.connection.accelerate.display
+ansible.plugins.connection.chroot.display
+ansible.plugins.connection.display
+ansible.plugins.connection.docker.display
+ansible.plugins.connection.jail.display
+ansible.plugins.connection.libvirt_lxc.display
+ansible.plugins.connection.local.display
+ansible.plugins.connection.paramiko_ssh.display
+ansible.plugins.connection.ssh.display
+ansible.plugins.connection.winrm.display
+ansible.plugins.connection.zone.display
+ansible.plugins.display
+ansible.plugins.lookup.display
+ansible.plugins.lookup.file.display
+ansible.plugins.lookup.template.display
+ansible.plugins.lookup.url.display
+ansible.plugins.strategy.debug.display
+ansible.plugins.strategy.display
+ansible.plugins.strategy.free.display
+ansible.plugins.strategy.linear.display
+ansible.template.display
+ansible.utils.display
+ansible.utils.display.Display.display
+ansible.utils.encrypt.display
+ansible.utils.module_docs.display
+ansible.vars.display" class="py-name" href="#" onclick="return doclink('link-51', 'display', 'link-51');">display</a></tt> </tt>
+<a name="L42"></a><tt class="py-lineno"> 42</tt>  <tt class="py-line"><tt class="py-keyword">except</tt> <tt class="py-name">ImportError</tt><tt class="py-op">:</tt> </tt>
+<a name="L43"></a><tt class="py-lineno"> 43</tt>  <tt class="py-line">    <tt class="py-keyword">from</tt> <tt id="link-52" class="py-name"><a title="ansible" class="py-name" href="#" onclick="return doclink('link-52', 'ansible', 'link-1');">ansible</a></tt><tt class="py-op">.</tt><tt id="link-53" class="py-name"><a title="ansible.parsing.utils
+ansible.utils" class="py-name" href="#" onclick="return doclink('link-53', 'utils', 'link-44');">utils</a></tt><tt class="py-op">.</tt><tt id="link-54" class="py-name"><a title="ansible.cli.adhoc.display
+ansible.cli.console.display
+ansible.cli.display
+ansible.cli.doc.display
+ansible.cli.galaxy.display
+ansible.cli.playbook.display
+ansible.cli.pull.display
+ansible.cli.vault.display
+ansible.executor.module_common.display
+ansible.executor.play_iterator.display
+ansible.executor.playbook_executor.display
+ansible.executor.process.result.display
+ansible.executor.process.worker.display
+ansible.executor.task_executor.display
+ansible.executor.task_queue_manager.display
+ansible.galaxy.api.display
+ansible.galaxy.login.display
+ansible.galaxy.role.display
+ansible.galaxy.token.display
+ansible.inventory.display
+ansible.parsing.dataloader.display
+ansible.parsing.vault.display
+ansible.parsing.yaml.constructor.display
+ansible.playbook.base.display
+ansible.playbook.become.display
+ansible.playbook.display
+ansible.playbook.helpers.display
+ansible.playbook.included_file.display
+ansible.playbook.play.display
+ansible.playbook.play_context.display
+ansible.playbook.role.requirement.display
+ansible.playbook.task.display
+ansible.playbook.task_include.display
+ansible.plugins.action.add_host.display
+ansible.plugins.action.display
+ansible.plugins.action.package.display
+ansible.plugins.action.pause.display
+ansible.plugins.action.win_reboot.display
+ansible.plugins.cache.base.display
+ansible.plugins.cache.display
+ansible.plugins.cache.jsonfile.display
+ansible.plugins.connection.accelerate.display
+ansible.plugins.connection.chroot.display
+ansible.plugins.connection.display
+ansible.plugins.connection.docker.display
+ansible.plugins.connection.jail.display
+ansible.plugins.connection.libvirt_lxc.display
+ansible.plugins.connection.local.display
+ansible.plugins.connection.paramiko_ssh.display
+ansible.plugins.connection.ssh.display
+ansible.plugins.connection.winrm.display
+ansible.plugins.connection.zone.display
+ansible.plugins.display
+ansible.plugins.lookup.display
+ansible.plugins.lookup.file.display
+ansible.plugins.lookup.template.display
+ansible.plugins.lookup.url.display
+ansible.plugins.strategy.debug.display
+ansible.plugins.strategy.display
+ansible.plugins.strategy.free.display
+ansible.plugins.strategy.linear.display
+ansible.template.display
+ansible.utils.display
+ansible.utils.display.Display.display
+ansible.utils.encrypt.display
+ansible.utils.module_docs.display
+ansible.vars.display" class="py-name" href="#" onclick="return doclink('link-54', 'display', 'link-51');">display</a></tt> <tt class="py-keyword">import</tt> <tt id="link-55" class="py-name" targets="Class ansible.utils.display.Display=ansible.utils.display.Display-class.html"><a title="ansible.utils.display.Display" class="py-name" href="#" onclick="return doclink('link-55', 'Display', 'link-55');">Display</a></tt> </tt>
+<a name="L44"></a><tt class="py-lineno"> 44</tt>  <tt class="py-line">    <tt id="link-56" class="py-name"><a title="ansible.cli.adhoc.display
+ansible.cli.console.display
+ansible.cli.display
+ansible.cli.doc.display
+ansible.cli.galaxy.display
+ansible.cli.playbook.display
+ansible.cli.pull.display
+ansible.cli.vault.display
+ansible.executor.module_common.display
+ansible.executor.play_iterator.display
+ansible.executor.playbook_executor.display
+ansible.executor.process.result.display
+ansible.executor.process.worker.display
+ansible.executor.task_executor.display
+ansible.executor.task_queue_manager.display
+ansible.galaxy.api.display
+ansible.galaxy.login.display
+ansible.galaxy.role.display
+ansible.galaxy.token.display
+ansible.inventory.display
+ansible.parsing.dataloader.display
+ansible.parsing.vault.display
+ansible.parsing.yaml.constructor.display
+ansible.playbook.base.display
+ansible.playbook.become.display
+ansible.playbook.display
+ansible.playbook.helpers.display
+ansible.playbook.included_file.display
+ansible.playbook.play.display
+ansible.playbook.play_context.display
+ansible.playbook.role.requirement.display
+ansible.playbook.task.display
+ansible.playbook.task_include.display
+ansible.plugins.action.add_host.display
+ansible.plugins.action.display
+ansible.plugins.action.package.display
+ansible.plugins.action.pause.display
+ansible.plugins.action.win_reboot.display
+ansible.plugins.cache.base.display
+ansible.plugins.cache.display
+ansible.plugins.cache.jsonfile.display
+ansible.plugins.connection.accelerate.display
+ansible.plugins.connection.chroot.display
+ansible.plugins.connection.display
+ansible.plugins.connection.docker.display
+ansible.plugins.connection.jail.display
+ansible.plugins.connection.libvirt_lxc.display
+ansible.plugins.connection.local.display
+ansible.plugins.connection.paramiko_ssh.display
+ansible.plugins.connection.ssh.display
+ansible.plugins.connection.winrm.display
+ansible.plugins.connection.zone.display
+ansible.plugins.display
+ansible.plugins.lookup.display
+ansible.plugins.lookup.file.display
+ansible.plugins.lookup.template.display
+ansible.plugins.lookup.url.display
+ansible.plugins.strategy.debug.display
+ansible.plugins.strategy.display
+ansible.plugins.strategy.free.display
+ansible.plugins.strategy.linear.display
+ansible.template.display
+ansible.utils.display
+ansible.utils.display.Display.display
+ansible.utils.encrypt.display
+ansible.utils.module_docs.display
+ansible.vars.display" class="py-name" href="#" onclick="return doclink('link-56', 'display', 'link-51');">display</a></tt> <tt class="py-op">=</tt> <tt id="link-57" class="py-name"><a title="ansible.utils.display.Display" class="py-name" href="#" onclick="return doclink('link-57', 'Display', 'link-55');">Display</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L45"></a><tt class="py-lineno"> 45</tt>  <tt class="py-line"> </tt>
+<a name="L46"></a><tt class="py-lineno"> 46</tt>  <tt class="py-line"><tt class="py-name">__all__</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-string">'TaskQueueManager'</tt><tt class="py-op">]</tt> </tt>
+<a name="L47"></a><tt class="py-lineno"> 47</tt>  <tt class="py-line"> </tt>
+<a name="L48"></a><tt class="py-lineno"> 48</tt>  <tt class="py-line"> </tt>
+<a name="TaskQueueManager"></a><div id="TaskQueueManager-def"><a name="L49"></a><tt class="py-lineno"> 49</tt> <a class="py-toggle" href="#" id="TaskQueueManager-toggle" onclick="return toggle('TaskQueueManager');">-</a><tt class="py-line"><tt class="py-keyword">class</tt> <a class="py-def-name" href="ansible.executor.task_queue_manager.TaskQueueManager-class.html">TaskQueueManager</a><tt class="py-op">:</tt> </tt>
+</div><div id="TaskQueueManager-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="TaskQueueManager-expanded"><a name="L50"></a><tt class="py-lineno"> 50</tt>  <tt class="py-line"> </tt>
+<a name="L51"></a><tt class="py-lineno"> 51</tt>  <tt class="py-line">    <tt class="py-docstring">'''</tt> </tt>
+<a name="L52"></a><tt class="py-lineno"> 52</tt>  <tt class="py-line"><tt class="py-docstring">    This class handles the multiprocessing requirements of Ansible by</tt> </tt>
+<a name="L53"></a><tt class="py-lineno"> 53</tt>  <tt class="py-line"><tt class="py-docstring">    creating a pool of worker forks, a result handler fork, and a</tt> </tt>
+<a name="L54"></a><tt class="py-lineno"> 54</tt>  <tt class="py-line"><tt class="py-docstring">    manager object with shared datastructures/queues for coordinating</tt> </tt>
+<a name="L55"></a><tt class="py-lineno"> 55</tt>  <tt class="py-line"><tt class="py-docstring">    work between all processes.</tt> </tt>
+<a name="L56"></a><tt class="py-lineno"> 56</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L57"></a><tt class="py-lineno"> 57</tt>  <tt class="py-line"><tt class="py-docstring">    The queue manager is responsible for loading the play strategy plugin,</tt> </tt>
+<a name="L58"></a><tt class="py-lineno"> 58</tt>  <tt class="py-line"><tt class="py-docstring">    which dispatches the Play's tasks to hosts.</tt> </tt>
+<a name="L59"></a><tt class="py-lineno"> 59</tt>  <tt class="py-line"><tt class="py-docstring">    '''</tt> </tt>
+<a name="L60"></a><tt class="py-lineno"> 60</tt>  <tt class="py-line"> </tt>
+<a name="L61"></a><tt class="py-lineno"> 61</tt>  <tt class="py-line">    <tt id="link-58" class="py-name" targets="Variable ansible.executor.task_queue_manager.TaskQueueManager.RUN_OK=ansible.executor.task_queue_manager.TaskQueueManager-class.html#RUN_OK"><a title="ansible.executor.task_queue_manager.TaskQueueManager.RUN_OK" class="py-name" href="#" onclick="return doclink('link-58', 'RUN_OK', 'link-58');">RUN_OK</a></tt>                <tt class="py-op">=</tt> <tt class="py-number">0</tt> </tt>
+<a name="L62"></a><tt class="py-lineno"> 62</tt>  <tt class="py-line">    <tt id="link-59" class="py-name" targets="Variable ansible.executor.task_queue_manager.TaskQueueManager.RUN_ERROR=ansible.executor.task_queue_manager.TaskQueueManager-class.html#RUN_ERROR"><a title="ansible.executor.task_queue_manager.TaskQueueManager.RUN_ERROR" class="py-name" href="#" onclick="return doclink('link-59', 'RUN_ERROR', 'link-59');">RUN_ERROR</a></tt>             <tt class="py-op">=</tt> <tt class="py-number">1</tt> </tt>
+<a name="L63"></a><tt class="py-lineno"> 63</tt>  <tt class="py-line">    <tt id="link-60" class="py-name" targets="Variable ansible.executor.task_queue_manager.TaskQueueManager.RUN_FAILED_HOSTS=ansible.executor.task_queue_manager.TaskQueueManager-class.html#RUN_FAILED_HOSTS"><a title="ansible.executor.task_queue_manager.TaskQueueManager.RUN_FAILED_HOSTS" class="py-name" href="#" onclick="return doclink('link-60', 'RUN_FAILED_HOSTS', 'link-60');">RUN_FAILED_HOSTS</a></tt>      <tt class="py-op">=</tt> <tt class="py-number">2</tt> </tt>
+<a name="L64"></a><tt class="py-lineno"> 64</tt>  <tt class="py-line">    <tt id="link-61" class="py-name" targets="Variable ansible.executor.task_queue_manager.TaskQueueManager.RUN_UNREACHABLE_HOSTS=ansible.executor.task_queue_manager.TaskQueueManager-class.html#RUN_UNREACHABLE_HOSTS"><a title="ansible.executor.task_queue_manager.TaskQueueManager.RUN_UNREACHABLE_HOSTS" class="py-name" href="#" onclick="return doclink('link-61', 'RUN_UNREACHABLE_HOSTS', 'link-61');">RUN_UNREACHABLE_HOSTS</a></tt> <tt class="py-op">=</tt> <tt class="py-number">3</tt> </tt>
+<a name="L65"></a><tt class="py-lineno"> 65</tt>  <tt class="py-line">    <tt id="link-62" class="py-name" targets="Variable ansible.executor.task_queue_manager.TaskQueueManager.RUN_FAILED_BREAK_PLAY=ansible.executor.task_queue_manager.TaskQueueManager-class.html#RUN_FAILED_BREAK_PLAY"><a title="ansible.executor.task_queue_manager.TaskQueueManager.RUN_FAILED_BREAK_PLAY" class="py-name" href="#" onclick="return doclink('link-62', 'RUN_FAILED_BREAK_PLAY', 'link-62');">RUN_FAILED_BREAK_PLAY</a></tt> <tt class="py-op">=</tt> <tt class="py-number">4</tt> </tt>
+<a name="L66"></a><tt class="py-lineno"> 66</tt>  <tt class="py-line">    <tt id="link-63" class="py-name" targets="Variable ansible.executor.task_queue_manager.TaskQueueManager.RUN_UNKNOWN_ERROR=ansible.executor.task_queue_manager.TaskQueueManager-class.html#RUN_UNKNOWN_ERROR"><a title="ansible.executor.task_queue_manager.TaskQueueManager.RUN_UNKNOWN_ERROR" class="py-name" href="#" onclick="return doclink('link-63', 'RUN_UNKNOWN_ERROR', 'link-63');">RUN_UNKNOWN_ERROR</a></tt>     <tt class="py-op">=</tt> <tt class="py-number">255</tt> </tt>
+<a name="L67"></a><tt class="py-lineno"> 67</tt>  <tt class="py-line"> </tt>
+<a name="TaskQueueManager.__init__"></a><div id="TaskQueueManager.__init__-def"><a name="L68"></a><tt class="py-lineno"> 68</tt> <a class="py-toggle" href="#" id="TaskQueueManager.__init__-toggle" onclick="return toggle('TaskQueueManager.__init__');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.executor.task_queue_manager.TaskQueueManager-class.html#__init__">__init__</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">inventory</tt><tt class="py-op">,</tt> <tt class="py-param">variable_manager</tt><tt class="py-op">,</tt> <tt class="py-param">loader</tt><tt class="py-op">,</tt> <tt class="py-param">options</tt><tt class="py-op">,</tt> <tt class="py-param">passwords</tt><tt class="py-op">,</tt> <tt class="py-param">stdout_callback</tt><tt class="py-op">=</tt><tt class="py-name">None</tt><tt class="py-op">,</tt> <tt class="py-param">run_additional_callbacks</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">,</tt> <tt class="py-param">run_tree</tt><tt class="py-op">=</tt><tt class="py-name">False</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="TaskQueueManager.__init__-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="TaskQueueManager.__init__-expanded"><a name="L69"></a><tt class="py-lineno"> 69</tt>  <tt class="py-line"> </tt>
+<a name="L70"></a><tt class="py-lineno"> 70</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_inventory</tt>        <tt class="py-op">=</tt> <tt id="link-64" class="py-name" targets="Package ansible.inventory=ansible.inventory-module.html"><a title="ansible.inventory" class="py-name" href="#" onclick="return doclink('link-64', 'inventory', 'link-64');">inventory</a></tt> </tt>
+<a name="L71"></a><tt class="py-lineno"> 71</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_variable_manager</tt> <tt class="py-op">=</tt> <tt class="py-name">variable_manager</tt> </tt>
+<a name="L72"></a><tt class="py-lineno"> 72</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_loader</tt>           <tt class="py-op">=</tt> <tt id="link-65" class="py-name" targets="Module ansible.parsing.yaml.loader=ansible.parsing.yaml.loader-module.html"><a title="ansible.parsing.yaml.loader" class="py-name" href="#" onclick="return doclink('link-65', 'loader', 'link-65');">loader</a></tt> </tt>
+<a name="L73"></a><tt class="py-lineno"> 73</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_options</tt>          <tt class="py-op">=</tt> <tt class="py-name">options</tt> </tt>
+<a name="L74"></a><tt class="py-lineno"> 74</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_stats</tt>            <tt class="py-op">=</tt> <tt id="link-66" class="py-name"><a title="ansible.executor.stats.AggregateStats" class="py-name" href="#" onclick="return doclink('link-66', 'AggregateStats', 'link-18');">AggregateStats</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L75"></a><tt class="py-lineno"> 75</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">passwords</tt>         <tt class="py-op">=</tt> <tt class="py-name">passwords</tt> </tt>
+<a name="L76"></a><tt class="py-lineno"> 76</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_stdout_callback</tt>  <tt class="py-op">=</tt> <tt class="py-name">stdout_callback</tt> </tt>
+<a name="L77"></a><tt class="py-lineno"> 77</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_run_additional_callbacks</tt> <tt class="py-op">=</tt> <tt class="py-name">run_additional_callbacks</tt> </tt>
+<a name="L78"></a><tt class="py-lineno"> 78</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_run_tree</tt>         <tt class="py-op">=</tt> <tt class="py-name">run_tree</tt> </tt>
+<a name="L79"></a><tt class="py-lineno"> 79</tt>  <tt class="py-line"> </tt>
+<a name="L80"></a><tt class="py-lineno"> 80</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_callbacks_loaded</tt> <tt class="py-op">=</tt> <tt class="py-name">False</tt> </tt>
+<a name="L81"></a><tt class="py-lineno"> 81</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_callback_plugins</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-op">]</tt> </tt>
+<a name="L82"></a><tt class="py-lineno"> 82</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_start_at_done</tt>    <tt class="py-op">=</tt> <tt class="py-name">False</tt> </tt>
+<a name="L83"></a><tt class="py-lineno"> 83</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_result_prc</tt>       <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L84"></a><tt class="py-lineno"> 84</tt>  <tt class="py-line"> </tt>
+<a name="L85"></a><tt class="py-lineno"> 85</tt>  <tt class="py-line">        <tt class="py-comment"># make sure the module path (if specified) is parsed and</tt> </tt>
+<a name="L86"></a><tt class="py-lineno"> 86</tt>  <tt class="py-line">        <tt class="py-comment"># added to the module_loader object</tt> </tt>
+<a name="L87"></a><tt class="py-lineno"> 87</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">options</tt><tt class="py-op">.</tt><tt class="py-name">module_path</tt> <tt class="py-keyword">is</tt> <tt class="py-keyword">not</tt> <tt class="py-name">None</tt><tt class="py-op">:</tt> </tt>
+<a name="L88"></a><tt class="py-lineno"> 88</tt>  <tt class="py-line">            <tt class="py-keyword">for</tt> <tt id="link-67" class="py-name" targets="Variable ansible.utils.display.path=ansible.utils.display-module.html#path,Module ansible.utils.path=ansible.utils.path-module.html"><a title="ansible.utils.display.path
+ansible.utils.path" class="py-name" href="#" onclick="return doclink('link-67', 'path', 'link-67');">path</a></tt> <tt class="py-keyword">in</tt> <tt class="py-name">options</tt><tt class="py-op">.</tt><tt class="py-name">module_path</tt><tt class="py-op">.</tt><tt class="py-name">split</tt><tt class="py-op">(</tt><tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">pathsep</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L89"></a><tt class="py-lineno"> 89</tt>  <tt class="py-line">                <tt id="link-68" class="py-name"><a title="ansible.plugins.module_loader" class="py-name" href="#" onclick="return doclink('link-68', 'module_loader', 'link-31');">module_loader</a></tt><tt class="py-op">.</tt><tt id="link-69" class="py-name" targets="Method ansible.plugins.PluginLoader.add_directory()=ansible.plugins.PluginLoader-class.html#add_directory"><a title="ansible.plugins.PluginLoader.add_directory" class="py-name" href="#" onclick="return doclink('link-69', 'add_directory', 'link-69');">add_directory</a></tt><tt class="py-op">(</tt><tt id="link-70" class="py-name"><a title="ansible.utils.display.path
+ansible.utils.path" class="py-name" href="#" onclick="return doclink('link-70', 'path', 'link-67');">path</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L90"></a><tt class="py-lineno"> 90</tt>  <tt class="py-line"> </tt>
+<a name="L91"></a><tt class="py-lineno"> 91</tt>  <tt class="py-line">        <tt class="py-comment"># a special flag to help us exit cleanly</tt> </tt>
+<a name="L92"></a><tt class="py-lineno"> 92</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_terminated</tt> <tt class="py-op">=</tt> <tt class="py-name">False</tt> </tt>
+<a name="L93"></a><tt class="py-lineno"> 93</tt>  <tt class="py-line"> </tt>
+<a name="L94"></a><tt class="py-lineno"> 94</tt>  <tt class="py-line">        <tt class="py-comment"># this dictionary is used to keep track of notified handlers</tt> </tt>
+<a name="L95"></a><tt class="py-lineno"> 95</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_notified_handlers</tt> <tt class="py-op">=</tt> <tt id="link-71" class="py-name" targets="Module ansible.plugins.lookup.dict=ansible.plugins.lookup.dict-module.html"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-71', 'dict', 'link-71');">dict</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L96"></a><tt class="py-lineno"> 96</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_listening_handlers</tt> <tt class="py-op">=</tt> <tt id="link-72" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-72', 'dict', 'link-71');">dict</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L97"></a><tt class="py-lineno"> 97</tt>  <tt class="py-line"> </tt>
+<a name="L98"></a><tt class="py-lineno"> 98</tt>  <tt class="py-line">        <tt class="py-comment"># dictionaries to keep track of failed/unreachable hosts</tt> </tt>
+<a name="L99"></a><tt class="py-lineno"> 99</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_failed_hosts</tt>      <tt class="py-op">=</tt> <tt id="link-73" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-73', 'dict', 'link-71');">dict</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L100"></a><tt class="py-lineno">100</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_unreachable_hosts</tt> <tt class="py-op">=</tt> <tt id="link-74" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-74', 'dict', 'link-71');">dict</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L101"></a><tt class="py-lineno">101</tt>  <tt class="py-line"> </tt>
+<a name="L102"></a><tt class="py-lineno">102</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_final_q</tt> <tt class="py-op">=</tt> <tt class="py-name">multiprocessing</tt><tt class="py-op">.</tt><tt class="py-name">Queue</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L103"></a><tt class="py-lineno">103</tt>  <tt class="py-line"> </tt>
+<a name="L104"></a><tt class="py-lineno">104</tt>  <tt class="py-line">        <tt class="py-comment"># A temporary file (opened pre-fork) used by connection</tt> </tt>
+<a name="L105"></a><tt class="py-lineno">105</tt>  <tt class="py-line">        <tt class="py-comment"># plugins for inter-process locking.</tt> </tt>
+<a name="L106"></a><tt class="py-lineno">106</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_connection_lockfile</tt> <tt class="py-op">=</tt> <tt class="py-name">tempfile</tt><tt class="py-op">.</tt><tt class="py-name">TemporaryFile</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L107"></a><tt class="py-lineno">107</tt>  <tt class="py-line"> </tt>
+<a name="TaskQueueManager._initialize_processes"></a><div id="TaskQueueManager._initialize_processes-def"><a name="L108"></a><tt class="py-lineno">108</tt> <a class="py-toggle" href="#" id="TaskQueueManager._initialize_processes-toggle" onclick="return toggle('TaskQueueManager._initialize_processes');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.executor.task_queue_manager.TaskQueueManager-class.html#_initialize_processes">_initialize_processes</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">num</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="TaskQueueManager._initialize_processes-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="TaskQueueManager._initialize_processes-expanded"><a name="L109"></a><tt class="py-lineno">109</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_workers</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-op">]</tt> </tt>
+<a name="L110"></a><tt class="py-lineno">110</tt>  <tt class="py-line"> </tt>
+<a name="L111"></a><tt class="py-lineno">111</tt>  <tt class="py-line">        <tt class="py-keyword">for</tt> <tt class="py-name">i</tt> <tt class="py-keyword">in</tt> <tt id="link-75" class="py-name" targets="Method ansible.module_utils.six._MovedItems.range()=ansible.module_utils.six._MovedItems-class.html#range"><a title="ansible.module_utils.six._MovedItems.range" class="py-name" href="#" onclick="return doclink('link-75', 'range', 'link-75');">range</a></tt><tt class="py-op">(</tt><tt class="py-name">num</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L112"></a><tt class="py-lineno">112</tt>  <tt class="py-line">            <tt class="py-name">rslt_q</tt> <tt class="py-op">=</tt> <tt class="py-name">multiprocessing</tt><tt class="py-op">.</tt><tt class="py-name">Queue</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L113"></a><tt class="py-lineno">113</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_workers</tt><tt class="py-op">.</tt><tt class="py-name">append</tt><tt class="py-op">(</tt><tt class="py-op">[</tt><tt class="py-name">None</tt><tt class="py-op">,</tt> <tt class="py-name">rslt_q</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L114"></a><tt class="py-lineno">114</tt>  <tt class="py-line"> </tt>
+<a name="L115"></a><tt class="py-lineno">115</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_result_prc</tt> <tt class="py-op">=</tt> <tt id="link-76" class="py-name"><a title="ansible.executor.process.result.ResultProcess" class="py-name" href="#" onclick="return doclink('link-76', 'ResultProcess', 'link-14');">ResultProcess</a></tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_final_q</tt><tt class="py-op">,</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_workers</tt><tt class="py-op">)</tt> </tt>
+<a name="L116"></a><tt class="py-lineno">116</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_result_prc</tt><tt class="py-op">.</tt><tt class="py-name">start</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L117"></a><tt class="py-lineno">117</tt>  <tt class="py-line"> </tt>
+<a name="TaskQueueManager._initialize_notified_handlers"></a><div id="TaskQueueManager._initialize_notified_handlers-def"><a name="L118"></a><tt class="py-lineno">118</tt> <a class="py-toggle" href="#" id="TaskQueueManager._initialize_notified_handlers-toggle" onclick="return toggle('TaskQueueManager._initialize_notified_handlers');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.executor.task_queue_manager.TaskQueueManager-class.html#_initialize_notified_handlers">_initialize_notified_handlers</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">play</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="TaskQueueManager._initialize_notified_handlers-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="TaskQueueManager._initialize_notified_handlers-expanded"><a name="L119"></a><tt class="py-lineno">119</tt>  <tt class="py-line">        <tt class="py-docstring">'''</tt> </tt>
+<a name="L120"></a><tt class="py-lineno">120</tt>  <tt class="py-line"><tt class="py-docstring">        Clears and initializes the shared notified handlers dict with entries</tt> </tt>
+<a name="L121"></a><tt class="py-lineno">121</tt>  <tt class="py-line"><tt class="py-docstring">        for each handler in the play, which is an empty array that will contain</tt> </tt>
+<a name="L122"></a><tt class="py-lineno">122</tt>  <tt class="py-line"><tt class="py-docstring">        inventory hostnames for those hosts triggering the handler.</tt> </tt>
+<a name="L123"></a><tt class="py-lineno">123</tt>  <tt class="py-line"><tt class="py-docstring">        '''</tt> </tt>
+<a name="L124"></a><tt class="py-lineno">124</tt>  <tt class="py-line"> </tt>
+<a name="L125"></a><tt class="py-lineno">125</tt>  <tt class="py-line">        <tt class="py-comment"># Zero the dictionary first by removing any entries there.</tt> </tt>
+<a name="L126"></a><tt class="py-lineno">126</tt>  <tt class="py-line">        <tt class="py-comment"># Proxied dicts don't support iteritems, so we have to use keys()</tt> </tt>
+<a name="L127"></a><tt class="py-lineno">127</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_notified_handlers</tt><tt class="py-op">.</tt><tt class="py-name">clear</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L128"></a><tt class="py-lineno">128</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_listening_handlers</tt><tt class="py-op">.</tt><tt class="py-name">clear</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L129"></a><tt class="py-lineno">129</tt>  <tt class="py-line"> </tt>
+<a name="L130"></a><tt class="py-lineno">130</tt>  <tt class="py-line">        <tt class="py-keyword">def</tt> <tt class="py-def-name">_process_block</tt><tt class="py-op">(</tt><tt class="py-param">b</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L131"></a><tt class="py-lineno">131</tt>  <tt class="py-line">            <tt class="py-name">temp_list</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-op">]</tt> </tt>
+<a name="L132"></a><tt class="py-lineno">132</tt>  <tt class="py-line">            <tt class="py-keyword">for</tt> <tt class="py-name">t</tt> <tt class="py-keyword">in</tt> <tt id="link-77" class="py-name" targets="Function ansible.compat.six.b()=ansible.compat.six-module.html#b,Function ansible.module_utils.six.b()=ansible.module_utils.six-module.html#b"><a title="ansible.compat.six.b
+ansible.module_utils.six.b" class="py-name" href="#" onclick="return doclink('link-77', 'b', 'link-77');">b</a></tt><tt class="py-op">.</tt><tt id="link-78" class="py-name"><a title="ansible.playbook.block" class="py-name" href="#" onclick="return doclink('link-78', 'block', 'link-21');">block</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L133"></a><tt class="py-lineno">133</tt>  <tt class="py-line">                <tt class="py-keyword">if</tt> <tt class="py-name">isinstance</tt><tt class="py-op">(</tt><tt class="py-name">t</tt><tt class="py-op">,</tt> <tt id="link-79" class="py-name"><a title="ansible.playbook.block.Block" class="py-name" href="#" onclick="return doclink('link-79', 'Block', 'link-22');">Block</a></tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L134"></a><tt class="py-lineno">134</tt>  <tt class="py-line">                    <tt class="py-name">temp_list</tt><tt class="py-op">.</tt><tt class="py-name">extend</tt><tt class="py-op">(</tt><tt class="py-name">_process_block</tt><tt class="py-op">(</tt><tt class="py-name">t</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L135"></a><tt class="py-lineno">135</tt>  <tt class="py-line">                <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L136"></a><tt class="py-lineno">136</tt>  <tt class="py-line">                    <tt class="py-name">temp_list</tt><tt class="py-op">.</tt><tt class="py-name">append</tt><tt class="py-op">(</tt><tt class="py-name">t</tt><tt class="py-op">)</tt> </tt>
+<a name="L137"></a><tt class="py-lineno">137</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> <tt class="py-name">temp_list</tt> </tt>
+</div><a name="L138"></a><tt class="py-lineno">138</tt>  <tt class="py-line"> </tt>
+<a name="L139"></a><tt class="py-lineno">139</tt>  <tt class="py-line">        <tt class="py-name">handler_list</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-op">]</tt> </tt>
+<a name="L140"></a><tt class="py-lineno">140</tt>  <tt class="py-line">        <tt class="py-keyword">for</tt> <tt class="py-name">handler_block</tt> <tt class="py-keyword">in</tt> <tt id="link-80" class="py-name" targets="Module ansible.playbook.play=ansible.playbook.play-module.html"><a title="ansible.playbook.play" class="py-name" href="#" onclick="return doclink('link-80', 'play', 'link-80');">play</a></tt><tt class="py-op">.</tt><tt class="py-name">handlers</tt><tt class="py-op">:</tt> </tt>
+<a name="L141"></a><tt class="py-lineno">141</tt>  <tt class="py-line">            <tt class="py-name">handler_list</tt><tt class="py-op">.</tt><tt class="py-name">extend</tt><tt class="py-op">(</tt><tt class="py-name">_process_block</tt><tt class="py-op">(</tt><tt class="py-name">handler_block</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L142"></a><tt class="py-lineno">142</tt>  <tt class="py-line"> </tt>
+<a name="L143"></a><tt class="py-lineno">143</tt>  <tt class="py-line">        <tt class="py-comment"># then initialize it with the given handler list</tt> </tt>
+<a name="L144"></a><tt class="py-lineno">144</tt>  <tt class="py-line">        <tt class="py-keyword">for</tt> <tt id="link-81" class="py-name" targets="Module ansible.playbook.handler=ansible.playbook.handler-module.html"><a title="ansible.playbook.handler" class="py-name" href="#" onclick="return doclink('link-81', 'handler', 'link-81');">handler</a></tt> <tt class="py-keyword">in</tt> <tt class="py-name">handler_list</tt><tt class="py-op">:</tt> </tt>
+<a name="L145"></a><tt class="py-lineno">145</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt id="link-82" class="py-name"><a title="ansible.playbook.handler" class="py-name" href="#" onclick="return doclink('link-82', 'handler', 'link-81');">handler</a></tt> <tt class="py-keyword">not</tt> <tt class="py-keyword">in</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_notified_handlers</tt><tt class="py-op">:</tt> </tt>
+<a name="L146"></a><tt class="py-lineno">146</tt>  <tt class="py-line">                <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_notified_handlers</tt><tt class="py-op">[</tt><tt id="link-83" class="py-name"><a title="ansible.playbook.handler" class="py-name" href="#" onclick="return doclink('link-83', 'handler', 'link-81');">handler</a></tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-op">]</tt> </tt>
+<a name="L147"></a><tt class="py-lineno">147</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt id="link-84" class="py-name"><a title="ansible.playbook.handler" class="py-name" href="#" onclick="return doclink('link-84', 'handler', 'link-81');">handler</a></tt><tt class="py-op">.</tt><tt class="py-name">listen</tt><tt class="py-op">:</tt> </tt>
+<a name="L148"></a><tt class="py-lineno">148</tt>  <tt class="py-line">                <tt class="py-name">listeners</tt> <tt class="py-op">=</tt> <tt id="link-85" class="py-name"><a title="ansible.playbook.handler" class="py-name" href="#" onclick="return doclink('link-85', 'handler', 'link-81');">handler</a></tt><tt class="py-op">.</tt><tt class="py-name">listen</tt> </tt>
+<a name="L149"></a><tt class="py-lineno">149</tt>  <tt class="py-line">                <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">isinstance</tt><tt class="py-op">(</tt><tt class="py-name">listeners</tt><tt class="py-op">,</tt> <tt id="link-86" class="py-name" targets="Module ansible.plugins.lookup.list=ansible.plugins.lookup.list-module.html"><a title="ansible.plugins.lookup.list" class="py-name" href="#" onclick="return doclink('link-86', 'list', 'link-86');">list</a></tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L150"></a><tt class="py-lineno">150</tt>  <tt class="py-line">                    <tt class="py-name">listeners</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt> <tt class="py-name">listeners</tt> <tt class="py-op">]</tt> </tt>
+<a name="L151"></a><tt class="py-lineno">151</tt>  <tt class="py-line">                <tt class="py-keyword">for</tt> <tt class="py-name">listener</tt> <tt class="py-keyword">in</tt> <tt class="py-name">listeners</tt><tt class="py-op">:</tt> </tt>
+<a name="L152"></a><tt class="py-lineno">152</tt>  <tt class="py-line">                    <tt class="py-keyword">if</tt> <tt class="py-name">listener</tt> <tt class="py-keyword">not</tt> <tt class="py-keyword">in</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_listening_handlers</tt><tt class="py-op">:</tt> </tt>
+<a name="L153"></a><tt class="py-lineno">153</tt>  <tt class="py-line">                        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_listening_handlers</tt><tt class="py-op">[</tt><tt class="py-name">listener</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-op">]</tt> </tt>
+<a name="L154"></a><tt class="py-lineno">154</tt>  <tt class="py-line">                    <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_listening_handlers</tt><tt class="py-op">[</tt><tt class="py-name">listener</tt><tt class="py-op">]</tt><tt class="py-op">.</tt><tt class="py-name">append</tt><tt class="py-op">(</tt><tt id="link-87" class="py-name"><a title="ansible.playbook.handler" class="py-name" href="#" onclick="return doclink('link-87', 'handler', 'link-81');">handler</a></tt><tt class="py-op">.</tt><tt id="link-88" class="py-name" targets="Method ansible.inventory.group.Group.get_name()=ansible.inventory.group.Group-class.html#get_name,Method ansible.inventory.host.Host.get_name()=ansible.inventory.host.Host-class.html#get_name,Method ansible.playbook.play.Play.get_name()=ansible.playbook.play.Play-class.html#get_name,Method ansible.playbook.role.Role.get_name()=ansible.playbook.role.Role-class.html#get_name,Method ansible.playbook.task.Task.get_name()=ansible.playbook.task.Task-class.html#get_name"><a title="ansible.inventory.group.Group.get_name
+ansible.inventory.host.Host.get_name
+ansible.playbook.play.Play.get_name
+ansible.playbook.role.Role.get_name
+ansible.playbook.task.Task.get_name" class="py-name" href="#" onclick="return doclink('link-88', 'get_name', 'link-88');">get_name</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L155"></a><tt class="py-lineno">155</tt>  <tt class="py-line"> </tt>
+<a name="TaskQueueManager.load_callbacks"></a><div id="TaskQueueManager.load_callbacks-def"><a name="L156"></a><tt class="py-lineno">156</tt> <a class="py-toggle" href="#" id="TaskQueueManager.load_callbacks-toggle" onclick="return toggle('TaskQueueManager.load_callbacks');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.executor.task_queue_manager.TaskQueueManager-class.html#load_callbacks">load_callbacks</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="TaskQueueManager.load_callbacks-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="TaskQueueManager.load_callbacks-expanded"><a name="L157"></a><tt class="py-lineno">157</tt>  <tt class="py-line">        <tt class="py-docstring">'''</tt> </tt>
+<a name="L158"></a><tt class="py-lineno">158</tt>  <tt class="py-line"><tt class="py-docstring">        Loads all available callbacks, with the exception of those which</tt> </tt>
+<a name="L159"></a><tt class="py-lineno">159</tt>  <tt class="py-line"><tt class="py-docstring">        utilize the CALLBACK_TYPE option. When CALLBACK_TYPE is set to 'stdout',</tt> </tt>
+<a name="L160"></a><tt class="py-lineno">160</tt>  <tt class="py-line"><tt class="py-docstring">        only one such callback plugin will be loaded.</tt> </tt>
+<a name="L161"></a><tt class="py-lineno">161</tt>  <tt class="py-line"><tt class="py-docstring">        '''</tt> </tt>
+<a name="L162"></a><tt class="py-lineno">162</tt>  <tt class="py-line"> </tt>
+<a name="L163"></a><tt class="py-lineno">163</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_callbacks_loaded</tt><tt class="py-op">:</tt> </tt>
+<a name="L164"></a><tt class="py-lineno">164</tt>  <tt class="py-line">            <tt class="py-keyword">return</tt> </tt>
+<a name="L165"></a><tt class="py-lineno">165</tt>  <tt class="py-line"> </tt>
+<a name="L166"></a><tt class="py-lineno">166</tt>  <tt class="py-line">        <tt class="py-name">stdout_callback_loaded</tt> <tt class="py-op">=</tt> <tt class="py-name">False</tt> </tt>
+<a name="L167"></a><tt class="py-lineno">167</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_stdout_callback</tt> <tt class="py-keyword">is</tt> <tt class="py-name">None</tt><tt class="py-op">:</tt> </tt>
+<a name="L168"></a><tt class="py-lineno">168</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_stdout_callback</tt> <tt class="py-op">=</tt> <tt class="py-name">C</tt><tt class="py-op">.</tt><tt id="link-89" class="py-name" targets="Variable ansible.constants.DEFAULT_STDOUT_CALLBACK=ansible.constants-module.html#DEFAULT_STDOUT_CALLBACK"><a title="ansible.constants.DEFAULT_STDOUT_CALLBACK" class="py-name" href="#" onclick="return doclink('link-89', 'DEFAULT_STDOUT_CALLBACK', 'link-89');">DEFAULT_STDOUT_CALLBACK</a></tt> </tt>
+<a name="L169"></a><tt class="py-lineno">169</tt>  <tt class="py-line"> </tt>
+<a name="L170"></a><tt class="py-lineno">170</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">isinstance</tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_stdout_callback</tt><tt class="py-op">,</tt> <tt id="link-90" class="py-name"><a title="ansible.plugins.callback.CallbackBase" class="py-name" href="#" onclick="return doclink('link-90', 'CallbackBase', 'link-42');">CallbackBase</a></tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L171"></a><tt class="py-lineno">171</tt>  <tt class="py-line">            <tt class="py-name">stdout_callback_loaded</tt> <tt class="py-op">=</tt> <tt class="py-name">True</tt> </tt>
+<a name="L172"></a><tt class="py-lineno">172</tt>  <tt class="py-line">        <tt class="py-keyword">elif</tt> <tt class="py-name">isinstance</tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_stdout_callback</tt><tt class="py-op">,</tt> <tt id="link-91" class="py-name"><a title="ansible.compat.six.string_types
+ansible.module_utils.six.string_types
+ansible.template.safe_eval'.string_types" class="py-name" href="#" onclick="return doclink('link-91', 'string_types', 'link-50');">string_types</a></tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L173"></a><tt class="py-lineno">173</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_stdout_callback</tt> <tt class="py-keyword">not</tt> <tt class="py-keyword">in</tt> <tt id="link-92" class="py-name"><a title="ansible.plugins.callback_loader" class="py-name" href="#" onclick="return doclink('link-92', 'callback_loader', 'link-29');">callback_loader</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L174"></a><tt class="py-lineno">174</tt>  <tt class="py-line">                <tt class="py-keyword">raise</tt> <tt id="link-93" class="py-name"><a title="ansible.errors.AnsibleError" class="py-name" href="#" onclick="return doclink('link-93', 'AnsibleError', 'link-5');">AnsibleError</a></tt><tt class="py-op">(</tt><tt class="py-string">"Invalid callback for stdout specified: %s"</tt> <tt class="py-op">%</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_stdout_callback</tt><tt class="py-op">)</tt> </tt>
+<a name="L175"></a><tt class="py-lineno">175</tt>  <tt class="py-line">            <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L176"></a><tt class="py-lineno">176</tt>  <tt class="py-line">                <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_stdout_callback</tt> <tt class="py-op">=</tt> <tt id="link-94" class="py-name"><a title="ansible.plugins.callback_loader" class="py-name" href="#" onclick="return doclink('link-94', 'callback_loader', 'link-29');">callback_loader</a></tt><tt class="py-op">.</tt><tt id="link-95" class="py-name" targets="Method ansible.galaxy.token.GalaxyToken.get()=ansible.galaxy.token.GalaxyToken-class.html#get,Method ansible.module_utils.ios.Restconf.get()=ansible.module_utils.ios.Restconf-class.html#get,Method ansible.module_utils.netcfg.NetworkConfig.get()=ansible.module_utils.netcfg.NetworkConfig-class.html#get,Method ansible.module_utils.openswitch.Rest.get()=ansible.module_utils.openswitch.Rest-class.html#get,Method ansible.plugins.PluginLoader.get()=ansible.plugins.PluginLoader-class.html#get,Method ansible.plugins.cache.base.BaseCacheModule.get()=ansible.plugins.cache.base.BaseCacheModule-class.html#get,Method ansible.plugins.cache.jsonfile.CacheModule.get()=ansible.plugins.cache.jsonfile.CacheModule-class.html#get,Method ansible.plugins.cache.memcached.CacheModule.get()=ansible.plugins.cache.memcached.CacheModule-class.html#get,Method ansible.plugins.cache.memory.CacheModule.get()=ansible.plugins.cache.memory.CacheModule-class.html#get,Method ansible.plugins.cache.redis.CacheModule.get()=ansible.plugins.cache.redis.CacheModule-class.html#get,Method ansible.plugins.lookup.etcd.Etcd.get()=ansible.plugins.lookup.etcd.Etcd-class.html#get,Method ansible.plugins.lookup.hashi_vault.HashiVault.get()=ansible.plugins.lookup.hashi_vault.HashiVault-class.html#get"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-95', 'get', 'link-95');">get</a></tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_stdout_callback</tt><tt class="py-op">)</tt> </tt>
+<a name="L177"></a><tt class="py-lineno">177</tt>  <tt class="py-line">                <tt class="py-name">stdout_callback_loaded</tt> <tt class="py-op">=</tt> <tt class="py-name">True</tt> </tt>
+<a name="L178"></a><tt class="py-lineno">178</tt>  <tt class="py-line">        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L179"></a><tt class="py-lineno">179</tt>  <tt class="py-line">            <tt class="py-keyword">raise</tt> <tt id="link-96" class="py-name"><a title="ansible.errors.AnsibleError" class="py-name" href="#" onclick="return doclink('link-96', 'AnsibleError', 'link-5');">AnsibleError</a></tt><tt class="py-op">(</tt><tt class="py-string">"callback must be an instance of CallbackBase or the name of a callback plugin"</tt><tt class="py-op">)</tt> </tt>
+<a name="L180"></a><tt class="py-lineno">180</tt>  <tt class="py-line"> </tt>
+<a name="L181"></a><tt class="py-lineno">181</tt>  <tt class="py-line">        <tt class="py-keyword">for</tt> <tt class="py-name">callback_plugin</tt> <tt class="py-keyword">in</tt> <tt id="link-97" class="py-name"><a title="ansible.plugins.callback_loader" class="py-name" href="#" onclick="return doclink('link-97', 'callback_loader', 'link-29');">callback_loader</a></tt><tt class="py-op">.</tt><tt id="link-98" class="py-name" targets="Method ansible.plugins.PluginLoader.all()=ansible.plugins.PluginLoader-class.html#all"><a title="ansible.plugins.PluginLoader.all" class="py-name" href="#" onclick="return doclink('link-98', 'all', 'link-98');">all</a></tt><tt class="py-op">(</tt><tt class="py-name">class_only</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L182"></a><tt class="py-lineno">182</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-name">hasattr</tt><tt class="py-op">(</tt><tt class="py-name">callback_plugin</tt><tt class="py-op">,</tt> <tt class="py-string">'CALLBACK_VERSION'</tt><tt class="py-op">)</tt> <tt class="py-keyword">and</tt> <tt class="py-name">callback_plugin</tt><tt class="py-op">.</tt><tt id="link-99" class="py-name" targets="Variable ansible.plugins.callback.actionable.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.actionable.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.context_demo.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.context_demo.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.default.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.default.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.hipchat.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.hipchat.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.json.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.json.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.junit.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.junit.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.log_plays.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.log_plays.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.logentries.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.logentries.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.mail.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.mail.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.minimal.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.minimal.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.oneline.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.oneline.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.osx_say.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.osx_say.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.profile_tasks.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.profile_tasks.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.skippy.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.skippy.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.slack.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.slack.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.syslog_json.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.syslog_json.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.timer.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.timer.CallbackModule-class.html#CALLBACK_VERSION,Variable ansible.plugins.callback.tree.CallbackModule.CALLBACK_VERSION=ansible.plugins.callback.tree.CallbackModule-class.html#CALLBACK_VERSION"><a title="ansible.plugins.callback.actionable.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.context_demo.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.default.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.hipchat.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.json.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.junit.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.log_plays.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.logentries.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.mail.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.minimal.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.oneline.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.osx_say.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.profile_tasks.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.skippy.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.slack.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.syslog_json.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.timer.CallbackModule.CALLBACK_VERSION
+ansible.plugins.callback.tree.CallbackModule.CALLBACK_VERSION" class="py-name" href="#" onclick="return doclink('link-99', 'CALLBACK_VERSION', 'link-99');">CALLBACK_VERSION</a></tt> <tt class="py-op">&gt;=</tt> <tt class="py-number">2.0</tt><tt class="py-op">:</tt> </tt>
+<a name="L183"></a><tt class="py-lineno">183</tt>  <tt class="py-line">                <tt class="py-comment"># we only allow one callback of type 'stdout' to be loaded, so check</tt> </tt>
+<a name="L184"></a><tt class="py-lineno">184</tt>  <tt class="py-line">                <tt class="py-comment"># the name of the current plugin and type to see if we need to skip</tt> </tt>
+<a name="L185"></a><tt class="py-lineno">185</tt>  <tt class="py-line">                <tt class="py-comment"># loading this callback plugin</tt> </tt>
+<a name="L186"></a><tt class="py-lineno">186</tt>  <tt class="py-line">                <tt class="py-name">callback_type</tt> <tt class="py-op">=</tt> <tt class="py-name">getattr</tt><tt class="py-op">(</tt><tt class="py-name">callback_plugin</tt><tt class="py-op">,</tt> <tt class="py-string">'CALLBACK_TYPE'</tt><tt class="py-op">,</tt> <tt class="py-name">None</tt><tt class="py-op">)</tt> </tt>
+<a name="L187"></a><tt class="py-lineno">187</tt>  <tt class="py-line">                <tt class="py-name">callback_needs_whitelist</tt>  <tt class="py-op">=</tt> <tt class="py-name">getattr</tt><tt class="py-op">(</tt><tt class="py-name">callback_plugin</tt><tt class="py-op">,</tt> <tt class="py-string">'CALLBACK_NEEDS_WHITELIST'</tt><tt class="py-op">,</tt> <tt class="py-name">False</tt><tt class="py-op">)</tt> </tt>
+<a name="L188"></a><tt class="py-lineno">188</tt>  <tt class="py-line">                <tt class="py-op">(</tt><tt class="py-name">callback_name</tt><tt class="py-op">,</tt> <tt class="py-name">_</tt><tt class="py-op">)</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt id="link-100" class="py-name"><a title="ansible.utils.display.path
+ansible.utils.path" class="py-name" href="#" onclick="return doclink('link-100', 'path', 'link-67');">path</a></tt><tt class="py-op">.</tt><tt class="py-name">splitext</tt><tt class="py-op">(</tt><tt class="py-name">os</tt><tt class="py-op">.</tt><tt id="link-101" class="py-name"><a title="ansible.utils.display.path
+ansible.utils.path" class="py-name" href="#" onclick="return doclink('link-101', 'path', 'link-67');">path</a></tt><tt class="py-op">.</tt><tt class="py-name">basename</tt><tt class="py-op">(</tt><tt class="py-name">callback_plugin</tt><tt class="py-op">.</tt><tt class="py-name">_original_path</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L189"></a><tt class="py-lineno">189</tt>  <tt class="py-line">                <tt class="py-keyword">if</tt> <tt class="py-name">callback_type</tt> <tt class="py-op">==</tt> <tt class="py-string">'stdout'</tt><tt class="py-op">:</tt> </tt>
+<a name="L190"></a><tt class="py-lineno">190</tt>  <tt class="py-line">                    <tt class="py-keyword">if</tt> <tt class="py-name">callback_name</tt> <tt class="py-op">!=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_stdout_callback</tt> <tt class="py-keyword">or</tt> <tt class="py-name">stdout_callback_loaded</tt><tt class="py-op">:</tt> </tt>
+<a name="L191"></a><tt class="py-lineno">191</tt>  <tt class="py-line">                        <tt class="py-keyword">continue</tt> </tt>
+<a name="L192"></a><tt class="py-lineno">192</tt>  <tt class="py-line">                    <tt class="py-name">stdout_callback_loaded</tt> <tt class="py-op">=</tt> <tt class="py-name">True</tt> </tt>
+<a name="L193"></a><tt class="py-lineno">193</tt>  <tt class="py-line">                <tt class="py-keyword">elif</tt> <tt class="py-name">callback_name</tt> <tt class="py-op">==</tt> <tt class="py-string">'tree'</tt> <tt class="py-keyword">and</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_run_tree</tt><tt class="py-op">:</tt> </tt>
+<a name="L194"></a><tt class="py-lineno">194</tt>  <tt class="py-line">                    <tt class="py-keyword">pass</tt> </tt>
+<a name="L195"></a><tt class="py-lineno">195</tt>  <tt class="py-line">                <tt class="py-keyword">elif</tt> <tt class="py-keyword">not</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_run_additional_callbacks</tt> <tt class="py-keyword">or</tt> <tt class="py-op">(</tt><tt class="py-name">callback_needs_whitelist</tt> <tt class="py-keyword">and</tt> <tt class="py-op">(</tt><tt class="py-name">C</tt><tt class="py-op">.</tt><tt id="link-102" class="py-name" targets="Variable ansible.constants.DEFAULT_CALLBACK_WHITELIST=ansible.constants-module.html#DEFAULT_CALLBACK_WHITELIST"><a title="ansible.constants.DEFAULT_CALLBACK_WHITELIST" class="py-name" href="#" onclick="return doclink('link-102', 'DEFAULT_CALLBACK_WHITELIST', 'link-102');">DEFAULT_CALLBACK_WHITELIST</a></tt> <tt class="py-keyword">is</tt> <tt class="py-name">None</tt> <tt class="py-keyword">or</tt> <tt class="py-name">callback_name</tt> <tt class="py-keyword">not</tt> <tt class="py-keyword">in</tt> <tt class="py-name">C</tt><tt class="py-op">.</tt><tt id="link-103" class="py-name"><a title="ansible.constants.DEFAULT_CALLBACK_WHITELIST" class="py-name" href="#" onclick="return doclink('link-103', 'DEFAULT_CALLBACK_WHITELIST', 'link-102');">DEFAULT_CALLBACK_WHITELIST</a></tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L196"></a><tt class="py-lineno">196</tt>  <tt class="py-line">                    <tt class="py-keyword">continue</tt> </tt>
+<a name="L197"></a><tt class="py-lineno">197</tt>  <tt class="py-line"> </tt>
+<a name="L198"></a><tt class="py-lineno">198</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_callback_plugins</tt><tt class="py-op">.</tt><tt class="py-name">append</tt><tt class="py-op">(</tt><tt class="py-name">callback_plugin</tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L199"></a><tt class="py-lineno">199</tt>  <tt class="py-line"> </tt>
+<a name="L200"></a><tt class="py-lineno">200</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_callbacks_loaded</tt> <tt class="py-op">=</tt> <tt class="py-name">True</tt> </tt>
+</div><a name="L201"></a><tt class="py-lineno">201</tt>  <tt class="py-line"> </tt>
+<a name="TaskQueueManager.run"></a><div id="TaskQueueManager.run-def"><a name="L202"></a><tt class="py-lineno">202</tt> <a class="py-toggle" href="#" id="TaskQueueManager.run-toggle" onclick="return toggle('TaskQueueManager.run');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.executor.task_queue_manager.TaskQueueManager-class.html#run">run</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">play</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="TaskQueueManager.run-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="TaskQueueManager.run-expanded"><a name="L203"></a><tt class="py-lineno">203</tt>  <tt class="py-line">        <tt class="py-docstring">'''</tt> </tt>
+<a name="L204"></a><tt class="py-lineno">204</tt>  <tt class="py-line"><tt class="py-docstring">        Iterates over the roles/tasks in a play, using the given (or default)</tt> </tt>
+<a name="L205"></a><tt class="py-lineno">205</tt>  <tt class="py-line"><tt class="py-docstring">        strategy for queueing tasks. The default is the linear strategy, which</tt> </tt>
+<a name="L206"></a><tt class="py-lineno">206</tt>  <tt class="py-line"><tt class="py-docstring">        operates like classic Ansible by keeping all hosts in lock-step with</tt> </tt>
+<a name="L207"></a><tt class="py-lineno">207</tt>  <tt class="py-line"><tt class="py-docstring">        a given task (meaning no hosts move on to the next task until all hosts</tt> </tt>
+<a name="L208"></a><tt class="py-lineno">208</tt>  <tt class="py-line"><tt class="py-docstring">        are done with the current task).</tt> </tt>
+<a name="L209"></a><tt class="py-lineno">209</tt>  <tt class="py-line"><tt class="py-docstring">        '''</tt> </tt>
+<a name="L210"></a><tt class="py-lineno">210</tt>  <tt class="py-line"> </tt>
+<a name="L211"></a><tt class="py-lineno">211</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_callbacks_loaded</tt><tt class="py-op">:</tt> </tt>
+<a name="L212"></a><tt class="py-lineno">212</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-104" class="py-name" targets="Method ansible.executor.task_queue_manager.TaskQueueManager.load_callbacks()=ansible.executor.task_queue_manager.TaskQueueManager-class.html#load_callbacks"><a title="ansible.executor.task_queue_manager.TaskQueueManager.load_callbacks" class="py-name" href="#" onclick="return doclink('link-104', 'load_callbacks', 'link-104');">load_callbacks</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L213"></a><tt class="py-lineno">213</tt>  <tt class="py-line"> </tt>
+<a name="L214"></a><tt class="py-lineno">214</tt>  <tt class="py-line">        <tt class="py-name">all_vars</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_variable_manager</tt><tt class="py-op">.</tt><tt id="link-105" class="py-name" targets="Method ansible.inventory.Inventory.get_vars()=ansible.inventory.Inventory-class.html#get_vars,Method ansible.inventory.group.Group.get_vars()=ansible.inventory.group.Group-class.html#get_vars,Method ansible.inventory.host.Host.get_vars()=ansible.inventory.host.Host-class.html#get_vars,Method ansible.playbook.block.Block.get_vars()=ansible.playbook.block.Block-class.html#get_vars,Method ansible.playbook.play.Play.get_vars()=ansible.playbook.play.Play-class.html#get_vars,Method ansible.playbook.role.Role.get_vars()=ansible.playbook.role.Role-class.html#get_vars,Method ansible.playbook.task.Task.get_vars()=ansible.playbook.task.Task-class.html#get_vars,Method ansible.playbook.task_include.TaskInclude.get_vars()=ansible.playbook.task_include.TaskInclude-class.html#get_vars,Method ansible.vars.VariableManager.get_vars()=ansible.vars.VariableManager-class.html#get_vars"><a title="ansible.inventory.Inventory.get_vars
+ansible.inventory.group.Group.get_vars
+ansible.inventory.host.Host.get_vars
+ansible.playbook.block.Block.get_vars
+ansible.playbook.play.Play.get_vars
+ansible.playbook.role.Role.get_vars
+ansible.playbook.task.Task.get_vars
+ansible.playbook.task_include.TaskInclude.get_vars
+ansible.vars.VariableManager.get_vars" class="py-name" href="#" onclick="return doclink('link-105', 'get_vars', 'link-105');">get_vars</a></tt><tt class="py-op">(</tt><tt id="link-106" class="py-name"><a title="ansible.parsing.yaml.loader" class="py-name" href="#" onclick="return doclink('link-106', 'loader', 'link-65');">loader</a></tt><tt class="py-op">=</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_loader</tt><tt class="py-op">,</tt> <tt id="link-107" class="py-name"><a title="ansible.playbook.play" class="py-name" href="#" onclick="return doclink('link-107', 'play', 'link-80');">play</a></tt><tt class="py-op">=</tt><tt id="link-108" class="py-name"><a title="ansible.playbook.play" class="py-name" href="#" onclick="return doclink('link-108', 'play', 'link-80');">play</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L215"></a><tt class="py-lineno">215</tt>  <tt class="py-line">        <tt class="py-name">templar</tt> <tt class="py-op">=</tt> <tt id="link-109" class="py-name"><a title="ansible.template.Templar" class="py-name" href="#" onclick="return doclink('link-109', 'Templar', 'link-34');">Templar</a></tt><tt class="py-op">(</tt><tt id="link-110" class="py-name"><a title="ansible.parsing.yaml.loader" class="py-name" href="#" onclick="return doclink('link-110', 'loader', 'link-65');">loader</a></tt><tt class="py-op">=</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_loader</tt><tt class="py-op">,</tt> <tt class="py-name">variables</tt><tt class="py-op">=</tt><tt class="py-name">all_vars</tt><tt class="py-op">)</tt> </tt>
+<a name="L216"></a><tt class="py-lineno">216</tt>  <tt class="py-line"> </tt>
+<a name="L217"></a><tt class="py-lineno">217</tt>  <tt class="py-line">        <tt class="py-name">new_play</tt> <tt class="py-op">=</tt> <tt id="link-111" class="py-name"><a title="ansible.playbook.play" class="py-name" href="#" onclick="return doclink('link-111', 'play', 'link-80');">play</a></tt><tt class="py-op">.</tt><tt id="link-112" class="py-name" targets="Method ansible.executor.play_iterator.HostState.copy()=ansible.executor.play_iterator.HostState-class.html#copy,Method ansible.playbook.base.Base.copy()=ansible.playbook.base.Base-class.html#copy,Method ansible.playbook.block.Block.copy()=ansible.playbook.block.Block-class.html#copy,Method ansible.playbook.play.Play.copy()=ansible.playbook.play.Play-class.html#copy,Method ansible.playbook.task.Task.copy()=ansible.playbook.task.Task-class.html#copy,Module ansible.plugins.action.copy=ansible.plugins.action.copy-module.html,Method ansible.plugins.cache.FactCache.copy()=ansible.plugins.cache.FactCache-class.html#copy,Method ansible.plugins.cache.base.BaseCacheModule.copy()=ansible.plugins.cache.base.BaseCacheModule-class.html#copy,Method ansible.plugins.cache.jsonfile.CacheModule.copy()=ansible.plugins.cache.jsonfile.CacheModule-class.html#copy,Method ansible.plugins.cache.memcached.CacheModule.copy()=ansible.plugins.cache.memcached.CacheModule-class.html#copy,Method ansible.plugins.cache.memory.CacheModule.copy()=ansible.plugins.cache.memory.CacheModule-class.html#copy,Method ansible.plugins.cache.redis.CacheModule.copy()=ansible.plugins.cache.redis.CacheModule-class.html#copy"><a title="ansible.executor.play_iterator.HostState.copy
+ansible.playbook.base.Base.copy
+ansible.playbook.block.Block.copy
+ansible.playbook.play.Play.copy
+ansible.playbook.task.Task.copy
+ansible.plugins.action.copy
+ansible.plugins.cache.FactCache.copy
+ansible.plugins.cache.base.BaseCacheModule.copy
+ansible.plugins.cache.jsonfile.CacheModule.copy
+ansible.plugins.cache.memcached.CacheModule.copy
+ansible.plugins.cache.memory.CacheModule.copy
+ansible.plugins.cache.redis.CacheModule.copy" class="py-name" href="#" onclick="return doclink('link-112', 'copy', 'link-112');">copy</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L218"></a><tt class="py-lineno">218</tt>  <tt class="py-line">        <tt class="py-name">new_play</tt><tt class="py-op">.</tt><tt id="link-113" class="py-name" targets="Method ansible.playbook.base.Base.post_validate()=ansible.playbook.base.Base-class.html#post_validate,Method ansible.playbook.task.Task.post_validate()=ansible.playbook.task.Task-class.html#post_validate"><a title="ansible.playbook.base.Base.post_validate
+ansible.playbook.task.Task.post_validate" class="py-name" href="#" onclick="return doclink('link-113', 'post_validate', 'link-113');">post_validate</a></tt><tt class="py-op">(</tt><tt class="py-name">templar</tt><tt class="py-op">)</tt> </tt>
+<a name="L219"></a><tt class="py-lineno">219</tt>  <tt class="py-line">        <tt class="py-name">new_play</tt><tt class="py-op">.</tt><tt class="py-name">handlers</tt> <tt class="py-op">=</tt> <tt class="py-name">new_play</tt><tt class="py-op">.</tt><tt id="link-114" class="py-name" targets="Method ansible.playbook.play.Play.compile_roles_handlers()=ansible.playbook.play.Play-class.html#compile_roles_handlers"><a title="ansible.playbook.play.Play.compile_roles_handlers" class="py-name" href="#" onclick="return doclink('link-114', 'compile_roles_handlers', 'link-114');">compile_roles_handlers</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> <tt class="py-op">+</tt> <tt class="py-name">new_play</tt><tt class="py-op">.</tt><tt class="py-name">handlers</tt> </tt>
+<a name="L220"></a><tt class="py-lineno">220</tt>  <tt class="py-line"> </tt>
+<a name="L221"></a><tt class="py-lineno">221</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-115" class="py-name"><a title="ansible.vars.hostvars" class="py-name" href="#" onclick="return doclink('link-115', 'hostvars', 'link-37');">hostvars</a></tt> <tt class="py-op">=</tt> <tt id="link-116" class="py-name"><a title="ansible.vars.hostvars.HostVars" class="py-name" href="#" onclick="return doclink('link-116', 'HostVars', 'link-38');">HostVars</a></tt><tt class="py-op">(</tt> </tt>
+<a name="L222"></a><tt class="py-lineno">222</tt>  <tt class="py-line">            <tt id="link-117" class="py-name"><a title="ansible.inventory" class="py-name" href="#" onclick="return doclink('link-117', 'inventory', 'link-64');">inventory</a></tt><tt class="py-op">=</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_inventory</tt><tt class="py-op">,</tt> </tt>
+<a name="L223"></a><tt class="py-lineno">223</tt>  <tt class="py-line">            <tt class="py-name">variable_manager</tt><tt class="py-op">=</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_variable_manager</tt><tt class="py-op">,</tt> </tt>
+<a name="L224"></a><tt class="py-lineno">224</tt>  <tt class="py-line">            <tt id="link-118" class="py-name"><a title="ansible.parsing.yaml.loader" class="py-name" href="#" onclick="return doclink('link-118', 'loader', 'link-65');">loader</a></tt><tt class="py-op">=</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_loader</tt><tt class="py-op">,</tt> </tt>
+<a name="L225"></a><tt class="py-lineno">225</tt>  <tt class="py-line">        <tt class="py-op">)</tt> </tt>
+<a name="L226"></a><tt class="py-lineno">226</tt>  <tt class="py-line"> </tt>
+<a name="L227"></a><tt class="py-lineno">227</tt>  <tt class="py-line">        <tt class="py-comment"># Fork # of forks, # of hosts or serial, whichever is lowest</tt> </tt>
+<a name="L228"></a><tt class="py-lineno">228</tt>  <tt class="py-line">        <tt class="py-name">contenders</tt> <tt class="py-op">=</tt>  <tt class="py-op">[</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_options</tt><tt class="py-op">.</tt><tt class="py-name">forks</tt><tt class="py-op">,</tt> <tt id="link-119" class="py-name"><a title="ansible.playbook.play" class="py-name" href="#" onclick="return doclink('link-119', 'play', 'link-80');">play</a></tt><tt class="py-op">.</tt><tt class="py-name">serial</tt><tt class="py-op">,</tt> <tt class="py-name">len</tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_inventory</tt><tt class="py-op">.</tt><tt id="link-120" class="py-name" targets="Method ansible.inventory.Inventory.get_hosts()=ansible.inventory.Inventory-class.html#get_hosts,Method ansible.inventory.group.Group.get_hosts()=ansible.inventory.group.Group-class.html#get_hosts,Method ansible.plugins.lookup.inventory_hostnames.LookupModule.get_hosts()=ansible.plugins.lookup.inventory_hostnames.LookupModule-class.html#get_hosts"><a title="ansible.inventory.Inventory.get_hosts
+ansible.inventory.group.Group.get_hosts
+ansible.plugins.lookup.inventory_hostnames.LookupModule.get_hosts" class="py-name" href="#" onclick="return doclink('link-120', 'get_hosts', 'link-120');">get_hosts</a></tt><tt class="py-op">(</tt><tt class="py-name">new_play</tt><tt class="py-op">.</tt><tt class="py-name">hosts</tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">]</tt> </tt>
+<a name="L229"></a><tt class="py-lineno">229</tt>  <tt class="py-line">        <tt class="py-name">contenders</tt> <tt class="py-op">=</tt>  <tt class="py-op">[</tt> <tt id="link-121" class="py-name" targets="Method ansible.utils.display.Display.v()=ansible.utils.display.Display-class.html#v"><a title="ansible.utils.display.Display.v" class="py-name" href="#" onclick="return doclink('link-121', 'v', 'link-121');">v</a></tt> <tt class="py-keyword">for</tt> <tt id="link-122" class="py-name"><a title="ansible.utils.display.Display.v" class="py-name" href="#" onclick="return doclink('link-122', 'v', 'link-121');">v</a></tt> <tt class="py-keyword">in</tt> <tt class="py-name">contenders</tt> <tt class="py-keyword">if</tt> <tt id="link-123" class="py-name"><a title="ansible.utils.display.Display.v" class="py-name" href="#" onclick="return doclink('link-123', 'v', 'link-121');">v</a></tt> <tt class="py-keyword">is</tt> <tt class="py-keyword">not</tt> <tt class="py-name">None</tt> <tt class="py-keyword">and</tt> <tt id="link-124" class="py-name"><a title="ansible.utils.display.Display.v" class="py-name" href="#" onclick="return doclink('link-124', 'v', 'link-121');">v</a></tt> <tt class="py-op">&gt;</tt> <tt class="py-number">0</tt> <tt class="py-op">]</tt> </tt>
+<a name="L230"></a><tt class="py-lineno">230</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-125" class="py-name" targets="Method ansible.executor.task_queue_manager.TaskQueueManager._initialize_processes()=ansible.executor.task_queue_manager.TaskQueueManager-class.html#_initialize_processes"><a title="ansible.executor.task_queue_manager.TaskQueueManager._initialize_processes" class="py-name" href="#" onclick="return doclink('link-125', '_initialize_processes', 'link-125');">_initialize_processes</a></tt><tt class="py-op">(</tt><tt id="link-126" class="py-name" targets="Function ansible.plugins.filter.mathstuff.min()=ansible.plugins.filter.mathstuff-module.html#min"><a title="ansible.plugins.filter.mathstuff.min" class="py-name" href="#" onclick="return doclink('link-126', 'min', 'link-126');">min</a></tt><tt class="py-op">(</tt><tt class="py-name">contenders</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L231"></a><tt class="py-lineno">231</tt>  <tt class="py-line"> </tt>
+<a name="L232"></a><tt class="py-lineno">232</tt>  <tt class="py-line">        <tt id="link-127" class="py-name"><a title="ansible.playbook.play_context" class="py-name" href="#" onclick="return doclink('link-127', 'play_context', 'link-25');">play_context</a></tt> <tt class="py-op">=</tt> <tt id="link-128" class="py-name"><a title="ansible.playbook.play_context.PlayContext" class="py-name" href="#" onclick="return doclink('link-128', 'PlayContext', 'link-26');">PlayContext</a></tt><tt class="py-op">(</tt><tt class="py-name">new_play</tt><tt class="py-op">,</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_options</tt><tt class="py-op">,</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">passwords</tt><tt class="py-op">,</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_connection_lockfile</tt><tt class="py-op">.</tt><tt class="py-name">fileno</tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L233"></a><tt class="py-lineno">233</tt>  <tt class="py-line">        <tt class="py-keyword">for</tt> <tt class="py-name">callback_plugin</tt> <tt class="py-keyword">in</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_callback_plugins</tt><tt class="py-op">:</tt> </tt>
+<a name="L234"></a><tt class="py-lineno">234</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-name">hasattr</tt><tt class="py-op">(</tt><tt class="py-name">callback_plugin</tt><tt class="py-op">,</tt> <tt class="py-string">'set_play_context'</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L235"></a><tt class="py-lineno">235</tt>  <tt class="py-line">                <tt class="py-name">callback_plugin</tt><tt class="py-op">.</tt><tt id="link-129" class="py-name" targets="Method ansible.plugins.callback.CallbackBase.set_play_context()=ansible.plugins.callback.CallbackBase-class.html#set_play_context"><a title="ansible.plugins.callback.CallbackBase.set_play_context" class="py-name" href="#" onclick="return doclink('link-129', 'set_play_context', 'link-129');">set_play_context</a></tt><tt class="py-op">(</tt><tt id="link-130" class="py-name"><a title="ansible.playbook.play_context" class="py-name" href="#" onclick="return doclink('link-130', 'play_context', 'link-25');">play_context</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L236"></a><tt class="py-lineno">236</tt>  <tt class="py-line"> </tt>
+<a name="L237"></a><tt class="py-lineno">237</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-131" class="py-name" targets="Method ansible.executor.task_queue_manager.TaskQueueManager.send_callback()=ansible.executor.task_queue_manager.TaskQueueManager-class.html#send_callback"><a title="ansible.executor.task_queue_manager.TaskQueueManager.send_callback" class="py-name" href="#" onclick="return doclink('link-131', 'send_callback', 'link-131');">send_callback</a></tt><tt class="py-op">(</tt><tt class="py-string">'v2_playbook_on_play_start'</tt><tt class="py-op">,</tt> <tt class="py-name">new_play</tt><tt class="py-op">)</tt> </tt>
+<a name="L238"></a><tt class="py-lineno">238</tt>  <tt class="py-line"> </tt>
+<a name="L239"></a><tt class="py-lineno">239</tt>  <tt class="py-line">        <tt class="py-comment"># initialize the shared dictionary containing the notified handlers</tt> </tt>
+<a name="L240"></a><tt class="py-lineno">240</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-132" class="py-name" targets="Method ansible.executor.task_queue_manager.TaskQueueManager._initialize_notified_handlers()=ansible.executor.task_queue_manager.TaskQueueManager-class.html#_initialize_notified_handlers"><a title="ansible.executor.task_queue_manager.TaskQueueManager._initialize_notified_handlers" class="py-name" href="#" onclick="return doclink('link-132', '_initialize_notified_handlers', 'link-132');">_initialize_notified_handlers</a></tt><tt class="py-op">(</tt><tt class="py-name">new_play</tt><tt class="py-op">)</tt> </tt>
+<a name="L241"></a><tt class="py-lineno">241</tt>  <tt class="py-line"> </tt>
+<a name="L242"></a><tt class="py-lineno">242</tt>  <tt class="py-line">        <tt class="py-comment"># load the specified strategy (or the default linear one)</tt> </tt>
+<a name="L243"></a><tt class="py-lineno">243</tt>  <tt class="py-line">        <tt id="link-133" class="py-name" targets="Package ansible.plugins.strategy=ansible.plugins.strategy-module.html"><a title="ansible.plugins.strategy" class="py-name" href="#" onclick="return doclink('link-133', 'strategy', 'link-133');">strategy</a></tt> <tt class="py-op">=</tt> <tt id="link-134" class="py-name"><a title="ansible.plugins.strategy_loader" class="py-name" href="#" onclick="return doclink('link-134', 'strategy_loader', 'link-30');">strategy_loader</a></tt><tt class="py-op">.</tt><tt id="link-135" class="py-name"><a title="ansible.galaxy.token.GalaxyToken.get
+ansible.module_utils.ios.Restconf.get
+ansible.module_utils.netcfg.NetworkConfig.get
+ansible.module_utils.openswitch.Rest.get
+ansible.plugins.PluginLoader.get
+ansible.plugins.cache.base.BaseCacheModule.get
+ansible.plugins.cache.jsonfile.CacheModule.get
+ansible.plugins.cache.memcached.CacheModule.get
+ansible.plugins.cache.memory.CacheModule.get
+ansible.plugins.cache.redis.CacheModule.get
+ansible.plugins.lookup.etcd.Etcd.get
+ansible.plugins.lookup.hashi_vault.HashiVault.get" class="py-name" href="#" onclick="return doclink('link-135', 'get', 'link-95');">get</a></tt><tt class="py-op">(</tt><tt class="py-name">new_play</tt><tt class="py-op">.</tt><tt id="link-136" class="py-name"><a title="ansible.plugins.strategy" class="py-name" href="#" onclick="return doclink('link-136', 'strategy', 'link-133');">strategy</a></tt><tt class="py-op">,</tt> <tt class="py-name">self</tt><tt class="py-op">)</tt> </tt>
+<a name="L244"></a><tt class="py-lineno">244</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt id="link-137" class="py-name"><a title="ansible.plugins.strategy" class="py-name" href="#" onclick="return doclink('link-137', 'strategy', 'link-133');">strategy</a></tt> <tt class="py-keyword">is</tt> <tt class="py-name">None</tt><tt class="py-op">:</tt> </tt>
+<a name="L245"></a><tt class="py-lineno">245</tt>  <tt class="py-line">            <tt class="py-keyword">raise</tt> <tt id="link-138" class="py-name"><a title="ansible.errors.AnsibleError" class="py-name" href="#" onclick="return doclink('link-138', 'AnsibleError', 'link-5');">AnsibleError</a></tt><tt class="py-op">(</tt><tt class="py-string">"Invalid play strategy specified: %s"</tt> <tt class="py-op">%</tt> <tt class="py-name">new_play</tt><tt class="py-op">.</tt><tt id="link-139" class="py-name"><a title="ansible.plugins.strategy" class="py-name" href="#" onclick="return doclink('link-139', 'strategy', 'link-133');">strategy</a></tt><tt class="py-op">,</tt> <tt class="py-name">obj</tt><tt class="py-op">=</tt><tt id="link-140" class="py-name"><a title="ansible.playbook.play" class="py-name" href="#" onclick="return doclink('link-140', 'play', 'link-80');">play</a></tt><tt class="py-op">.</tt><tt class="py-name">_ds</tt><tt class="py-op">)</tt> </tt>
+<a name="L246"></a><tt class="py-lineno">246</tt>  <tt class="py-line"> </tt>
+<a name="L247"></a><tt class="py-lineno">247</tt>  <tt class="py-line">        <tt class="py-comment"># build the iterator</tt> </tt>
+<a name="L248"></a><tt class="py-lineno">248</tt>  <tt class="py-line">        <tt class="py-name">iterator</tt> <tt class="py-op">=</tt> <tt id="link-141" class="py-name"><a title="ansible.executor.play_iterator.PlayIterator" class="py-name" href="#" onclick="return doclink('link-141', 'PlayIterator', 'link-9');">PlayIterator</a></tt><tt class="py-op">(</tt> </tt>
+<a name="L249"></a><tt class="py-lineno">249</tt>  <tt class="py-line">            <tt id="link-142" class="py-name"><a title="ansible.inventory" class="py-name" href="#" onclick="return doclink('link-142', 'inventory', 'link-64');">inventory</a></tt><tt class="py-op">=</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_inventory</tt><tt class="py-op">,</tt> </tt>
+<a name="L250"></a><tt class="py-lineno">250</tt>  <tt class="py-line">            <tt id="link-143" class="py-name"><a title="ansible.playbook.play" class="py-name" href="#" onclick="return doclink('link-143', 'play', 'link-80');">play</a></tt><tt class="py-op">=</tt><tt class="py-name">new_play</tt><tt class="py-op">,</tt> </tt>
+<a name="L251"></a><tt class="py-lineno">251</tt>  <tt class="py-line">            <tt id="link-144" class="py-name"><a title="ansible.playbook.play_context" class="py-name" href="#" onclick="return doclink('link-144', 'play_context', 'link-25');">play_context</a></tt><tt class="py-op">=</tt><tt id="link-145" class="py-name"><a title="ansible.playbook.play_context" class="py-name" href="#" onclick="return doclink('link-145', 'play_context', 'link-25');">play_context</a></tt><tt class="py-op">,</tt> </tt>
+<a name="L252"></a><tt class="py-lineno">252</tt>  <tt class="py-line">            <tt class="py-name">variable_manager</tt><tt class="py-op">=</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_variable_manager</tt><tt class="py-op">,</tt> </tt>
+<a name="L253"></a><tt class="py-lineno">253</tt>  <tt class="py-line">            <tt class="py-name">all_vars</tt><tt class="py-op">=</tt><tt class="py-name">all_vars</tt><tt class="py-op">,</tt> </tt>
+<a name="L254"></a><tt class="py-lineno">254</tt>  <tt class="py-line">            <tt class="py-name">start_at_done</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_start_at_done</tt><tt class="py-op">,</tt> </tt>
+<a name="L255"></a><tt class="py-lineno">255</tt>  <tt class="py-line">        <tt class="py-op">)</tt> </tt>
+<a name="L256"></a><tt class="py-lineno">256</tt>  <tt class="py-line"> </tt>
+<a name="L257"></a><tt class="py-lineno">257</tt>  <tt class="py-line">        <tt class="py-comment"># Because the TQM may survive multiple play runs, we start by marking</tt> </tt>
+<a name="L258"></a><tt class="py-lineno">258</tt>  <tt class="py-line">        <tt class="py-comment"># any hosts as failed in the iterator here which may have been marked</tt> </tt>
+<a name="L259"></a><tt class="py-lineno">259</tt>  <tt class="py-line">        <tt class="py-comment"># as failed in previous runs. Then we clear the internal list of failed</tt> </tt>
+<a name="L260"></a><tt class="py-lineno">260</tt>  <tt class="py-line">        <tt class="py-comment"># hosts so we know what failed this round.</tt> </tt>
+<a name="L261"></a><tt class="py-lineno">261</tt>  <tt class="py-line">        <tt class="py-keyword">for</tt> <tt class="py-name">host_name</tt> <tt class="py-keyword">in</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_failed_hosts</tt><tt class="py-op">.</tt><tt id="link-146" class="py-name" targets="Method ansible.plugins.cache.FactCache.keys()=ansible.plugins.cache.FactCache-class.html#keys,Method ansible.plugins.cache.base.BaseCacheModule.keys()=ansible.plugins.cache.base.BaseCacheModule-class.html#keys,Method ansible.plugins.cache.jsonfile.CacheModule.keys()=ansible.plugins.cache.jsonfile.CacheModule-class.html#keys,Method ansible.plugins.cache.memcached.CacheModule.keys()=ansible.plugins.cache.memcached.CacheModule-class.html#keys,Method ansible.plugins.cache.memory.CacheModule.keys()=ansible.plugins.cache.memory.CacheModule-class.html#keys,Method ansible.plugins.cache.redis.CacheModule.keys()=ansible.plugins.cache.redis.CacheModule-class.html#keys"><a title="ansible.plugins.cache.FactCache.keys
+ansible.plugins.cache.base.BaseCacheModule.keys
+ansible.plugins.cache.jsonfile.CacheModule.keys
+ansible.plugins.cache.memcached.CacheModule.keys
+ansible.plugins.cache.memory.CacheModule.keys
+ansible.plugins.cache.redis.CacheModule.keys" class="py-name" href="#" onclick="return doclink('link-146', 'keys', 'link-146');">keys</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L262"></a><tt class="py-lineno">262</tt>  <tt class="py-line">            <tt id="link-147" class="py-name" targets="Module ansible.inventory.host=ansible.inventory.host-module.html"><a title="ansible.inventory.host" class="py-name" href="#" onclick="return doclink('link-147', 'host', 'link-147');">host</a></tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_inventory</tt><tt class="py-op">.</tt><tt id="link-148" class="py-name" targets="Method ansible.inventory.Inventory.get_host()=ansible.inventory.Inventory-class.html#get_host"><a title="ansible.inventory.Inventory.get_host" class="py-name" href="#" onclick="return doclink('link-148', 'get_host', 'link-148');">get_host</a></tt><tt class="py-op">(</tt><tt class="py-name">host_name</tt><tt class="py-op">)</tt> </tt>
+<a name="L263"></a><tt class="py-lineno">263</tt>  <tt class="py-line">            <tt class="py-name">iterator</tt><tt class="py-op">.</tt><tt id="link-149" class="py-name" targets="Method ansible.executor.play_iterator.PlayIterator.mark_host_failed()=ansible.executor.play_iterator.PlayIterator-class.html#mark_host_failed"><a title="ansible.executor.play_iterator.PlayIterator.mark_host_failed" class="py-name" href="#" onclick="return doclink('link-149', 'mark_host_failed', 'link-149');">mark_host_failed</a></tt><tt class="py-op">(</tt><tt id="link-150" class="py-name"><a title="ansible.inventory.host" class="py-name" href="#" onclick="return doclink('link-150', 'host', 'link-147');">host</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L264"></a><tt class="py-lineno">264</tt>  <tt class="py-line"> </tt>
+<a name="L265"></a><tt class="py-lineno">265</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-151" class="py-name" targets="Method ansible.executor.task_queue_manager.TaskQueueManager.clear_failed_hosts()=ansible.executor.task_queue_manager.TaskQueueManager-class.html#clear_failed_hosts"><a title="ansible.executor.task_queue_manager.TaskQueueManager.clear_failed_hosts" class="py-name" href="#" onclick="return doclink('link-151', 'clear_failed_hosts', 'link-151');">clear_failed_hosts</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L266"></a><tt class="py-lineno">266</tt>  <tt class="py-line"> </tt>
+<a name="L267"></a><tt class="py-lineno">267</tt>  <tt class="py-line">        <tt class="py-comment"># during initialization, the PlayContext will clear the start_at_task</tt> </tt>
+<a name="L268"></a><tt class="py-lineno">268</tt>  <tt class="py-line">        <tt class="py-comment"># field to signal that a matching task was found, so check that here</tt> </tt>
+<a name="L269"></a><tt class="py-lineno">269</tt>  <tt class="py-line">        <tt class="py-comment"># and remember it so we don't try to skip tasks on future plays</tt> </tt>
+<a name="L270"></a><tt class="py-lineno">270</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">getattr</tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_options</tt><tt class="py-op">,</tt> <tt class="py-string">'start_at_task'</tt><tt class="py-op">,</tt> <tt class="py-name">None</tt><tt class="py-op">)</tt> <tt class="py-keyword">is</tt> <tt class="py-keyword">not</tt> <tt class="py-name">None</tt> <tt class="py-keyword">and</tt> <tt id="link-152" class="py-name"><a title="ansible.playbook.play_context" class="py-name" href="#" onclick="return doclink('link-152', 'play_context', 'link-25');">play_context</a></tt><tt class="py-op">.</tt><tt class="py-name">start_at_task</tt> <tt class="py-keyword">is</tt> <tt class="py-name">None</tt><tt class="py-op">:</tt> </tt>
+<a name="L271"></a><tt class="py-lineno">271</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_start_at_done</tt> <tt class="py-op">=</tt> <tt class="py-name">True</tt> </tt>
+<a name="L272"></a><tt class="py-lineno">272</tt>  <tt class="py-line"> </tt>
+<a name="L273"></a><tt class="py-lineno">273</tt>  <tt class="py-line">        <tt class="py-comment"># and run the play using the strategy and cleanup on way out</tt> </tt>
+<a name="L274"></a><tt class="py-lineno">274</tt>  <tt class="py-line">        <tt class="py-name">play_return</tt> <tt class="py-op">=</tt> <tt id="link-153" class="py-name"><a title="ansible.plugins.strategy" class="py-name" href="#" onclick="return doclink('link-153', 'strategy', 'link-133');">strategy</a></tt><tt class="py-op">.</tt><tt id="link-154" class="py-name" targets="Method ansible.cli.CLI.run()=ansible.cli.CLI-class.html#run,Method ansible.cli.adhoc.AdHocCLI.run()=ansible.cli.adhoc.AdHocCLI-class.html#run,Method ansible.cli.console.ConsoleCLI.run()=ansible.cli.console.ConsoleCLI-class.html#run,Method ansible.cli.doc.DocCLI.run()=ansible.cli.doc.DocCLI-class.html#run,Method ansible.cli.galaxy.GalaxyCLI.run()=ansible.cli.galaxy.GalaxyCLI-class.html#run,Method ansible.cli.playbook.PlaybookCLI.run()=ansible.cli.playbook.PlaybookCLI-class.html#run,Method ansible.cli.pull.PullCLI.run()=ansible.cli.pull.PullCLI-class.html#run,Method ansible.cli.vault.VaultCLI.run()=ansible.cli.vault.VaultCLI-class.html#run,Method ansible.executor.playbook_executor.PlaybookExecutor.run()=ansible.executor.playbook_executor.PlaybookExecutor-class.html#run,Method ansible.executor.process.result.ResultProcess.run()=ansible.executor.process.result.ResultProcess-class.html#run,Method ansible.executor.process.worker.WorkerProcess.run()=ansible.executor.process.worker.WorkerProcess-class.html#run,Method ansible.executor.task_executor.TaskExecutor.run()=ansible.executor.task_executor.TaskExecutor-class.html#run,Method ansible.executor.task_queue_manager.TaskQueueManager.run()=ansible.executor.task_queue_manager.TaskQueueManager-class.html#run,Method ansible.inventory.vars_plugins.noop.VarsModule.run()=ansible.inventory.vars_plugins.noop.VarsModule-class.html#run,Method ansible.module_utils.netcmd.CommandRunner.run()=ansible.module_utils.netcmd.CommandRunner-class.html#run,Method ansible.module_utils.service.Service.run()=ansible.module_utils.service.Service-class.html#run,Method ansible.plugins.action.ActionBase.run()=ansible.plugins.action.ActionBase-class.html#run,Method ansible.plugins.action.add_host.ActionModule.run()=ansible.plugins.action.add_host.ActionModule-class.html#run,Method ansible.plugins.action.assemble.ActionModule.run()=ansible.plugins.action.assemble.ActionModule-class.html#run,Method ansible.plugins.action.assert.ActionModule.run()=ansible.plugins.action.assert.ActionModule-class.html#run,Method ansible.plugins.action.async.ActionModule.run()=ansible.plugins.action.async.ActionModule-class.html#run,Method ansible.plugins.action.copy.ActionModule.run()=ansible.plugins.action.copy.ActionModule-class.html#run,Method ansible.plugins.action.debug.ActionModule.run()=ansible.plugins.action.debug.ActionModule-class.html#run,Method ansible.plugins.action.fail.ActionModule.run()=ansible.plugins.action.fail.ActionModule-class.html#run,Method ansible.plugins.action.fetch.ActionModule.run()=ansible.plugins.action.fetch.ActionModule-class.html#run,Method ansible.plugins.action.group_by.ActionModule.run()=ansible.plugins.action.group_by.ActionModule-class.html#run,Method ansible.plugins.action.include_vars.ActionModule.run()=ansible.plugins.action.include_vars.ActionModule-class.html#run,Method ansible.plugins.action.junos_template.ActionModule.run()=ansible.plugins.action.junos_template.ActionModule-class.html#run,Method ansible.plugins.action.net_config.ActionModule.run()=ansible.plugins.action.net_config.ActionModule-class.html#run,Method ansible.plugins.action.net_template.ActionModule.run()=ansible.plugins.action.net_template.ActionModule-class.html#run,Method ansible.plugins.action.normal.ActionModule.run()=ansible.plugins.action.normal.ActionModule-class.html#run,Method ansible.plugins.action.ops_template.ActionModule.run()=ansible.plugins.action.ops_template.ActionModule-class.html#run,Method ansible.plugins.action.package.ActionModule.run()=ansible.plugins.action.package.ActionModule-class.html#run,Method ansible.plugins.action.patch.ActionModule.run()=ansible.plugins.action.patch.ActionModule-class.html#run,Method ansible.plugins.action.pause.ActionModule.run()=ansible.plugins.action.pause.ActionModule-class.html#run,Method ansible.plugins.action.raw.ActionModule.run()=ansible.plugins.action.raw.ActionModule-class.html#run,Method ansible.plugins.action.script.ActionModule.run()=ansible.plugins.action.script.ActionModule-class.html#run,Method ansible.plugins.action.service.ActionModule.run()=ansible.plugins.action.service.ActionModule-class.html#run,Method ansible.plugins.action.set_fact.ActionModule.run()=ansible.plugins.action.set_fact.ActionModule-class.html#run,Method ansible.plugins.action.synchronize.ActionModule.run()=ansible.plugins.action.synchronize.ActionModule-class.html#run,Method ansible.plugins.action.template.ActionModule.run()=ansible.plugins.action.template.ActionModule-class.html#run,Method ansible.plugins.action.unarchive.ActionModule.run()=ansible.plugins.action.unarchive.ActionModule-class.html#run,Method ansible.plugins.action.win_reboot.ActionModule.run()=ansible.plugins.action.win_reboot.ActionModule-class.html#run,Method ansible.plugins.lookup.LookupBase.run()=ansible.plugins.lookup.LookupBase-class.html#run,Method ansible.plugins.lookup.cartesian.LookupModule.run()=ansible.plugins.lookup.cartesian.LookupModule-class.html#run,Method ansible.plugins.lookup.consul_kv.LookupModule.run()=ansible.plugins.lookup.consul_kv.LookupModule-class.html#run,Method ansible.plugins.lookup.credstash.LookupModule.run()=ansible.plugins.lookup.credstash.LookupModule-class.html#run,Method ansible.plugins.lookup.csvfile.LookupModule.run()=ansible.plugins.lookup.csvfile.LookupModule-class.html#run,Method ansible.plugins.lookup.dict.LookupModule.run()=ansible.plugins.lookup.dict.LookupModule-class.html#run,Method ansible.plugins.lookup.dig.LookupModule.run()=ansible.plugins.lookup.dig.LookupModule-class.html#run,Method ansible.plugins.lookup.dnstxt.LookupModule.run()=ansible.plugins.lookup.dnstxt.LookupModule-class.html#run,Method ansible.plugins.lookup.env.LookupModule.run()=ansible.plugins.lookup.env.LookupModule-class.html#run,Method ansible.plugins.lookup.etcd.LookupModule.run()=ansible.plugins.lookup.etcd.LookupModule-class.html#run,Method ansible.plugins.lookup.file.LookupModule.run()=ansible.plugins.lookup.file.LookupModule-class.html#run,Method ansible.plugins.lookup.fileglob.LookupModule.run()=ansible.plugins.lookup.fileglob.LookupModule-class.html#run,Method ansible.plugins.lookup.first_found.LookupModule.run()=ansible.plugins.lookup.first_found.LookupModule-class.html#run,Method ansible.plugins.lookup.flattened.LookupModule.run()=ansible.plugins.lookup.flattened.LookupModule-class.html#run,Method ansible.plugins.lookup.hashi_vault.LookupModule.run()=ansible.plugins.lookup.hashi_vault.LookupModule-class.html#run,Method ansible.plugins.lookup.indexed_items.LookupModule.run()=ansible.plugins.lookup.indexed_items.LookupModule-class.html#run,Method ansible.plugins.lookup.ini.LookupModule.run()=ansible.plugins.lookup.ini.LookupModule-class.html#run,Method ansible.plugins.lookup.inventory_hostnames.LookupModule.run()=ansible.plugins.lookup.inventory_hostnames.LookupModule-class.html#run,Method ansible.plugins.lookup.items.LookupModule.run()=ansible.plugins.lookup.items.LookupModule-class.html#run,Method ansible.plugins.lookup.lines.LookupModule.run()=ansible.plugins.lookup.lines.LookupModule-class.html#run,Method ansible.plugins.lookup.list.LookupModule.run()=ansible.plugins.lookup.list.LookupModule-class.html#run,Method ansible.plugins.lookup.nested.LookupModule.run()=ansible.plugins.lookup.nested.LookupModule-class.html#run,Method ansible.plugins.lookup.password.LookupModule.run()=ansible.plugins.lookup.password.LookupModule-class.html#run,Method ansible.plugins.lookup.pipe.LookupModule.run()=ansible.plugins.lookup.pipe.LookupModule-class.html#run,Method ansible.plugins.lookup.random_choice.LookupModule.run()=ansible.plugins.lookup.random_choice.LookupModule-class.html#run,Method ansible.plugins.lookup.redis_kv.LookupModule.run()=ansible.plugins.lookup.redis_kv.LookupModule-class.html#run,Method ansible.plugins.lookup.sequence.LookupModule.run()=ansible.plugins.lookup.sequence.LookupModule-class.html#run,Method ansible.plugins.lookup.shelvefile.LookupModule.run()=ansible.plugins.lookup.shelvefile.LookupModule-class.html#run,Method ansible.plugins.lookup.subelements.LookupModule.run()=ansible.plugins.lookup.subelements.LookupModule-class.html#run,Method ansible.plugins.lookup.template.LookupModule.run()=ansible.plugins.lookup.template.LookupModule-class.html#run,Method ansible.plugins.lookup.together.LookupModule.run()=ansible.plugins.lookup.together.LookupModule-class.html#run,Method ansible.plugins.lookup.url.LookupModule.run()=ansible.plugins.lookup.url.LookupModule-class.html#run,Method ansible.plugins.strategy.StrategyBase.run()=ansible.plugins.strategy.StrategyBase-class.html#run,Method ansible.plugins.strategy.free.StrategyModule.run()=ansible.plugins.strategy.free.StrategyModule-class.html#run,Method ansible.plugins.strategy.linear.StrategyModule.run()=ansible.plugins.strategy.linear.StrategyModule-class.html#run"><a title="ansible.cli.CLI.run
+ansible.cli.adhoc.AdHocCLI.run
+ansible.cli.console.ConsoleCLI.run
+ansible.cli.doc.DocCLI.run
+ansible.cli.galaxy.GalaxyCLI.run
+ansible.cli.playbook.PlaybookCLI.run
+ansible.cli.pull.PullCLI.run
+ansible.cli.vault.VaultCLI.run
+ansible.executor.playbook_executor.PlaybookExecutor.run
+ansible.executor.process.result.ResultProcess.run
+ansible.executor.process.worker.WorkerProcess.run
+ansible.executor.task_executor.TaskExecutor.run
+ansible.executor.task_queue_manager.TaskQueueManager.run
+ansible.inventory.vars_plugins.noop.VarsModule.run
+ansible.module_utils.netcmd.CommandRunner.run
+ansible.module_utils.service.Service.run
+ansible.plugins.action.ActionBase.run
+ansible.plugins.action.add_host.ActionModule.run
+ansible.plugins.action.assemble.ActionModule.run
+ansible.plugins.action.assert.ActionModule.run
+ansible.plugins.action.async.ActionModule.run
+ansible.plugins.action.copy.ActionModule.run
+ansible.plugins.action.debug.ActionModule.run
+ansible.plugins.action.fail.ActionModule.run
+ansible.plugins.action.fetch.ActionModule.run
+ansible.plugins.action.group_by.ActionModule.run
+ansible.plugins.action.include_vars.ActionModule.run
+ansible.plugins.action.junos_template.ActionModule.run
+ansible.plugins.action.net_config.ActionModule.run
+ansible.plugins.action.net_template.ActionModule.run
+ansible.plugins.action.normal.ActionModule.run
+ansible.plugins.action.ops_template.ActionModule.run
+ansible.plugins.action.package.ActionModule.run
+ansible.plugins.action.patch.ActionModule.run
+ansible.plugins.action.pause.ActionModule.run
+ansible.plugins.action.raw.ActionModule.run
+ansible.plugins.action.script.ActionModule.run
+ansible.plugins.action.service.ActionModule.run
+ansible.plugins.action.set_fact.ActionModule.run
+ansible.plugins.action.synchronize.ActionModule.run
+ansible.plugins.action.template.ActionModule.run
+ansible.plugins.action.unarchive.ActionModule.run
+ansible.plugins.action.win_reboot.ActionModule.run
+ansible.plugins.lookup.LookupBase.run
+ansible.plugins.lookup.cartesian.LookupModule.run
+ansible.plugins.lookup.consul_kv.LookupModule.run
+ansible.plugins.lookup.credstash.LookupModule.run
+ansible.plugins.lookup.csvfile.LookupModule.run
+ansible.plugins.lookup.dict.LookupModule.run
+ansible.plugins.lookup.dig.LookupModule.run
+ansible.plugins.lookup.dnstxt.LookupModule.run
+ansible.plugins.lookup.env.LookupModule.run
+ansible.plugins.lookup.etcd.LookupModule.run
+ansible.plugins.lookup.file.LookupModule.run
+ansible.plugins.lookup.fileglob.LookupModule.run
+ansible.plugins.lookup.first_found.LookupModule.run
+ansible.plugins.lookup.flattened.LookupModule.run
+ansible.plugins.lookup.hashi_vault.LookupModule.run
+ansible.plugins.lookup.indexed_items.LookupModule.run
+ansible.plugins.lookup.ini.LookupModule.run
+ansible.plugins.lookup.inventory_hostnames.LookupModule.run
+ansible.plugins.lookup.items.LookupModule.run
+ansible.plugins.lookup.lines.LookupModule.run
+ansible.plugins.lookup.list.LookupModule.run
+ansible.plugins.lookup.nested.LookupModule.run
+ansible.plugins.lookup.password.LookupModule.run
+ansible.plugins.lookup.pipe.LookupModule.run
+ansible.plugins.lookup.random_choice.LookupModule.run
+ansible.plugins.lookup.redis_kv.LookupModule.run
+ansible.plugins.lookup.sequence.LookupModule.run
+ansible.plugins.lookup.shelvefile.LookupModule.run
+ansible.plugins.lookup.subelements.LookupModule.run
+ansible.plugins.lookup.template.LookupModule.run
+ansible.plugins.lookup.together.LookupModule.run
+ansible.plugins.lookup.url.LookupModule.run
+ansible.plugins.strategy.StrategyBase.run
+ansible.plugins.strategy.free.StrategyModule.run
+ansible.plugins.strategy.linear.StrategyModule.run" class="py-name" href="#" onclick="return doclink('link-154', 'run', 'link-154');">run</a></tt><tt class="py-op">(</tt><tt class="py-name">iterator</tt><tt class="py-op">,</tt> <tt id="link-155" class="py-name"><a title="ansible.playbook.play_context" class="py-name" href="#" onclick="return doclink('link-155', 'play_context', 'link-25');">play_context</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L275"></a><tt class="py-lineno">275</tt>  <tt class="py-line"> </tt>
+<a name="L276"></a><tt class="py-lineno">276</tt>  <tt class="py-line">        <tt class="py-comment"># now re-save the hosts that failed from the iterator to our internal list</tt> </tt>
+<a name="L277"></a><tt class="py-lineno">277</tt>  <tt class="py-line">        <tt class="py-keyword">for</tt> <tt class="py-name">host_name</tt> <tt class="py-keyword">in</tt> <tt class="py-name">iterator</tt><tt class="py-op">.</tt><tt id="link-156" class="py-name" targets="Method ansible.executor.play_iterator.PlayIterator.get_failed_hosts()=ansible.executor.play_iterator.PlayIterator-class.html#get_failed_hosts,Method ansible.plugins.strategy.StrategyBase.get_failed_hosts()=ansible.plugins.strategy.StrategyBase-class.html#get_failed_hosts"><a title="ansible.executor.play_iterator.PlayIterator.get_failed_hosts
+ansible.plugins.strategy.StrategyBase.get_failed_hosts" class="py-name" href="#" onclick="return doclink('link-156', 'get_failed_hosts', 'link-156');">get_failed_hosts</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L278"></a><tt class="py-lineno">278</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_failed_hosts</tt><tt class="py-op">[</tt><tt class="py-name">host_name</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-name">True</tt> </tt>
+<a name="L279"></a><tt class="py-lineno">279</tt>  <tt class="py-line"> </tt>
+<a name="L280"></a><tt class="py-lineno">280</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-157" class="py-name" targets="Method ansible.executor.task_queue_manager.TaskQueueManager._cleanup_processes()=ansible.executor.task_queue_manager.TaskQueueManager-class.html#_cleanup_processes"><a title="ansible.executor.task_queue_manager.TaskQueueManager._cleanup_processes" class="py-name" href="#" onclick="return doclink('link-157', '_cleanup_processes', 'link-157');">_cleanup_processes</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L281"></a><tt class="py-lineno">281</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">play_return</tt> </tt>
+</div><a name="L282"></a><tt class="py-lineno">282</tt>  <tt class="py-line"> </tt>
+<a name="TaskQueueManager.cleanup"></a><div id="TaskQueueManager.cleanup-def"><a name="L283"></a><tt class="py-lineno">283</tt> <a class="py-toggle" href="#" id="TaskQueueManager.cleanup-toggle" onclick="return toggle('TaskQueueManager.cleanup');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.executor.task_queue_manager.TaskQueueManager-class.html#cleanup">cleanup</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="TaskQueueManager.cleanup-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="TaskQueueManager.cleanup-expanded"><a name="L284"></a><tt class="py-lineno">284</tt>  <tt class="py-line">        <tt id="link-158" class="py-name"><a title="ansible.cli.adhoc.display
+ansible.cli.console.display
+ansible.cli.display
+ansible.cli.doc.display
+ansible.cli.galaxy.display
+ansible.cli.playbook.display
+ansible.cli.pull.display
+ansible.cli.vault.display
+ansible.executor.module_common.display
+ansible.executor.play_iterator.display
+ansible.executor.playbook_executor.display
+ansible.executor.process.result.display
+ansible.executor.process.worker.display
+ansible.executor.task_executor.display
+ansible.executor.task_queue_manager.display
+ansible.galaxy.api.display
+ansible.galaxy.login.display
+ansible.galaxy.role.display
+ansible.galaxy.token.display
+ansible.inventory.display
+ansible.parsing.dataloader.display
+ansible.parsing.vault.display
+ansible.parsing.yaml.constructor.display
+ansible.playbook.base.display
+ansible.playbook.become.display
+ansible.playbook.display
+ansible.playbook.helpers.display
+ansible.playbook.included_file.display
+ansible.playbook.play.display
+ansible.playbook.play_context.display
+ansible.playbook.role.requirement.display
+ansible.playbook.task.display
+ansible.playbook.task_include.display
+ansible.plugins.action.add_host.display
+ansible.plugins.action.display
+ansible.plugins.action.package.display
+ansible.plugins.action.pause.display
+ansible.plugins.action.win_reboot.display
+ansible.plugins.cache.base.display
+ansible.plugins.cache.display
+ansible.plugins.cache.jsonfile.display
+ansible.plugins.connection.accelerate.display
+ansible.plugins.connection.chroot.display
+ansible.plugins.connection.display
+ansible.plugins.connection.docker.display
+ansible.plugins.connection.jail.display
+ansible.plugins.connection.libvirt_lxc.display
+ansible.plugins.connection.local.display
+ansible.plugins.connection.paramiko_ssh.display
+ansible.plugins.connection.ssh.display
+ansible.plugins.connection.winrm.display
+ansible.plugins.connection.zone.display
+ansible.plugins.display
+ansible.plugins.lookup.display
+ansible.plugins.lookup.file.display
+ansible.plugins.lookup.template.display
+ansible.plugins.lookup.url.display
+ansible.plugins.strategy.debug.display
+ansible.plugins.strategy.display
+ansible.plugins.strategy.free.display
+ansible.plugins.strategy.linear.display
+ansible.template.display
+ansible.utils.display
+ansible.utils.display.Display.display
+ansible.utils.encrypt.display
+ansible.utils.module_docs.display
+ansible.vars.display" class="py-name" href="#" onclick="return doclink('link-158', 'display', 'link-51');">display</a></tt><tt class="py-op">.</tt><tt id="link-159" class="py-name" targets="Method ansible.module_utils.basic.AnsibleModule.debug()=ansible.module_utils.basic.AnsibleModule-class.html#debug,Module ansible.plugins.action.debug=ansible.plugins.action.debug-module.html,Module ansible.plugins.strategy.debug=ansible.plugins.strategy.debug-module.html,Method ansible.utils.display.Display.debug()=ansible.utils.display.Display-class.html#debug"><a title="ansible.module_utils.basic.AnsibleModule.debug
+ansible.plugins.action.debug
+ansible.plugins.strategy.debug
+ansible.utils.display.Display.debug" class="py-name" href="#" onclick="return doclink('link-159', 'debug', 'link-159');">debug</a></tt><tt class="py-op">(</tt><tt class="py-string">"RUNNING CLEANUP"</tt><tt class="py-op">)</tt> </tt>
+<a name="L285"></a><tt class="py-lineno">285</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-160" class="py-name" targets="Method ansible.executor.process.result.ResultProcess.terminate()=ansible.executor.process.result.ResultProcess-class.html#terminate,Method ansible.executor.task_queue_manager.TaskQueueManager.terminate()=ansible.executor.task_queue_manager.TaskQueueManager-class.html#terminate"><a title="ansible.executor.process.result.ResultProcess.terminate
+ansible.executor.task_queue_manager.TaskQueueManager.terminate" class="py-name" href="#" onclick="return doclink('link-160', 'terminate', 'link-160');">terminate</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L286"></a><tt class="py-lineno">286</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_final_q</tt><tt class="py-op">.</tt><tt id="link-161" class="py-name" targets="Method ansible.module_utils.shell.Shell.close()=ansible.module_utils.shell.Shell-class.html#close,Method ansible.plugins.connection.ConnectionBase.close()=ansible.plugins.connection.ConnectionBase-class.html#close,Method ansible.plugins.connection.accelerate.Connection.close()=ansible.plugins.connection.accelerate.Connection-class.html#close,Method ansible.plugins.connection.chroot.Connection.close()=ansible.plugins.connection.chroot.Connection-class.html#close,Method ansible.plugins.connection.docker.Connection.close()=ansible.plugins.connection.docker.Connection-class.html#close,Method ansible.plugins.connection.funcd.Connection.close()=ansible.plugins.connection.funcd.Connection-class.html#close,Method ansible.plugins.connection.jail.Connection.close()=ansible.plugins.connection.jail.Connection-class.html#close,Method ansible.plugins.connection.libvirt_lxc.Connection.close()=ansible.plugins.connection.libvirt_lxc.Connection-class.html#close,Method ansible.plugins.connection.local.Connection.close()=ansible.plugins.connection.local.Connection-class.html#close,Method ansible.plugins.connection.lxc.Connection.close()=ansible.plugins.connection.lxc.Connection-class.html#close,Method ansible.plugins.connection.lxd.Connection.close()=ansible.plugins.connection.lxd.Connection-class.html#close,Method ansible.plugins.connection.paramiko_ssh.Connection.close()=ansible.plugins.connection.paramiko_ssh.Connection-class.html#close,Method ansible.plugins.connection.ssh.Connection.close()=ansible.plugins.connection.ssh.Connection-class.html#close,Method ansible.plugins.connection.winrm.Connection.close()=ansible.plugins.connection.winrm.Connection-class.html#close,Method ansible.plugins.connection.zone.Connection.close()=ansible.plugins.connection.zone.Connection-class.html#close"><a title="ansible.module_utils.shell.Shell.close
+ansible.plugins.connection.ConnectionBase.close
+ansible.plugins.connection.accelerate.Connection.close
+ansible.plugins.connection.chroot.Connection.close
+ansible.plugins.connection.docker.Connection.close
+ansible.plugins.connection.funcd.Connection.close
+ansible.plugins.connection.jail.Connection.close
+ansible.plugins.connection.libvirt_lxc.Connection.close
+ansible.plugins.connection.local.Connection.close
+ansible.plugins.connection.lxc.Connection.close
+ansible.plugins.connection.lxd.Connection.close
+ansible.plugins.connection.paramiko_ssh.Connection.close
+ansible.plugins.connection.ssh.Connection.close
+ansible.plugins.connection.winrm.Connection.close
+ansible.plugins.connection.zone.Connection.close" class="py-name" href="#" onclick="return doclink('link-161', 'close', 'link-161');">close</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L287"></a><tt class="py-lineno">287</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-162" class="py-name"><a title="ansible.executor.task_queue_manager.TaskQueueManager._cleanup_processes" class="py-name" href="#" onclick="return doclink('link-162', '_cleanup_processes', 'link-157');">_cleanup_processes</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L288"></a><tt class="py-lineno">288</tt>  <tt class="py-line"> </tt>
+<a name="TaskQueueManager._cleanup_processes"></a><div id="TaskQueueManager._cleanup_processes-def"><a name="L289"></a><tt class="py-lineno">289</tt> <a class="py-toggle" href="#" id="TaskQueueManager._cleanup_processes-toggle" onclick="return toggle('TaskQueueManager._cleanup_processes');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.executor.task_queue_manager.TaskQueueManager-class.html#_cleanup_processes">_cleanup_processes</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="TaskQueueManager._cleanup_processes-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="TaskQueueManager._cleanup_processes-expanded"><a name="L290"></a><tt class="py-lineno">290</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_result_prc</tt><tt class="py-op">:</tt> </tt>
+<a name="L291"></a><tt class="py-lineno">291</tt>  <tt class="py-line">            <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_result_prc</tt><tt class="py-op">.</tt><tt id="link-163" class="py-name"><a title="ansible.executor.process.result.ResultProcess.terminate
+ansible.executor.task_queue_manager.TaskQueueManager.terminate" class="py-name" href="#" onclick="return doclink('link-163', 'terminate', 'link-160');">terminate</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L292"></a><tt class="py-lineno">292</tt>  <tt class="py-line"> </tt>
+<a name="L293"></a><tt class="py-lineno">293</tt>  <tt class="py-line">            <tt class="py-keyword">for</tt> <tt class="py-op">(</tt><tt class="py-name">worker_prc</tt><tt class="py-op">,</tt> <tt class="py-name">rslt_q</tt><tt class="py-op">)</tt> <tt class="py-keyword">in</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_workers</tt><tt class="py-op">:</tt> </tt>
+<a name="L294"></a><tt class="py-lineno">294</tt>  <tt class="py-line">                <tt class="py-name">rslt_q</tt><tt class="py-op">.</tt><tt id="link-164" class="py-name"><a title="ansible.module_utils.shell.Shell.close
+ansible.plugins.connection.ConnectionBase.close
+ansible.plugins.connection.accelerate.Connection.close
+ansible.plugins.connection.chroot.Connection.close
+ansible.plugins.connection.docker.Connection.close
+ansible.plugins.connection.funcd.Connection.close
+ansible.plugins.connection.jail.Connection.close
+ansible.plugins.connection.libvirt_lxc.Connection.close
+ansible.plugins.connection.local.Connection.close
+ansible.plugins.connection.lxc.Connection.close
+ansible.plugins.connection.lxd.Connection.close
+ansible.plugins.connection.paramiko_ssh.Connection.close
+ansible.plugins.connection.ssh.Connection.close
+ansible.plugins.connection.winrm.Connection.close
+ansible.plugins.connection.zone.Connection.close" class="py-name" href="#" onclick="return doclink('link-164', 'close', 'link-161');">close</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L295"></a><tt class="py-lineno">295</tt>  <tt class="py-line">                <tt class="py-keyword">if</tt> <tt class="py-name">worker_prc</tt> <tt class="py-keyword">and</tt> <tt class="py-name">worker_prc</tt><tt class="py-op">.</tt><tt class="py-name">is_alive</tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L296"></a><tt class="py-lineno">296</tt>  <tt class="py-line">                    <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L297"></a><tt class="py-lineno">297</tt>  <tt class="py-line">                        <tt class="py-name">worker_prc</tt><tt class="py-op">.</tt><tt id="link-165" class="py-name"><a title="ansible.executor.process.result.ResultProcess.terminate
+ansible.executor.task_queue_manager.TaskQueueManager.terminate" class="py-name" href="#" onclick="return doclink('link-165', 'terminate', 'link-160');">terminate</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L298"></a><tt class="py-lineno">298</tt>  <tt class="py-line">                    <tt class="py-keyword">except</tt> <tt class="py-name">AttributeError</tt><tt class="py-op">:</tt> </tt>
+<a name="L299"></a><tt class="py-lineno">299</tt>  <tt class="py-line">                        <tt class="py-keyword">pass</tt> </tt>
+</div><a name="L300"></a><tt class="py-lineno">300</tt>  <tt class="py-line"> </tt>
+<a name="TaskQueueManager.clear_failed_hosts"></a><div id="TaskQueueManager.clear_failed_hosts-def"><a name="L301"></a><tt class="py-lineno">301</tt> <a class="py-toggle" href="#" id="TaskQueueManager.clear_failed_hosts-toggle" onclick="return toggle('TaskQueueManager.clear_failed_hosts');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.executor.task_queue_manager.TaskQueueManager-class.html#clear_failed_hosts">clear_failed_hosts</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="TaskQueueManager.clear_failed_hosts-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="TaskQueueManager.clear_failed_hosts-expanded"><a name="L302"></a><tt class="py-lineno">302</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_failed_hosts</tt> <tt class="py-op">=</tt> <tt id="link-166" class="py-name"><a title="ansible.plugins.lookup.dict" class="py-name" href="#" onclick="return doclink('link-166', 'dict', 'link-71');">dict</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L303"></a><tt class="py-lineno">303</tt>  <tt class="py-line"> </tt>
+<a name="TaskQueueManager.get_inventory"></a><div id="TaskQueueManager.get_inventory-def"><a name="L304"></a><tt class="py-lineno">304</tt> <a class="py-toggle" href="#" id="TaskQueueManager.get_inventory-toggle" onclick="return toggle('TaskQueueManager.get_inventory');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.executor.task_queue_manager.TaskQueueManager-class.html#get_inventory">get_inventory</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="TaskQueueManager.get_inventory-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="TaskQueueManager.get_inventory-expanded"><a name="L305"></a><tt class="py-lineno">305</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_inventory</tt> </tt>
+</div><a name="L306"></a><tt class="py-lineno">306</tt>  <tt class="py-line"> </tt>
+<a name="TaskQueueManager.get_variable_manager"></a><div id="TaskQueueManager.get_variable_manager-def"><a name="L307"></a><tt class="py-lineno">307</tt> <a class="py-toggle" href="#" id="TaskQueueManager.get_variable_manager-toggle" onclick="return toggle('TaskQueueManager.get_variable_manager');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.executor.task_queue_manager.TaskQueueManager-class.html#get_variable_manager">get_variable_manager</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="TaskQueueManager.get_variable_manager-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="TaskQueueManager.get_variable_manager-expanded"><a name="L308"></a><tt class="py-lineno">308</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_variable_manager</tt> </tt>
+</div><a name="L309"></a><tt class="py-lineno">309</tt>  <tt class="py-line"> </tt>
+<a name="TaskQueueManager.get_loader"></a><div id="TaskQueueManager.get_loader-def"><a name="L310"></a><tt class="py-lineno">310</tt> <a class="py-toggle" href="#" id="TaskQueueManager.get_loader-toggle" onclick="return toggle('TaskQueueManager.get_loader');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.executor.task_queue_manager.TaskQueueManager-class.html#get_loader">get_loader</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="TaskQueueManager.get_loader-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="TaskQueueManager.get_loader-expanded"><a name="L311"></a><tt class="py-lineno">311</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_loader</tt> </tt>
+</div><a name="L312"></a><tt class="py-lineno">312</tt>  <tt class="py-line"> </tt>
+<a name="TaskQueueManager.get_workers"></a><div id="TaskQueueManager.get_workers-def"><a name="L313"></a><tt class="py-lineno">313</tt> <a class="py-toggle" href="#" id="TaskQueueManager.get_workers-toggle" onclick="return toggle('TaskQueueManager.get_workers');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.executor.task_queue_manager.TaskQueueManager-class.html#get_workers">get_workers</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="TaskQueueManager.get_workers-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="TaskQueueManager.get_workers-expanded"><a name="L314"></a><tt class="py-lineno">314</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_workers</tt><tt class="py-op">[</tt><tt class="py-op">:</tt><tt class="py-op">]</tt> </tt>
+</div><a name="L315"></a><tt class="py-lineno">315</tt>  <tt class="py-line"> </tt>
+<a name="TaskQueueManager.terminate"></a><div id="TaskQueueManager.terminate-def"><a name="L316"></a><tt class="py-lineno">316</tt> <a class="py-toggle" href="#" id="TaskQueueManager.terminate-toggle" onclick="return toggle('TaskQueueManager.terminate');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.executor.task_queue_manager.TaskQueueManager-class.html#terminate">terminate</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="TaskQueueManager.terminate-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="TaskQueueManager.terminate-expanded"><a name="L317"></a><tt class="py-lineno">317</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_terminated</tt> <tt class="py-op">=</tt> <tt class="py-name">True</tt> </tt>
+</div><a name="L318"></a><tt class="py-lineno">318</tt>  <tt class="py-line"> </tt>
+<a name="TaskQueueManager.has_dead_workers"></a><div id="TaskQueueManager.has_dead_workers-def"><a name="L319"></a><tt class="py-lineno">319</tt> <a class="py-toggle" href="#" id="TaskQueueManager.has_dead_workers-toggle" onclick="return toggle('TaskQueueManager.has_dead_workers');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.executor.task_queue_manager.TaskQueueManager-class.html#has_dead_workers">has_dead_workers</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="TaskQueueManager.has_dead_workers-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="TaskQueueManager.has_dead_workers-expanded"><a name="L320"></a><tt class="py-lineno">320</tt>  <tt class="py-line"> </tt>
+<a name="L321"></a><tt class="py-lineno">321</tt>  <tt class="py-line">        <tt class="py-comment"># [&lt;WorkerProcess(WorkerProcess-2, stopped[SIGKILL])&gt;,</tt> </tt>
+<a name="L322"></a><tt class="py-lineno">322</tt>  <tt class="py-line">        <tt class="py-comment"># &lt;WorkerProcess(WorkerProcess-2, stopped[SIGTERM])&gt;</tt> </tt>
+<a name="L323"></a><tt class="py-lineno">323</tt>  <tt class="py-line"> </tt>
+<a name="L324"></a><tt class="py-lineno">324</tt>  <tt class="py-line">        <tt class="py-name">defunct</tt> <tt class="py-op">=</tt> <tt class="py-name">False</tt> </tt>
+<a name="L325"></a><tt class="py-lineno">325</tt>  <tt class="py-line">        <tt class="py-keyword">for</tt> <tt class="py-name">idx</tt><tt class="py-op">,</tt><tt class="py-name">x</tt> <tt class="py-keyword">in</tt> <tt class="py-name">enumerate</tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_workers</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L326"></a><tt class="py-lineno">326</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-name">hasattr</tt><tt class="py-op">(</tt><tt class="py-name">x</tt><tt class="py-op">[</tt><tt class="py-number">0</tt><tt class="py-op">]</tt><tt class="py-op">,</tt> <tt class="py-string">'exitcode'</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L327"></a><tt class="py-lineno">327</tt>  <tt class="py-line">                <tt class="py-keyword">if</tt> <tt class="py-name">x</tt><tt class="py-op">[</tt><tt class="py-number">0</tt><tt class="py-op">]</tt><tt class="py-op">.</tt><tt class="py-name">exitcode</tt> <tt class="py-keyword">in</tt> <tt class="py-op">[</tt><tt class="py-op">-</tt><tt class="py-number">9</tt><tt class="py-op">,</tt> <tt class="py-op">-</tt><tt class="py-number">15</tt><tt class="py-op">]</tt><tt class="py-op">:</tt> </tt>
+<a name="L328"></a><tt class="py-lineno">328</tt>  <tt class="py-line">                    <tt class="py-name">defunct</tt> <tt class="py-op">=</tt> <tt class="py-name">True</tt> </tt>
+<a name="L329"></a><tt class="py-lineno">329</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">defunct</tt> </tt>
+</div><a name="L330"></a><tt class="py-lineno">330</tt>  <tt class="py-line"> </tt>
+<a name="TaskQueueManager.send_callback"></a><div id="TaskQueueManager.send_callback-def"><a name="L331"></a><tt class="py-lineno">331</tt> <a class="py-toggle" href="#" id="TaskQueueManager.send_callback-toggle" onclick="return toggle('TaskQueueManager.send_callback');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="ansible.executor.task_queue_manager.TaskQueueManager-class.html#send_callback">send_callback</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">method_name</tt><tt class="py-op">,</tt> <tt class="py-op">*</tt><tt class="py-param">args</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-param">kwargs</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="TaskQueueManager.send_callback-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="TaskQueueManager.send_callback-expanded"><a name="L332"></a><tt class="py-lineno">332</tt>  <tt class="py-line">        <tt class="py-keyword">for</tt> <tt class="py-name">callback_plugin</tt> <tt class="py-keyword">in</tt> <tt class="py-op">[</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_stdout_callback</tt><tt class="py-op">]</tt> <tt class="py-op">+</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_callback_plugins</tt><tt class="py-op">:</tt> </tt>
+<a name="L333"></a><tt class="py-lineno">333</tt>  <tt class="py-line">            <tt class="py-comment"># a plugin that set self.disabled to True will not be called</tt> </tt>
+<a name="L334"></a><tt class="py-lineno">334</tt>  <tt class="py-line">            <tt class="py-comment"># see osx_say.py example for such a plugin</tt> </tt>
+<a name="L335"></a><tt class="py-lineno">335</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-name">getattr</tt><tt class="py-op">(</tt><tt class="py-name">callback_plugin</tt><tt class="py-op">,</tt> <tt class="py-string">'disabled'</tt><tt class="py-op">,</tt> <tt class="py-name">False</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L336"></a><tt class="py-lineno">336</tt>  <tt class="py-line">                <tt class="py-keyword">continue</tt> </tt>
+<a name="L337"></a><tt class="py-lineno">337</tt>  <tt class="py-line"> </tt>
+<a name="L338"></a><tt class="py-lineno">338</tt>  <tt class="py-line">            <tt class="py-comment"># try to find v2 method, fallback to v1 method, ignore callback if no method found</tt> </tt>
+<a name="L339"></a><tt class="py-lineno">339</tt>  <tt class="py-line">            <tt class="py-name">methods</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-op">]</tt> </tt>
+<a name="L340"></a><tt class="py-lineno">340</tt>  <tt class="py-line">            <tt class="py-keyword">for</tt> <tt class="py-name">possible</tt> <tt class="py-keyword">in</tt> <tt class="py-op">[</tt><tt class="py-name">method_name</tt><tt class="py-op">,</tt> <tt class="py-string">'v2_on_any'</tt><tt class="py-op">]</tt><tt class="py-op">:</tt> </tt>
+<a name="L341"></a><tt class="py-lineno">341</tt>  <tt class="py-line">                <tt class="py-name">gotit</tt> <tt class="py-op">=</tt>  <tt class="py-name">getattr</tt><tt class="py-op">(</tt><tt class="py-name">callback_plugin</tt><tt class="py-op">,</tt> <tt class="py-name">possible</tt><tt class="py-op">,</tt> <tt class="py-name">None</tt><tt class="py-op">)</tt> </tt>
+<a name="L342"></a><tt class="py-lineno">342</tt>  <tt class="py-line">                <tt class="py-keyword">if</tt> <tt class="py-name">gotit</tt> <tt class="py-keyword">is</tt> <tt class="py-name">None</tt><tt class="py-op">:</tt> </tt>
+<a name="L343"></a><tt class="py-lineno">343</tt>  <tt class="py-line">                    <tt class="py-name">gotit</tt> <tt class="py-op">=</tt> <tt class="py-name">getattr</tt><tt class="py-op">(</tt><tt class="py-name">callback_plugin</tt><tt class="py-op">,</tt> <tt class="py-name">possible</tt><tt class="py-op">.</tt><tt id="link-167" class="py-name" targets="Method ansible.module_utils.netcfg.NetworkConfig.replace()=ansible.module_utils.netcfg.NetworkConfig-class.html#replace"><a title="ansible.module_utils.netcfg.NetworkConfig.replace" class="py-name" href="#" onclick="return doclink('link-167', 'replace', 'link-167');">replace</a></tt><tt class="py-op">(</tt><tt class="py-string">'v2_'</tt><tt class="py-op">,</tt><tt class="py-string">''</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt class="py-name">None</tt><tt class="py-op">)</tt> </tt>
+<a name="L344"></a><tt class="py-lineno">344</tt>  <tt class="py-line">                <tt class="py-keyword">if</tt> <tt class="py-name">gotit</tt> <tt class="py-keyword">is</tt> <tt class="py-keyword">not</tt> <tt class="py-name">None</tt><tt class="py-op">:</tt> </tt>
+<a name="L345"></a><tt class="py-lineno">345</tt>  <tt class="py-line">                    <tt class="py-name">methods</tt><tt class="py-op">.</tt><tt class="py-name">append</tt><tt class="py-op">(</tt><tt class="py-name">gotit</tt><tt class="py-op">)</tt> </tt>
+<a name="L346"></a><tt class="py-lineno">346</tt>  <tt class="py-line"> </tt>
+<a name="L347"></a><tt class="py-lineno">347</tt>  <tt class="py-line">            <tt class="py-keyword">for</tt> <tt class="py-name">method</tt> <tt class="py-keyword">in</tt> <tt class="py-name">methods</tt><tt class="py-op">:</tt> </tt>
+<a name="L348"></a><tt class="py-lineno">348</tt>  <tt class="py-line">                <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L349"></a><tt class="py-lineno">349</tt>  <tt class="py-line">                    <tt class="py-comment"># temporary hack, required due to a change in the callback API, so</tt> </tt>
+<a name="L350"></a><tt class="py-lineno">350</tt>  <tt class="py-line">                    <tt class="py-comment"># we don't break backwards compatibility with callbacks which were</tt> </tt>
+<a name="L351"></a><tt class="py-lineno">351</tt>  <tt class="py-line">                    <tt class="py-comment"># designed to use the original API</tt> </tt>
+<a name="L352"></a><tt class="py-lineno">352</tt>  <tt class="py-line">                    <tt class="py-comment"># FIXME: target for removal and revert to the original code here after a year (2017-01-14)</tt> </tt>
+<a name="L353"></a><tt class="py-lineno">353</tt>  <tt class="py-line">                    <tt class="py-keyword">if</tt> <tt class="py-name">method_name</tt> <tt class="py-op">==</tt> <tt class="py-string">'v2_playbook_on_start'</tt><tt class="py-op">:</tt> </tt>
+<a name="L354"></a><tt class="py-lineno">354</tt>  <tt class="py-line">                        <tt class="py-keyword">import</tt> <tt class="py-name">inspect</tt> </tt>
+<a name="L355"></a><tt class="py-lineno">355</tt>  <tt class="py-line">                        <tt class="py-op">(</tt><tt class="py-name">f_args</tt><tt class="py-op">,</tt> <tt class="py-name">f_varargs</tt><tt class="py-op">,</tt> <tt class="py-name">f_keywords</tt><tt class="py-op">,</tt> <tt class="py-name">f_defaults</tt><tt class="py-op">)</tt> <tt class="py-op">=</tt> <tt class="py-name">inspect</tt><tt class="py-op">.</tt><tt class="py-name">getargspec</tt><tt class="py-op">(</tt><tt class="py-name">method</tt><tt class="py-op">)</tt> </tt>
+<a name="L356"></a><tt class="py-lineno">356</tt>  <tt class="py-line">                        <tt class="py-keyword">if</tt> <tt class="py-string">'playbook'</tt> <tt class="py-keyword">in</tt> <tt class="py-name">f_args</tt><tt class="py-op">:</tt> </tt>
+<a name="L357"></a><tt class="py-lineno">357</tt>  <tt class="py-line">                            <tt class="py-name">method</tt><tt class="py-op">(</tt><tt class="py-op">*</tt><tt class="py-name">args</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-name">kwargs</tt><tt class="py-op">)</tt> </tt>
+<a name="L358"></a><tt class="py-lineno">358</tt>  <tt class="py-line">                        <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L359"></a><tt class="py-lineno">359</tt>  <tt class="py-line">                            <tt class="py-name">method</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L360"></a><tt class="py-lineno">360</tt>  <tt class="py-line">                    <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L361"></a><tt class="py-lineno">361</tt>  <tt class="py-line">                        <tt class="py-name">method</tt><tt class="py-op">(</tt><tt class="py-op">*</tt><tt class="py-name">args</tt><tt class="py-op">,</tt> <tt class="py-op">**</tt><tt class="py-name">kwargs</tt><tt class="py-op">)</tt> </tt>
+<a name="L362"></a><tt class="py-lineno">362</tt>  <tt class="py-line">                <tt class="py-keyword">except</tt> <tt class="py-name">Exception</tt> <tt class="py-keyword">as</tt> <tt id="link-168" class="py-name" targets="Variable ansible.plugins.lookup.consul_kv.e=ansible.plugins.lookup.consul_kv-module.html#e"><a title="ansible.plugins.lookup.consul_kv.e" class="py-name" href="#" onclick="return doclink('link-168', 'e', 'link-168');">e</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L363"></a><tt class="py-lineno">363</tt>  <tt class="py-line">                    <tt class="py-comment">#TODO: add config toggle to make this fatal or not?</tt> </tt>
+<a name="L364"></a><tt class="py-lineno">364</tt>  <tt class="py-line">                    <tt id="link-169" class="py-name"><a title="ansible.cli.adhoc.display
+ansible.cli.console.display
+ansible.cli.display
+ansible.cli.doc.display
+ansible.cli.galaxy.display
+ansible.cli.playbook.display
+ansible.cli.pull.display
+ansible.cli.vault.display
+ansible.executor.module_common.display
+ansible.executor.play_iterator.display
+ansible.executor.playbook_executor.display
+ansible.executor.process.result.display
+ansible.executor.process.worker.display
+ansible.executor.task_executor.display
+ansible.executor.task_queue_manager.display
+ansible.galaxy.api.display
+ansible.galaxy.login.display
+ansible.galaxy.role.display
+ansible.galaxy.token.display
+ansible.inventory.display
+ansible.parsing.dataloader.display
+ansible.parsing.vault.display
+ansible.parsing.yaml.constructor.display
+ansible.playbook.base.display
+ansible.playbook.become.display
+ansible.playbook.display
+ansible.playbook.helpers.display
+ansible.playbook.included_file.display
+ansible.playbook.play.display
+ansible.playbook.play_context.display
+ansible.playbook.role.requirement.display
+ansible.playbook.task.display
+ansible.playbook.task_include.display
+ansible.plugins.action.add_host.display
+ansible.plugins.action.display
+ansible.plugins.action.package.display
+ansible.plugins.action.pause.display
+ansible.plugins.action.win_reboot.display
+ansible.plugins.cache.base.display
+ansible.plugins.cache.display
+ansible.plugins.cache.jsonfile.display
+ansible.plugins.connection.accelerate.display
+ansible.plugins.connection.chroot.display
+ansible.plugins.connection.display
+ansible.plugins.connection.docker.display
+ansible.plugins.connection.jail.display
+ansible.plugins.connection.libvirt_lxc.display
+ansible.plugins.connection.local.display
+ansible.plugins.connection.paramiko_ssh.display
+ansible.plugins.connection.ssh.display
+ansible.plugins.connection.winrm.display
+ansible.plugins.connection.zone.display
+ansible.plugins.display
+ansible.plugins.lookup.display
+ansible.plugins.lookup.file.display
+ansible.plugins.lookup.template.display
+ansible.plugins.lookup.url.display
+ansible.plugins.strategy.debug.display
+ansible.plugins.strategy.display
+ansible.plugins.strategy.free.display
+ansible.plugins.strategy.linear.display
+ansible.template.display
+ansible.utils.display
+ansible.utils.display.Display.display
+ansible.utils.encrypt.display
+ansible.utils.module_docs.display
+ansible.vars.display" class="py-name" href="#" onclick="return doclink('link-169', 'display', 'link-51');">display</a></tt><tt class="py-op">.</tt><tt id="link-170" class="py-name" targets="Method ansible.utils.display.Display.warning()=ansible.utils.display.Display-class.html#warning"><a title="ansible.utils.display.Display.warning" class="py-name" href="#" onclick="return doclink('link-170', 'warning', 'link-170');">warning</a></tt><tt class="py-op">(</tt><tt class="py-string">u"Failure using method (%s) in callback plugin (%s): %s"</tt> <tt class="py-op">%</tt> <tt class="py-op">(</tt><tt id="link-171" class="py-name"><a title="ansible.utils.unicode.to_unicode" class="py-name" href="#" onclick="return doclink('link-171', 'to_unicode', 'link-46');">to_unicode</a></tt><tt class="py-op">(</tt><tt class="py-name">method_name</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt id="link-172" class="py-name"><a title="ansible.utils.unicode.to_unicode" class="py-name" href="#" onclick="return doclink('link-172', 'to_unicode', 'link-46');">to_unicode</a></tt><tt class="py-op">(</tt><tt class="py-name">callback_plugin</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt id="link-173" class="py-name"><a title="ansible.utils.unicode.to_unicode" class="py-name" href="#" onclick="return doclink('link-173', 'to_unicode', 'link-46');">to_unicode</a></tt><tt class="py-op">(</tt><tt id="link-174" class="py-name"><a title="ansible.plugins.lookup.consul_kv.e" class="py-name" href="#" onclick="return doclink('link-174', 'e', 'link-168');">e</a></tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L365"></a><tt class="py-lineno">365</tt>  <tt class="py-line">                    <tt class="py-keyword">from</tt> <tt class="py-name">traceback</tt> <tt class="py-keyword">import</tt> <tt class="py-name">format_tb</tt> </tt>
+<a name="L366"></a><tt class="py-lineno">366</tt>  <tt class="py-line">                    <tt class="py-keyword">from</tt> <tt class="py-name">sys</tt> <tt class="py-keyword">import</tt> <tt class="py-name">exc_info</tt> </tt>
+<a name="L367"></a><tt class="py-lineno">367</tt>  <tt class="py-line">                    <tt id="link-175" class="py-name"><a title="ansible.cli.adhoc.display
+ansible.cli.console.display
+ansible.cli.display
+ansible.cli.doc.display
+ansible.cli.galaxy.display
+ansible.cli.playbook.display
+ansible.cli.pull.display
+ansible.cli.vault.display
+ansible.executor.module_common.display
+ansible.executor.play_iterator.display
+ansible.executor.playbook_executor.display
+ansible.executor.process.result.display
+ansible.executor.process.worker.display
+ansible.executor.task_executor.display
+ansible.executor.task_queue_manager.display
+ansible.galaxy.api.display
+ansible.galaxy.login.display
+ansible.galaxy.role.display
+ansible.galaxy.token.display
+ansible.inventory.display
+ansible.parsing.dataloader.display
+ansible.parsing.vault.display
+ansible.parsing.yaml.constructor.display
+ansible.playbook.base.display
+ansible.playbook.become.display
+ansible.playbook.display
+ansible.playbook.helpers.display
+ansible.playbook.included_file.display
+ansible.playbook.play.display
+ansible.playbook.play_context.display
+ansible.playbook.role.requirement.display
+ansible.playbook.task.display
+ansible.playbook.task_include.display
+ansible.plugins.action.add_host.display
+ansible.plugins.action.display
+ansible.plugins.action.package.display
+ansible.plugins.action.pause.display
+ansible.plugins.action.win_reboot.display
+ansible.plugins.cache.base.display
+ansible.plugins.cache.display
+ansible.plugins.cache.jsonfile.display
+ansible.plugins.connection.accelerate.display
+ansible.plugins.connection.chroot.display
+ansible.plugins.connection.display
+ansible.plugins.connection.docker.display
+ansible.plugins.connection.jail.display
+ansible.plugins.connection.libvirt_lxc.display
+ansible.plugins.connection.local.display
+ansible.plugins.connection.paramiko_ssh.display
+ansible.plugins.connection.ssh.display
+ansible.plugins.connection.winrm.display
+ansible.plugins.connection.zone.display
+ansible.plugins.display
+ansible.plugins.lookup.display
+ansible.plugins.lookup.file.display
+ansible.plugins.lookup.template.display
+ansible.plugins.lookup.url.display
+ansible.plugins.strategy.debug.display
+ansible.plugins.strategy.display
+ansible.plugins.strategy.free.display
+ansible.plugins.strategy.linear.display
+ansible.template.display
+ansible.utils.display
+ansible.utils.display.Display.display
+ansible.utils.encrypt.display
+ansible.utils.module_docs.display
+ansible.vars.display" class="py-name" href="#" onclick="return doclink('link-175', 'display', 'link-51');">display</a></tt><tt class="py-op">.</tt><tt id="link-176" class="py-name"><a title="ansible.module_utils.basic.AnsibleModule.debug
+ansible.plugins.action.debug
+ansible.plugins.strategy.debug
+ansible.utils.display.Display.debug" class="py-name" href="#" onclick="return doclink('link-176', 'debug', 'link-159');">debug</a></tt><tt class="py-op">(</tt><tt class="py-string">'Callback Exception: \n'</tt> <tt class="py-op">+</tt> <tt class="py-string">' '</tt><tt class="py-op">.</tt><tt class="py-name">join</tt><tt class="py-op">(</tt><tt class="py-name">format_tb</tt><tt class="py-op">(</tt><tt class="py-name">exc_info</tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-number">2</tt><tt class="py-op">]</tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+</div></div><a name="L368"></a><tt class="py-lineno">368</tt>  <tt class="py-line"> </tt><script type="text/javascript">
+<!--
+expandto(location.href);
+// -->
+</script>
+</pre>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="ansible-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >ansible</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Fri Jul 29 13:11:42 2016
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>
