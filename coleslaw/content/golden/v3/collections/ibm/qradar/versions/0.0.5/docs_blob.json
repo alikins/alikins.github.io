@@ -1,0 +1,614 @@
+{
+    "collection_readme": {
+        "name": "README.md",
+        "html": "<h1>IBM QRadar Ansible Collection</h1>\n<h2>Tech Preview</h2>\n<p>This is the <a href=\"https://docs.ansible.com/ansible/latest/dev_guide/developing_collections.html\">Ansible\nCollection</a>\nprovided by the <a href=\"https://github.com/ansible-security\">Ansible Security Automation\nTeam</a> for automating actions in <a href=\"https://www.ibm.com/us-en/marketplace/ibm-qradar-siem\">IBM\nQRadar SIEM</a>.</p>\n<p>This Collection is meant for distribution via\n<a href=\"https://galaxy.ansible.com/\">Ansible Galaxy</a> as is available for all\n<a href=\"https://github.com/ansible/ansible\">Ansible</a> users to utilize, contribute to,\nand provide feedback about.</p>\n<h3>Using IBM QRadar Ansible Collection</h3>\n<p>An example for using this collection to manage a log source with <a href=\"https://www.ibm.com/security/security-intelligence/qradar\">IBM QRadar</a> is as follows.</p>\n<p><code>inventory.ini</code> (Note the password should be managed by a <a href=\"https://docs.ansible.com/ansible/latest/user_guide/vault.html\">Vault</a> for a production environment.</p>\n<pre><code>[qradar]\nqradar.example.com\n\n[qradar:vars]\nansible_network_os=ibm.qradar.qradar\nansible_user=admin\nansible_httpapi_pass=SuperSekretPassword\nansible_httpapi_use_ssl=yes\nansible_httpapi_validate_certs=yes\nansible_connection=httpapi\n</code></pre>\n\n<h4>Using the modules with Fully Qualified Collection Name (FQCN)</h4>\n<p>With <a href=\"https://docs.ansible.com/ansible/latest/dev_guide/developing_collections.html\">Ansible\nCollections</a>\nthere are various ways to utilize them either by calling specific Content from\nthe Collection, such as a module, by it's Fully Qualified Collection Name (FQCN)\nas we'll show in this example or by defining a Collection Search Path as the\nexamples below will display.</p>\n<p><code>qradar_with_collections_example.yml</code></p>\n<pre><code>---\n- name: Testing URI manipulation of QRadar with FQCN\n  hosts: qradar\n  gather_facts: false\n  tasks:\n    - name: create log source\n      ibm.qradar.qradar_log_source_management:\n        name: &quot;Ansible Collections Example Log Source&quot;\n        type_name: &quot;Linux OS&quot;\n        state: present\n        description: &quot;Ansible Collections Example Log Source Description&quot;\n</code></pre>\n\n<h4>Define your collection search path at the Play level</h4>\n<p>Below we specify our collection at the\n<a href=\"https://docs.ansible.com/ansible/latest/user_guide/playbooks_intro.html\">Play</a>\nlevel which allows us to use the <code>qradar_log_source_management</code> module without\nthe need for the FQCN for each task.</p>\n<p><code>qradar_with_collections_example.yml</code></p>\n<pre><code>---\n- name: Testing URI manipulation of QRadar\n  hosts: qradar\n  gather_facts: false\n  collections:\n    - ibm.qradar\n  tasks:\n    - name: create log source\n      qradar_log_source_management:\n        name: &quot;Ansible Collections Example Log Source&quot;\n        type_name: &quot;Linux OS&quot;\n        state: present\n        description: &quot;Ansible Collections Example Log Source Description&quot;\n</code></pre>\n\n<h4>Define your collection search path at the Block level</h4>\n<p>Another option for Collection use is below. Here we use the\n<a href=\"https://docs.ansible.com/ansible/latest/user_guide/playbooks_blocks.html\"><code>block</code></a>\nlevel keyword instead of <a href=\"https://docs.ansible.com/ansible/latest/user_guide/playbooks_intro.html\">Play</a>\nlevel as with the previous example. In this scenario we are able to use the\n<code>qradar_log_source_management</code> module without the need for the FQCN for each\ntask but with an optionally more specific scope of Collection Search Path than\nspecifying at the Play level.</p>\n<p><code>qradar_with_collections_block_example.yml</code></p>\n<pre><code>---\n- name: Testing URI manipulation of QRadar\n  hosts: qradar\n  gather_facts: false\n  tasks:\n    - name: collection namespace block\n      block:\n        - name: create log source\n          qradar_log_source_management:\n            name: &quot;Ansible Collections Example Log Source&quot;\n            type_name: &quot;Linux OS&quot;\n            state: present\n            description: &quot;Ansible Collections Example Log Source Description&quot;\n      collections:\n        - ibm.qradar\n</code></pre>\n\n<h3>Directory Structure</h3>\n<ul>\n<li><code>docs/</code>: local documentation for the collection</li>\n<li><code>license.txt</code>: optional copy of license(s) for this collection</li>\n<li><code>galaxy.yml</code>: source data for the MANIFEST.json that will be part of the collection package</li>\n<li><code>playbooks/</code>: playbooks reside here</li>\n<li><code>tasks/</code>: this holds 'task list files' for <code>include_tasks</code>/<code>import_tasks</code> usage</li>\n<li><code>plugins/</code>: all ansible plugins and modules go here, each in its own subdir</li>\n<li><code>modules/</code>: ansible modules</li>\n<li><code>lookups/</code>: lookup plugins</li>\n<li><code>filters/</code>: Jinja2 filter plugins</li>\n<li>... rest of plugins</li>\n<li><code>README.md</code>: information file (this file)</li>\n<li><code>roles/</code>: directory for ansible roles</li>\n<li><code>tests/</code>: tests for the collection's content</li>\n</ul>"
+    },
+    "documentation_files": [],
+    "contents": [
+        {
+            "content_name": "qradar_rule_info",
+            "content_type": "module",
+            "doc_strings": {
+                "doc": {
+                    "author": "Ansible Security Automation Team (@maxamillion) <https://github.com/ansible-security>\"",
+                    "description": [
+                        "This module obtains information about one or many QRadar Rules, with filter options"
+                    ],
+                    "filename": "/tmp/tmpxzy_zz0i/ansible_collections/ibm/qradar/plugins/modules/qradar_rule_info.py",
+                    "module": "qradar_rule_info",
+                    "notes": [
+                        "You may provide many filters and they will all be applied, except for C(id) as that will return only the Rule identified by the unique ID provided."
+                    ],
+                    "options": [
+                        {
+                            "name": "id",
+                            "description": [
+                                "Obtain only information of the Rule with provided ID"
+                            ],
+                            "required": false,
+                            "type": "int"
+                        },
+                        {
+                            "name": "name",
+                            "description": [
+                                "Obtain only information of the Rule that matches the provided name"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "origin",
+                            "choices": [
+                                "SYSTEM",
+                                "OVERRIDE",
+                                "USER"
+                            ],
+                            "description": [
+                                "Obtain only information of Rules that are of a certain origin"
+                            ],
+                            "required": false,
+                            "type": "str"
+                        },
+                        {
+                            "name": "owner",
+                            "description": [
+                                "Obtain only information of Rules owned by a certain user"
+                            ],
+                            "required": false,
+                            "type": "str"
+                        },
+                        {
+                            "name": "type",
+                            "choices": [
+                                "EVENT",
+                                "FLOW",
+                                "COMMON",
+                                "USER"
+                            ],
+                            "description": [
+                                "Obtain only information for the Rules of a certain type"
+                            ],
+                            "required": false,
+                            "type": "str"
+                        }
+                    ],
+                    "short_description": "Obtain information about one or many QRadar Rules, with filter options",
+                    "version_added": "2.9"
+                },
+                "examples": "\n",
+                "metadata": {
+                    "status": [
+                        "preview"
+                    ],
+                    "supported_by": "community"
+                },
+                "return": null
+            },
+            "readme_file": null,
+            "readme_html": null
+        },
+        {
+            "content_name": "qradar_rule",
+            "content_type": "module",
+            "doc_strings": {
+                "doc": {
+                    "author": "Ansible Security Automation Team (@maxamillion) <https://github.com/ansible-security>",
+                    "description": [
+                        "Manage state of QRadar Rules, with filter options"
+                    ],
+                    "filename": "/tmp/tmpxzy_zz0i/ansible_collections/ibm/qradar/plugins/modules/qradar_rule.py",
+                    "module": "qradar_rule",
+                    "options": [
+                        {
+                            "name": "id",
+                            "description": [
+                                "Manage state of a QRadar Rule by ID"
+                            ],
+                            "required": false,
+                            "type": "int"
+                        },
+                        {
+                            "name": "name",
+                            "description": [
+                                "Manage state of a QRadar Rule by name"
+                            ],
+                            "required": false,
+                            "type": "str"
+                        },
+                        {
+                            "name": "owner",
+                            "description": [
+                                "Manage ownership of a QRadar Rule"
+                            ],
+                            "required": false,
+                            "type": "str"
+                        },
+                        {
+                            "name": "state",
+                            "choices": [
+                                "enabled",
+                                "disabled",
+                                "absent"
+                            ],
+                            "description": [
+                                "Manage state of a QRadar Rule"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        }
+                    ],
+                    "short_description": "Manage state of QRadar Rules, with filter options",
+                    "version_added": "2.9"
+                },
+                "examples": "\n",
+                "metadata": {
+                    "status": [
+                        "preview"
+                    ],
+                    "supported_by": "community"
+                },
+                "return": null
+            },
+            "readme_file": null,
+            "readme_html": null
+        },
+        {
+            "content_name": "qradar_offense_note",
+            "content_type": "module",
+            "doc_strings": {
+                "doc": {
+                    "author": "Ansible Security Automation Team (@maxamillion) <https://github.com/ansible-security>",
+                    "description": [
+                        "This module allows to create a QRadar Offense note"
+                    ],
+                    "filename": "/tmp/tmpxzy_zz0i/ansible_collections/ibm/qradar/plugins/modules/qradar_offense_note.py",
+                    "module": "qradar_offense_note",
+                    "options": [
+                        {
+                            "name": "id",
+                            "description": [
+                                "Offense ID to operate on"
+                            ],
+                            "required": true,
+                            "type": "int"
+                        },
+                        {
+                            "name": "note_text",
+                            "description": "The note's text contents",
+                            "required": true,
+                            "type": "str"
+                        }
+                    ],
+                    "short_description": "Create or update a QRadar Offense Note",
+                    "version_added": "2.9"
+                },
+                "examples": "\n",
+                "metadata": {
+                    "status": [
+                        "preview"
+                    ],
+                    "supported_by": "community"
+                },
+                "return": null
+            },
+            "readme_file": null,
+            "readme_html": null
+        },
+        {
+            "content_name": "qradar_offense_info",
+            "content_type": "module",
+            "doc_strings": {
+                "doc": {
+                    "author": "Ansible Security Automation Team (@maxamillion) <https://github.com/ansible-security>",
+                    "description": [
+                        "This module allows to obtain information about one or many QRadar Offenses, with filter options"
+                    ],
+                    "filename": "/tmp/tmpxzy_zz0i/ansible_collections/ibm/qradar/plugins/modules/qradar_offense_info.py",
+                    "module": "qradar_offense_info",
+                    "notes": [
+                        "You may provide many filters and they will all be applied, except for C(id) as that will return only"
+                    ],
+                    "options": [
+                        {
+                            "name": "assigned_to",
+                            "description": [
+                                "Obtain only information of Offenses assigned to a certain user"
+                            ],
+                            "required": false,
+                            "type": "str"
+                        },
+                        {
+                            "name": "closing_reason",
+                            "description": [
+                                "Obtain only information of Offenses that were closed by a specific closing reason"
+                            ],
+                            "required": false,
+                            "type": "str"
+                        },
+                        {
+                            "name": "closing_reason_id",
+                            "description": [
+                                "Obtain only information of Offenses that were closed by a specific closing reason ID"
+                            ],
+                            "required": false,
+                            "type": "int"
+                        },
+                        {
+                            "name": "follow_up",
+                            "description": [
+                                "Obtain only information of Offenses that are marked with the follow up flag"
+                            ],
+                            "required": false,
+                            "type": "bool"
+                        },
+                        {
+                            "name": "id",
+                            "description": [
+                                "Obtain only information of the Offense with provided ID"
+                            ],
+                            "required": false,
+                            "type": "int"
+                        },
+                        {
+                            "name": "name",
+                            "description": [
+                                "Obtain only information of the Offense that matches the provided name"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "protected",
+                            "description": [
+                                "Obtain only information of Offenses that are protected"
+                            ],
+                            "required": false,
+                            "type": "bool"
+                        },
+                        {
+                            "name": "status",
+                            "choices": [
+                                "open",
+                                "OPEN",
+                                "hidden",
+                                "HIDDEN",
+                                "closed",
+                                "CLOSED"
+                            ],
+                            "default": "open",
+                            "description": [
+                                "Obtain only information of Offenses of a certain status"
+                            ],
+                            "required": false,
+                            "type": "str"
+                        }
+                    ],
+                    "short_description": "Obtain information about one or many QRadar Offenses, with filter options",
+                    "version_added": "2.9"
+                },
+                "examples": "\n",
+                "metadata": {
+                    "status": [
+                        "preview"
+                    ],
+                    "supported_by": "community"
+                },
+                "return": [
+                    {
+                        "name": "offenses",
+                        "contains": [
+                            {
+                                "name": "qradar_offenses",
+                                "contains": [
+                                    {
+                                        "name": "name",
+                                        "description": "Name of the service.",
+                                        "returned": "always",
+                                        "sample": "arp-ethers.service",
+                                        "type": "str"
+                                    },
+                                    {
+                                        "name": "source",
+                                        "description": "Init system of the service. One of C(systemd), C(sysv), C(upstart).",
+                                        "returned": "always",
+                                        "sample": "sysv",
+                                        "type": "str"
+                                    },
+                                    {
+                                        "name": "state",
+                                        "description": "State of the service. Either C(running), C(stopped), or C(unknown).",
+                                        "returned": "always",
+                                        "sample": "running",
+                                        "type": "str"
+                                    },
+                                    {
+                                        "name": "status",
+                                        "description": "State of the service. Either C(enabled), C(disabled), or C(unknown).",
+                                        "returned": "systemd systems or RedHat/SUSE flavored sysvinit/upstart",
+                                        "sample": "enabled",
+                                        "type": "str"
+                                    }
+                                ],
+                                "description": "IBM QRadar Offenses found based on provided filters",
+                                "returned": "always",
+                                "type": "complex"
+                            }
+                        ],
+                        "description": "Information",
+                        "elements": "dict",
+                        "returned": "always",
+                        "type": "list"
+                    }
+                ]
+            },
+            "readme_file": null,
+            "readme_html": null
+        },
+        {
+            "content_name": "qradar_offense_action",
+            "content_type": "module",
+            "doc_strings": {
+                "doc": {
+                    "author": "Ansible Security Automation Team (@maxamillion) <https://github.com/ansible-security>",
+                    "description": [
+                        "This module allows to assign, protect, follow up, set status, and assign closing reason to QRadar Offenses"
+                    ],
+                    "filename": "/tmp/tmpxzy_zz0i/ansible_collections/ibm/qradar/plugins/modules/qradar_offense_action.py",
+                    "module": "qradar_offense_action",
+                    "notes": [
+                        "Requires one of C(name) or C(id) be provided",
+                        "Only one of C(closing_reason) or C(closing_reason_id) can be provided"
+                    ],
+                    "options": [
+                        {
+                            "name": "assigned_to",
+                            "description": [
+                                "Assign to an user, the QRadar username should be provided"
+                            ],
+                            "required": false,
+                            "type": "str"
+                        },
+                        {
+                            "name": "closing_reason",
+                            "description": [
+                                "Assign a predefined closing reason here, by name."
+                            ],
+                            "required": false,
+                            "type": "str"
+                        },
+                        {
+                            "name": "closing_reason_id",
+                            "description": [
+                                "Assign a predefined closing reason here, by id."
+                            ],
+                            "required": false,
+                            "type": "int"
+                        },
+                        {
+                            "name": "follow_up",
+                            "description": [
+                                "Set or unset the flag to follow up on a QRadar Offense"
+                            ],
+                            "required": false,
+                            "type": "bool"
+                        },
+                        {
+                            "name": "id",
+                            "description": [
+                                "ID of Offense"
+                            ],
+                            "required": true,
+                            "type": "int"
+                        },
+                        {
+                            "name": "protected",
+                            "description": [
+                                "Set or unset the flag to protect a QRadar Offense"
+                            ],
+                            "required": false,
+                            "type": "bool"
+                        },
+                        {
+                            "name": "status",
+                            "choices": [
+                                "open",
+                                "OPEN",
+                                "hidden",
+                                "HIDDEN",
+                                "closed",
+                                "CLOSED"
+                            ],
+                            "description": [
+                                "One of \"open\", \"hidden\" or \"closed\". (Either all lower case or all caps)"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        }
+                    ],
+                    "short_description": "Take action on a QRadar Offense",
+                    "version_added": "2.9"
+                },
+                "examples": "\n",
+                "metadata": {
+                    "status": [
+                        "preview"
+                    ],
+                    "supported_by": "community"
+                },
+                "return": null
+            },
+            "readme_file": null,
+            "readme_html": null
+        },
+        {
+            "content_name": "qradar_log_source_management",
+            "content_type": "module",
+            "doc_strings": {
+                "doc": {
+                    "author": "Ansible Security Automation Team (@maxamillion) <https://github.com/ansible-security>",
+                    "description": [
+                        "This module allows for addition, deletion, or modification of Log Sources in QRadar"
+                    ],
+                    "filename": "/tmp/tmpxzy_zz0i/ansible_collections/ibm/qradar/plugins/modules/qradar_log_source_management.py",
+                    "module": "qradar_log_source_management",
+                    "notes": [
+                        "Either C(type) or C(type_id) is required"
+                    ],
+                    "options": [
+                        {
+                            "name": "description",
+                            "description": [
+                                "Description of log source"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "identifier",
+                            "description": [
+                                "Log Source Identifier (Typically IP Address or Hostname of log source)"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "name",
+                            "description": [
+                                "Name of Log Source"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "protocol_type_id",
+                            "description": [
+                                "Type of protocol by id, as defined in QRadar Log Source Types Documentation"
+                            ],
+                            "required": false,
+                            "type": "int"
+                        },
+                        {
+                            "name": "state",
+                            "choices": [
+                                "present",
+                                "absent"
+                            ],
+                            "description": [
+                                "Add or remove a log source."
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "type_id",
+                            "description": [
+                                "Type of resource by id, as defined in QRadar Log Source Types Documentation"
+                            ],
+                            "required": false,
+                            "type": "int"
+                        },
+                        {
+                            "name": "type_name",
+                            "description": [
+                                "Type of resource by name"
+                            ],
+                            "required": false,
+                            "type": "str"
+                        }
+                    ],
+                    "short_description": "Manage Log Sources in QRadar",
+                    "version_added": "2.9"
+                },
+                "examples": "\n",
+                "metadata": {
+                    "status": [
+                        "preview"
+                    ],
+                    "supported_by": "community"
+                },
+                "return": null
+            },
+            "readme_file": null,
+            "readme_html": null
+        },
+        {
+            "content_name": "qradar_deploy",
+            "content_type": "module",
+            "doc_strings": {
+                "doc": {
+                    "author": "Ansible Security Automation Team (@maxamillion) <https://github.com/ansible-security>",
+                    "description": [
+                        "This module allows for INCREMENTAL or FULL deployments"
+                    ],
+                    "filename": "/tmp/tmpxzy_zz0i/ansible_collections/ibm/qradar/plugins/modules/qradar_deploy.py",
+                    "module": "qradar_deploy",
+                    "notes": [
+                        "This module does not support check mode because the QRadar REST API does not offer stateful inspection of configuration deployments"
+                    ],
+                    "options": [
+                        {
+                            "name": "type",
+                            "choices": [
+                                "INCREMENTAL",
+                                "FULL"
+                            ],
+                            "default": "INCREMENTAL",
+                            "description": [
+                                "Type of deployment"
+                            ],
+                            "required": false,
+                            "type": "str"
+                        }
+                    ],
+                    "short_description": "Trigger a qradar configuration deployment",
+                    "version_added": "2.9"
+                },
+                "examples": "\n",
+                "metadata": {
+                    "status": [
+                        "preview"
+                    ],
+                    "supported_by": "community"
+                },
+                "return": null
+            },
+            "readme_file": null,
+            "readme_html": null
+        },
+        {
+            "content_name": "qradar",
+            "content_type": "module_utils",
+            "doc_strings": null,
+            "readme_file": null,
+            "readme_html": null
+        },
+        {
+            "content_name": "qradar",
+            "content_type": "httpapi",
+            "doc_strings": {
+                "doc": {
+                    "author": "Ansible Security Automation Team",
+                    "description": [
+                        "This HttpApi plugin provides methods to connect to IBM QRadar over a HTTP(S)-based api."
+                    ],
+                    "filename": "/tmp/tmpxzy_zz0i/ansible_collections/ibm/qradar/plugins/httpapi/qradar.py",
+                    "httpapi": "qradar",
+                    "short_description": "HttpApi Plugin for IBM QRadar",
+                    "version_added": "2.9"
+                },
+                "examples": null,
+                "metadata": {
+                    "status": [
+                        "preview"
+                    ],
+                    "supported_by": "community"
+                },
+                "return": null
+            },
+            "readme_file": null,
+            "readme_html": null
+        }
+    ],
+    "name": "docs_blob.json",
+    "_node_type": "IndexJsonNode"
+}

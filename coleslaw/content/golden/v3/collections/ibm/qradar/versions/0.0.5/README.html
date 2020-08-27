@@ -1,0 +1,247 @@
+<!-- coleslaw start default-before-extends template "<TemplateReference 'README.html.j2'>" -->
+
+<!-- coleslaw start base template="<TemplateReference 'README.html.j2'>" -->
+<!DOCTYPE html>
+<html lang="en">
+<!-- coleslaw start base-after-html template="<TemplateReference 'README.html.j2'>" -->
+<head>
+    
+    
+    <!-- coleslaw start template "<TemplateReference 'head_block.html.j2'>" -->
+<!-- Required meta tags -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+<!-- Bootstrap CSS -->
+<link href="https://stackpath.bootstrapcdn.com/bootswatch/4.5.0/spacelab/bootstrap.min.css"
+        rel="stylesheet"
+        integrity="sha384-sIQOcNYer0kt7oTyFe/YrGzKMFP/qxsJbXTxq0/uiZQgpwXwEu41sVz2M61lWbai"
+        crossorigin="anonymous">
+<!-- Bootstrap-table -->
+<link href="https://unpkg.com/bootstrap-table@1.17.1/dist/bootstrap-table.min.css" rel="stylesheet">
+<!-- prism syntax highlighting -->
+<link href="https://cdn.jsdelivr.net/npm/prismjs@1.20.0/themes/prism.css" rel="stylesheet" />
+<!-- coleslaw end template="<TemplateReference 'head_block.html.j2'>" -->
+    <title>README</title>
+    
+
+</head>
+<body>
+    <div id="content">
+
+    <!-- coleslaw start template="<TemplateReference 'navbar.html.j2'>"  -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+  <a class="navbar-brand" href="#">Coleslaw</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navbarColor01">
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item active">
+        <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="https://github.com/alikins/coleslaw">About</a>
+      </li>
+    </ul>
+    <span class="badge badge-primary">Coleslaw</span>
+  </div>
+</nav>
+<!-- coleslaw end template="<TemplateReference 'navbar.html.j2'> -->
+    <!-- coleslaw start template="<TemplateReference 'breadcrumb.html.j2'>" -->
+<nav aria-label="breadcrumb">
+<ol class="breadcrumb">
+
+    <li class="breadcrumb-item"><a href="../../../../../../../../index.html">home</a></li>
+
+    <li class="breadcrumb-item"><a href="../../../../../../../index.html">content</a></li>
+
+    <li class="breadcrumb-item"><a href="../../../../../../index.html">golden</a></li>
+
+    <li class="breadcrumb-item"><a href="../../../../../index.html">v3</a></li>
+
+    <li class="breadcrumb-item"><a href="../../../../index.html">collections</a></li>
+
+    <li class="breadcrumb-item"><a href="../../../index.html">ibm</a></li>
+
+    <li class="breadcrumb-item"><a href="../../index.html">qradar</a></li>
+
+    <li class="breadcrumb-item"><a href="../index.html">versions</a></li>
+
+    <li class="breadcrumb-item"><a href="index.html">0.0.5</a></li>
+
+<li class="breadcrumb-item"><a href="README.html">README.html</a></li>
+</ol>
+</nav>
+<!-- coleslaw end template="<TemplateReference 'breadcrumb.html.j2'>" -->
+
+<h1>IBM QRadar Ansible Collection</h1>
+<h2>Tech Preview</h2>
+<p>This is the <a href="https://docs.ansible.com/ansible/latest/dev_guide/developing_collections.html">Ansible
+Collection</a>
+provided by the <a href="https://github.com/ansible-security">Ansible Security Automation
+Team</a> for automating actions in <a href="https://www.ibm.com/us-en/marketplace/ibm-qradar-siem">IBM
+QRadar SIEM</a>.</p>
+<p>This Collection is meant for distribution via
+<a href="https://galaxy.ansible.com/">Ansible Galaxy</a> as is available for all
+<a href="https://github.com/ansible/ansible">Ansible</a> users to utilize, contribute to,
+and provide feedback about.</p>
+<h3>Using IBM QRadar Ansible Collection</h3>
+<p>An example for using this collection to manage a log source with <a href="https://www.ibm.com/security/security-intelligence/qradar">IBM QRadar</a> is as follows.</p>
+<p><code>inventory.ini</code> (Note the password should be managed by a <a href="https://docs.ansible.com/ansible/latest/user_guide/vault.html">Vault</a> for a production environment.</p>
+<pre><code>[qradar]
+qradar.example.com
+
+[qradar:vars]
+ansible_network_os=ibm.qradar.qradar
+ansible_user=admin
+ansible_httpapi_pass=SuperSekretPassword
+ansible_httpapi_use_ssl=yes
+ansible_httpapi_validate_certs=yes
+ansible_connection=httpapi
+</code></pre>
+
+<h4>Using the modules with Fully Qualified Collection Name (FQCN)</h4>
+<p>With <a href="https://docs.ansible.com/ansible/latest/dev_guide/developing_collections.html">Ansible
+Collections</a>
+there are various ways to utilize them either by calling specific Content from
+the Collection, such as a module, by it's Fully Qualified Collection Name (FQCN)
+as we'll show in this example or by defining a Collection Search Path as the
+examples below will display.</p>
+<p><code>qradar_with_collections_example.yml</code></p>
+<pre><code>---
+- name: Testing URI manipulation of QRadar with FQCN
+  hosts: qradar
+  gather_facts: false
+  tasks:
+    - name: create log source
+      ibm.qradar.qradar_log_source_management:
+        name: &quot;Ansible Collections Example Log Source&quot;
+        type_name: &quot;Linux OS&quot;
+        state: present
+        description: &quot;Ansible Collections Example Log Source Description&quot;
+</code></pre>
+
+<h4>Define your collection search path at the Play level</h4>
+<p>Below we specify our collection at the
+<a href="https://docs.ansible.com/ansible/latest/user_guide/playbooks_intro.html">Play</a>
+level which allows us to use the <code>qradar_log_source_management</code> module without
+the need for the FQCN for each task.</p>
+<p><code>qradar_with_collections_example.yml</code></p>
+<pre><code>---
+- name: Testing URI manipulation of QRadar
+  hosts: qradar
+  gather_facts: false
+  collections:
+    - ibm.qradar
+  tasks:
+    - name: create log source
+      qradar_log_source_management:
+        name: &quot;Ansible Collections Example Log Source&quot;
+        type_name: &quot;Linux OS&quot;
+        state: present
+        description: &quot;Ansible Collections Example Log Source Description&quot;
+</code></pre>
+
+<h4>Define your collection search path at the Block level</h4>
+<p>Another option for Collection use is below. Here we use the
+<a href="https://docs.ansible.com/ansible/latest/user_guide/playbooks_blocks.html"><code>block</code></a>
+level keyword instead of <a href="https://docs.ansible.com/ansible/latest/user_guide/playbooks_intro.html">Play</a>
+level as with the previous example. In this scenario we are able to use the
+<code>qradar_log_source_management</code> module without the need for the FQCN for each
+task but with an optionally more specific scope of Collection Search Path than
+specifying at the Play level.</p>
+<p><code>qradar_with_collections_block_example.yml</code></p>
+<pre><code>---
+- name: Testing URI manipulation of QRadar
+  hosts: qradar
+  gather_facts: false
+  tasks:
+    - name: collection namespace block
+      block:
+        - name: create log source
+          qradar_log_source_management:
+            name: &quot;Ansible Collections Example Log Source&quot;
+            type_name: &quot;Linux OS&quot;
+            state: present
+            description: &quot;Ansible Collections Example Log Source Description&quot;
+      collections:
+        - ibm.qradar
+</code></pre>
+
+<h3>Directory Structure</h3>
+<ul>
+<li><code>docs/</code>: local documentation for the collection</li>
+<li><code>license.txt</code>: optional copy of license(s) for this collection</li>
+<li><code>galaxy.yml</code>: source data for the MANIFEST.json that will be part of the collection package</li>
+<li><code>playbooks/</code>: playbooks reside here</li>
+<li><code>tasks/</code>: this holds 'task list files' for <code>include_tasks</code>/<code>import_tasks</code> usage</li>
+<li><code>plugins/</code>: all ansible plugins and modules go here, each in its own subdir</li>
+<li><code>modules/</code>: ansible modules</li>
+<li><code>lookups/</code>: lookup plugins</li>
+<li><code>filters/</code>: Jinja2 filter plugins</li>
+<li>... rest of plugins</li>
+<li><code>README.md</code>: information file (this file)</li>
+<li><code>roles/</code>: directory for ansible roles</li>
+<li><code>tests/</code>: tests for the collection's content</li>
+</ul>
+</div>
+    <div id="links"><!-- coleslaw start siblings template="<TemplateReference 'sibling_links.html.j2'>" -->
+<ul class="nav">
+
+    
+    
+    <li class="nav-item">
+    <a class="nav-link" href="index.html">index.html</a>
+    </li>
+
+    
+    
+    <li class="nav-item">
+    <a class="nav-link" href="index.json">index.json</a>
+    </li>
+
+    
+    
+    <li class="nav-item">
+    <a class="nav-link" href="FILES.json">FILES.json</a>
+    </li>
+
+    
+    
+    <li class="nav-item">
+    <a class="nav-link" href="MANIFEST.json">MANIFEST.json</a>
+    </li>
+
+    
+    
+    <li class="nav-item">
+    <a class="nav-link" href="docs_blob.json">docs_blob.json</a>
+    </li>
+
+</ul>
+<!-- coleslaw end siblings template="<TemplateReference 'sibling_links.html.j2'>" --></div>
+    <div id="footer">
+        
+    <!-- coleslaw start template "<TemplateReference 'javascript.html.j2'>" -->
+<!-- Optional JavaScript -->
+<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
+
+<script src="https://unpkg.com/bootstrap-table@1.17.1/dist/bootstrap-table.min.js"></script>
+
+<!-- prism syntax highlighting -->
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.20.0/components/prism-core.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.20.0/plugins/autoloader/prism-autoloader.min.js"></script>
+<!-- coleslaw end template "<TemplateReference 'javascript.html.j2'>" -->
+
+    </div>
+</body>
+<!-- coleslaw end base-before-end-html template="<TemplateReference 'README.html.j2'>" -->
+</html>
+<!-- coleslaw end base template="<TemplateReference 'README.html.j2'>" -->

@@ -1,0 +1,835 @@
+{
+    "collection_readme": {
+        "name": "README.md",
+        "html": "<h1>Ansible Collection - ibm.spectrum_virtualize</h1>\n<p><a href=\"https://docs.ansible.com/ansible/latest/modules/list_of_cloud_modules.html#azure\"><img alt=\"Doc\" src=\"https://img.shields.io/badge/docs-latest-brightgreen.svg\"></a>\n<a href=\"https://docs.ansible.com/ansible/latest/community/code_of_conduct.html\"><img alt=\"Code of conduct\" src=\"https://img.shields.io/badge/code%20of%20conduct-Ansible-silver.svg\"></a>\n<a href=\"LICENSE\"><img alt=\"License\" src=\"https://img.shields.io/badge/license-GPL%20v3.0-brightgreen.svg\"></a></p>\n<p>This collection provides a series of Ansible modules and plugins for interacting with the IBM Spectrum Virtualize Family. These products include the IBM SAN Volume Controller, IBM FlashSystem family members built with IBM Spectrum Virtualize (FlashSystem 5010, 5030, 5100, 7200, 9100, 9200, 9200R, and V9000), IBM Storwize family, and IBM Spectrum Virtualize for Public Cloud. For more information regarding these products see the <a href=\"https://www.ibm.com/support/knowledgecenter/en/\">IBM Knowledge Center</a> .</p>\n<h2>Requirements</h2>\n<ul>\n<li>Ansible version 2.9 or higher</li>\n</ul>\n<h2>Installation</h2>\n<p>To install the IBM Spectrum Virtualize collection hosted in Galaxy:</p>\n<pre><code>ansible-galaxy collection install ibm.spectrum_virtualize\n</code></pre>\n\n<p>To upgrade to the latest version of the IBM Spectrum Virtualize collection:</p>\n<pre><code>ansible-galaxy collection install ibm.spectrum_virtualize --force\n</code></pre>\n\n<h2>Usage</h2>\n<h3>Playbooks</h3>\n<p>To use a module from the IBM Spectrum Virtualize collection, please reference the full namespace, collection name, and module name that you want to use:</p>\n<pre><code>---\n- name: Using the IBM Spectrum Virtualize collection\n  hosts: localhost\n  tasks:\n    - name: Gather info from storage\n      ibm.spectrum_virtualize.ibm_svc_info:\n        clustername: x.x.x.x\n        domain:\n        username: username\n        password: password\n        log_path: /tmp/playbook.debug\n        name: gather_info\n        state: info\n        gather_subset: all\n</code></pre>\n\n<p>Alternatively, you can add a full namepsace and collection name in the <code>collections</code> element:</p>\n<pre><code>---\n- name: Using the IBM Spectrum Virtualize collection\n  collections:\n    - ibm.spectrum_virtualize\n  gather_facts: no\n  connection: local\n  hosts: localhost\n  tasks:\n    - name: Gather info from storage\n      ibm_svc_info:\n        clustername: x.x.x.x\n        domain:\n        username: username\n        password: password\n        log_path: /tmp/playbook.debug\n        name: gather_info\n        state: info\n        gather_subset: all\n</code></pre>\n\n<h2>Supported Resources</h2>\n<h3>Modules</h3>\n<ul>\n<li>ibm_svc_info - Collects information on the IBM Spectrum Virtualize system</li>\n<li>ibm_svc_host - Host management for IBM Spectrum Virtualize</li>\n<li>ibm_svc_mdisk - MDisk managment for IBM Spectrum Virtualize</li>\n<li>ibm_svc_mdiskgrp - Pool management for IBM Spectrum Virtualize</li>\n<li>ibm_svc_vdisk - Volume management for IBM Spectrum Virtualize</li>\n<li>ibm_svc_vol_map - Volume mapping management for IBM Spectrum Virtualize</li>\n</ul>\n<h2>Limitation</h2>\n<p>The IBM Spectrum Virtualize Ansible collections leverage REST APIs to connect to the  IBM Spectrum Virtualize storage system. This creates the following limitations:\n1. Using the REST API to list more than 2000 objects may create a loss of service from the API side, as it automatically restarts due to memory constraints.\n2. It is not possible to access the REST API using an IPv6 address on a cluster.\n3. To run the Ansible collections, Spectrum Virtualize storage system must be at Version 8.1.3 or higher.</p>\n<h2>Contributing</h2>\n<p>Currently we are not accepting community contributions.\nThough, you may periodically review this content to learn when and how contributions can be made in the future.</p>\n<h2>License</h2>\n<p>GNU General Public License v3.0</p>\n<p>See <a href=\"LICENSE\">LICENSE</a> to see the full text.</p>"
+    },
+    "documentation_files": [],
+    "contents": [
+        {
+            "content_name": "ibm_svc_vdisk",
+            "content_type": "module",
+            "doc_strings": {
+                "doc": {
+                    "author": [
+                        "Peng Wang(@wangpww)"
+                    ],
+                    "description": [
+                        "Ansible interface to manage 'mkvdisk' and 'rmvdisk' volume commands."
+                    ],
+                    "filename": "/tmp/tmp2nv1gd2y/ansible_collections/ibm/spectrum_virtualize/plugins/modules/ibm_svc_vdisk.py",
+                    "module": "ibm_svc_vdisk",
+                    "options": [
+                        {
+                            "name": "clustername",
+                            "description": [
+                                "The hostname or management IP of the Spectrum Virtualize storage system"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "domain",
+                            "description": [
+                                "Domain for the IBM Spectrum Virtualize storage system"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "easytier",
+                            "choices": [
+                                "on",
+                                "off",
+                                "auto"
+                            ],
+                            "default": "off",
+                            "description": [
+                                "Defines use of easytier with VDisk"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "log_path",
+                            "description": [
+                                "Debugs log for this file"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "mdiskgrp",
+                            "description": [
+                                "Specifies one or more storage pools name to use when you are creating this volume"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "name",
+                            "description": [
+                                "Specifies a name to assign to the new volume"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "password",
+                            "description": [
+                                "REST API password for the IBM Spectrum Virtualize storage system"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "size",
+                            "description": [
+                                "Defines size of VDisk"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "state",
+                            "choices": [
+                                "absent",
+                                "present"
+                            ],
+                            "description": [
+                                "Creates (C(present)) or removes (C(absent)) a volume"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "unit",
+                            "choices": [
+                                "b",
+                                "kb",
+                                "mb",
+                                "gb",
+                                "tb",
+                                "pb"
+                            ],
+                            "default": "mb",
+                            "description": [
+                                "Defines the size optoin for the storage unit"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "username",
+                            "description": [
+                                "REST API username for the IBM Spectrum Virtualize storage system"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "validate_certs",
+                            "description": [
+                                "Validate certification"
+                            ],
+                            "type": "bool"
+                        }
+                    ],
+                    "short_description": "This module manages volumes on IBM Spectrum Virtualize Family storage systems.",
+                    "version_added": "2.10"
+                },
+                "examples": "\n- name: Using the IBM Spectrum Virtualize collection to create a volume\n  hosts: localhost\n  collections:\n    - ibm.spectrum_virtualize\n  gather_facts: no\n  connection: local\n  tasks:\n    - name: Create volume\n      ibm_svc_vdisk:\n        clustername: \"{{clustername}}\"\n        domain: \"{{domain}}\"\n        username: \"{{username}}\"\n        password: \"{{password}}\"\n        log_path: /tmp/playbook.debug\n        name: volume0\n        state: present\n        mdiskgrp: Pool0\n        easytier: 'off'\n        size: \"4294967296\"\n        unit: b\n\n- name: Using the IBM Spectrum Virtualize collection to delete a volume\n  hosts: localhost\n  collections:\n    - ibm.spectrum_virtualize\n  gather_facts: no\n  connection: local\n  tasks:\n    - name: Delete volume\n      ibm_svc_vdisk:\n        clustername: \"{{clustername}}\"\n        domain: \"{{domain}}\"\n        username: \"{{username}}\"\n        password: \"{{password}}\"\n        log_path: /tmp/playbook.debug\n        name: volume0\n        state: absent\n",
+                "metadata": {
+                    "status": [
+                        "preview"
+                    ],
+                    "supported_by": "community"
+                },
+                "return": null
+            },
+            "readme_file": null,
+            "readme_html": null
+        },
+        {
+            "content_name": "ibm_svc_info",
+            "content_type": "module",
+            "doc_strings": {
+                "doc": {
+                    "author": [
+                        "Peng Wang (@wangpww)"
+                    ],
+                    "description": [
+                        "Gathers the list of specified IBM Spectrum Virtualize storage system entities. These include the list of nodes, pools, volumes, hosts, host clusters, FC ports, iSCSI ports, target port FC, FC consistgrp, vdiskcopy, I/O groups, FC map, FC connectivity, NVMe fabric, array, and system."
+                    ],
+                    "filename": "/tmp/tmp2nv1gd2y/ansible_collections/ibm/spectrum_virtualize/plugins/modules/ibm_svc_info.py",
+                    "module": "ibm_svc_info",
+                    "options": [
+                        {
+                            "name": "clustername",
+                            "description": [
+                                "The hostname or management IP of the Spectrum Virtualize storage system"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "domain",
+                            "description": [
+                                "Domain for the IBM Spectrum Virtualize storage system"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "gather_subset",
+                            "choices": [
+                                "vol",
+                                "pool",
+                                "node",
+                                "iog",
+                                "host",
+                                "hc",
+                                "fcport",
+                                "iscsiport",
+                                "fcmap",
+                                "fc",
+                                "fcconsistgrp",
+                                "vdiskcopy",
+                                "targetportfc",
+                                "array",
+                                "system",
+                                "all"
+                            ],
+                            "default": "all",
+                            "description": [
+                                "List of string variables to specify the IBM Spectrum Virtualize entities for which information is required.",
+                                "all - list of all IBM Spectrum Virtualize entities supported by the module",
+                                "vol - lists information for VDisks",
+                                "pool - lists information for mdiskgrps",
+                                "node - lists information for nodes",
+                                "iog - lists information for I/O groups",
+                                "host - lists information for hosts",
+                                "hc - lists information for host clusters",
+                                "fc - lists information for FC connectivity",
+                                "fcport - lists information for FC ports",
+                                "targetportfc - lists information for WWPN which is required to set up FC zoning and to display the current failover status of host I/O ports",
+                                "fcmap - lists information for FC maps",
+                                "fcconsistgrp - displays a concise list or a detailed view of FlashCopy consistency groups",
+                                "iscsiport - lists information for iSCSI ports",
+                                "vdiskcopy - lists information for volume copy",
+                                "array - lists information for array MDisks",
+                                "system - displays the storage system information"
+                            ],
+                            "required": false,
+                            "type": "list"
+                        },
+                        {
+                            "name": "log_path",
+                            "description": [
+                                "Debugs log for this file"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "name",
+                            "description": [
+                                "Collects storage information"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "password",
+                            "description": [
+                                "REST API password for the IBM Spectrum Virtualize storage system"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "state",
+                            "choices": [
+                                "info"
+                            ],
+                            "default": "info",
+                            "description": [
+                                "Returns \"info\""
+                            ],
+                            "required": false,
+                            "type": "str"
+                        },
+                        {
+                            "name": "username",
+                            "description": [
+                                "REST API username for the IBM Spectrum Virtualize storage system"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "validate_certs",
+                            "description": [
+                                "Validate certification"
+                            ],
+                            "type": "bool"
+                        }
+                    ],
+                    "short_description": "This module gathers various information from the IBM Spectrum Virtualize storage systems.",
+                    "version_added": "2.10"
+                },
+                "examples": "\n- name: Using the IBM Spectrum Virtualize collection to gather storage information\n  hosts: localhost\n  collections:\n    - ibm.spectrum_virtualize\n  gather_facts: no\n  connection: local\n  tasks:\n    - name: Get volume info\n      ibm_svc_info:\n        clustername: \"{{clustername}}\"\n        domain: \"{{domain}}\"\n        username: \"{{username}}\"\n        password: \"{{password}}\"\n        log_path: /tmp/ansible.log\n        state: info\n        gather_subset: vol\n\n- name: Using the IBM Spectrum Virtualize collection to gather storage information\n  hosts: localhost\n  collections:\n    - ibm.spectrum_virtualize\n  gather_facts: no\n  connection: local\n  tasks:\n    - name: Get pool info\n      ibm_svc_info:\n        clustername: \"{{clustername}}\"\n        domain: \"{{domain}}\"\n        username: \"{{username}}\"\n        password: \"{{password}}\"\n        log_path: /tmp/ansible.log\n        state: info\n        gather_subset: pool\n\n",
+                "metadata": {
+                    "status": [
+                        "preview"
+                    ],
+                    "supported_by": "community"
+                },
+                "return": null
+            },
+            "readme_file": null,
+            "readme_html": null
+        },
+        {
+            "content_name": "ibm_svc_vol_map",
+            "content_type": "module",
+            "doc_strings": {
+                "doc": {
+                    "author": [
+                        "Peng Wang(@wangpww)"
+                    ],
+                    "description": [
+                        "Ansible interface to manage volume mapping commands 'mkvdiskhostmap' and 'rmvdiskhostmap' commands."
+                    ],
+                    "filename": "/tmp/tmp2nv1gd2y/ansible_collections/ibm/spectrum_virtualize/plugins/modules/ibm_svc_vol_map.py",
+                    "module": "ibm_svc_vol_map",
+                    "options": [
+                        {
+                            "name": "clustername",
+                            "description": [
+                                "The hostname or management IP of the Spectrum Virtualize storage system"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "domain",
+                            "description": [
+                                "Domain for the IBM Spectrum Virtualize storage system"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "host",
+                            "description": [
+                                "Specifies the host name for host mapping"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "log_path",
+                            "description": [
+                                "Debugs log for this file"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "password",
+                            "description": [
+                                "REST API password for the IBM Spectrum Virtualize storage system"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "state",
+                            "choices": [
+                                "absent",
+                                "present"
+                            ],
+                            "description": [
+                                "Creates (C(present)) or removes (C(absent)) a volume mapping"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "username",
+                            "description": [
+                                "REST API username for the IBM Spectrum Virtualize storage system"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "validate_certs",
+                            "description": [
+                                "Validate certification"
+                            ],
+                            "type": "bool"
+                        },
+                        {
+                            "name": "volname",
+                            "description": [
+                                "Specifies the volume name for host mapping"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        }
+                    ],
+                    "short_description": "This module manages volume mapping on IBM Spectrum Virtualize Family storage systems.",
+                    "version_added": "2.10"
+                },
+                "examples": "\n- name: Using the IBM Spectrum Virtualize collection to map a volume to a host\n  hosts: localhost\n  collections:\n    - ibm.spectrum_virtualize\n  gather_facts: no\n  connection: local\n  tasks:\n    - name: map volume to host\n      ibm_svc_vol_map:\n        clustername: \"{{clustername}}\"\n        domain: \"{{domain}}\"\n        username: \"{{username}}\"\n        password: \"{{password}}\"\n        log_path: /tmp/playbook.debug\n        volname: volume0\n        host: host4test\n        state: present\n\n- name: Using the IBM Spectrum Virtualize collection to unmap a volume from a host\n  hosts: localhost\n  collections:\n    - ibm.spectrum_virtualize\n  gather_facts: no\n  connection: local\n  tasks:\n    - name: unmap volume from host\n      ibm_svc_vol_map:\n        clustername: \"{{clustername}}\"\n        domain: \"{{domain}}\"\n        username: \"{{username}}\"\n        password: \"{{password}}\"\n        log_path: /tmp/playbook.debug\n        volname: volume0\n        host: host4test\n        state: absent\n",
+                "metadata": {
+                    "status": [
+                        "preview"
+                    ],
+                    "supported_by": "community"
+                },
+                "return": null
+            },
+            "readme_file": null,
+            "readme_html": null
+        },
+        {
+            "content_name": "ibm_svc_host",
+            "content_type": "module",
+            "doc_strings": {
+                "doc": {
+                    "author": [
+                        "Peng Wang (@wangpww)"
+                    ],
+                    "description": [
+                        "Ansible interface to manage 'mkhost' and 'rmhost' host commands."
+                    ],
+                    "filename": "/tmp/tmp2nv1gd2y/ansible_collections/ibm/spectrum_virtualize/plugins/modules/ibm_svc_host.py",
+                    "module": "ibm_svc_host",
+                    "options": [
+                        {
+                            "name": "clustername",
+                            "description": [
+                                "The hostname or management IP of the Spectrum Virtualize storage system"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "domain",
+                            "description": [
+                                "Domain for the IBM Spectrum Virtualize storage system"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "fcwwpn",
+                            "description": [
+                                "List of Initiator WWN to be added to the host"
+                            ],
+                            "required": false,
+                            "type": "str"
+                        },
+                        {
+                            "name": "iogrp",
+                            "default": "0:1:2:3",
+                            "description": [
+                                "Specifies a set of one or more input/output (I/O) groups that the host can access the volumes from"
+                            ],
+                            "required": false,
+                            "type": "str"
+                        },
+                        {
+                            "name": "iscsiname",
+                            "description": [
+                                "Initiator IQN to be added to the host"
+                            ],
+                            "required": false,
+                            "type": "str"
+                        },
+                        {
+                            "name": "log_path",
+                            "description": [
+                                "Debugs log for this file"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "name",
+                            "description": [
+                                "Specifies a name or label for the new host object"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "password",
+                            "description": [
+                                "REST API password for the IBM Spectrum Virtualize storage system"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "protocol",
+                            "choices": [
+                                "scsi",
+                                "nvme"
+                            ],
+                            "default": "scsi",
+                            "description": [
+                                "Specifies the protocol used by the host to communicate with the storage system"
+                            ],
+                            "required": false,
+                            "type": "str"
+                        },
+                        {
+                            "name": "state",
+                            "choices": [
+                                "absent",
+                                "present"
+                            ],
+                            "description": [
+                                "Creates (C(present)) or removes (C(absent)) a host"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "type",
+                            "default": null,
+                            "description": [
+                                "Specifies the type of host"
+                            ],
+                            "required": false,
+                            "type": "str"
+                        },
+                        {
+                            "name": "username",
+                            "description": [
+                                "REST API username for the IBM Spectrum Virtualize storage system"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "validate_certs",
+                            "description": [
+                                "Validate certification"
+                            ],
+                            "type": "bool"
+                        }
+                    ],
+                    "short_description": "This module manages hosts on IBM Spectrum Virtualize Family storage systems.",
+                    "version_added": "2.10"
+                },
+                "examples": "\n- name: Using the IBM Spectrum Virtualize collection to create an iSCSI host\n  hosts: localhost\n  collections:\n    - ibm.spectrum_virtualize\n  gather_facts: no\n  connection: local\n  tasks:\n    - name: Define a new iSCSI host\n      ibm_svc_host:\n        clustername: \"{{clustername}}\"\n        domain: \"{{domain}}\"\n        username: \"{{username}}\"\n        password: \"{{password}}\"\n        log_path: /tmp/playbook.debug\n        name: host4test\n        state: present\n        iscsiname: iqn.1994-05.com.redhat:2e358e438b8a\n        iogrp: 0:1:2:3\n        protocol: scsi\n        type: generic\n\n- name: Using the IBM Spectrum Virtualize collection to create an FC host\n  hosts: localhost\n  collections:\n    - ibm.spectrum_virtualize\n  gather_facts: no\n  connection: local\n  tasks:\n    - name: Define a new FC host\n      ibm_svc_host:\n        clustername: \"{{clustername}}\"\n        domain: \"{{domain}}\"\n        username: \"{{username}}\"\n        password: \"{{password}}\"\n        log_path: /tmp/playbook.debug\n        name: host4test\n        state: present\n        fcwwpn: 100000109B570216:1000001AA0570266\n        iogrp: 0:1:2:3\n        protocol: scsi\n        type: generic\n\n- name: Using the IBM Spectrum Virtualize collection to delete a host\n  hosts: localhost\n  collections:\n    - ibm.spectrum_virtualize\n  gather_facts: no\n  connection: local\n  tasks:\n    - name: Delete host\n      ibm_svc_host:\n        clustername: \"{{clustername}}\"\n        domain: \"{{domain}}\"\n        username: \"{{username}}\"\n        password: \"{{password}}\"\n        log_path: /tmp/playbook.debug\n        name: host4test\n        state: absent\n",
+                "metadata": {
+                    "status": [
+                        "preview"
+                    ],
+                    "supported_by": "community"
+                },
+                "return": null
+            },
+            "readme_file": null,
+            "readme_html": null
+        },
+        {
+            "content_name": "ibm_svc_mdiskgrp",
+            "content_type": "module",
+            "doc_strings": {
+                "doc": {
+                    "author": [
+                        "Peng Wang(@wangpww)"
+                    ],
+                    "description": [
+                        "Ansible interface to manage 'mkmdiskgrp' and 'rmmdiskgrp' pool commands."
+                    ],
+                    "filename": "/tmp/tmp2nv1gd2y/ansible_collections/ibm/spectrum_virtualize/plugins/modules/ibm_svc_mdiskgrp.py",
+                    "module": "ibm_svc_mdiskgrp",
+                    "options": [
+                        {
+                            "name": "clustername",
+                            "description": [
+                                "The hostname or management IP of the Spectrum Virtualize storage system"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "datareduction",
+                            "choices": [
+                                "yes",
+                                "no"
+                            ],
+                            "default": "no",
+                            "description": [
+                                "Defines use of data reduction pools (DRPs) on the MDisk group"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "domain",
+                            "description": [
+                                "Domain for the IBM Spectrum Virtualize storage system"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "easytier",
+                            "choices": [
+                                "on",
+                                "off",
+                                "auto"
+                            ],
+                            "default": "off",
+                            "description": [
+                                "Defines use of easytier with the MDisk group"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "encrypt",
+                            "choices": [
+                                "yes",
+                                "no"
+                            ],
+                            "default": "no",
+                            "description": [
+                                "Defines use of encryption with the MDisk group"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "ext",
+                            "description": [
+                                "Specifies the size of the extents for this group in MB"
+                            ],
+                            "type": "int"
+                        },
+                        {
+                            "name": "log_path",
+                            "description": [
+                                "Debugs log for this file"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "name",
+                            "description": [
+                                "Specifies a name to assign to the new pool"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "parentmdiskgrp",
+                            "description": [
+                                "parentmdiskgrp for subpool"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "password",
+                            "description": [
+                                "REST API password for the IBM Spectrum Virtualize storage system"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "size",
+                            "description": [
+                                "Specifies the child pool capacity. The value must be a numeric value (and an integer multiple of the extent size)"
+                            ],
+                            "type": "int"
+                        },
+                        {
+                            "name": "state",
+                            "choices": [
+                                "absent",
+                                "present"
+                            ],
+                            "description": [
+                                "Creates (C(present)) or removes (C(absent)) an MDisk group"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "unit",
+                            "description": [
+                                "Unit for subpool"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "username",
+                            "description": [
+                                "REST API username for the IBM Spectrum Virtualize storage system"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "validate_certs",
+                            "description": [
+                                "Validate certification"
+                            ],
+                            "type": "bool"
+                        }
+                    ],
+                    "short_description": "This module manages pools on IBM Spectrum Virtualize Family storage systems.",
+                    "version_added": "2.10"
+                },
+                "examples": "\n- name: Using the IBM Spectrum Virtualize collection to create a pool\n  hosts: localhost\n  collections:\n    - ibm.spectrum_virtualize\n  gather_facts: no\n  connection: local\n  tasks:\n    - name: make mdisk group\n      ibm_svc_mdiskgrp:\n        clustername: \"{{clustername}}\"\n        domain: \"{{domain}}\"\n        username: \"{{username}}\"\n        password: \"{{password}}\"\n        name: pool1\n        state: present\n        datareduction: no\n        easytier: auto\n        encrypt: no\n        ext: 1024\n\n- name: Using the IBM Spectrum Virtualize collection to delete a pool\n  hosts: localhost\n  collections:\n    - ibm.spectrum_virtualize\n  gather_facts: no\n  connection: local\n  tasks:\n    - name: delete mdisk group\n      ibm_svc_mdiskgrp:\n        clustername: \"{{clustername}}\"\n        domain: \"{{domain}}\"\n        username: \"{{username}}\"\n        password: \"{{password}}\"\n        name: pool1\n        state: absent\n\n",
+                "metadata": {
+                    "status": [
+                        "preview"
+                    ],
+                    "supported_by": "community"
+                },
+                "return": null
+            },
+            "readme_file": null,
+            "readme_html": null
+        },
+        {
+            "content_name": "ibm_svc_mdisk",
+            "content_type": "module",
+            "doc_strings": {
+                "doc": {
+                    "author": [
+                        "Peng Wang(@wangpww)"
+                    ],
+                    "description": [
+                        "Ansible interface to manage 'mkarray' and 'rmmdisk' MDisk commands."
+                    ],
+                    "filename": "/tmp/tmp2nv1gd2y/ansible_collections/ibm/spectrum_virtualize/plugins/modules/ibm_svc_mdisk.py",
+                    "module": "ibm_svc_mdisk",
+                    "options": [
+                        {
+                            "name": "clustername",
+                            "description": [
+                                "The hostname or management IP of the Spectrum Virtualize storage system"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "domain",
+                            "description": [
+                                "Domain for the IBM Spectrum Virtualize storage system"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "drive",
+                            "description": [
+                                "Drive(s) to use as members of the RAID array"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "encrypt",
+                            "choices": [
+                                "yes",
+                                "no"
+                            ],
+                            "default": "no",
+                            "description": [
+                                "encrypt"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "level",
+                            "choices": [
+                                "raid0",
+                                "raid1",
+                                "raid5",
+                                "raid6",
+                                "raid10"
+                            ],
+                            "description": [
+                                "level"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "log_path",
+                            "description": [
+                                "Debugs log for this file"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "mdiskgrp",
+                            "description": [
+                                "The storage pool (mdiskgrp) to which you want to add the MDisk"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "name",
+                            "description": [
+                                "The MDisk name"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "password",
+                            "description": [
+                                "REST API password for the IBM Spectrum Virtualize storage system"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "state",
+                            "choices": [
+                                "absent",
+                                "present"
+                            ],
+                            "description": [
+                                "Creates (C(present)) or removes (C(absent)) the MDisk"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "username",
+                            "description": [
+                                "REST API username for the IBM Spectrum Virtualize storage system"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "validate_certs",
+                            "description": [
+                                "Validate certification"
+                            ],
+                            "type": "bool"
+                        }
+                    ],
+                    "short_description": "This module manages MDisks on IBM Spectrum Virtualize Family storage systems.",
+                    "version_added": "2.10"
+                },
+                "examples": "\n- name: Using the IBM Spectrum Virtualize collection to create a new MDisk array\n  hosts: localhost\n  collections:\n    - ibm.spectrum_virtualize\n  gather_facts: no\n  connection: local\n  tasks:\n    - name: Create MDisk and named mdisk20\n      ibm_svc_mdisk:\n        clustername: \"{{clustername}}\"\n        domain: \"{{domain}}\"\n        username: \"{{username}}\"\n        password: \"{{password}}\"\n        name: mdisk20\n        state: present\n        level: raid0\n        drive: '5:6'\n        encrypt: no\n        mdiskgrp: pool20\n\n- name: Using the IBM Spectrum Virtualize collection to delete an MDisk array\n  hosts: localhost\n  collections:\n    - ibm.spectrum_virtualize\n  gather_facts: no\n  connection: local\n  tasks:\n    - name: Delete MDisk named mdisk20\n      ibm_svc_mdisk:\n        clustername: \"{{clustername}}\"\n        domain: \"{{domain}}\"\n        username: \"{{username}}\"\n        password: \"{{password}}\"\n        name: mdisk20\n        state: absent\n        mdiskgrp: pool20\n",
+                "metadata": {
+                    "status": [
+                        "preview"
+                    ],
+                    "supported_by": "community"
+                },
+                "return": null
+            },
+            "readme_file": null,
+            "readme_html": null
+        },
+        {
+            "content_name": "ibm_svc_utils",
+            "content_type": "module_utils",
+            "doc_strings": null,
+            "readme_file": null,
+            "readme_html": null
+        }
+    ],
+    "name": "docs_blob.json",
+    "_node_type": "IndexJsonNode"
+}

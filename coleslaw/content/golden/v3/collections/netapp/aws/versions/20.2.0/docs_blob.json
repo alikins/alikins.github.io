@@ -1,10 +1,578 @@
 {
     "collection_readme": {
-        "name": null,
-        "html": null
+        "name": "README.md",
+        "html": "<p>=============================================================</p>\n<p>netapp.aws                                                   </p>\n<p>NetApp AWS CVS Collection                                    </p>\n<p>Copyright (c) 2019 NetApp, Inc. All rights reserved.       <br>\nSpecifications subject to change without notice.             </p>\n<p>=============================================================</p>\n<h1>Installation</h1>\n<pre><code>ansible-galaxy collection install netapp.aws\n</code></pre>\n\n<p>To use Collection add the following to the top of your playbook, with out this you will be using Ansible 2.9 version of the module</p>\n<pre><code>collections:\n  - netapp.aws\n</code></pre>\n\n<h1>Need help</h1>\n<p>Join our Slack Channel at <a href=\"http://netapp.io/slack\">Netapp.io</a></p>\n<h1>Notes</h1>\n<p>These Ansible modules are supporting NetApp Cloud Volumes Service for AWS.</p>\n<p>They require a subscription to the service and your API access keys.</p>\n<p>The modules currently support Active Directory, Pool, FileSystem (Volume), and Snapshot services.</p>\n<h1>Release Notes</h1>\n<h2>20.2.0</h2>\n<h3>Bug Fixes</h3>\n<ul>\n<li>galaxy.yml: fix path to github repository.</li>\n</ul>\n<h2>19.11.0</h2>\n<ul>\n<li>Initial release as a collection.</li>\n</ul>"
     },
     "documentation_files": [],
-    "contents": [],
+    "contents": [
+        {
+            "content_name": "aws_netapp_cvs_pool",
+            "content_type": "module",
+            "doc_strings": {
+                "doc": {
+                    "author": "NetApp Ansible Team (@carchi8py) <ng-ansibleteam@netapp.com>",
+                    "description": [
+                        "Create, Update, Delete Pool on AWS Cloud Volumes Service."
+                    ],
+                    "filename": "/tmp/tmpo39i_g1b/ansible_collections/netapp/aws/plugins/modules/aws_netapp_cvs_pool.py",
+                    "module": "aws_netapp_cvs_pool",
+                    "notes": [
+                        "The modules prefixed with aws\\_cvs\\_netapp are built to Manage AWS Cloud Volumes Service ."
+                    ],
+                    "options": [
+                        {
+                            "name": "api_key",
+                            "description": [
+                                "The access key to authenticate with the AWSCVS Web Services Proxy or Embedded Web Services API."
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "api_url",
+                            "description": [
+                                "The url to the AWSCVS Web Services Proxy or Embedded Web Services API."
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "from_name",
+                            "description": [
+                                "rename the existing pool name ( The human readable name of the Pool )",
+                                "I(from_name) is the existing name, and I(name) the new name",
+                                "can be used with update operation"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "name",
+                            "description": [
+                                "pool name ( The human readable name of the Pool )",
+                                "name can be used for create, update and delete operations"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "region",
+                            "description": [
+                                "The region to which the Pool is associated."
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "secret_key",
+                            "description": [
+                                "The secret_key to authenticate with the AWSCVS Web Services Proxy or Embedded Web Services API."
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "serviceLevel",
+                            "choices": [
+                                "basic",
+                                "standard",
+                                "extreme"
+                            ],
+                            "description": [
+                                "The service level of the Pool",
+                                "can be used with pool create, update operations"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "sizeInBytes",
+                            "description": [
+                                "Size of the Pool in bytes",
+                                "can be used with pool create, update operations",
+                                "minimum value is 4000000000000 bytes"
+                            ],
+                            "type": "int"
+                        },
+                        {
+                            "name": "state",
+                            "choices": [
+                                "present",
+                                "absent"
+                            ],
+                            "description": [
+                                "Whether the specified pool should exist or not."
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "validate_certs",
+                            "default": true,
+                            "description": [
+                                "Should https certificates be validated?"
+                            ],
+                            "required": false,
+                            "type": "bool"
+                        },
+                        {
+                            "name": "vendorID",
+                            "description": [
+                                "A vendor ID for the Pool. E.g. an ID allocated by a vendor service for the Pool.",
+                                "can be used with pool create, update operations",
+                                "must be unique"
+                            ],
+                            "type": "str"
+                        }
+                    ],
+                    "short_description": "NetApp AWS Cloud Volumes Service Manage Pools.",
+                    "version_added": "2.9"
+                },
+                "examples": "\n- name: Create a new Pool\n  aws_netapp_cvs_pool:\n    state: present\n    name: TestPoolBB12\n    serviceLevel: extreme\n    sizeInBytes: 4000000000000\n    vendorID: ansiblePoolTestVendorBB12\n    region: us-east-1\n    api_url: cds-aws-bundles.netapp.com\n    api_key: MyAPiKey\n    secret_key: MySecretKey\n\n- name: Delete a Pool\n  aws_netapp_cvs_pool:\n    state: absent\n    name: TestPoolBB7\n    region: us-east-1\n    api_url: cds-aws-bundles.netapp.com\n    api_key: MyAPiKey\n    secret_key: MySecretKey\n\n- name: Update a Pool\n  aws_netapp_cvs_pool:\n    state: present\n    from_name: TestPoolBB12\n    name: Mynewpool7\n    vendorID: ansibleVendorMynewpool15\n    serviceLevel: extreme\n    sizeInBytes: 4000000000000\n    region: us-east-1\n    api_url: cds-aws-bundles.netapp.com\n    api_key: MyAPiKey\n    secret_key: MySecretKey\n\n",
+                "metadata": {
+                    "status": [
+                        "preview"
+                    ],
+                    "supported_by": "community"
+                },
+                "return": null
+            },
+            "readme_file": null,
+            "readme_html": null
+        },
+        {
+            "content_name": "aws_netapp_cvs_snapshots",
+            "content_type": "module",
+            "doc_strings": {
+                "doc": {
+                    "author": "NetApp Ansible Team (@carchi8py) <ng-ansibleteam@netapp.com>",
+                    "description": [
+                        "Create, Update, Delete Snapshot on AWS Cloud Volumes Service."
+                    ],
+                    "filename": "/tmp/tmpo39i_g1b/ansible_collections/netapp/aws/plugins/modules/aws_netapp_cvs_snapshots.py",
+                    "module": "aws_netapp_cvs_snapshots",
+                    "notes": [
+                        "The modules prefixed with aws\\_cvs\\_netapp are built to Manage AWS Cloud Volumes Service ."
+                    ],
+                    "options": [
+                        {
+                            "name": "api_key",
+                            "description": [
+                                "The access key to authenticate with the AWSCVS Web Services Proxy or Embedded Web Services API."
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "api_url",
+                            "description": [
+                                "The url to the AWSCVS Web Services Proxy or Embedded Web Services API."
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "fileSystemId",
+                            "description": [
+                                "Name or Id of the filesystem.",
+                                "Required for create operation"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "from_name",
+                            "description": [
+                                "ID or Name of the snapshot to rename.",
+                                "Required to create an snapshot called 'name' by renaming 'from_name'."
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "name",
+                            "description": [
+                                "Name of the snapshot"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "region",
+                            "description": [
+                                "The region to which the snapshot belongs to."
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "secret_key",
+                            "description": [
+                                "The secret_key to authenticate with the AWSCVS Web Services Proxy or Embedded Web Services API."
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "state",
+                            "choices": [
+                                "present",
+                                "absent"
+                            ],
+                            "description": [
+                                "Whether the specified snapshot should exist or not."
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "validate_certs",
+                            "default": true,
+                            "description": [
+                                "Should https certificates be validated?"
+                            ],
+                            "required": false,
+                            "type": "bool"
+                        }
+                    ],
+                    "short_description": "NetApp AWS Cloud Volumes Service Manage Snapshots.",
+                    "version_added": "2.9"
+                },
+                "examples": "\n- name: Create Snapshot\n  aws_netapp_cvs_snapshots:\n    state: present\n    region: us-east-1\n    name: testSnapshot\n    fileSystemId: testVolume\n    api_url : cds-aws-bundles.netapp.com\n    api_key: myApiKey\n    secret_key : mySecretKey\n\n- name: Update Snapshot\n  aws_netapp_cvs_snapshots:\n    state: present\n    region: us-east-1\n    name: testSnapshot - renamed\n    from_name: testSnapshot\n    fileSystemId: testVolume\n    api_url : cds-aws-bundles.netapp.com\n    api_key: myApiKey\n    secret_key : mySecretKey\n\n- name: Delete Snapshot\n  aws_netapp_cvs_snapshots:\n    state: absent\n    region: us-east-1\n    name: testSnapshot\n    api_url : cds-aws-bundles.netapp.com\n    api_key: myApiKey\n    secret_key : mySecretKey\n",
+                "metadata": {
+                    "status": [
+                        "preview"
+                    ],
+                    "supported_by": "community"
+                },
+                "return": null
+            },
+            "readme_file": null,
+            "readme_html": null
+        },
+        {
+            "content_name": "aws_netapp_cvs_active_directory",
+            "content_type": "module",
+            "doc_strings": {
+                "doc": {
+                    "author": "NetApp Ansible Team (@carchi8py) <ng-ansibleteam@netapp.com>",
+                    "description": [
+                        "Create, Update, Delete ActiveDirectory on AWS Cloud Volumes Service."
+                    ],
+                    "filename": "/tmp/tmpo39i_g1b/ansible_collections/netapp/aws/plugins/modules/aws_netapp_cvs_active_directory.py",
+                    "module": "aws_netapp_cvs_active_directory",
+                    "notes": [
+                        "The modules prefixed with aws\\_cvs\\_netapp are built to Manage AWS Cloud Volumes Service ."
+                    ],
+                    "options": [
+                        {
+                            "name": "DNS",
+                            "description": [
+                                "DNS server address for the Active Directory domain",
+                                "Required when C(state=present)",
+                                "Required when C(state=present), to modify ActiveDirectory properties."
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "api_key",
+                            "description": [
+                                "The access key to authenticate with the AWSCVS Web Services Proxy or Embedded Web Services API."
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "api_url",
+                            "description": [
+                                "The url to the AWSCVS Web Services Proxy or Embedded Web Services API."
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "domain",
+                            "description": [
+                                "Name of the Active Directory domain"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "netBIOS",
+                            "description": [
+                                "NetBIOS name of the server."
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "password",
+                            "description": [
+                                "Password of the Active Directory domain administrator",
+                                "Required when C(state=present), to modify ActiveDirectory properties"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "region",
+                            "description": [
+                                "The region to which the Active Directory credentials are associated."
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "secret_key",
+                            "description": [
+                                "The secret_key to authenticate with the AWSCVS Web Services Proxy or Embedded Web Services API."
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "state",
+                            "choices": [
+                                "present",
+                                "absent"
+                            ],
+                            "description": [
+                                "Whether the specified ActiveDirectory should exist or not."
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "username",
+                            "description": [
+                                "Username of the Active Directory domain administrator"
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "validate_certs",
+                            "default": true,
+                            "description": [
+                                "Should https certificates be validated?"
+                            ],
+                            "required": false,
+                            "type": "bool"
+                        }
+                    ],
+                    "short_description": "NetApp AWS CloudVolumes Service Manage Active Directory.",
+                    "version_added": "2.9"
+                },
+                "examples": "\n    - name: Create Active Directory\n      aws_netapp_cvs_active_directory.py:\n        state: present\n        region: us-east-1\n        DNS: 101.102.103.123\n        domain: mydomain.com\n        password: netapp1!\n        netBIOS: testing\n        username: user1\n        api_url : My_CVS_Hostname\n        api_key: My_API_Key\n        secret_key : My_Secret_Key\n\n    - name: Update Active Directory\n      aws_netapp_cvs_active_directory.py:\n        state: present\n        region: us-east-1\n        DNS: 101.102.103.123\n        domain: mydomain.com\n        password: netapp2!\n        netBIOS: testingBIOS\n        username: user2\n        api_url : My_CVS_Hostname\n        api_key: My_API_Key\n        secret_key : My_Secret_Key\n\n    - name: Delete Active Directory\n      aws_netapp_cvs_active_directory.py:\n        state: absent\n        region: us-east-1\n        domain: mydomain.com\n        api_url : My_CVS_Hostname\n        api_key: My_API_Key\n        secret_key : My_Secret_Key\n",
+                "metadata": {
+                    "status": [
+                        "preview"
+                    ],
+                    "supported_by": "certified"
+                },
+                "return": null
+            },
+            "readme_file": null,
+            "readme_html": null
+        },
+        {
+            "content_name": "aws_netapp_cvs_filesystems",
+            "content_type": "module",
+            "doc_strings": {
+                "doc": {
+                    "author": "NetApp Ansible Team (@carchi8py) <ng-ansibleteam@netapp.com>",
+                    "description": [
+                        "Create, Update, Delete fileSystem on AWS Cloud Volumes Service."
+                    ],
+                    "filename": "/tmp/tmpo39i_g1b/ansible_collections/netapp/aws/plugins/modules/aws_netapp_cvs_filesystems.py",
+                    "module": "aws_netapp_cvs_filesystems",
+                    "notes": [
+                        "The modules prefixed with aws\\_cvs\\_netapp are built to Manage AWS Cloud Volumes Service ."
+                    ],
+                    "options": [
+                        {
+                            "name": "api_key",
+                            "description": [
+                                "The access key to authenticate with the AWSCVS Web Services Proxy or Embedded Web Services API."
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "api_url",
+                            "description": [
+                                "The url to the AWSCVS Web Services Proxy or Embedded Web Services API."
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "creationToken",
+                            "description": [
+                                "Name of the filesystem"
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "exportPolicy",
+                            "description": [
+                                "The policy rules to export the filesystem"
+                            ],
+                            "suboptions": [
+                                {
+                                    "name": "rules",
+                                    "description": [
+                                        "Set of rules to export the filesystem",
+                                        "Requires allowedClients, access and protocol"
+                                    ],
+                                    "suboptions": [
+                                        {
+                                            "name": "allowedClients",
+                                            "description": [
+                                                "Comma separated list of ip address blocks of the clients to access the fileSystem",
+                                                "Each address block contains the starting IP address and size for the block"
+                                            ],
+                                            "type": "str"
+                                        },
+                                        {
+                                            "name": "cifs",
+                                            "description": [
+                                                "Enable or disable cifs filesystem"
+                                            ],
+                                            "type": "bool"
+                                        },
+                                        {
+                                            "name": "nfsv3",
+                                            "description": [
+                                                "Enable or disable nfsv3 fileSystem"
+                                            ],
+                                            "type": "bool"
+                                        },
+                                        {
+                                            "name": "nfsv4",
+                                            "description": [
+                                                "Enable or disable nfsv4 filesystem"
+                                            ],
+                                            "type": "bool"
+                                        },
+                                        {
+                                            "name": "ruleIndex",
+                                            "description": [
+                                                "Index number of the rule"
+                                            ],
+                                            "type": "int"
+                                        },
+                                        {
+                                            "name": "unixReadOnly",
+                                            "description": [
+                                                "Should fileSystem have read only permission or not"
+                                            ],
+                                            "type": "bool"
+                                        },
+                                        {
+                                            "name": "unixReadWrite",
+                                            "description": [
+                                                "Should fileSystem have read write permission or not"
+                                            ],
+                                            "type": "bool"
+                                        }
+                                    ],
+                                    "type": "list"
+                                }
+                            ],
+                            "type": "dict"
+                        },
+                        {
+                            "name": "quotaInBytes",
+                            "description": [
+                                "Size of the filesystem",
+                                "Required for create"
+                            ],
+                            "type": "int"
+                        },
+                        {
+                            "name": "region",
+                            "description": [
+                                "The region to which the filesystem belongs to."
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "secret_key",
+                            "description": [
+                                "The secret_key to authenticate with the AWSCVS Web Services Proxy or Embedded Web Services API."
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "serviceLevel",
+                            "choices": [
+                                "standard",
+                                "premium",
+                                "extreme"
+                            ],
+                            "description": [
+                                "Service Level of a filesystem."
+                            ],
+                            "type": "str"
+                        },
+                        {
+                            "name": "state",
+                            "choices": [
+                                "present",
+                                "absent"
+                            ],
+                            "description": [
+                                "Whether the specified fileSystem should exist or not."
+                            ],
+                            "required": true,
+                            "type": "str"
+                        },
+                        {
+                            "name": "validate_certs",
+                            "default": true,
+                            "description": [
+                                "Should https certificates be validated?"
+                            ],
+                            "required": false,
+                            "type": "bool"
+                        }
+                    ],
+                    "short_description": "NetApp AWS Cloud Volumes Service Manage FileSystem.",
+                    "version_added": "2.9"
+                },
+                "examples": "\n- name: Create FileSystem\n  aws_netapp_cvs_filesystems:\n    state: present\n    region: us-east-1\n    creationToken: newVolume-1\n    exportPolicy:\n        rules:\n          - allowedClients: 172.16.0.4\n            cifs: False\n            nfsv3: True\n            nfsv4: True\n            ruleIndex: 1\n            unixReadOnly: True\n            unixReadWrite: False\n    quotaInBytes: 100000000000\n    api_url : cds-aws-bundles.netapp.com\n    api_key: Q1ZRR0p0VGNuZ3VhMnJBYk5zczM1RkZ3Z0lCbUE3\n    secret_key : U1FwdHdKSGRQQUhIdkIwMktMU1ZCV2x6WUowZWRD\n\n- name: Update FileSystem\n  aws_netapp_cvs_filesystems:\n     state: present\n     region: us-east-1\n     creationToken: newVolume-1\n     exportPolicy:\n         rules:\n           - allowedClients: 172.16.0.4\n             cifs: False\n             nfsv3: True\n             nfsv4: True\n             ruleIndex: 1\n             unixReadOnly: True\n             unixReadWrite: False\n     quotaInBytes: 200000000000\n     api_url : cds-aws-bundles.netapp.com\n     api_key: Q1ZRR0p0VGNuZ3VhMnJBYk5zczM1RkZ3Z0lCbUE3\n     secret_key : U1FwdHdKSGRQQUhIdkIwMktMU1ZCV2x6WUowZWRD\n\n- name: Delete FileSystem\n  aws_netapp_cvs_filesystems:\n     state: present\n     region: us-east-1\n     creationToken: newVolume-1\n     quotaInBytes: 100000000000\n     api_url : cds-aws-bundles.netapp.com\n     api_key: Q1ZRR0p0VGNuZ3VhMnJBYk5zczM1RkZ3Z0lCbUE3\n     secret_key : U1FwdHdKSGRQQUhIdkIwMktMU1ZCV2x6WUowZWRD\n",
+                "metadata": {
+                    "status": [
+                        "preview"
+                    ],
+                    "supported_by": "community"
+                },
+                "return": null
+            },
+            "readme_file": null,
+            "readme_html": null
+        },
+        {
+            "content_name": "netapp_module",
+            "content_type": "module_utils",
+            "doc_strings": null,
+            "readme_file": null,
+            "readme_html": null
+        },
+        {
+            "content_name": "netapp",
+            "content_type": "module_utils",
+            "doc_strings": null,
+            "readme_file": null,
+            "readme_html": null
+        },
+        {
+            "content_name": "netapp",
+            "content_type": "doc_fragments",
+            "doc_strings": null,
+            "readme_file": null,
+            "readme_html": null
+        }
+    ],
     "name": "docs_blob.json",
     "_node_type": "IndexJsonNode"
 }
